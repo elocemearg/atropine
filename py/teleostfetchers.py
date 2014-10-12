@@ -540,14 +540,15 @@ class QuickestFinishersFetcher(object):
 		# We'll build each row so it only takes up 50% of the screen, because
 		# we're going to put them together into two columns.
 		for (table, timestamp) in finishing_times:
-			stime = time.strptime(timestamp, "%Y-%m-%d %H:%M:%S");
+			stime = time.strptime(timestamp + " UTC", "%Y-%m-%d %H:%M:%S %Z");
 			secs = time.mktime(stime);
+                        localtime = time.localtime(secs)
 			if len(rows) == 0:
 				first_secs = secs;
 			row = teleostscreen.TableRow();
 			row.append_value(teleostscreen.RowValue(str(table), teleostscreen.PercentLength(10), text_colour=table_colour, alignment=teleostscreen.ALIGN_CENTRE, bg_colour=table_bg_colour));
 			
-			row.append_value(teleostscreen.RowValue(time.strftime("%I.%M%p", stime).lower().lstrip("0"), teleostscreen.PercentLength(20), text_colour=time_colour, alignment=teleostscreen.ALIGN_RIGHT));
+			row.append_value(teleostscreen.RowValue(time.strftime("%I.%M%p", localtime).lower().lstrip("0"), teleostscreen.PercentLength(20), text_colour=time_colour, alignment=teleostscreen.ALIGN_RIGHT));
 			if len(rows) > 0:
 				diff = int(secs - first_secs);
 				row.append_value(teleostscreen.RowValue("+%dm%02ds" % (diff / 60, diff % 60), teleostscreen.PercentLength(19), text_colour=diff_time_colour, alignment=teleostscreen.ALIGN_RIGHT));
