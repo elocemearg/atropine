@@ -72,7 +72,7 @@ def show_games_as_html_table(games, editable=True, remarks=None):
 	print "<table class=\"scorestable\">";
 	print "<tr>";
 	print "<th>Table</th><th>Type</th>";
-	print "<th>Player 1</th><th>Score</th><th>Player 2</th><th>Remarks</th>";       
+	print "<th>Player 1</th><th>Score</th><th>Player 2</th><th></th>";       
 	print "</tr>"
 	last_table_no = None;
 	gamenum = 0;

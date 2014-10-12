@@ -54,6 +54,7 @@ try:
 		print "Players are ranked by points.";
 	else:
 		print "Players are ranked somehow. Your guess is as good as mine.";
+        print "</p>"
 
 	print "<table class=\"standingstable\">";
 	print "<tr><th></th><th></th><th>P</th><th>W</th><th>Pts</th></tr>";
