@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# vim: ts=4:
 
 import sqlite3;
 import re;
