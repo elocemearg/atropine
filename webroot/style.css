@@ -1,0 +1,166 @@
+body {
+	font-family: sans-serif;
+}
+
+.sidebar {
+	position: fixed;
+	left: 10px;
+	width: 190px;
+}
+
+.mainpane {
+	margin-left: 200px;
+}
+
+.groupseparator {
+	height: 4px;
+	background-color: purple;
+}
+
+.fixturetable {
+	border-collapse: collapse;
+}
+
+table.fixturetable th {
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+table.fixturetable td.gameplayer1 {
+	background-color: #ffffcc;
+}
+
+table.fixturetable td.gamescore {
+	background-color: #ffffcc;
+}
+
+table.fixturetable td.gameplayer2 {
+	background-color: #ffffcc;
+}
+
+table.fixturetable td.tableno {
+	font-size: 1.5em;
+	font-weight: bold;
+	vertical-align: middle;
+	text-align: center;
+}
+
+table.scorestable td.tableno {
+	font-size: 1.5em;
+	font-weight: bold;
+	vertical-align: middle;
+	text-align: center;
+}
+
+.scorestable {
+	border-collapse:collapse;
+}
+
+table.scorestable th {
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+tr.gamerow td {
+}
+
+tr.firstgameintable td {
+	border-top: 3px solid black;
+}
+
+tr.unplayedgame td.gameplayer1 {
+	background-color: #eeeeee;
+}
+
+tr.unplayedgame td.gameplayer2 {
+	background-color: #eeeeee;
+}
+
+td.winningplayer {
+	background-color: #aaffaa;
+}
+
+td.losingplayer {
+	background-color: #ffaaaa;
+}
+
+.roundno {
+	text-align: center;
+}
+
+.gameseq {
+	text-align: center;
+}
+
+.tableno {
+	text-align: center;
+}
+
+.gametype {
+	text-align: center;
+}
+
+.gameplayer1 {
+	text-align: right;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+.gamescore {
+	text-align: center;
+}
+
+input.gamescore {
+	text-align: center;
+}
+
+.gameplayer2 {
+	text-align: left;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+
+/* STANDINGS */
+
+table.standingstable {
+	border-collapse: collapse;
+}
+
+table.standingstable td {
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+tr.standingsrow td {
+	border-bottom: 1px dashed gray;
+}
+
+table.standingstable th {
+	border-bottom: 1px solid black;
+	background-color: #dddddd;
+}
+
+td.standingspos {
+	text-align: right;
+	vertical-align: middle;
+}
+
+td.standingsname {
+	text-align: left;
+	border-right: 1px solid gray;
+}
+
+td.standingsplayed {
+	text-align: right;
+	border-right: 1px solid gray;
+}
+
+td.standingswins {
+	text-align: right;
+	border-right: 1px solid gray;
+}
+
+td.standingspoints {
+	text-align: right;
+}

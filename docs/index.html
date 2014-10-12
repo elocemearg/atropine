@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB" xml:lang="en-GB">
+<head>
+<title>Atropine - Tutorial</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+<body>
+	<h1>Atropine Tutorial</h1>
+
+	<p>
+	Atropine is a Countdown tournament administration system controlled
+	by your web browser. Teleost is a program that continually reads the
+	state of the tournament and updates a window showing standings, results
+	and other information.
+	</p>
+
+	<h2>Prerequisites</h2>
+	<p>
+	The two things you need that might not be installed on your computer
+	already are <a href="http://www.python.org">Python</a> and
+	<a href="http://pygame.org">pygame</a>. Python is the programming
+	language in which Atropine and Teleost are written. pygame is a module
+	for Python which, among other things, gives graphical capabilities to
+	a Python application.
+	</p>
+	<p>
+	To use Atropine, you need
+	<a href="http://www.python.org/download/">Python 2.x</a> installed.
+	At the time of writing, the latest version of this is
+	<a href="http://www.python.org/download/releases/2.7.6/">2.7.6</a>.
+	If you are using Windows, you want the "Windows x86 MSI Installer".
+	</p>
+	<p>
+	To use Teleost, which is the program that displays standings and
+	results on the screen, you need <a href="http://pygame.org">pygame</a>
+	in addition to Python. Go to the
+	<a href="http://pygame.org/download.shtml">pygame download page</a>
+	and download and install the version of pygame compatible with your
+	Python installation. At the time of writing, the latest version of
+	pygame is 1.9.1, and <a href="http://pygame.org/ftp/pygame-1.9.1.win32-py2.7.msi">pygame-1.9.1.win32-py2.7.msi</a>
+	is the Windows installer for the specific pygame version compatible
+	with Python 2.7.
+	</p>
+
+	<h2>Installation</h2>
+	<p>
+	After you have installed the prerequisites detailed above, unzip
+	atropine.zip into a directory of your choosing. There are a number
+	of files and directories, but the only ones you need to know about
+	to use Atropine and Teleost are <tt>atropine.py</tt> and
+	<tt>teleost.py</tt>.
+	</p>
+	<h2>Starting Atropine</h2>
+	<p>
+	Atropine is a web server. When you run it, you leave it sitting in the
+	background and then use your web browser to connect to it and
+	administer tournaments. To start atropine, run
+	<tt>atropine.py</tt>. The Windows Firewall might tell you
+	it has blocked some features of Python and ask you what you want to
+	do about it. You need to allow Python to use at least private networks.
+	</p>
+	<p>
+	Once <tt>atropine.py</tt> is running, use your web browser to
+	visit <a href="http://localhost:3960/">http://localhost:3960</a>. This
+	will redirect you to the home screen.
+	</p>
+	<h2>Creating a tourney</h2>
+	<p>
+	Decide on a name for your tourney and enter it into the "Tourney name"
+	box. This name must consist only of letters, numbers, underscores and
+	hyphens - no spaces. So "colin2014" is okay, but "Countdown In Lincoln
+	2014" is not. Then click <em>Create Tourney</em>.
+	When that succeeds, click the "click here to continue" link
+	and you will land on the Tourney Setup page.
+	</p>
+	<h2>Starting Teleost (optional)</h2>
+	<p>
+	If you want to show everyone the standings and results, you'll use
+	Teleost for this. This step isn't necessary to administer a tournament,
+	but if you want to use Teleost then just run <tt>teleost.py</tt> and
+	enter the name of your tournament when prompted. The Teleost window
+	should then appear. Once it's running and you've got the window
+	positioned where you want it, it shouldn't need any more
+	intervention.
+	</p>
+	<h2>Tourney Setup</h2>
+	<p>
+	The Tourney Setup page allows you to load the list of players and
+	specify the rules of the tournament.
+	To get back to this page at any time, you can click the
+	<em>Setup</em> link in the sidebar.
+	</p>
+	<p>
+	A tourney isn't much of a tourney without players. The text area under
+	the heading <em>Player List</em> is where your list of players
+	goes. Put each player name on a separate line, starting with the
+	highest-rated player and finishing with the lowest-rated player. The
+	reason this is one big text box rather than many little text boxes, one
+	for each player, is to make it easier to copy and paste the list of
+	players from somewhere else.
+	</p>
+	<p>
+	Each player is assigned a rating. If you want to assign a rating to
+	a player, follow their name with a comma and the rating, like this:
+	</p>
+	<pre>	Kevin Birks,1850</pre>
+	<p>
+	If any players are not given ratings, ratings are automatically
+	assigned to players with the top player receiving a rating of 2000,
+	the second player 1980, the next player 1960, and so on.
+	</p>
+	<p>
+	<em>N.B.</em> If you need to add a patzer player (an Apterous
+	Prune) to take the number of players up to a multiple of two or three,
+	give them a rating of zero.
+	</p>
+	<p>
+	Copy and paste the following example players into the player list box.
+	</p>
+	<pre>	Kevin Birks
+	Jonathan Rawlplug
+	Dark Meeks
+	Giles Huc-Things
+	Ed McBellface
+	Admiral Glad
+	Jack Worzel
+	Some Hurst
+	Some Other Hurst
+	Randy Prat
+	David B Barnyard
+	Apterous Prune,0</pre>
+	<p>
+	Then click <em>Save Player List</em>.
+	</p>
+	<p>
+	The Tourney Setup stage is also where you can specify how many players
+	are on a table, and how to rank players, but leave those as the
+	defaults for now.
+	</p>
+	<h2>Generating Fixtures</h2>
+	<p>
+	Once your tourney has some players, you can get on with generating
+	fixtures for the first round. This tutorial will assume a COLIN-style
+	tournament structure: there are three rounds, in each round
+	players are divided into groups of three, and in each group three
+	games are played, with each player playing two games and hosting one.
+	</p>
+	<p>
+	Click the <em>Generate new round...</em> link in the sidebar.
+	You'll be presented with a list of fixture generators. Click
+	<em>COLIN Fixture Generator</em>. For the first round, this
+	will come back to you with a list of fixtures immediately.
+	</p>
+	<p>
+	Review the fixtures, then click <em>Accept Fixtures</em>. The
+	fixtures aren't committed until you click this button.
+	</p>
+	<p>
+	You should then see a page telling you the fixtures were added
+	successfully. Click the <em>View games</em> link to go to the
+	score editor.
+	</p>
+
+	<h2>Filling in scores</h2>
+	<p>
+	The score editor is the page you'll be using the most. There is one for
+	every round, and you can get to the score editor for a particular round
+	by clicking the link with that round's name in the sidebar, e.g.
+	"Round 1".
+	</p>
+	<p>
+	When a game is finished and you have the score, type it in the
+	corresponding box and click <em>Save</em> or press ENTER.
+	</p>
+	<p>
+	Normally a score is two numbers separated by a hyphen, e.g. 56-52, but
+	the score editor is pretty permissive with what it will accept as a
+	score. As long as it looks like a number, followed by something that
+	isn't a number, followed by another number, it'll accept it. If you
+	enter something it doesn't understand, a suitable admonishment will
+	appear in the "Remarks" column for that game.
+	</p>
+	<p>
+	If a game was won on a tiebreak, include an asterisk (*) in the score.
+	This can go anywhere in the score text apart from in the middle of a
+	number. Points scored on tiebreaks do not count towards a player's
+	total.
+	</p>
+	<p>
+	Remember to click <em>Save</em> (or press ENTER) after entering
+	a result. If you change a score box and don't save it, its background
+	will turn yellow to warn you that it hasn't been saved. Scores are not
+	written to the database until you save them. If you try to navigate
+	away from the page when there are unsaved results, a box will appear
+	warning you that you're about to lose work.
+	</p>
+	<p>
+	If you've got Teleost open, you'll find that when you enter the first
+	result the display switches to showing the standings table and a
+	scrolling window for the latest results.
+	</p>
+	<h2>The rest of the tourney</h2>
+	<p>
+	When you've entered all results for one round and you're ready to
+	generate fixtures for the next round, click
+	<em>Generate new round...</em> as before. This time, if you
+	click <em>COLIN Fixture Generator</em> you'll be asked a
+	question before proceeding. The COLIN fixture generator needs to
+	group together players with similar performance, ensuring players don't
+	play anyone they've already played in the tourney. This is rather
+	complicated, so you can specify a time limit after which it will give
+	you the best grouping it has found up to that point. The default is
+	15 seconds.
+	</p>
+	<p>
+	Therefore, when you click the <em>Generate Fixtures</em> button
+	for round 2 onwards, it may take a few seconds to bring you the
+	fixtures. With our example of 12 players it should be very quick, but
+	in larger tournaments the fixtures will take longer to generate.
+	</p>
+	<h2>Display Control</h2>
+	<p>
+	The <em>Display Control</em> link in the sidebar takes you to
+	a menu asking which screen you want Teleost to show. It does no harm to
+	leave it on the default setting "Auto", but if you want the Teleost
+	window to show a particular screen, you can select it and click
+	<em>Apply Settings</em>. Teleost will then show only that
+	screen until you specify otherwise.
+	</p>
+	<p>
+	In <em>Auto</em> mode, Teleost uses the following rules to
+	decide which screen to show:
+	</p>
+	<ul>
+		<li>If the tourney is in a knockout stage, Teleost displays
+		the <em>Fixtures</em> screen.</li>
+		<li>Otherwise, if the latest round has had fixtures generated
+		but no scores have been filled in yet, Teleost displays the
+		<em>Fixtures</em> screen.</li>
+		<li>Otherwise, if the latest round has had some but not all of
+		its scores filled in, Teleost displays the
+		<em>Standings / Videprinter</em> screen.</li>
+		<li>If in the latest round all games have had their
+		scores filled in, Teleost displays the
+		<em>Standings / Table Results</em> screen.</li>
+	</ul>
+	<p>
+	In <em>Auto</em> mode, Teleost never shows the
+	<em>Records</em> or <em>Overachievers</em> screens,
+	so if you want to show those you need to switch to them manually using
+	the Display Control menu.
+	</p>
+<hr />
+	<p>
+	</p>
+</body>
+</html>
