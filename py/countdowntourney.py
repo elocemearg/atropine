@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# vim: ts=4:
+# vim: ts=4 noexpandtab:
 
 import sqlite3;
 import re;
@@ -135,43 +135,64 @@ commit;
 
 class TourneyException(Exception):
 	def __init__(self, description=None):
-		self.description = description;
+		if description:
+			self.description = description;
 
 class TourneyInProgressException(TourneyException):
+	description = "Tournament is in progress."
 	pass;
 
 class PlayerDoesNotExistException(TourneyException):
+	description = "Player does not exist."
 	pass;
 
 class PlayerExistsException(TourneyException):
+	description = "Player already exists."
 	pass;
 
 class UnknownRankMethodException(TourneyException):
+	description = "Unknown ranking method."
 	pass;
 
 class DBNameExistsException(TourneyException):
+	description = "Tourney name already exists."
 	pass;
 
 class DBNameDoesNotExistException(TourneyException):
+	description = "No tourney by that name exists."
 	pass;
 
 class InvalidDBNameException(TourneyException):
+	description = "Invalid tourney name."
 	pass;
 
 class InvalidRatingException(TourneyException):
+	description = "Invalid rating. Rating must be an integer."
 	pass;
 
 class IncompleteRatingsException(TourneyException):
+	description = "Incomplete ratings - specify ratings for nobody or everybody."
 	pass;
 
 class InvalidTableSizeException(TourneyException):
+	description = "Invalid table size - number of players per table must be 2 or 3."
 	pass;
 
 class FixtureGeneratorException(TourneyException):
+	description = "Failed to generate fixtures."
 	pass;
 
 class PlayerNotInGameException(TourneyException):
+	description = "That player is not in that game."
 	pass;
+
+class NotMostRecentRoundException(TourneyException):
+	description = "That is not the most recent round."
+	pass
+
+class NoGamesException(TourneyException):
+	description = "No games have been played."
+	pass
 
 class Player(object):
 	def __init__(self, name, rating=0):
@@ -740,7 +761,23 @@ class Tourney(object):
 		except:
 			self.db.rollback();
 			raise;
-	
+
+	def delete_round(self, round_no):
+		latest_round_no = self.get_latest_round_no(round_type='P');
+		if latest_round_no is None:
+			raise NoGamesException()
+		if latest_round_no != round_no:
+			raise NotMostRecentRoundException()
+		
+		try:
+			cur = self.db.cursor()
+			cur.execute("delete from game where round_no = ?", (latest_round_no,))
+			cur.execute("delete from rounds where id = ?", (latest_round_no,))
+			self.db.commit()
+		except:
+			self.db.rollback()
+			raise
+
 	def set_game_players(self, alterations):
 		# alterations is (round_no, seq, p1, p2)
 		# but we want (p1name, p2name, round_no, seq) for feeding into the

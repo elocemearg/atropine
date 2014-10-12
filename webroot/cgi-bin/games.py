@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# vim:ts=8 shiftwidth=8 softtabstop=8 noexpandtab
+
 import sys;
 import cgicommon;
 import urllib;
@@ -188,73 +190,9 @@ function score_modified(control_name) {
 		print "<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no;
 		print "<input type=\"hidden\" id=\"lastmodified\" name=\"lastmodified\" value=\"\" />";
 
-		print "<table class=\"scorestable\">";
-		print "<tr>";
-		print "<th>Table</th><th>Type</th>";
-		print "<th>Player 1</th><th>Score</th><th>Player 2</th><th>Remarks</th>";
-		print "</tr>"
-
-		gamenum = 0;
-		last_table_no = None;
 		games = tourney.get_games(round_no=round_no, only_players_known=False);
-		for g in games:
-			player_names = g.get_player_names();
-			player_strings = (str(g.p1), str(g.p2));
-			tr_classes = ["gamerow"];
 
-			if last_table_no is None or last_table_no != g.table_no:
-				tr_classes.append("firstgameintable");
-				# Count how many consecutive games appear with this table
-				# number, so we can group them together in the table.
-				num_games_on_table = 0;
-				while gamenum + num_games_on_table < len(games) and games[gamenum + num_games_on_table].table_no == g.table_no:
-					num_games_on_table += 1;
-				first_game_in_table = True;
-			else:
-				first_game_in_table = False;
-			
-			if g.is_complete():
-				tr_classes.append("completedgame");
-			else:
-				tr_classes.append("unplayedgame");
-
-			print "<tr class=\"%s\">" % " ".join(tr_classes);
-			#print "<td class=\"roundno\">%d</td>" % round_no;
-			if first_game_in_table:
-				print "<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, g.table_no);
-			print "<td class=\"gametype\">%s</td>" % cgi.escape(g.game_type);
-
-			p1_classes = ["gameplayer1"];
-			p2_classes = ["gameplayer2"];
-			if g.is_complete():
-				if g.s1 == g.s2:
-					p1_classes.append("losingplayer");
-					p2_classes.append("losingplayer");
-				elif g.s1 > g.s2:
-					p1_classes.append("winningplayer");
-					p2_classes.append("losingplayer");
-				elif g.s2 > g.s1:
-					p1_classes.append("losingplayer");
-					p2_classes.append("winningplayer");
-			
-			print "<td class=\"%s\" align=\"right\">%s</td>" % (" ".join(p1_classes), cgi.escape(player_strings[0]));
-			score = g.format_score();
-			print "<td class=\"gamescore\" align=\"center\">";
-
-			if g.are_players_known():
-				print """
-<input class="gamescore" id="game%dscore" type="text" size="10"
-	name="game%dscore" value="%s"
-	onchange="score_modified('game%dscore');" />""" % (gamenum, gamenum, cgi.escape(score, True), gamenum);
-
-			print "</td>";
-			print "<td class=\"%s\" align=\"left\">%s</td>" % (" ".join(p2_classes), cgi.escape(player_strings[1]));
-			print "<td class=\"gameremarks\">%s</td>" % cgi.escape(remarks.get(gamenum, ""));
-			print "</tr>";
-			gamenum += 1;
-			last_table_no = g.table_no;
-		
-		print "</table>";
+		cgicommon.show_games_as_html_table(games, editable=True, remarks=remarks)
 
 		print "<input type=\"submit\" name=\"save\" value=\"Save\" onclick=\"unset_unsaved_data_warning();\" />";
 		#print "<input type=\"submit\" name=\"randomresults\" value=\"Random Results\" />";

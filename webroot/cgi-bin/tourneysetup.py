@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# vim: ts=4 noexpandtab
+
 import cgi;
 import cgitb;
 import cgicommon;
@@ -58,7 +60,7 @@ print "<div class=\"mainpane\">";
 print "<h1>Tourney Setup</h1>";
 
 if tourneyname is None:
-	print "<h1>Bugger</h1>";
+	print "<h1>Sloblock</h1>";
 	print "<p>No tourney name specified. <a href=\"/cgi-bin/home.py\">Home</a></p>";
 elif not tourney:
 	print "<p>No valid tourney name specified</p>";
@@ -168,6 +170,15 @@ else:
 	print "</blockquote>";
 	print '<input type="submit" name="rulessubmit" value="Save Rules" />';
 	print "</form>";
+
+	if tourney.get_num_games() > 0:
+		print '<h2>Delete rounds</h2>'
+		print '<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>'
+		print '<form action="/cgi-bin/delround.py" method="get" />'
+		print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname)
+		print '<input type="submit" name="delroundsetupsubmit" value="Delete most recent round" />'
+		print '</form>'
+
 print "</div>";
 
 print "</body>";
