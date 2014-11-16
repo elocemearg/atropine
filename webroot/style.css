@@ -196,3 +196,19 @@ th.exporttablenumber {
 	text-align: center;
 	/* border-top: 1ex solid white;*/
 }
+
+table.teamscorestable {
+	border: 2px solid grey;
+	border-collapse: collapse;
+}
+
+td.teamscorestablename {
+	border: 1px solid gray;
+	text-align: left;
+}
+
+td.teamscorestablescore {
+	border: 1px solid gray;
+	text-align: right;
+	font-weight: bold;
+}

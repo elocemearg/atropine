@@ -152,14 +152,10 @@ else:
 			print "</blockquote>";
 		print '<input type="submit" name="playerlistsubmit" value="Save Player List" />'
 		print '</form>'
-	
-	if len(players) > 0:
-		print '<h3>Export standings and results</h3>'
-		print '<p>'
-		print '<a href="/cgi-bin/export.py?tourney=%s&format=html" target="_blank">HTML (opens in new window)</a>' % urllib.quote_plus(tourneyname)
-		print '</p><p>'
-		print '<a href="/cgi-bin/export.py?tourney=%s&format=text" target="_blank">Plain text (opens in new window)</a>' % urllib.quote_plus(tourneyname)
-		print '</p>'
+
+	print '<p>'
+	print '<a href="/cgi-bin/teamsetup.py?tourney=%s">Hangover Team Setup</a>' % (urllib.quote_plus(tourneyname))
+	print '</p>'
 
 	players_per_table = tourney.get_table_size();
 	rank = tourney.get_rank_method();
@@ -186,6 +182,14 @@ else:
 		print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname)
 		print '<input type="submit" name="delroundsetupsubmit" value="Delete most recent round" />'
 		print '</form>'
+	
+	if len(players) > 0:
+		print '<h2>Export standings and results</h2>'
+		print '<p>'
+		print '<a href="/cgi-bin/export.py?tourney=%s&format=html" target="_blank">HTML (opens in new window)</a>' % urllib.quote_plus(tourneyname)
+		print '</p><p>'
+		print '<a href="/cgi-bin/export.py?tourney=%s&format=text" target="_blank">Plain text (opens in new window)</a>' % urllib.quote_plus(tourneyname)
+		print '</p>'
 
 print "</div>";
 

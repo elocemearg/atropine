@@ -64,6 +64,25 @@ def show_sidebar(tourney):
 		print "</div>";
 	print "</div>";
 
+def make_team_dot_html(team):
+	if team:
+		team_string = '<font color="#%s">&bull;</font>' % team.get_hex_colour()
+	else:
+		team_string = ""
+	return team_string
+
+def make_player_dot_html(player):
+	return make_team_dot_html(player.get_team())
+
+def show_team_score_table(team_scores):
+	print "<table class=\"teamscorestable\">"
+	print '<th colspan="2">Team score</th>'
+	for (team, score) in team_scores:
+		print '<tr>'
+		print '<td class="teamscorestablename">%s %s</td>' % (make_team_dot_html(team), cgi.escape(team.get_name()))
+		print '<td class="teamscorestablescore">%d</td>' % score
+		print '</tr>'
+	print '</table>'
 
 def show_games_as_html_table(games, editable=True, remarks=None):
 	if remarks is None:
@@ -116,7 +135,9 @@ def show_games_as_html_table(games, editable=True, remarks=None):
 				p1_classes.append("losingplayer");
 				p2_classes.append("winningplayer");
 		
-		print "<td class=\"%s\" align=\"right\">%s</td>" % (" ".join(p1_classes), cgi.escape(player_strings[0]));
+		team_string = make_player_dot_html(g.p1)
+
+		print "<td class=\"%s\" align=\"right\">%s %s</td>" % (" ".join(p1_classes), cgi.escape(player_strings[0]), team_string);
 		score = g.format_score();
 		print "<td class=\"gamescore\" align=\"center\">";
 
@@ -130,7 +151,8 @@ onchange="score_modified('game%dscore');" />""" % (gamenum, gamenum, cgi.escape(
 				print cgi.escape(score)
 
 		print "</td>";
-		print "<td class=\"%s\" align=\"left\">%s</td>" % (" ".join(p2_classes), cgi.escape(player_strings[1]));
+		team_string = make_player_dot_html(g.p2)
+		print "<td class=\"%s\" align=\"left\">%s %s</td>" % (" ".join(p2_classes), team_string, cgi.escape(player_strings[1]));
 		print "<td class=\"gameremarks\">%s</td>" % cgi.escape(remarks.get(gamenum, ""));
 		print "</tr>";
 		gamenum += 1;

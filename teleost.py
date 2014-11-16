@@ -79,6 +79,7 @@ try:
 	pygame.init();
 
 	standings_fetcher = teleostfetchers.StandingsFetcher(tourney);
+        team_score_fetcher = teleostfetchers.TeamScoreFetcher(tourney);
 	videprinter_fetcher = teleostfetchers.VideprinterFetcher(tourney);
 	table_results_fetcher = teleostfetchers.TableResultsFetcher(tourney);
 	highest_winning_scores_fetcher = teleostfetchers.HighestWinningScoresFetcher(tourney);
@@ -92,17 +93,20 @@ try:
 	#fontfilename = "/usr/share/fonts/truetype/futura/Futura Condensed Bold.ttf";
 
 	standings_widget = teleostscreen.TableWidget(standings_fetcher, 9, scroll_interval=10);
+        team_score_widget = teleostscreen.TableWidget(team_score_fetcher, 1, scroll_interval=5)
 
 	standings_videprinter = teleostscreen.View(name="Standings / Videprinter", desc="Standings table taking up most of the screen, with latest results displayed on a scrolling window below.");
 
 	standings_videprinter.add_view(standings_widget, top_pc=5, height_pc=65, left_pc=0, width_pc=95);
 	standings_videprinter.add_view(teleostscreen.ShadedArea(128), top_pc=72, height_pc=30, left_pc=0, width_pc=100);
+        standings_videprinter.add_view(team_score_widget, top_pc=5, height_pc=7, left_pc=5, width_pc=20);
 	standings_videprinter.add_view(teleostscreen.VideprinterWidget(videprinter_fetcher, 4), top_pc=73, height_pc=25, left_pc=2, width_pc=100);
 
 	standings_results = teleostscreen.View(name="Standings / Table Results", desc="Standings table taking up most of the screen, with this round's fixtures and results displayed at the bottom.");
 	standings_results.add_view(standings_widget, top_pc=5, height_pc=65, left_pc=0, width_pc=95);
 	standings_results.add_view(teleostscreen.ShadedArea(128), top_pc=72, height_pc=30, left_pc=0, width_pc=100);
 	standings_results.add_view(teleostscreen.TableWidget(table_results_fetcher, 4, scroll_interval=5), top_pc=73, height_pc=26, left_pc=0, width_pc=100);
+        standings_results.add_view(team_score_widget, top_pc=5, height_pc=7, left_pc=5, width_pc=20);
 
 	notables = teleostscreen.TimedViewCycler(name="Records", desc="Highest winning scores, losing scores and combined scores.");
 
@@ -125,6 +129,7 @@ try:
 
 	fixtures = teleostscreen.View(name="Fixtures", desc="Display all fixtures in the current round, using the whole screen to do it.");
 	fixtures.add_view(teleostscreen.PagedFixturesWidget(current_round_fixtures_fetcher, num_lines=13, scroll_interval=10), top_pc=0, left_pc=0, width_pc=100, height_pc=100);
+        fixtures.add_view(team_score_widget, top_pc=1, height_pc=8, left_pc=69, width_pc=30);
 
 	view_list = [standings_videprinter, standings_results, fixtures, overachievers, tuff_luck, notables, quickest_finishers];
 
