@@ -153,8 +153,9 @@ else:
 		print '<input type="submit" name="playerlistsubmit" value="Save Player List" />'
 		print '</form>'
 
+	print '<h2>Team Setup</h2>'
 	print '<p>'
-	print '<a href="/cgi-bin/teamsetup.py?tourney=%s">Hangover Team Setup</a>' % (urllib.quote_plus(tourneyname))
+	print '<a href="/cgi-bin/teamsetup.py?tourney=%s">Assign players to teams</a>' % (urllib.quote_plus(tourneyname))
 	print '</p>'
 
 	players_per_table = tourney.get_table_size();

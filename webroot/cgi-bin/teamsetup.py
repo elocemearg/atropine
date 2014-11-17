@@ -91,6 +91,7 @@ form = cgi.FieldStorage();
 tourneyname = form.getfirst("tourney")
 player_team_submit = form.getfirst("playerteamsubmit")
 random_assignment_submit = form.getfirst("randomassignmentsubmit")
+clear_teams_submit = form.getfirst("clearteams")
 random_group_size = int_or_none(form.getfirst("randomgroupsize"))
 if random_group_size is None:
     random_group_size = 6
@@ -132,6 +133,14 @@ if tourneyname and tourney:
             if random_group_size is None:
                 random_group_size = 0
             player_teams = random_team_assignment(tourney, random_group_size)
+            try:
+                tourney.set_player_teams(player_teams)
+                player_teams_set = True
+            except countdowntourney.TourneyException as e:
+                tourney_exception = e
+        elif clear_teams_submit:
+            players = tourney.get_players()
+            player_teams = [ (p.get_name(), None) for p in players ]
             try:
                 tourney.set_player_teams(player_teams)
                 player_teams_set = True
@@ -209,7 +218,18 @@ else:
     print 'Divide players by rating into groups of <input type="text" name="randomgroupsize" value="%d" size="5"> and randomly distribute each group as evenly as possible among the teams. Set to 0 to divide the whole player list randomly into teams, ignoring rating.' % random_group_size
     print '</p>'
     print '<p>'
-    print '<input type="submit" name="randomassignmentsubmit" value="Yes please, do that" />'
+    print '<input type="submit" name="randomassignmentsubmit" value="Randomly assign players to teams" />'
+    print '</p>'
+    print '</form>'
+
+    print '<h2>Clear teams</h2>'
+    print '<form action="%s?tourney=%s" method="POST">' % (cgi.escape(baseurl, True), urllib.quote_plus(tourneyname))
+    print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True)
+    print '<p>'
+    print 'Remove all players from their teams.'
+    print '</p>'
+    print '<p>'
+    print '<input type="submit" name="clearteams" value="Clear team assignments"/>'
     print '</p>'
     print '</form>'
     #print '</p>'

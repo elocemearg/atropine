@@ -104,7 +104,7 @@ function generate_fixtures_clicked() {
     limit_seconds = parseInt(document.getElementById('maxtime').value);
     // document.getElementById('generatefixtures').disabled = true;
     spam_progress_label();
-    setInterval(function() { if (Math.random() < 0.4) { spam_progress_label(); } }, 200);
+    setInterval(function() { if (Math.random() < 0.4) { spam_progress_label(); } }, 300);
 }
 </script>""";
     elements.append(htmlform.HTMLFragment(javascript));
@@ -155,11 +155,16 @@ def generate(tourney, settings):
     rounds = tourney.get_rounds();
     rounds = filter(lambda x : x.get("type", None) == "P", rounds);
 
-    max_time = settings.get("maxtime", 10);
+    max_time = settings.get("maxtime", 30);
     try:
         limit_ms = int(max_time) * 1000;
     except ValueError:
-        limit_ms = 10000;
+        limit_ms = 30000;
+
+    # Set a sensible cap of five minutes, in case the user has entered a
+    # huge number to be clever
+    if limit_ms > 300000:
+        limit_ms = 300000;
 
     rank_by_wins = (rank_method == countdowntourney.RANK_WINS_POINTS);
 
