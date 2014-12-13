@@ -79,13 +79,15 @@ function spam_progress_label() {
         document.getElementById('progresslabel').innerHTML = "Generating fixtures...";
     }
     else if (pc < 100) {
-        var gerund = "";
-        var noun = "";
+        if (Math.random() < 0.4) {
+            var gerund = "";
+            var noun = "";
 
-        gerund = gerunds[Math.floor(Math.random() * gerunds.length)];
-        noun = nouns[Math.floor(Math.random() * nouns.length)];
+            gerund = gerunds[Math.floor(Math.random() * gerunds.length)];
+            noun = nouns[Math.floor(Math.random() * nouns.length)];
 
-        document.getElementById('progresslabel').innerHTML = progress + " " + gerund + " " + noun + "...";
+            document.getElementById('progresslabel').innerHTML = progress + " " + gerund + " " + noun + "...";
+        }
     }
     else if (ms_elapsed < limit_seconds * 1000 + 3000) {
         if (!noticed_results_overdue) {
@@ -104,7 +106,7 @@ function generate_fixtures_clicked() {
     limit_seconds = parseInt(document.getElementById('maxtime').value);
     // document.getElementById('generatefixtures').disabled = true;
     spam_progress_label();
-    setInterval(function() { if (Math.random() < 0.4) { spam_progress_label(); } }, 300);
+    setInterval(function() { spam_progress_label(); }, 300);
 }
 </script>""";
     elements.append(htmlform.HTMLFragment(javascript));

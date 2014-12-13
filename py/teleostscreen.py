@@ -86,7 +86,15 @@ def get_sensible_font(font_name, desired_line_size):
     font = pygame.font.SysFont(font_name, size);
     return font;
 
+use_dot_cache = False
+dot_cache = dict()
+
 def make_team_dot(width, height, colour):
+    if use_dot_cache:
+        dot_surface = dot_cache.get((width, height, colour))
+        if dot_surface:
+            return dot_surface
+
     # Draw a dot in the centre of a height*width rectangle
     surface = pygame.Surface((width, height), pygame.SRCALPHA)
     if height >= width:
@@ -100,7 +108,18 @@ def make_team_dot(width, height, colour):
         x = (width - dot_width) / 2
         y = (height - dot_height) / 2
 
-    surface.fill(colour, pygame.Rect(x, y, dot_width, dot_height))
+    start_alpha = 0
+    end_alpha = 255
+    for corner_x in range(x, x + dot_width / 2):
+        corner_y = y + corner_x - x
+        sq_width = dot_width - (corner_x - x) * 2
+        sq_height = sq_width
+        alpha = int(start_alpha + float(corner_x - x) * float(end_alpha - start_alpha) / float(dot_width / 2))
+        alpha_colour = (colour[0], colour[1], colour[2], alpha)
+        surface.fill(alpha_colour, pygame.Rect(corner_x, corner_y, sq_width, sq_height))
+
+    if use_dot_cache:
+        dot_cache[(width, height, colour)] = surface
     return surface
 
 class View(object):
