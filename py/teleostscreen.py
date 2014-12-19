@@ -822,11 +822,11 @@ class PagedFixturesWidget(Widget):
 
                 surface.blit(name1_label, (name1_x + this_name1_width_px - name1_label.get_width(), text_y_pos));
                 if team1_label:
-                    surface.blit(team1_label, ((name1_x + this_name1_width_px), text_y_pos))
+                    surface.blit(team1_label, ((name1_x + this_name1_width_px), y_pos))
                 surface.blit(score_label, (score_x + (score_width_px - score_label.get_width()) / 2, text_y_pos));
                 surface.blit(name2_label, (this_name2_x, text_y_pos));
                 if team2_label:
-                    surface.blit(team2_label, (name2_x, text_y_pos))
+                    surface.blit(team2_label, (name2_x, y_pos))
                 y_pos += modified_line_height;
                 text_y_pos += modified_line_height;
 
