@@ -13,6 +13,13 @@ class StandingsPlayer(object):
             self.is_patzer = False;
         self.wins = 0
         self.points = 0
+        self.rating = rating
+
+    def get_name(self):
+        return self.name
+
+    def get_rating(self):
+        return self.rating
     
     def post_result(self, myscore, theirscore, tb=False):
         if myscore > theirscore:
@@ -72,6 +79,24 @@ def get_penalty(games, p1, p2, rank_by_wins=True):
     # Don't want two prunes drawn against each other
     if p1.is_patzer and p2.is_patzer:
         pen += 1000000;
+
+    # If one of these two players is a patzer, then if the other player has
+    # played a patzer before, make it unlikely they will play a patzer again
+    if p1.get_rating() == 0 or p2.get_rating() == 0 and (p1.get_rating() != 0 or p2.get_rating() != 0):
+        if p1.get_rating() == 0:
+            human = p2
+            patzer = p1
+        else:
+            human = p1
+            patzer = p2
+
+        for g in games:
+            if g.p1.get_name() == human.get_name():
+                if g.p2.get_rating() == 0:
+                    pen += 1000000
+            elif g.p2.get_name() == human.get_name():
+                if g.p1.get_rating() == 0:
+                    pen += 1000000
     
     # If two players have a different number of wins, apply a penalty.
     # Fixtures between players whose win counts differ by 1 are usually
