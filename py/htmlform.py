@@ -84,7 +84,7 @@ class HTMLFormCheckBox(HTMLFormElement):
 		if self.checked:
 			s += " checked";
 		s += " /> ";
-		s += self.label;
+		s += cgi.escape(self.label);
 		return s;
 
 class HTMLFormHiddenInput(HTMLFormElement):
@@ -96,7 +96,7 @@ class HTMLFormHiddenInput(HTMLFormElement):
 		return self.value;
 	
 	def html(self):
-		return "<input type=\"hidden\" name=\"%s\" value=\"%s\">\n" % (cgi.escape(self.name), cgi.escape(self.value));
+		return "<input type=\"hidden\" name=\"%s\" value=\"%s\">\n" % (cgi.escape(self.name, True), cgi.escape(self.value, True));
 
 class HTMLFormTextInput(HTMLFormElement):
 	def __init__(self, label, name, value, length=None, other_attrs=None):
@@ -110,12 +110,12 @@ class HTMLFormTextInput(HTMLFormElement):
 		return self.value;
 
 	def html(self):
-		s = "%s <input type=\"text\" name=\"%s\" value=\"%s\"" % (self.label, cgi.escape(self.name), cgi.escape(self.value));
+		s = "%s <input type=\"text\" name=\"%s\" value=\"%s\"" % (self.label, cgi.escape(self.name, True), cgi.escape(self.value, True));
 		if self.length:
 			s += " length=\"%d\"" % int(self.length);
 		if self.other_attrs:
 			for name in self.other_attrs:
-				s += "%s=\"%s\" " % (cgi.escape(name), cgi.escape(self.other_attrs[name], True));
+				s += " %s=\"%s\"" % (cgi.escape(name), cgi.escape(self.other_attrs[name], True));
 			
 		s += " />";
 		return s;
@@ -141,14 +141,14 @@ class HTMLFormRadioButton(HTMLFormElement):
 				c.selected = False;
 
 	def html(self):
-		s = label;
+		s = self.label;
 		s += "<br />";
-		for c in choices:
+		for c in self.choices:
 			if c.selected:
 				checked = "checked";
 			else:
 				checked = "";
-			s = "<input type=\"radio\" name=\"%s\" value=\"%s\" %s /> %s" % (cgi.escape(self.name, True), cgi.escape(c.value, True), checked, c.label);
+			s += "<input type=\"radio\" name=\"%s\" value=\"%s\" %s /> %s" % (cgi.escape(self.name, True), cgi.escape(c.value, True), checked, cgi.escape(c.label));
 			s += "<br />\n";
 		return s;
 

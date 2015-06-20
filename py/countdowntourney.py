@@ -1246,6 +1246,58 @@ and g.p2 = p2.id
         self.db.commit();
         self.db.close();
 
+def make_fixtures_from_groups(groups, round_no, repeat_threes=False):
+    fixtures = [];
+    table_no = 1;
+    round_seq = 1;
+    for group in groups:
+        if len(group) % 2 == 1:
+            # If there are an odd number of players on this table, then each
+            # player takes a turn at hosting, and the player X places clockwise
+            # from the host plays the player X places anticlockwise from the
+            # host, for X in 1 .. (len(group) - 1) / 2.
+            for host in range(len(group)):
+                for x in range(1, (len(group) - 1) / 2 + 1):
+                    left = (host + len(group) + x) % len(group)
+                    right = (host + len(group) - x) % len(group)
+                    p1 = group[left]
+                    p2 = group[right]
+                    fixture = Game(round_no, round_seq, table_no, 'P', p1, p2)
+                    fixtures.append(fixture)
+                    round_seq += 1
+                    if repeat_threes and len(group) == 3:
+                        fixture = Game(round_no, round_seq, table_no, 'P', p2, p1)
+                        fixtures.append(fixture)
+                        round_seq += 1
+        else:
+            # There are an even number of players. Each player X from
+            # X = 0 .. len(group) - 1 plays each player Y for
+            # Y in X + 1 .. len(group) - 1
+            for x in range(len(group)):
+                for y in range(x + 1, len(group)):
+                    p1 = group[x]
+                    p2 = group[y]
+                    if round_seq % 2 == 0:
+                        (p1, p2) = (p2, p1)
+                    fixture = Game(round_no, round_seq, table_no, 'P', p1, p2)
+                    fixtures.append(fixture)
+                    round_seq += 1
+        table_no += 1
+    return fixtures
+
+def get_5_3_table_sizes(num_players):
+    if num_players < 8:
+        return []
+    table_sizes = []
+    players_left = num_players
+    while players_left % 5 != 0:
+        table_sizes.append(3)
+        players_left -= 3
+    while players_left > 0:
+        table_sizes = [5] + table_sizes
+        players_left -= 5
+    return table_sizes
+
 def tourney_open(dbname, directory="."):
     if not re.match("^[A-Za-z0-9_-]+$", dbname):
         raise InvalidDBNameException("The tourney database name can only contain letters, numbers, underscores and hyphens.");

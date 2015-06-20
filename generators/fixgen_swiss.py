@@ -1,28 +1,54 @@
+import sys
 import random;
 import countdowntourney;
 import htmlform;
-import swiss3;
+import swissN;
 
-name = "COLIN Fixture Generator";
-description = "In round 1, place higher-rated players on different tables. In subsequent rounds, group together players who have performed similarly so far, without rematches.";
+name = "Swiss Army Blunderbuss";
+description = "Players are matched against opponents who have performed similarly to them so far in the tourney, but repeats of previous fixtures are avoided.";
+valid_group_sizes = (2, 3, 4, 5, -5)
 
 def get_user_form(tourney, settings):
+    players = tourney.get_players();
+
     max_time = None;
     if settings.get("maxtime", None) is not None:
         try:
             max_time = int(settings["maxtime"]);
         except ValueError:
             max_time = None;
-    
+
+    group_size = None
+    if settings.get("groupsize", None) is not None:
+        try:
+            group_size = int(settings["groupsize"])
+        except ValueError:
+            group_size = None
+
     games = tourney.get_games(game_type='P');
 
-    if max_time > 0:
-        return None;
-    elif len(games) == 0:
+    rounds = tourney.get_rounds();
+    rounds = filter(lambda x : x.get("type", None) == "P", rounds);
+
+    if max_time > 0 and group_size in valid_group_sizes and (group_size == -5 or len(players) % group_size == 0):
         return None;
     else:
-        # Default to 30 seconds
-        max_time = 30;
+        # Default to 30 seconds, group size of 3
+        if max_time is None or max_time == 0:
+            max_time = 30;
+        if group_size is None or group_size not in valid_group_sizes:
+            if len(players) % 3 == 0:
+                group_size = 3
+            elif len(players) % 2 == 0:
+                group_size = 2
+            elif len(players) % 5 == 0:
+                group_size = 5
+            elif len(players) >= 8:
+                group_size = -5
+            elif len(players) % 4 == 0:
+                group_size = 4
+            else:
+                group_size = None
 
     elements = [];
     javascript = """
@@ -40,7 +66,8 @@ var gerunds = ["Reticulating", "Exaggerating", "Refrigerating",
             "Translating", "Restarting", "Entertaining", "Checking",
             "Verifying", "Flushing", "Contextualising", "Deconstructing",
             "Justifying", "Hacking", "Redrawing", "Reimagining",
-            "Reinterpreting", "Reasoning with", "Impersonating"];
+            "Reinterpreting", "Reasoning with", "Impersonating",
+            "Abbreviating", "Underestimating", "Misappropriating"];
 var nouns = ["seeding list", "rule book", "hypergrid",
             "network services", "timestamps", "multidimensional array",
             "decision tree", "player list", "weighting matrix",
@@ -50,7 +77,8 @@ var nouns = ["seeding list", "rule book", "hypergrid",
             "linked lists", "hash tables", "system clock", "file descriptors",
             "syntax tree", "binary tree", "dictionary", "homework",
             "breakfast", "contextualiser", "splines", "supercluster",
-            "record books"];
+            "record books", "sandwiches", "grouping strategy",
+            "reality"];
 
 var endings = [
     "Bribing officials", "Talking bollocks", "Feeding cat",
@@ -110,9 +138,19 @@ function generate_fixtures_clicked() {
 }
 </script>""";
     elements.append(htmlform.HTMLFragment(javascript));
+    elements.append(htmlform.HTMLFragment("<p>"))
     elements.append(htmlform.HTMLFormTextInput("Time limit for finding optimal grouping (seconds)", "maxtime", str(max_time), length=3, other_attrs={"id": "maxtime"}));
     elements.append(htmlform.HTMLFragment("<br />"));
+
+    elements.append(htmlform.HTMLFragment("</p><p>"))
+    group_size_choices = [ htmlform.HTMLFormChoice(str(gs), str(gs), gs == group_size) for gs in valid_group_sizes if gs > 0 and len(players) % gs == 0 ]
+    if len(players) >= 8 and len(rounds) > 0:
+        group_size_choices.append(htmlform.HTMLFormChoice("-5", "5&3", group_size == -5))
+
+    elements.append(htmlform.HTMLFormRadioButton("groupsize", "Players per table", group_size_choices))
+    elements.append(htmlform.HTMLFragment("</p><p>"))
     elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures", other_attrs={"onclick": "generate_fixtures_clicked();", "id": "generatefixtures"}));
+    elements.append(htmlform.HTMLFragment("</p>"))
     elements.append(htmlform.HTMLFragment("<p id=\"progresslabel\">For large numbers of players, fixture generation is not immediate - it can take up to the specified number of seconds.</p>"));
     elements.append(htmlform.HTMLFragment("<noscript>Your browser doesn't have Javascript enabled, which means you miss out on progress updates while fixtures are being generated.</noscript>"));
 
@@ -121,13 +159,13 @@ function generate_fixtures_clicked() {
 
 def check_ready(tourney):
     players = tourney.get_players();
-    table_size = tourney.get_table_size();
 
-    if len(players) % table_size != 0:
-        return (False, "Number of players (%d) is not a multiple of the table size (%d)" % (len(players), table_size));
-    
-    if table_size != 3:
-        return (False, "The COLIN fixture generator can only be used when there are three players per table.");
+    for size in valid_group_sizes:
+        if len(players) % size == 0:
+            break
+    else:
+        if len(players) < 8:
+            return (False, "Number of players (%d) is not a multiple of any of %s" % (len(players), ", ".join(map(str, valid_group_sizes))))
     
     games = tourney.get_games(game_type='P');
     num_incomplete = 0;
@@ -150,10 +188,6 @@ def generate(tourney, settings):
     table_size = tourney.get_table_size();
     rank_method = tourney.get_rank_method();
 
-    (ready, excuse) = check_ready(tourney);
-    if not ready:
-        raise countdowntourney.FixtureGeneratorException(excuse);
-
     rounds = tourney.get_rounds();
     rounds = filter(lambda x : x.get("type", None) == "P", rounds);
 
@@ -163,6 +197,25 @@ def generate(tourney, settings):
     except ValueError:
         limit_ms = 30000;
 
+    group_size = settings.get("groupsize", 3)
+    try:
+        group_size = int(group_size)
+    except ValueError:
+        group_size = 3
+
+    (ready, excuse) = check_ready(tourney);
+    if not ready:
+        raise countdowntourney.FixtureGeneratorException(excuse);
+
+    if group_size < 2 and group_size != -5:
+        raise countdowntourney.FixtureGeneratorException("The table size is less than 2 (%d)" % group_size)
+
+    if group_size > 0 and len(players) % group_size != 0:
+        raise countdowntourney.FixtureGeneratorException("Number of players (%d) is not a multiple of the table size (%d)" % (len(players), group_size));
+
+    if group_size == -5 and len(players) < 8:
+        raise countdowntourney.FixtureGeneratorException("Number of players (%d) is not valid for the 5&3 fixture generator - you need at least 8 players" % len(players))
+
     # Set a sensible cap of five minutes, in case the user has entered a
     # huge number to be clever
     if limit_ms > 300000:
@@ -171,27 +224,14 @@ def generate(tourney, settings):
     rank_by_wins = (rank_method == countdowntourney.RANK_WINS_POINTS);
 
     if len(rounds) == 0:
-        (weight, groups) = swiss3.swiss3_first_round(players);
+        (weight, groups) = swissN.swissN_first_round(players, group_size);
         round_no = 1;
     else:
         games = tourney.get_games(game_type="P");
-        (weight, groups) = swiss3.swiss3(games, players, rank_by_wins=rank_by_wins, limit_ms=limit_ms);
+        (weight, groups) = swissN.swissN(games, players, group_size, rank_by_wins=rank_by_wins, limit_ms=limit_ms);
         round_no = len(rounds) + 1;
-    
-    fixtures = [];
-    table_no = 1;
-    round_seq = 1;
-    for group in groups:
-        for i in range(0, len(group)):
-            for j in range(i + 1, len(group)):
-                p1 = group[i];
-                p2 = group[j];
-                if (i + j) % 2 == 0:
-                    (p1, p2) = (p2, p1);
-                fixture = countdowntourney.Game(round_no, round_seq, table_no, 'P', p1, p2);
-                fixtures.append(fixture);
-                round_seq += 1;
-        table_no += 1;
+
+    fixtures = countdowntourney.make_fixtures_from_groups(groups, round_no, group_size == -5)
     
     d = dict();
     d["fixtures"] = fixtures;

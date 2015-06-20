@@ -52,7 +52,7 @@ def show_sidebar(tourney):
 				round_name = "Round " + str(round_no);
 
 			print "<div class=\"roundlink\">";
-			print "<a href=\"/cgi-bin/games.py?tourney=%s&round=%s\">%s</a>" % (urllib.quote_plus(tourney.name), urllib.quote_plus(str(round_no)), cgi.escape(round_name));
+			print "<a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\">%s</a>" % (urllib.quote_plus(tourney.name), urllib.quote_plus(str(round_no)), cgi.escape(round_name));
 			print "</div>";
 		print "<br />";
 		print "<div class=\"genroundlink\">";

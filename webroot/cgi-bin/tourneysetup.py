@@ -31,8 +31,8 @@ form = cgi.FieldStorage();
 tourneyname = form.getfirst("tourney");
 playerlist = form.getfirst("playerlist");
 player_list_submit = form.getfirst("playerlistsubmit");
-players_per_table = form.getfirst("playerspertable");
-players_per_table = int_or_none(players_per_table);
+#players_per_table = form.getfirst("playerspertable");
+#players_per_table = int_or_none(players_per_table);
 modify_player_submit = form.getfirst("modifyplayersubmit");
 rank = form.getfirst("rank");
 rank = int_or_none(rank);
@@ -84,7 +84,7 @@ else:
 	if request_method == "POST" and rules_submit:
 		try:
 			tourney.set_rank_method(rank);
-			tourney.set_table_size(players_per_table);
+			#tourney.set_table_size(players_per_table);
 			print "<p><strong>Rules updated successfully.</strong></p>";
 		except countdowntourney.TourneyException as e:
 			cgicommon.show_tourney_exception(e);
@@ -143,13 +143,13 @@ else:
 				writer.writerow((cgi.escape(name), str(rating)));
 		print "</textarea><br />";
 
-		table_size = tourney.get_table_size();
-		if players_per_table:
-			table_size = players_per_table;
-		if len(players) % table_size != 0:
-			print "<blockquote>";
-			print "<strong>Warning!</strong> Number of players must be a multiple of %d to generate fixtures!</strong>" % table_size;
-			print "</blockquote>";
+		#table_size = tourney.get_table_size();
+		#if players_per_table:
+		#	table_size = players_per_table;
+		#if len(players) % table_size != 0:
+		#	print "<blockquote>";
+		#	print "<strong>Warning!</strong> Number of players must be a multiple of %d to generate fixtures!</strong>" % table_size;
+		#	print "</blockquote>";
 		print '<input type="submit" name="playerlistsubmit" value="Save Player List" />'
 		print '</form>'
 
@@ -158,7 +158,7 @@ else:
 	print '<a href="/cgi-bin/teamsetup.py?tourney=%s">Assign players to teams</a>' % (urllib.quote_plus(tourneyname))
 	print '</p>'
 
-	players_per_table = tourney.get_table_size();
+	#players_per_table = tourney.get_table_size();
 	rank = tourney.get_rank_method();
 	print "<h2>Tourney rules</h2>";
 	print '<form action="%s" method="post" />' % baseurl;
@@ -168,11 +168,12 @@ else:
 	print '<input type="radio" name="rank" value="%d" %s /> Wins, then points<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "");
 	print '<input type="radio" name="rank" value="%d" %s /> Points only' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "");
 	print '</blockquote>';
-	print "<h3>Players per table</h3>";
-	print "<blockquote>";
-	print '<input type="radio" name="playerspertable" value="2" %s /> 2<br />' % ("checked" if players_per_table == 2 else "");
-	print '<input type="radio" name="playerspertable" value="3" %s /> 3' % ("checked" if players_per_table == 3 else "");
-	print "</blockquote>";
+	
+	#print "<h3>Players per table</h3>";
+	#print "<blockquote>";
+	#print '<input type="radio" name="playerspertable" value="2" %s /> 2<br />' % ("checked" if players_per_table == 2 else "");
+	#print '<input type="radio" name="playerspertable" value="3" %s /> 3' % ("checked" if players_per_table == 3 else "");
+	#print "</blockquote>";
 	print '<input type="submit" name="rulessubmit" value="Save Rules" />';
 	print "</form>";
 
