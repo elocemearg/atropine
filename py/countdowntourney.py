@@ -16,7 +16,8 @@ create table if not exists player (
     name text,
     rating int,
     team_id int,
-    unique(name)
+    short_name text,
+    unique(name), unique(short_name)
 );
 
 -- TEAM table
@@ -161,6 +162,10 @@ class PlayerExistsException(TourneyException):
     description = "Player already exists."
     pass;
 
+class DuplicatePlayerException(TourneyException):
+    description = "No two players are allowed to have the same name."
+    pass
+
 class UnknownRankMethodException(TourneyException):
     description = "Unknown ranking method."
     pass;
@@ -206,10 +211,14 @@ class NoGamesException(TourneyException):
     pass
 
 class Player(object):
-    def __init__(self, name, rating=0, team=None):
+    def __init__(self, name, rating=0, team=None, short_name=None):
         self.name = name;
         self.rating = rating;
         self.team = team;
+        if short_name:
+            self.short_name = short_name
+        else:
+            self.short_name = name
     
     def __eq__(self, other):
         if other is None:
@@ -258,6 +267,35 @@ class Player(object):
     
     def get_team(self):
         return self.team
+
+    def get_short_name(self):
+        return self.short_name
+
+def get_first_name(name):
+    return name.split(" ", 1)[0]
+
+def get_first_name_and_last_initial(name):
+    names = name.split(" ", 1)
+    if len(names) < 2 or len(names[1]) < 1:
+        return get_first_name(name)
+    else:
+        return names[0] + " " + names[1][0]
+
+def get_short_name(name, players):
+    short_name = get_first_name(name)
+    for op in players:
+        if name != op[0] and short_name == get_first_name(op[0]):
+            break
+    else:
+        return short_name
+    
+    short_name = get_first_name_and_last_initial(name)
+    for op in players:
+        if name != op[0] and short_name == get_first_name_and_last_initial(op[0]):
+            break
+    else:
+        return short_name
+    return name
 
 # This object can be on one side and/or other of a Game, just like a Player.
 # However, it does not represent a player. It represents the winner or loser
@@ -356,7 +394,6 @@ class Game(object):
         else:
             return False;
 
-    
     def contains_player(self, player):
         if self.p1 == player or self.p2 == player:
             return True;
@@ -405,6 +442,9 @@ class Game(object):
     def get_player_names(self):
         return [self.p1.get_name(), self.p2.get_name()];
     
+    def get_short_player_names(self):
+        return [self.p1.get_short_name(), self.p2.get_short_name()]
+    
     def get_player_score(self, player):
         if self.p1.is_player_known() and self.p1 == player:
             score = self.s1;
@@ -423,7 +463,6 @@ class Game(object):
             raise PlayerNotInGameException("player %s is not in the game between %s and %s." % (str(player), str(self.p1), str(self.p2)));
         return score;
 
-    
     def set_player_score(self, player, score):
         if self.p1 == player:
             self.s1 = score;
@@ -537,6 +576,17 @@ class Tourney(object):
         self.db.commit();
         cur.close()
 
+    def get_largest_table_game_count(self, round_no):
+        cur = self.db.cursor()
+        cur.execute("select max(num_games) from (select table_no, count(*) num_games from game where round_no = ? group by table_no) x", (round_no,))
+        result = cur.fetchone()
+        if result[0] is None:
+            count = 0
+        else:
+            count = int(result[0])
+        self.db.commit()
+        cur.close()
+        return count;
 
     # players must be a list of two-tuples. Each tuple is (name, rating).
     # Alternatively they can be Player objects, which pretend to be 2-tuples.
@@ -551,6 +601,22 @@ class Tourney(object):
         if self.get_num_games() > 0:
             raise TourneyInProgressException("Adding or removing players is not permitted once the tournament has started.");
 
+        # Make sure all the player names are unique
+        for pi in range(len(players)):
+            for opi in range(pi + 1, len(players)):
+                if players[pi][0] == players[opi][0]:
+                    raise DuplicatePlayerException("No two players are allowed to have the same name, and you've got two %ss." % (players[pi][0]))
+
+        # For each player, work out a "short name", which will be the first
+        # of their first name, first name and last initial, and full name,
+        # which is unique for that player.
+        new_players = []
+        for p in players:
+            short_name = get_short_name(p[0], players)
+            new_players.append((p[0], p[1], short_name))
+
+        players = new_players
+
         # Check the ratings, if given, are sane, and convert them to integers
         new_players = [];
         for p in players:
@@ -559,7 +625,7 @@ class Tourney(object):
                     rating = int(p[1]);
                 else:
                     rating = None;
-                new_players.append((p[0], rating));
+                new_players.append((p[0], rating, p[2]));
             except ValueError:
                 raise InvalidRatingException("Player \"%s\" has an invalid rating \"%s\". A player's rating must be an integer." % (p[0], p[1]));
         players = new_players;
@@ -576,9 +642,9 @@ class Tourney(object):
             rating = max_rating;
             for i in range(len(players)):
                 if players[i][1] is None:
-                    new_players.append((players[i][0], rating));
+                    new_players.append((players[i][0], rating, players[i][2]));
                 else:
-                    new_players.append((players[i][0], players[i][1]));
+                    new_players.append((players[i][0], players[i][1], players[i][2]));
                 rating -= rating_step;
             players = new_players;
             self.set_attribute("autoratings", 1);
@@ -587,7 +653,7 @@ class Tourney(object):
 
         self.db.execute("delete from player");
 
-        self.db.executemany("insert into player(name, rating, team_id) values (?, ?, null)", players);
+        self.db.executemany("insert into player(name, rating, team_id, short_name) values (?, ?, null, ?)", players);
         self.db.commit();
     
     def are_ratings_automatic(self):
@@ -595,34 +661,34 @@ class Tourney(object):
     
     def get_players(self):
         cur = self.db.cursor();
-        cur.execute("select p.name, p.rating, t.id, t.name, t.colour from player p left outer join team t on p.team_id = t.id order by p.rating desc, p.name");
+        cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name from player p left outer join team t on p.team_id = t.id order by p.rating desc, p.name");
         players = [];
         for row in cur:
             if row[2] is not None:
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
-            players.append(Player(row[0], row[1], team));
+            players.append(Player(row[0], row[1], team, row[5]));
         cur.close();
         return players;
     
-    def add_player(self, name, rating):
-        if self.get_num_games() > 0:
-            raise TourneyInProgressException("Adding or removing players is not permitted once the tournament has started.");
-        self.db.execute("insert into player(name, rating, team_id) values (?, ?, null)", (name, rating));
-        self.db.commit();
-    
-    def remove_player(self, name):
-        if self.get_num_games() > 0:
-            raise TourneyInProgressException("Adding or removing players is not permitted once the tournament has started.");
+    #def add_player(self, name, rating):
+    #    if self.get_num_games() > 0:
+    #        raise TourneyInProgressException("Adding or removing players is not permitted once the tournament has started.");
+    #    self.db.execute("insert into player(name, rating, team_id) values (?, ?, null)", (name, rating));
+    #    self.db.commit();
+    #
+    #def remove_player(self, name):
+    #    if self.get_num_games() > 0:
+    #        raise TourneyInProgressException("Adding or removing players is not permitted once the tournament has started.");
 
-        cur = self.db.cursor();
-        cur.execute("delete from player where name = ?", (name));
-        if cur.rowcount < 1:
-            self.db.rollback();
-            raise PlayerDoesNotExistException("Cannot remove player \"" + name + "\" because such a player does not exist.");
-        cur.close();
-        self.db.commit();
+    #    cur = self.db.cursor();
+    #    cur.execute("delete from player where name = ?", (name));
+    #    if cur.rowcount < 1:
+    #        self.db.rollback();
+    #        raise PlayerDoesNotExistException("Cannot remove player \"" + name + "\" because such a player does not exist.");
+    #    cur.close();
+    #    self.db.commit();
     
     def rerate_player(self, name, rating):
         try:
@@ -648,6 +714,15 @@ class Tourney(object):
             self.db.rollback();
             raise PlayerDoesNotExistException("Cannot rename player \"" + oldname + "\" because no player by that name exists.");
         cur.close();
+
+        # Recalculate everyone's short names, because this name change might
+        # mean that short names are no longer unique
+        cur = self.db.cursor()
+        players = self.get_players()
+        for p in players:
+            short_name = get_short_name(p.get_name(), players)
+            cur.execute("update player set short_name = ? where name = ?", (short_name, p.get_name()))
+
         self.db.commit();
     
     def get_player_name(self, player_id):
@@ -841,7 +916,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
         return rows_updated;
     
     def get_player_from_name(self, name):
-        sql = "select p.name, p.rating, t.id, t.name, t.colour from player p left outer join team t on p.team_id = t.id where p.name = ?";
+        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name from player p left outer join team t on p.team_id = t.id where p.name = ?";
         cur = self.db.cursor();
         cur.execute(sql, (name,));
         row = cur.fetchone();
@@ -853,10 +928,10 @@ where round_no = ? and seq = ?""", alterations_reordered);
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
-            return Player(row[0], row[1], team);
+            return Player(row[0], row[1], team, row[5]);
     
     def get_player_from_id(self, player_id):
-        sql = "select p.name, p.rating, t.id, t.name, t.colour from player p left outer join team t on p.team_id = t.id where p.id = ?";
+        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name from player p left outer join team t on p.team_id = t.id where p.id = ?";
         cur = self.db.cursor();
         cur.execute(sql, (player_id,));
         row = cur.fetchone();
@@ -868,7 +943,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
                 team = None
             else:
                 team = Team(row[2], row[3], row[4])
-            return Player(row[0], row[1], team);
+            return Player(row[0], row[1], team, row[5]);
     
     def get_latest_round_no(self, round_type=None):
         cur = self.db.cursor();
@@ -1065,7 +1140,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
     def get_table_size(self):
         return self.get_int_attribute("tablesize", 3);
 
-    def get_standings(self):
+    def get_standings(self, use_short_names=False):
         method = self.get_rank_method();
         if method == RANK_WINS_POINTS:
             orderby = "order by wins desc, points desc, name";

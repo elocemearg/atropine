@@ -126,21 +126,28 @@ else:
 		print "<input type=\"submit\" name=\"modifyplayersubmit\" value=\"Modify Player\" />"
 		print "</form>"
 	else:
+		players = tourney.get_players();
 		print "<h2>Player list</h2>";
 		print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
 		print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname);
 		print '<textarea rows="30" cols="40" name="playerlist">';
-		players = tourney.get_players();
-		auto_ratings = tourney.are_ratings_automatic();
-		writer = csv.writer(sys.stdout);
-		# Write player names, or player names and ratings if the user specified
-		# the players' ratings.
-		for p in players:
-			(name, rating) = p;
-			if auto_ratings and rating != 0:
-				writer.writerow((cgi.escape(name),));
-			else:
-				writer.writerow((cgi.escape(name), str(rating)));
+		if request_method == "POST":
+			# If the user has submitted something, display what the user
+			# submitted rather than what's in the database - this gives them
+			# a chance to correct any errors without typing in the whole
+			# change again.
+			print cgi.escape(playerlist)
+		else:
+			auto_ratings = tourney.are_ratings_automatic();
+			writer = csv.writer(sys.stdout);
+			# Write player names, or player names and ratings if the user
+			# specified the players' ratings.
+			for p in players:
+				(name, rating) = p;
+				if auto_ratings and rating != 0:
+					writer.writerow((cgi.escape(name),));
+				else:
+					writer.writerow((cgi.escape(name), str(rating)));
 		print "</textarea><br />";
 
 		#table_size = tourney.get_table_size();

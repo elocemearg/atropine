@@ -133,17 +133,25 @@ class TeamScoreFetcher(object):
 
 
 class StandingsFetcher(object):
-    def __init__(self, tourney):
+    def __init__(self, tourney, use_short_names=False):
         self.tourney = tourney;
+        self.use_short_names = use_short_names
+        self.short_name_widths = (12, 46, 11, 11, 20)
+        self.ordinary_name_widths = (10, 55, 10, 10, 15)
     
     def fetch_header_row(self):
+        if self.use_short_names:
+            (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, points_width_pc) = self.short_name_widths
+        else:
+            (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, points_width_pc) = self.ordinary_name_widths
+
         row = teleostscreen.TableRow();
         grey = (128, 128, 128);
-        row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(10), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
-        row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(55), text_colour=grey));
-        row.append_value(teleostscreen.RowValue("P", teleostscreen.PercentLength(10), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
-        row.append_value(teleostscreen.RowValue("W", teleostscreen.PercentLength(10), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
-        row.append_value(teleostscreen.RowValue("Pts", teleostscreen.PercentLength(15), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(pos_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(name_width_pc), text_colour=grey));
+        row.append_value(teleostscreen.RowValue("P", teleostscreen.PercentLength(played_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue("W", teleostscreen.PercentLength(wins_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue("Pts", teleostscreen.PercentLength(points_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
         row.set_border(bottom_border=teleostscreen.LineStyle((96, 96, 96), 1));
         return row;
     
@@ -169,28 +177,35 @@ class StandingsFetcher(object):
             row = teleostscreen.TableRow();
             player_object = self.tourney.get_player_from_name(str(player[1]))
             team_colour = player_object.get_team_colour_tuple()
+            if self.use_short_names:
+                display_name = player_object.get_short_name()
+                (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, points_width_pc) = self.short_name_widths
+            else:
+                display_name = player_object.get_name()
+                (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, points_width_pc) = self.ordinary_name_widths
 
-            row.append_value(teleostscreen.RowValue(str(player[0]), teleostscreen.PercentLength(10), text_colour=pos_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            row.append_value(teleostscreen.RowValue(str(player[0]), teleostscreen.PercentLength(pos_width_pc), text_colour=pos_colour, alignment=teleostscreen.ALIGN_RIGHT));
             if team_colour:
                 row.append_value(teleostscreen.RowValueTeamDot(teleostscreen.PercentLength(3), team_colour))
-                row.append_value(teleostscreen.RowValue(str(player[1]), teleostscreen.PercentLength(52), text_colour=name_colour));
+                row.append_value(teleostscreen.RowValue(display_name, teleostscreen.PercentLength(name_width_pc - 3), text_colour=name_colour));
             else:
-                row.append_value(teleostscreen.RowValue(str(player[1]), teleostscreen.PercentLength(55), text_colour=name_colour));
-            row.append_value(teleostscreen.RowValue(str(player[2]), teleostscreen.PercentLength(10), text_colour=played_colour, alignment=teleostscreen.ALIGN_RIGHT));
-            row.append_value(teleostscreen.RowValue(str(player[3]), teleostscreen.PercentLength(10), text_colour=wins_colour, alignment=teleostscreen.ALIGN_RIGHT));
-            row.append_value(teleostscreen.RowValue(str(player[4]), teleostscreen.PercentLength(15), text_colour=points_colour, alignment=teleostscreen.ALIGN_RIGHT));
+                row.append_value(teleostscreen.RowValue(display_name, teleostscreen.PercentLength(name_width_pc), text_colour=name_colour));
+            row.append_value(teleostscreen.RowValue(str(player[2]), teleostscreen.PercentLength(played_width_pc), text_colour=played_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            row.append_value(teleostscreen.RowValue(str(player[3]), teleostscreen.PercentLength(wins_width_pc), text_colour=wins_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            row.append_value(teleostscreen.RowValue(str(player[4]), teleostscreen.PercentLength(points_width_pc), text_colour=points_colour, alignment=teleostscreen.ALIGN_RIGHT));
             rows.append(row);
 
         return rows;
 
 class TableResultsFetcher(object):
-    def __init__(self, tourney):
+    def __init__(self, tourney, use_short_names=False):
         self.tourney = tourney;
+        self.use_short_names = use_short_names
     
     def fetch_header_row(self):
         return None;
 
-    def fetch_data_rows(self, start_row, num_rows):
+    def fetch_data_rows(self, start_row, num_rows_to_fetch):
         # Find the latest prelim round
         rounds = self.tourney.get_rounds();
         latest_round_no = None;
@@ -203,43 +218,55 @@ class TableResultsFetcher(object):
             # That was easy.
             return [];
         
-        desired_table_index = start_row / num_rows;
+        pages = []
+        current_page = []
+        #desired_table_index = start_row / num_rows;
         games = self.tourney.get_games(round_no=latest_round_no);
-        table_index = 0;
         games = sorted(games, key=lambda x : x.table_no);
-        prev_table_no = None;
-        table_no = None;
-        table_games = [];
+
+        prev_table_no = None
+
         for g in games:
-            if prev_table_no is not None and prev_table_no != g.table_no:
-                table_index += 1;
-            if table_index == desired_table_index:
-                table_no = g.table_no;
-                table_games.append(g);
-            prev_table_no = g.table_no;
+            if prev_table_no is None or prev_table_no != g.table_no:
+                # New table... if the number of games on this table will
+                # fit onto this page, draw them on this page, otherwise
+                # open a new page
+                games_on_table = len(filter(lambda x : x.table_no == g.table_no, games))
+                if len(current_page) > 0:
+                    gap = 1
+                else:
+                    gap = 0
 
-        if not table_games:
-            return None;
-        
-        rows = [];
-        top_row = teleostscreen.TableRow();
-        top_row_colour = (0, 192, 192);
-        name_colour = (255, 255, 255);
-        score_colour = (255, 255, 255);
-        top_row.append_value(teleostscreen.RowValue("%s   Table %d" % (latest_round_name, table_no), teleostscreen.PercentLength(100), text_colour=top_row_colour, alignment=teleostscreen.ALIGN_CENTRE));
-        rows.append(top_row);
+                if len(current_page) > 0 and len(current_page) + gap + 1 + games_on_table > num_rows_to_fetch:
+                    pages.append(current_page)
+                    current_page = []
+                    gap = 0
 
-        green = (0, 255, 0, 64);
-        green_transparent = (0, 255, 0, 0);
-        red = (255, 0, 0, 64);
-        red_transparent = (255, 0, 0, 0);
+                top_row = teleostscreen.TableRow();
+                top_row_colour = (0, 192, 192);
+                name_colour = (255, 255, 255);
+                score_colour = (255, 255, 255);
+                top_row.append_value(teleostscreen.RowValue("%s   Table %d" % (latest_round_name, g.table_no), teleostscreen.PercentLength(100), text_colour=top_row_colour, alignment=teleostscreen.ALIGN_CENTRE));
 
-        for g in table_games:
+                # If we've already put a table on this page, put a blank row
+                # between the last result of the previous table and the header
+                # row of this table
+                if gap:
+                    current_page.append(teleostscreen.TableRow())
+                current_page.append(top_row);
+
+            green = (0, 255, 0, 64);
+            green_transparent = (0, 255, 0, 0);
+            red = (255, 0, 0, 64);
+            red_transparent = (255, 0, 0, 0);
+
             row = teleostscreen.TableRow();
             hgradientpair_left = None;
             hgradientpair_right = None;
             if g.is_complete():
                 score_str = g.format_score();
+                if self.use_short_names:
+                    score_str = "".join(score_str.split())
                 if g.s1 > g.s2:
                     hgradientpair_left = (green, green_transparent);
                     hgradientpair_right = (red_transparent, red);
@@ -263,23 +290,40 @@ class TableResultsFetcher(object):
             else:
                 team2_colour = None
                 name2_pc = 40
-            names = g.get_player_names();
+
+            if self.use_short_names:
+                names = g.get_short_player_names()
+                name1_pc -= 4
+                name2_pc -= 4
+                score_width_pc = 28
+            else:
+                names = g.get_player_names()
+                score_width_pc = 20
 
             # Name of player 1
             row.append_value(teleostscreen.RowValue(names[0], teleostscreen.PercentLength(name1_pc), text_colour=name_colour, alignment=teleostscreen.ALIGN_RIGHT, hgradientpair=hgradientpair_left));
             # Player 1's team colour dot, if applicable
             if team1_colour:
                 row.append_value(teleostscreen.RowValueTeamDot(teleostscreen.PercentLength(3), team1_colour))
+            
             # Score
-            row.append_value(teleostscreen.RowValue(score_str, teleostscreen.PercentLength(20), text_colour=score_colour, alignment=teleostscreen.ALIGN_CENTRE));
+            row.append_value(teleostscreen.RowValue(score_str, teleostscreen.PercentLength(score_width_pc), text_colour=score_colour, alignment=teleostscreen.ALIGN_CENTRE));
             # Player 2's team colour dot, if applicable
             if team2_colour:
                 row.append_value(teleostscreen.RowValueTeamDot(teleostscreen.PercentLength(3), team2_colour))
             # Name of player 2
             row.append_value(teleostscreen.RowValue(names[1], teleostscreen.PercentLength(name2_pc), text_colour=name_colour, alignment=teleostscreen.ALIGN_LEFT, hgradientpair=hgradientpair_right));
-            rows.append(row);
 
-        return rows;
+            current_page.append(row)
+            prev_table_no = g.table_no
+
+        pages.append(current_page)
+        
+        requested_page = start_row / num_rows_to_fetch
+        if requested_page < 0 or requested_page >= len(pages):
+            return None
+        else:
+            return pages[requested_page]
 
 class HighestWinningScoresFetcher(object):
     def __init__(self, tourney):
