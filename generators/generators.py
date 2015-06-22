@@ -11,4 +11,5 @@ def get_fixture_generator_list():
 	for f in file_list:
 		if f.endswith(".py") and f.startswith("fixgen_"):
 			module_list.append(f[0:-3]);
+        module_list = sorted(module_list)
 	return module_list;
