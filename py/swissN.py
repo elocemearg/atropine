@@ -151,17 +151,17 @@ def get_table_penalty(weight_matrix, table, table_penalty_cache):
     elif table_penalty_cache and table in table_penalty_cache:
         return table_penalty_cache[table]
     else:
-        # penalty is the highest penalty between two players on the table
-        max_penalty = None
+        # penalty is the average penalty of all possible pairs on the table.
+        penalty_sum = 0
+        num_samples = 0
         for i1 in range(0, len(table)):
             for i2 in range(i1 + 1, len(table)):
-                pen = weight_matrix[table[i1]][table[i2]]
-                if max_penalty is None or pen > max_penalty:
-                    max_penalty = pen
-        return max_penalty
-    if table_penalty_cache is not None and len(table) <= 5:
-        table_penalty_cache[table] = penalty
-    return penalty
+                penalty_sum += weight_matrix[table[i1]][table[i2]]
+                num_samples += 1
+        return float(penalty_sum) / num_samples
+    #if table_penalty_cache is not None and len(table) <= 5:
+    #    table_penalty_cache[table] = penalty
+    #return penalty
 
 def total_penalty(weight_matrix, tables, table_penalty_cache):
     penalty = 0
