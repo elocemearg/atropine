@@ -79,6 +79,9 @@ if not tourney_created:
 	print "</p>";
 	print "</form>";
 
+print "<hr>"
+print "<p>atropine version %s</p>" % (countdowntourney.SW_VERSION)
+
 print "</body>";
 print "</html>";
 

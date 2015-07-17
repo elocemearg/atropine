@@ -4,6 +4,8 @@ import sqlite3;
 import re;
 import os;
 
+SW_VERSION = "0.5.1"
+
 RANK_WINS_POINTS = 0;
 RANK_POINTS = 1;
 

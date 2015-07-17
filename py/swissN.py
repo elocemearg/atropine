@@ -346,6 +346,8 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, ini
             max_wins_diff = 0
 
     while best_grouping is None:
+        if log:
+            sys.stderr.write("[swissN] Trying with max_wins_diff %d, max_rematches %d\n" % (max_wins_diff, max_rematches))
         for groups in generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff):
             weight = total_penalty(matrix, groups, table_penalty_cache)
             if best_weight is None or weight < best_weight:
@@ -364,8 +366,6 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, ini
             if max_wins_diff > max_wins - min_wins:
                 max_wins_diff = 0
                 max_rematches += 1
-            if log:
-                sys.stderr.write("[swissN] Trying with max_wins_diff %d, max_rematches %d\n" % (max_wins_diff, max_rematches))
 
     #(weight, groups) = best_grouping(matrix, range(matrix_size), group_size, limit_ms=limit_ms)
 
