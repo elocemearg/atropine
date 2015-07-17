@@ -99,11 +99,10 @@ class HTMLFormHiddenInput(HTMLFormElement):
 		return "<input type=\"hidden\" name=\"%s\" value=\"%s\">\n" % (cgi.escape(self.name, True), cgi.escape(self.value, True));
 
 class HTMLFormTextInput(HTMLFormElement):
-	def __init__(self, label, name, value, length=None, other_attrs=None):
+	def __init__(self, label, name, value, other_attrs=None):
 		super(HTMLFormTextInput, self).__init__(name);
 		self.label = label;
 		self.value = value;
-		self.length = length;
 		self.other_attrs = other_attrs;
 	
 	def get_value(self):
@@ -111,8 +110,6 @@ class HTMLFormTextInput(HTMLFormElement):
 
 	def html(self):
 		s = "%s <input type=\"text\" name=\"%s\" value=\"%s\"" % (self.label, cgi.escape(self.name, True), cgi.escape(self.value, True));
-		if self.length:
-			s += " length=\"%d\"" % int(self.length);
 		if self.other_attrs:
 			for name in self.other_attrs:
 				s += " %s=\"%s\"" % (cgi.escape(name), cgi.escape(self.other_attrs[name], True));

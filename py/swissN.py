@@ -263,7 +263,7 @@ def swissN_first_round(cdt_players, group_size):
         groups.append(PlayerGroup(player_list, 0));
     return (0, groups);
 
-def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None):
+def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, init_max_rematches=0):
     log = True
     players = [];
     for p in cdt_players:
@@ -320,7 +320,7 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None):
 
     best_grouping = None
     best_weight = None
-    max_rematches = 0
+    max_rematches = init_max_rematches
     max_wins_diff = 0
     max_wins = max(map(lambda x : x.wins, players))
     min_wins = min(map(lambda x : x.wins, players))

@@ -25,6 +25,13 @@ def get_user_form(tourney, settings):
         except ValueError:
             group_size = None
 
+    init_max_rematches = 0
+    if settings.get("initmaxrematches", None) is not None:
+        try:
+            init_max_rematches = int(settings["initmaxrematches"])
+        except ValueError:
+            init_max_rematches = 0
+
     games = tourney.get_games(game_type='P');
 
     rounds = tourney.get_rounds();
@@ -139,7 +146,7 @@ function generate_fixtures_clicked() {
 </script>""";
     elements.append(htmlform.HTMLFragment(javascript));
     elements.append(htmlform.HTMLFragment("<p>"))
-    elements.append(htmlform.HTMLFormTextInput("Time limit for finding optimal grouping (seconds)", "maxtime", str(max_time), length=3, other_attrs={"id": "maxtime"}));
+    elements.append(htmlform.HTMLFormTextInput("Time limit for finding optimal grouping (seconds)", "maxtime", str(max_time), other_attrs={"id": "maxtime", "size": "3"}));
     elements.append(htmlform.HTMLFragment("<br />"));
 
     elements.append(htmlform.HTMLFragment("</p><p>"))
@@ -149,9 +156,11 @@ function generate_fixtures_clicked() {
 
     elements.append(htmlform.HTMLFormRadioButton("groupsize", "Players per table", group_size_choices))
     elements.append(htmlform.HTMLFragment("</p><p>"))
+    elements.append(htmlform.HTMLFormTextInput("Try to avoid matches between players who have played each other more than ", "initmaxrematches", str(init_max_rematches), other_attrs={"size" : "3"}))
+    elements.append(htmlform.HTMLFragment(" times before.</p><p>"))
     elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures", other_attrs={"onclick": "generate_fixtures_clicked();", "id": "generatefixtures"}));
     elements.append(htmlform.HTMLFragment("</p>"))
-    elements.append(htmlform.HTMLFragment("<p id=\"progresslabel\">For large numbers of players, fixture generation is not immediate - it can take up to the specified number of seconds.</p>"));
+    elements.append(htmlform.HTMLFragment("<p id=\"progresslabel\">For large numbers of players or unusual formats, fixture generation is not immediate - it can take up to the specified number of seconds, or longer if no permissible configurations are found in that time.</p>"));
     elements.append(htmlform.HTMLFragment("<noscript>Your browser doesn't have Javascript enabled, which means you miss out on progress updates while fixtures are being generated.</noscript>"));
 
     form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py", elements);
@@ -203,6 +212,12 @@ def generate(tourney, settings):
     except ValueError:
         group_size = 3
 
+    init_max_rematches = settings.get("initmaxrematches", 0)
+    try:
+        init_max_rematches = int(init_max_rematches)
+    except ValueError:
+        init_max_rematches = 0
+
     (ready, excuse) = check_ready(tourney);
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
@@ -228,7 +243,7 @@ def generate(tourney, settings):
         round_no = 1;
     else:
         games = tourney.get_games(game_type="P");
-        (weight, groups) = swissN.swissN(games, players, group_size, rank_by_wins=rank_by_wins, limit_ms=limit_ms);
+        (weight, groups) = swissN.swissN(games, players, group_size, rank_by_wins=rank_by_wins, limit_ms=limit_ms, init_max_rematches=init_max_rematches);
         round_no = len(rounds) + 1;
 
     fixtures = countdowntourney.make_fixtures_from_groups(groups, round_no, group_size == -5)
