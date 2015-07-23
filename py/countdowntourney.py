@@ -101,11 +101,11 @@ select * from game
 where p1_score is not null and p2_score is not null and game_type = 'P';
 
 create view if not exists game_divided as
-select round_no, table_no, game_type, p1 p_id, p1_score p_score,
+select round_no, seq, table_no, game_type, p1 p_id, p1_score p_score,
     p2 opp_id, p2_score opp_score, tiebreak
 from game
-union
-select round_no, table_no, game_type, p2 p_id, p2_score p_score,
+union all
+select round_no, seq, table_no, game_type, p2 p_id, p2_score p_score,
     p1 opp_id, p1_score opp_score, tiebreak
 from game;
 
