@@ -64,7 +64,11 @@ try:
         print "<p>"
         rank_method = tourney.get_rank_method();
         if rank_method == countdowntourney.RANK_WINS_POINTS:
-            print "Players are ranked by wins, then points.";
+            print "Players are ranked by wins, then points."
+            for s in standings:
+                if s[5] > 0:
+                    print "Draws count as half a win."
+                    break
         elif rank_method == countdowntourney.RANK_POINTS:
             print "Players are ranked by points.";
         else:
@@ -135,6 +139,10 @@ try:
         rank_method = tourney.get_rank_method();
         if rank_method == countdowntourney.RANK_WINS_POINTS:
             print "Players are ranked by wins, then points.";
+            for s in standings:
+                if s[5] > 0:
+                    print "Draws count as half a win."
+                    break
         elif rank_method == countdowntourney.RANK_POINTS:
             print "Players are ranked by points.";
         else:
