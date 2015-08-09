@@ -28,47 +28,47 @@ cgicommon.print_html_head("Display control: " + str(tourney_name));
 print "<body>";
 
 if tourney_name is None:
-	print "<h1>No tourney specified</h1>";
-	print "<p><a href=\"/cgi-bin/home.py\">Home</a></p>";
+    print "<h1>No tourney specified</h1>";
+    print "<p><a href=\"/cgi-bin/home.py\">Home</a></p>";
 else:
-	try:
-		tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
+    try:
+        tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
 
-		cgicommon.show_sidebar(tourney);
+        cgicommon.show_sidebar(tourney);
 
-		print "<div class=\"mainpane\">"
+        print "<div class=\"mainpane\">"
 
-		if request_method == "POST":
-			mode = form.getfirst("mode");
-			if mode is not None:
-				try:
-					mode = int(mode);
-					tourney.set_teleost_mode(mode);
-				except ValueError:
-					pass;
+        if request_method == "POST":
+            mode = form.getfirst("mode");
+            if mode is not None:
+                try:
+                    mode = int(mode);
+                    tourney.set_teleost_mode(mode);
+                except ValueError:
+                    pass;
 
-		views = tourney.get_teleost_modes();
-		print "<h1>Display control</h1>";
+        views = tourney.get_teleost_modes();
+        print "<h1>Display control</h1>";
 
-		print "<form action=\"/cgi-bin/teleost.py?tourney=%s\" method=\"POST\">" % urllib.quote_plus(tourney_name);
-		print "<p>";
-		for v in views:
-			view_num = v.get("num", -1);
-			view_name = v.get("name", "View %d" % view_num);
-			view_desc = v.get("desc", "");
-			view_selected = v.get("selected", False);
-			print "<input type=\"radio\" name=\"mode\" value=\"%d\" %s />" % (view_num, "checked" if view_selected else "");
-			print "<strong>%s</strong>: %s" % (cgi.escape(view_name), cgi.escape(view_desc));
-			print "<br />";
-		print "</p>";
+        print "<form action=\"/cgi-bin/teleost.py?tourney=%s\" method=\"POST\">" % urllib.quote_plus(tourney_name);
+        print "<p>";
+        for v in views:
+            view_num = v.get("num", -1);
+            view_name = v.get("name", "View %d" % view_num);
+            view_desc = v.get("desc", "");
+            view_selected = v.get("selected", False);
+            print "<input type=\"radio\" name=\"mode\" value=\"%d\" %s />" % (view_num, "checked" if view_selected else "");
+            print "<strong>%s</strong>: %s" % (cgi.escape(view_name), cgi.escape(view_desc));
+            print "<br />";
+        print "</p>";
 
-		print "<input type=\"submit\" name=\"submit\" value=\"Apply Settings\" />";
-		print "</form>";
+        print "<input type=\"submit\" name=\"submit\" value=\"Apply Settings\" />";
+        print "</form>";
 
-		print "</div>";
+        print "</div>";
 
-	except countdowntourney.TourneyException as e:
-		cgicommon.show_tourney_exception(e);
+    except countdowntourney.TourneyException as e:
+        cgicommon.show_tourney_exception(e);
 
 print "</body></html>";
 

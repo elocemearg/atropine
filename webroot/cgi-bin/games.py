@@ -188,7 +188,7 @@ function score_modified(control_name) {
         print "<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no;
         print "<input type=\"hidden\" id=\"lastmodified\" name=\"lastmodified\" value=\"\" />";
 
-	if tourney.are_players_assigned_teams():
+        if tourney.are_players_assigned_teams():
             team_scores = tourney.get_team_scores()
             cgicommon.show_team_score_table(team_scores)
             print '<br />'
