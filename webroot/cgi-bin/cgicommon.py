@@ -126,8 +126,8 @@ def show_games_as_html_table(games, editable=True, remarks=None):
 		p2_classes = ["gameplayer2"];
 		if g.is_complete():
 			if g.s1 == g.s2:
-				p1_classes.append("losingplayer");
-				p2_classes.append("losingplayer");
+				p1_classes.append("drawingplayer");
+				p2_classes.append("drawingplayer");
 			elif g.s1 > g.s2:
 				p1_classes.append("winningplayer");
 				p2_classes.append("losingplayer");

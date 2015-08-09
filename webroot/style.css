@@ -84,6 +84,10 @@ td.losingplayer {
 	background-color: #ffaaaa;
 }
 
+td.drawingplayer {
+	background-color: #ffff88;
+}
+
 .roundno {
 	text-align: center;
 }

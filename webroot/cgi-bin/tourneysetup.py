@@ -129,20 +129,21 @@ else:
 		except countdowntourney.TourneyException as e:
 			cgicommon.show_tourney_exception(e)
 
+	players = tourney.get_players();
+	players = sorted(players, key=lambda x : x.name);
+
+	print "<p>"
 	if tourney.get_num_games() > 0:
-		players = tourney.get_players();
-		players = sorted(players, key=lambda x : x.name);
-
-		print "<p>"
 		print "The tournament has started."
-		print "There are %d players," % len(players)
-		num_active = len(filter(lambda x : not x.is_withdrawn(), players))
-		if num_active != len(players):
-			print "of whom %d are active and %d withdrawn." % (num_active, len(players) - num_active)
-		else:
-			print "none withdrawn."
-		print "</p>"
+	print "There are %d players," % len(players)
+	num_active = len(filter(lambda x : not x.is_withdrawn(), players))
+	if num_active != len(players):
+		print "of whom %d are active and %d withdrawn." % (num_active, len(players) - num_active)
+	else:
+		print "none withdrawn."
+	print "</p>"
 
+	if tourney.get_num_games() > 0:
 		print "<h2>Modify player</h2>"
 		print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
 		print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourneyname, True)

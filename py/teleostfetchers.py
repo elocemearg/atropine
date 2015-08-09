@@ -60,8 +60,8 @@ class VideprinterFetcher(object):
             round_desc_colour = (255, 128, 64);
             timestamp_colour = (192, 192, 192);
             score_colour = (255, 255, 255);
-            name1_colour = (192, 192, 192);
-            name2_colour = (192, 192, 192);
+            name1_colour = (192, 192, 48);
+            name2_colour = (192, 192, 48);
             if s1 is not None and s2 is not None:
                 if s1 > s2:
                     name1_colour = (0, 192, 0);
@@ -259,6 +259,8 @@ class TableResultsFetcher(object):
             green_transparent = (0, 255, 0, 0);
             red = (255, 0, 0, 64);
             red_transparent = (255, 0, 0, 0);
+            yellow = (255, 255, 0, 64)
+            yellow_transparent = (255, 255, 0, 0)
 
             row = teleostscreen.TableRow();
             hgradientpair_left = None;
@@ -273,6 +275,9 @@ class TableResultsFetcher(object):
                 elif g.s2 > g.s1:
                     hgradientpair_left = (red, red_transparent);
                     hgradientpair_right = (green_transparent, green);
+                else:
+                    hgradientpair_left = (yellow, yellow_transparent)
+                    hgradientpair_right = (yellow_transparent, yellow)
             else:
                 score_str = "v";
 

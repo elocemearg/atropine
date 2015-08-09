@@ -95,7 +95,7 @@ try:
     #fontfilename = "/usr/share/fonts/truetype/futura/Futura Condensed Bold.ttf";
 
     standings_widget = teleostscreen.TableWidget(standings_fetcher, 9, scroll_interval=10);
-    vertical_standings_widget = teleostscreen.TableWidget(short_standings_fetcher, 13, scroll_interval=15)
+    vertical_standings_widget = teleostscreen.TableWidget(short_standings_fetcher, 13, scroll_interval=12)
     team_score_widget = teleostscreen.TableWidget(team_score_fetcher, 1, scroll_interval=5)
 
     standings_videprinter = teleostscreen.View(name="Standings / Videprinter", desc="Standings table taking up most of the screen, with latest results displayed on a scrolling window below.");
@@ -113,7 +113,7 @@ try:
     
     standings_results_vert = teleostscreen.View(name="Standings / Table Results (vertical)", desc="Standings table on the left half of the screen, this rounds fixtures and results on the right.")
     standings_results_vert.add_view(vertical_standings_widget, top_pc=5, height_pc=90, left_pc=2, width_pc=46)
-    standings_results_vert.add_view(teleostscreen.TableWidget(short_table_results_fetcher, 15, scroll_interval=15), top_pc=5, height_pc=90, left_pc=52, width_pc=46)
+    standings_results_vert.add_view(teleostscreen.TableWidget(short_table_results_fetcher, 15, scroll_interval=12), top_pc=5, height_pc=90, left_pc=52, width_pc=46)
     standings_results_vert.add_view(team_score_widget, top_pc=5, height_pc=7, left_pc=5, width_pc=20);
 
     notables = teleostscreen.TimedViewCycler(name="Records", desc="Highest winning scores, losing scores and combined scores.");
@@ -212,15 +212,16 @@ try:
                             new_view_index = 3;
                     elif played > 0 and unplayed == 0:
                         # All games in this round have been played - we
-                        # want the standings and results screen, but if any
-                        # table has more than three games on it then we
-                        # want the vertical standings and results screen
-                        if largest_table_size > 3:
-                            if current_view_index != 2:
-                                new_view_index = 2
-                        else:
+                        # want the standings and results screen, but if
+                        # we don't have three games to a table then
+                        # then we want the vertical standings and
+                        # results screen.
+                        if largest_table_size == 3:
                             if current_view_index != 1:
                                 new_view_index = 1;
+                        else:
+                            if current_view_index != 2:
+                                new_view_index = 2
                     else:
                         # Round in progress: we want the videprinter
                         if current_view_index != 0:
