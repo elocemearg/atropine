@@ -686,15 +686,21 @@ class PagedFixturesWidget(Widget):
         red_right_shade = pygame.Surface((name2_width_px, line_height), pygame.SRCALPHA);
         green_left_shade = pygame.Surface((name1_width_px, line_height), pygame.SRCALPHA);
         green_right_shade = pygame.Surface((name2_width_px, line_height), pygame.SRCALPHA);
+        yellow_left_shade = pygame.Surface((name1_width_px, line_height), pygame.SRCALPHA);
+        yellow_right_shade = pygame.Surface((name2_width_px, line_height), pygame.SRCALPHA);
         green = (0, 255, 0, 64);
         green_transparent = (0, 255, 0, 0);
         red = (255, 0, 0, 64);
         red_transparent = (255, 0, 0, 0);
+        yellow = (255, 255, 0, 64);
+        yellow_transparent = (255, 255, 0, 0)
 
         shade_area_horiz_gradient(red_left_shade, red_left_shade.get_rect(), red, red_transparent);
         shade_area_horiz_gradient(red_right_shade, red_right_shade.get_rect(), red_transparent, red);
         shade_area_horiz_gradient(green_left_shade, green_left_shade.get_rect(), green, green_transparent);
         shade_area_horiz_gradient(green_right_shade, green_right_shade.get_rect(), green_transparent, green);
+        shade_area_horiz_gradient(yellow_left_shade, yellow_left_shade.get_rect(), yellow, yellow_transparent)
+        shade_area_horiz_gradient(yellow_right_shade, yellow_right_shade.get_rect(), yellow_transparent, yellow)
 
         #font = get_sensible_font(self.font_name, title_height);
         #heading = font.render(round_name, 1, (255, 255, 255));
@@ -814,11 +820,17 @@ class PagedFixturesWidget(Widget):
                 if g.is_complete():
                     gap = int(0.1 * modified_line_height);
                     if g.s1 > g.s2:
-                        surface_merge(surface, green_left_shade, (name1_x + shade_spacing, y_pos + shade_spacing), (0, 0, name1_width_px - shade_spacing, modified_line_height - 2 * shade_spacing))
-                        surface_merge(surface, red_right_shade, (name2_x - shade_spacing, y_pos + shade_spacing), (0, 0, name2_width_px - shade_spacing, modified_line_height - 2 * shade_spacing))
+                        left_shade = green_left_shade
+                        right_shade = red_right_shade
                     elif g.s2 > g.s1:
-                        surface_merge(surface, red_left_shade, (name1_x + shade_spacing, y_pos + shade_spacing), (0, 0, name1_width_px - shade_spacing, modified_line_height - 2 * shade_spacing))
-                        surface_merge(surface, green_right_shade, (name2_x - shade_spacing, y_pos + shade_spacing), (0, 0, name2_width_px - shade_spacing, modified_line_height - 2 * shade_spacing))
+                        left_shade = red_left_shade
+                        right_shade = green_right_shade
+                    else:
+                        left_shade = yellow_left_shade
+                        right_shade = yellow_right_shade
+                    surface_merge(surface, left_shade, (name1_x + shade_spacing, y_pos + shade_spacing), (0, 0, name1_width_px - shade_spacing, modified_line_height - 2 * shade_spacing))
+                    surface_merge(surface, right_shade, (name2_x - shade_spacing, y_pos + shade_spacing), (0, 0, name2_width_px - shade_spacing, modified_line_height - 2 * shade_spacing))
+
 
                 surface.blit(name1_label, (name1_x + this_name1_width_px - name1_label.get_width(), text_y_pos));
                 if team1_label:
