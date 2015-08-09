@@ -37,13 +37,15 @@ def set_random_score(game):
                 round_score = 18;
             else:
                 round_score = 7;
-        if x < p1_threshold:
+        if r1 > 0 and x < p1_threshold:
             p1_score += round_score;
-        elif x > p2_threshold:
+        elif r2 > 0 and x > p2_threshold:
             p2_score += round_score;
         else:
-            p1_score += round_score;
-            p2_score += round_score;
+            if r1 > 0:
+                p1_score += round_score;
+            if r2 > 0:
+                p2_score += round_score;
 
     if p1_score == p2_score:
         if random.randint(0, 1) == 0:

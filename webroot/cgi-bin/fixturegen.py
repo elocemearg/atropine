@@ -132,7 +132,9 @@ try:
                 };
                 json_fixture_plan = json.dumps(fixture_plan);
                 print "<input type=\"hidden\" name=\"jsonfixtureplan\" value=\"%s\" />" % cgi.escape(json_fixture_plan, True);
+                print "<p>"
                 print "<input type=\"submit\" name=\"accept\" value=\"Accept Fixtures\" />";
+                print "</p>"
                 print "</form>";
             elif "accept" in form:
                 json_fixture_plan = form.getfirst("jsonfixtureplan");

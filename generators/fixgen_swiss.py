@@ -158,20 +158,19 @@ function generate_fixtures_clicked() {
         group_size_choices.append(htmlform.HTMLFormChoice("-5", "5&3", group_size == -5))
 
     elements.append(htmlform.HTMLFormRadioButton("groupsize", "Players per table", group_size_choices))
-    elements.append(htmlform.HTMLFragment("</p>"))
-    elements.append(htmlform.HTMLFragment("<p>Increase the following values if the fixture generator has trouble finding a grouping within the time limit.</p>"));
+    elements.append(htmlform.HTMLFragment("</p>\n"))
+    elements.append(htmlform.HTMLFragment("<p>Increase the following values if the fixture generator has trouble finding a grouping within the time limit.</p>\n"));
     
     elements.append(htmlform.HTMLFragment("<blockquote>"))
     elements.append(htmlform.HTMLFormTextInput("Time limit for finding optimal grouping (seconds)", "maxtime", str(max_time), other_attrs={"id": "maxtime", "size": "3"}));
-    elements.append(htmlform.HTMLFragment("</blockquote>"))
+    elements.append(htmlform.HTMLFragment("</blockquote>\n"))
     elements.append(htmlform.HTMLFragment("<blockquote>"))
     elements.append(htmlform.HTMLFormTextInput("Initial maximum rematches between players", "initmaxrematches", str(init_max_rematches), other_attrs={"size" : "3"}))
-    elements.append(htmlform.HTMLFragment("</blockquote><blockquote>"))
+    elements.append(htmlform.HTMLFragment("</blockquote>\n<blockquote>"))
     elements.append(htmlform.HTMLFormTextInput("Initial maximum win count difference between players", "initmaxwindiff", str(init_max_win_diff), other_attrs={"size" : "3"}))
-    elements.append(htmlform.HTMLFragment("</blockquote>"))
+    elements.append(htmlform.HTMLFragment("</blockquote>\n"))
 
     elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures", other_attrs={"onclick": "generate_fixtures_clicked();", "id": "generatefixtures"}));
-    elements.append(htmlform.HTMLFragment("</p>"))
     elements.append(htmlform.HTMLFragment("<p id=\"progresslabel\">For large numbers of players or unusual formats, fixture generation is not immediate - it can take up to the specified number of seconds, or longer if no permissible configurations are found in that time.</p>"));
     elements.append(htmlform.HTMLFragment("<noscript>Your browser doesn't have Javascript enabled, which means you miss out on progress updates while fixtures are being generated.</noscript>"));
 

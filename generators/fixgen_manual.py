@@ -141,7 +141,9 @@ def get_user_form(tourney, settings):
         elements.append(htmlform.HTMLFragment("</tr>\n"))
 
     elements.append(htmlform.HTMLFragment("</table>\n"));
+    elements.append(htmlform.HTMLFragment("<p>\n"))
     elements.append(htmlform.HTMLFormSubmitButton("submit", "Submit"));
+    elements.append(htmlform.HTMLFragment("</p>\n"))
 
     if duplicate_slots:
         elements.append(htmlform.HTMLFragment("<p>You have players in multiple slots: these are highlighted in <font color=\"#ff0000\"><strong>red</strong></font>.</p>"));

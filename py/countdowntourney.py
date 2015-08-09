@@ -9,6 +9,10 @@ SW_VERSION = "0.6.0"
 RANK_WINS_POINTS = 0;
 RANK_POINTS = 1;
 
+RATINGS_MANUAL = 0
+RATINGS_GRADUATED = 1
+RATINGS_UNIFORM = 2
+
 create_tables_sql = """
 begin transaction;
 
@@ -197,6 +201,10 @@ class InvalidDBNameException(TourneyException):
 class InvalidRatingException(TourneyException):
     description = "Invalid rating. Rating must be an integer."
     pass;
+
+class TooManyPlayersException(TourneyException):
+    description = "You've got too many players. Turf some out onto the street."
+    pass
 
 class IncompleteRatingsException(TourneyException):
     description = "Incomplete ratings - specify ratings for nobody or everybody."
@@ -614,7 +622,7 @@ class Tourney(object):
     # players are rated progressively lower. It is an error to specify a
     # rating for some players and not others.
     # This function removes any players currently registered.
-    def set_players(self, players):
+    def set_players(self, players, auto_rating_behaviour=RATINGS_UNIFORM):
         # If there are any games, in this tournament, it's too late to
         # change the player list.
         if self.get_num_games() > 0:
@@ -651,41 +659,62 @@ class Tourney(object):
             try:
                 if p[1] is not None:
                     rating = int(p[1]);
+                    if rating != 0 and auto_rating_behaviour != RATINGS_MANUAL:
+                        # Can't specify any non-zero ratings if automatic
+                        # rating is enabled.
+                        raise InvalidRatingException("Player \"%s\" has been given a rating (%d) but you have selected automatic rating. If automatic rating is used, players may not be given manual ratings in the initial player list except a rating of 0 to indicate a patzer." % (p[0], rating))
                 else:
+                    if auto_rating_behaviour == RATINGS_MANUAL:
+                        # Can't have unrated players if automatic rating
+                        # has been disabled.
+                        raise InvalidRatingException("Player \"%s\" does not have a rating. If manual rating is selected, all players must be given a rating." % (p[0]))
                     rating = None;
                 new_players.append((p[0], rating, p[2]));
             except ValueError:
                 raise InvalidRatingException("Player \"%s\" has an invalid rating \"%s\". A player's rating must be an integer." % (p[0], p[1]));
         players = new_players;
 
-        ratings = map(lambda x : x[1], filter(lambda x : x[1] is not None, players));
+        #ratings = map(lambda x : x[1], filter(lambda x : x[1] is not None, players));
         #if len(ratings) != 0 and len(ratings) != len(players):
         #    raise IncompleteRatingsException("Either every player must be given a rating, or no players may be given ratings in which case ratings will be automatically assigned.");
 
-        if len(ratings) < len(players):
-            max_rating = 2000;
-            rating_step = 20;
+        if auto_rating_behaviour != RATINGS_MANUAL:
+            if auto_rating_behaviour == RATINGS_GRADUATED:
+                max_rating = 2000
+                min_rating = 1000
+            else:
+                max_rating = 1000
+                min_rating = 1000
 
             new_players = [];
             rating = max_rating;
-            for i in range(len(players)):
-                if players[i][1] is None:
-                    new_players.append((players[i][0], rating, players[i][2]));
+            num_unrated_players = len(filter(lambda x : x[1] is None, players))
+            num_players_given_auto_rating = 0
+
+            if max_rating != min_rating and num_unrated_players > max_rating - min_rating:
+                raise TooManyPlayersException("I don't know what kind of crazy-ass tournament you're running here, but it appears to have more than %d players in it. Automatic rating isn't going to work, and to be honest I'd be surprised if anything else did." % num_unrated_players)
+
+            for p in players:
+                if num_unrated_players == 1:
+                    rating = max_rating
                 else:
-                    new_players.append((players[i][0], players[i][1], players[i][2]));
-                rating -= rating_step;
+                    rating = int(max_rating - num_players_given_auto_rating * (max_rating - min_rating) / (num_unrated_players - 1))
+                if p[1] is None:
+                    new_players.append((p[0], rating, p[2]));
+                    num_players_given_auto_rating += 1
+                else:
+                    new_players.append((p[0], p[1], p[2]));
             players = new_players;
-            self.set_attribute("autoratings", 1);
-        else:
-            self.set_attribute("autoratings", 0);
+
+        self.set_attribute("autoratingbehaviour", auto_rating_behaviour);
 
         self.db.execute("delete from player");
 
         self.db.executemany("insert into player(name, rating, team_id, short_name) values (?, ?, null, ?)", players);
         self.db.commit();
-    
-    def are_ratings_automatic(self):
-        return bool(self.get_int_attribute("autoratings", 1));
+
+    def get_auto_rating_behaviour(self):
+        return bool(self.get_int_attribute("autoratingbehaviour", 2))
     
     def get_active_players(self):
         # Return the list of players in the tournament who are not marked
