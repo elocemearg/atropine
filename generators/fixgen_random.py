@@ -2,8 +2,11 @@ import random
 import countdowntourney
 import htmlform
 
-name = "Random Fixture Generator";
-description = "Randomly distribute players between tables, without regard for previous results.";
+name = "Random Fixture Generator"
+description = """Randomly assign players to tables, without regard for previous
+games. No attempt is made to avoid rematches. Patzers, if any, are placed on
+the highest numbered tables and are kept separate from each other if possible.
+Other than that, the fixtures are random."""
 
 # If this fixture generator is now able to generate a new round without
 # any further information from the user, return None.
