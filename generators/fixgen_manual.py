@@ -16,7 +16,7 @@ def lookup_player(players, name):
     raise countdowntourney.PlayerDoesNotExistException("Player %s does not exist! I haven't a clue who they are." % name);
 
 def get_user_form(tourney, settings):
-    players = sorted(tourney.get_players(), key=lambda x : x.get_name());
+    players = sorted(tourney.get_active_players(), key=lambda x : x.get_name());
     table_size = None
     if settings.get("tablesize", None) is not None:
         try:
@@ -163,7 +163,7 @@ def check_ready(tourney):
 
 def generate(tourney, settings):
     table_size = settings.get("tablesize", None)
-    players = tourney.get_players();
+    players = tourney.get_active_players();
 
     if table_size is None:
         raise countdowntourney.FixtureGeneratorException("No table size specified")

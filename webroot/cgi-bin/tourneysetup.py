@@ -18,6 +18,13 @@ def int_or_none(s):
 	except ValueError:
 		return None;
 
+def show_player_drop_down_box(players, control_name):
+	print "<select name=\"%s\">" % (control_name)
+	print "<option value=\"\">-- select player --</option>"
+	for p in players:
+		print "<option value=\"%s\">%s (%d)</option>" % (cgi.escape(p.name, True), cgi.escape(p.name), p.rating);
+	print "</select>"
+
 cgitb.enable();
 
 cgicommon.set_module_path();
@@ -37,6 +44,10 @@ modify_player_submit = form.getfirst("modifyplayersubmit");
 rank = form.getfirst("rank");
 rank = int_or_none(rank);
 rules_submit = form.getfirst("rulessubmit");
+withdraw_player_submit = form.getfirst("withdrawplayersubmit");
+unwithdraw_player_submit = form.getfirst("unwithdrawplayersubmit");
+withdraw_player_name = form.getfirst("withdrawplayername");
+unwithdraw_player_name = form.getfirst("unwithdrawplayername");
 
 
 tourney = None;
@@ -66,7 +77,9 @@ elif not tourney:
 	print "<p>No valid tourney name specified</p>";
 else:
 	print '<p><a href="%s?tourney=%s">%s</a></p>' % (baseurl, urllib.quote_plus(tourneyname), cgi.escape(tourneyname));
-	if request_method == "POST" and playerlist and player_list_submit:
+	if request_method == "POST" and player_list_submit:
+		if not playerlist:
+			playerlist = ""
 		lines = playerlist.split("\n");
 		lines = filter(lambda x : len(x) > 0, map(lambda x : x.rstrip(), lines));
 		reader = csv.reader(lines);
@@ -105,21 +118,37 @@ else:
 						print "<p><strong>Failed to rerate player: \"%s\" is not a valid rating.</strong></p>" % cgi.escape(new_rating);
 		except countdowntourney.TourneyException as e:
 			cgicommon.show_tourney_exception(e);
+	if request_method == "POST" and withdraw_player_submit and withdraw_player_name: 
+		try:
+			tourney.withdraw_player(withdraw_player_name)
+		except countdowntourney.TourneyException as e:
+			cgicommon.show_tourney_exception(e);
+	if request_method == "POST" and unwithdraw_player_submit and unwithdraw_player_name:
+		try:
+			tourney.unwithdraw_player(unwithdraw_player_name)
+		except countdowntourney.TourneyException as e:
+			cgicommon.show_tourney_exception(e)
 
 	if tourney.get_num_games() > 0:
-		print "<p>Tournament has started.</p>";
+		players = tourney.get_players();
+		players = sorted(players, key=lambda x : x.name);
+
+		print "<p>"
+		print "The tournament has started."
+		print "There are %d players," % len(players)
+		num_active = len(filter(lambda x : not x.is_withdrawn(), players))
+		if num_active != len(players):
+			print "of whom %d are active and %d withdrawn." % (num_active, len(players) - num_active)
+		else:
+			print "none withdrawn."
+		print "</p>"
 
 		print "<h2>Modify player</h2>"
 		print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
 		print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourneyname, True)
 
-		print "<select name=\"playername\">"
-		players = tourney.get_players();
-		players = sorted(players, key=lambda x : x.name);
-		print "<option value=\"\">-- select player --</option>"
-		for p in players:
-			print "<option value=\"%s\">%s (%d)</option>" % (cgi.escape(p.name, True), cgi.escape(p.name), p.rating);
-		print "</select>"
+		show_player_drop_down_box(players, "playername")
+
 		print "<br />"
 		print "New name <input type=\"text\" name=\"newplayername\" /> (blank to leave unchanged)<br />"
 		print "New rating <input type=\"text\" name=\"newplayerrating\" /> (blank to leave unchanged)<br />"
@@ -131,7 +160,7 @@ else:
 		print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
 		print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname);
 		print '<textarea rows="30" cols="40" name="playerlist">';
-		if request_method == "POST":
+		if request_method == "POST" and playerlist:
 			# If the user has submitted something, display what the user
 			# submitted rather than what's in the database - this gives them
 			# a chance to correct any errors without typing in the whole
@@ -164,6 +193,43 @@ else:
 	print '<p>'
 	print '<a href="/cgi-bin/teamsetup.py?tourney=%s">Assign players to teams</a>' % (urllib.quote_plus(tourneyname))
 	print '</p>'
+
+	active_players = tourney.get_active_players();
+	active_players = sorted(active_players, key=lambda x : x.name);
+	if len(active_players) > 0:
+		print '<h2>Withdraw player</h2>'
+		print '<p>'
+		print 'If you withdraw a player, they will not be included in future rounds unless and until they are reinstated.'
+		print 'Withdrawn players will still appear in the standings table, and any fixtures already played or generated will stand.'
+		print '</p>'
+		print '<form action="%s" method="post" />' % baseurl
+		print '<p>'
+		show_player_drop_down_box(active_players, "withdrawplayername")
+		print '</p><p>'
+		print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname);
+		print "<input type=\"submit\" name=\"withdrawplayersubmit\" value=\"Withdraw Player\" />"
+		print '</p>'
+		print '</form>'
+
+	withdrawn_players = tourney.get_withdrawn_players()
+	if withdrawn_players:
+		withdrawn_players = sorted(withdrawn_players, key=lambda x : x.name)
+		print '<h2>Reinstate player</h2>'
+		print '<p>The following players are currently withdrawn from the tourney.</p>'
+		print '<blockquote>'
+		for p in withdrawn_players:
+			print '<li>%s</li>' % (cgi.escape(p.name))
+		print '</blockquote>'
+
+		print '<p>These players will not be included in future rounds until reinstated below.</p>'
+		print '<form action="%s" method="post" />' % baseurl
+		print '<p>'
+		show_player_drop_down_box(withdrawn_players, "unwithdrawplayername")
+		print '</p><p>'
+		print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname);
+		print '<input type=\"submit\" name=\"unwithdrawplayersubmit\" value=\"Reinstate Player\" />'
+		print '</p>'
+		print '</form>'
 
 	#players_per_table = tourney.get_table_size();
 	rank = tourney.get_rank_method();

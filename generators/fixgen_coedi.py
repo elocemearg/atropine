@@ -22,7 +22,7 @@ def get_user_form(tourney, settings):
         # Not the first round.
         return None;
 
-    players = sorted(tourney.get_players(), key=lambda x : x.get_name());
+    players = sorted(tourney.get_active_players(), key=lambda x : x.get_name());
 
     set_players = [ None for i in range(0, len(players)) ];
 
@@ -139,7 +139,7 @@ def get_user_form(tourney, settings):
     return form;
 
 def check_ready(tourney):
-    players = tourney.get_players();
+    players = tourney.get_active_players();
     table_size = tourney.get_table_size();
 
     if len(players) < 3:
@@ -161,7 +161,7 @@ def check_ready(tourney):
     return (True, None);
 
 def generate(tourney, settings):
-    players = tourney.get_players();
+    players = tourney.get_active_players();
     table_size = tourney.get_table_size();
 
     (ready, excuse) = check_ready(tourney);    

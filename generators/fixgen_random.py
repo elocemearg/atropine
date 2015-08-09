@@ -13,7 +13,7 @@ description = "Randomly distribute players between tables, without regard for pr
 # obtained from them should be added to the "settings" dictionary and the
 # call made again.
 def get_user_form(tourney, settings):
-    players = tourney.get_players();
+    players = tourney.get_active_players();
     table_size = None
     if settings.get("tablesize", None) is not None:
         try:
@@ -55,7 +55,7 @@ def get_user_form(tourney, settings):
     return form;
 
 def check_ready(tourney):
-    players = tourney.get_players();
+    players = tourney.get_active_players();
 
     for size in (2,3,4,5):
         if len(players) % size == 0:
@@ -71,7 +71,7 @@ def check_ready(tourney):
 # it might choose not to, if, for example, the user decides they don't want
 # to accept the fixtures.
 def generate(tourney, settings):
-    players = tourney.get_players();
+    players = tourney.get_active_players();
 
     (ready, excuse) = check_ready(tourney);
     if not ready:

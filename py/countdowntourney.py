@@ -4,7 +4,7 @@ import sqlite3;
 import re;
 import os;
 
-SW_VERSION = "0.5.2"
+SW_VERSION = "0.6.0"
 
 RANK_WINS_POINTS = 0;
 RANK_POINTS = 1;
@@ -19,6 +19,7 @@ create table if not exists player (
     rating int,
     team_id int,
     short_name text,
+    withdrawn int not null default 0,
     unique(name), unique(short_name)
 );
 
@@ -192,6 +193,9 @@ class IncompleteRatingsException(TourneyException):
     description = "Incomplete ratings - specify ratings for nobody or everybody."
     pass;
 
+class InvalidPlayerNameException(TourneyException):
+    description = "A player's name is not allowed to be blank or consist entirely of whitespace."
+
 class InvalidTableSizeException(TourneyException):
     description = "Invalid table size - number of players per table must be 2 or 3."
     pass;
@@ -213,10 +217,11 @@ class NoGamesException(TourneyException):
     pass
 
 class Player(object):
-    def __init__(self, name, rating=0, team=None, short_name=None):
+    def __init__(self, name, rating=0, team=None, short_name=None, withdrawn=False):
         self.name = name;
         self.rating = rating;
         self.team = team;
+        self.withdrawn = withdrawn
         if short_name:
             self.short_name = short_name
         else:
@@ -248,6 +253,9 @@ class Player(object):
 
     def is_pending(self):
         return False;
+    
+    def is_withdrawn(self):
+        return self.withdrawn
 
     def make_dict(self):
         return {
@@ -603,6 +611,15 @@ class Tourney(object):
         if self.get_num_games() > 0:
             raise TourneyInProgressException("Adding or removing players is not permitted once the tournament has started.");
 
+        # Strip leading and trailing whitespace from player names
+        new_player_list = [ (x[0].strip(), x[1]) for x in players ]
+        players = new_player_list
+
+        # Make sure no player names are blank
+        for p in players:
+            if p[0] == "":
+                raise InvalidPlayerNameException()
+
         # Make sure all the player names are unique
         for pi in range(len(players)):
             for opi in range(pi + 1, len(players)):
@@ -661,16 +678,27 @@ class Tourney(object):
     def are_ratings_automatic(self):
         return bool(self.get_int_attribute("autoratings", 1));
     
-    def get_players(self):
+    def get_active_players(self):
+        # Return the list of players in the tournament who are not marked
+        # as withdrawn.
+        return self.get_players(exclude_withdrawn=True)
+    
+    def get_withdrawn_players(self):
+        return filter(lambda x : x.withdrawn, self.get_players())
+    
+    def get_players(self, exclude_withdrawn=False):
         cur = self.db.cursor();
-        cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name from player p left outer join team t on p.team_id = t.id order by p.rating desc, p.name");
+        if exclude_withdrawn:
+            cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn from player p left outer join team t on p.team_id = t.id where p.withdrawn = 0 order by p.rating desc, p.name")
+        else:
+            cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn from player p left outer join team t on p.team_id = t.id order by p.rating desc, p.name");
         players = [];
         for row in cur:
             if row[2] is not None:
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
-            players.append(Player(row[0], row[1], team, row[5]));
+            players.append(Player(row[0], row[1], team, row[5], bool(row[6])));
         cur.close();
         return players;
     
@@ -707,6 +735,10 @@ class Tourney(object):
     
     def rename_player(self, oldname, newname):
         players = self.get_players();
+        newname = newname.strip();
+        if newname == "":
+            raise InvalidPlayerNameException()
+
         for p in players:
             if p.name == newname:
                 raise PlayerExistsException("Cannot rename player \"%s\" to \"%s\" because there's already another player called %s." % (oldname, newname, newname));
@@ -726,7 +758,26 @@ class Tourney(object):
             cur.execute("update player set short_name = ? where name = ?", (short_name, p.get_name()))
 
         self.db.commit();
-    
+
+    def set_player_withdrawn(self, name, withdrawn):
+        withdrawn = bool(withdrawn)
+        cur = self.db.cursor()
+        cur.execute("update player set withdrawn = ? where name = ?", (1 if withdrawn else 0, name))
+        if cur.rowcount < 1:
+            self.db.rollback()
+            raise PlayerDoesNotExistException("Cannot change withdrawn status for player \"%s\" because no player by that name exists." % (name))
+        cur.close()
+        self.db.commit()
+
+    def withdraw_player(self, name):
+        # Set a player as withdrawn, so that the player is not included in the
+        # player list supplied to the fixture generator for future rounds.
+        self.set_player_withdrawn(name, 1)
+
+    def unwithdraw_player(self, name):
+        # Change a players withdrawn status to 0
+        self.set_player_withdrawn(name, 0)
+ 
     def get_player_name(self, player_id):
         cur = self.db.cursor();
         cur.execute("select name from player where id = ?", (player_id));

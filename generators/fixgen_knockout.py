@@ -216,7 +216,7 @@ def get_user_form(tourney, settings):
 	if num_players:
 		try:
 			num_players = int(num_players);
-			num_players_in_tourney = len(tourney.get_players());
+			num_players_in_tourney = len(tourney.get_active_players());
 			if num_players < 2 or num_players > num_players_in_tourney:
 				elements.append(htmlform.HTMLFragment("<p><strong>%d is an invalid number of players: must be between 2 and %d.</strong></p>" % (num_players, num_players_in_tourney)));
 				num_players = None;
@@ -249,7 +249,7 @@ def get_user_form(tourney, settings):
 	else:
 		# Page 3
 
-		players = tourney.get_players();
+		players = tourney.get_active_players();
 		standings = tourney.get_standings();
 
 		# If we've just come from page 2, decide on initial player names in
@@ -393,7 +393,7 @@ def get_user_form(tourney, settings):
 
 def check_ready(tourney):
 	# If there are at least two players registered, that's fine
-	players = tourney.get_players();
+	players = tourney.get_active_players();
 	if len(players) >= 2:
 		return (True, None);
 	else:
@@ -407,7 +407,7 @@ def generate(tourney, settings):
 	if not ready:
 		raise countdowntourney.FixtureGeneratorException(excuse);
 
-	players = tourney.get_players();
+	players = tourney.get_active_players();
 
 	num_players = settings.get("num_players");
 	if not num_players:

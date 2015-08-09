@@ -197,10 +197,10 @@ function score_modified(control_name) {
 
         cgicommon.show_games_as_html_table(games, editable=True, remarks=remarks)
 
-        print "<input type=\"submit\" name=\"save\" value=\"Save\" onclick=\"unset_unsaved_data_warning();\" />";
+        print "<p><input type=\"submit\" name=\"save\" value=\"Save\" onclick=\"unset_unsaved_data_warning();\" /></p>";
 
         if form.getfirst("showrandomresultsbutton"):
-            print "<input type=\"submit\" name=\"randomresults\" value=\"Random Results\" />";
+            print "<p><input type=\"submit\" name=\"randomresults\" value=\"Random Results\" /></p>";
 
         print "</form>"
 

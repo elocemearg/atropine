@@ -9,7 +9,7 @@ description = "Players are matched against opponents who have performed similarl
 valid_group_sizes = (2, 3, 4, 5, -5)
 
 def get_user_form(tourney, settings):
-    players = tourney.get_players();
+    players = tourney.get_active_players();
 
     max_time = None;
     if settings.get("maxtime", None) is not None:
@@ -167,7 +167,7 @@ function generate_fixtures_clicked() {
     return form;
 
 def check_ready(tourney):
-    players = tourney.get_players();
+    players = tourney.get_active_players();
 
     for size in valid_group_sizes:
         if len(players) % size == 0:
@@ -193,7 +193,7 @@ def check_ready(tourney):
     return (True, None);
 
 def generate(tourney, settings):
-    players = tourney.get_players();
+    players = tourney.get_active_players();
     table_size = tourney.get_table_size();
     rank_method = tourney.get_rank_method();
 

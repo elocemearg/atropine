@@ -46,7 +46,9 @@ try:
     print "<h1>Fixture Generator</h1>";
     generator_name = form.getfirst("generator");
     module_list = generators.get_fixture_generator_list();
-    if generator_name is None:
+    if len(tourney.get_active_players()) == 0:
+        print "<p>You can't generate fixtures because the tournament doesn't have any active players.</p>"
+    elif generator_name is None:
         print "<p>The following fixture generators are available.</p>";
 
         print "<table border=\"1\">";
