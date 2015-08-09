@@ -31,7 +31,7 @@ create table if not exists team (
     unique(name)
 );
 
-insert into team(name, colour) values('Red', 240 * 65536);
+insert into team(name, colour) values('White', 255 * 256 * 256 + 255 * 256 + 255);
 insert into team(name, colour) values('Blue', 128 * 256 + 255);
 
 -- GAME table, containing scheduled games and played games
