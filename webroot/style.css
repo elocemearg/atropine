@@ -216,3 +216,27 @@ td.teamscorestablescore {
 	text-align: right;
 	font-weight: bold;
 }
+
+div.tourneyexception {
+	background-color: #ffcccc;
+	border: 5px solid red;
+	height: 130px;
+	max-width: 600px;
+	display: table;
+}
+
+div.tourneyexceptionimage {
+	float: left;
+	height: 130px;
+	width: 150px;
+}
+
+div.tourneyexceptionmessagecontainer {
+	max-width: 450px;
+	vertical-align: middle;
+	display: table-cell;
+}
+
+div.tourneyexceptionmessage {
+	font-size: 14pt;
+}

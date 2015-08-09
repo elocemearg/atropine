@@ -20,9 +20,16 @@ def print_html_head(title):
 	print "</head>";
 
 def show_tourney_exception(exc):
-	print "<blockquote>";
-	print "<strong>%s</strong>" % cgi.escape(exc.description);
-	print "</blockquote>";
+	print "<div class=\"tourneyexception\">"
+	print "<div class=\"tourneyexceptionimage\">"
+	print "<img src=\"/images/facepalm.png\" alt=\"Facepalm\" />"
+	print "</div>"
+	print "<div class=\"tourneyexceptionmessagecontainer\">"
+	print "<div class=\"tourneyexceptionmessage\">"
+	print "%s" % cgi.escape(exc.description)
+	print "</div>"
+	print "</div>"
+	print "</div>"
 
 def set_module_path():
 	generator_dir = os.environ.get("GENERATORPATH", ".");

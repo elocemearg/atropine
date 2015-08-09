@@ -216,6 +216,13 @@ try:
 
 except countdowntourney.TourneyException as e:
     cgicommon.show_tourney_exception(e);
+    generator_name = form.getfirst("generator");
+    print "<p>"
+    if generator_name:
+        print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s&generator=%s\">Sigh...</a>" % (urllib.quote_plus(tourney_name), urllib.quote_plus(generator_name))
+    else:
+        print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Sigh...</a>" % (urllib.quote_plus(tourney_name))
+    print "</p>"
 
 print "</body>";
 print "</html>";

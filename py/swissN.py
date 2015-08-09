@@ -180,9 +180,14 @@ def generate_sets(l, num):
             for remainder in generate_sets(l[(i+1):], num - 1):
                 yield [l[i]] + remainder
 
-def generate_all_groupings_aux(group_size_list, possible_opponents, depth=0):
+def generate_all_groupings_aux(group_size_list, possible_opponents, depth, start_time, limit_ms):
     group_size = group_size_list[0]
     players_ordered = sorted(possible_opponents)
+
+    if time.time() > start_time + limit_ms / 1000.0:
+        # Out of time
+        return
+
     if players_ordered:
         p = players_ordered[0]
         opps = possible_opponents[p]
@@ -214,12 +219,12 @@ def generate_all_groupings_aux(group_size_list, possible_opponents, depth=0):
                     # This is the last table
                     yield [candidate_table]
                 else:
-                    for remainder2 in generate_all_groupings_aux(group_size_list[1:], new_possible_opponents, depth + 1):
+                    for remainder2 in generate_all_groupings_aux(group_size_list[1:], new_possible_opponents, depth + 1, start_time, limit_ms):
                         yield [candidate_table] + remainder2
 
         
 
-def generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff):
+def generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, start_time, limit_ms):
     num_players = len(played_matrix)
     possible_opponents = dict()
     if sum(group_size_list) != num_players:
@@ -232,7 +237,7 @@ def generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_
                     #print "played_matrix[%d][%d] %d" % (p, opp, played_matrix[p][opp])
                     opponents.append(opp)
         possible_opponents[p] = opponents
-    return generate_all_groupings_aux(group_size_list, possible_opponents)
+    return generate_all_groupings_aux(group_size_list, possible_opponents, 0, start_time, limit_ms)
 
 class PlayerGroup(object):
     def __init__(self, player_list, weight):
@@ -263,7 +268,7 @@ def swissN_first_round(cdt_players, group_size):
         groups.append(PlayerGroup(player_list, 0));
     return (0, groups);
 
-def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, init_max_rematches=0):
+def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, init_max_rematches=0, init_max_win_diff=0):
     log = True
     players = [];
     for p in cdt_players:
@@ -321,7 +326,7 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, ini
     best_grouping = None
     best_weight = None
     max_rematches = init_max_rematches
-    max_wins_diff = 0
+    max_wins_diff = init_max_win_diff
     max_wins = max(map(lambda x : x.wins, players))
     min_wins = min(map(lambda x : x.wins, players))
 
@@ -332,23 +337,24 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, ini
     # If the group of people on N wins, for any N, is not a multiple of the
     # table size, then don't bother looking for groupings where max_wins_diff
     # is 0.
-    if group_size < 0:
-        max_wins_diff = 0
-    else:
-        max_wins_diff = 1
-        for wins in range(min_wins, max_wins + 1):
-            num = len(filter(lambda x : x.wins == wins, players))
-            if num % group_size != 0:
-                if log:
-                    sys.stderr.write("%d players on %d wins, not a multiple of %d, so not bothering to look for perfection\n" % (num, wins, group_size))
-                break
-        else:
+    if max_wins_diff == 0:
+        if group_size < 0:
             max_wins_diff = 0
+        else:
+            max_wins_diff = 1
+            for wins in range(min_wins, max_wins + 1):
+                num = len(filter(lambda x : x.wins == wins, players))
+                if num % group_size != 0:
+                    if log:
+                        sys.stderr.write("%d players on %d wins, not a multiple of %d, so not bothering to look for perfection\n" % (num, wins, group_size))
+                    break
+            else:
+                max_wins_diff = 0
 
     while best_grouping is None:
         if log:
             sys.stderr.write("[swissN] Trying with max_wins_diff %d, max_rematches %d\n" % (max_wins_diff, max_rematches))
-        for groups in generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff):
+        for groups in generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, start_time, limit_ms):
             weight = total_penalty(matrix, groups, table_penalty_cache)
             if best_weight is None or weight < best_weight:
                 best_weight = weight
@@ -356,9 +362,11 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, ini
                 if log:
                     sys.stderr.write("[swissN] New best plan is %f, %s\n" % (best_weight, str(best_grouping)))
             if limit_ms and time.time() - start_time > float(limit_ms) / 1000.0:
-                if log:
-                    sys.stderr.write("[swissN] That's time...\n")
                 break
+        if limit_ms and time.time() - start_time > float(limit_ms) / 1000.0:
+            if log:
+                sys.stderr.write("[swissN] That's time...\n")
+            break
         if best_weight is None:
             if log:
                 sys.stderr.write("[swissN] No groupings for max_wins_diff %d, max_rematches %d\n" % (max_wins_diff, max_rematches))
@@ -368,6 +376,9 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, ini
                 max_rematches += 1
 
     #(weight, groups) = best_grouping(matrix, range(matrix_size), group_size, limit_ms=limit_ms)
+    
+    if best_grouping is None:
+        return (None, None)
 
     weight = best_weight
     groups = best_grouping
