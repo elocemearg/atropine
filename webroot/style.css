@@ -165,6 +165,11 @@ td.standingswins {
 	border-right: 1px solid gray;
 }
 
+td.standingsdraws {
+	text-align: right;
+	border-right: 1px solid gray;
+}
+
 td.standingspoints {
 	text-align: right;
 }

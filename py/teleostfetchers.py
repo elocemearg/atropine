@@ -136,14 +136,18 @@ class StandingsFetcher(object):
     def __init__(self, tourney, use_short_names=False):
         self.tourney = tourney;
         self.use_short_names = use_short_names
-        self.short_name_widths = (12, 46, 11, 11, 20)
-        self.ordinary_name_widths = (10, 55, 10, 10, 15)
+        self.short_name_widths = (12, 48, 10, 10, 0, 20)
+        self.short_name_widths_inc_draws = (12, 38, 10, 10, 10, 20)
+        self.ordinary_name_widths = (10, 55, 10, 10, 0, 15)
+        self.ordinary_name_widths_inc_draws = (10, 45, 10, 10, 10, 15)
     
     def fetch_header_row(self):
+        standings = self.tourney.get_standings();
+        draws_exist = self.tourney.get_show_draws_column()
         if self.use_short_names:
-            (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, points_width_pc) = self.short_name_widths
+            (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, draws_width_pc, points_width_pc) = self.short_name_widths_inc_draws if draws_exist else self.short_name_widths
         else:
-            (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, points_width_pc) = self.ordinary_name_widths
+            (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, draws_width_pc, points_width_pc) = self.ordinary_name_widths_inc_draws if draws_exist else self.ordinary_name_widths
 
         row = teleostscreen.TableRow();
         grey = (128, 128, 128);
@@ -151,6 +155,8 @@ class StandingsFetcher(object):
         row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(name_width_pc), text_colour=grey));
         row.append_value(teleostscreen.RowValue("P", teleostscreen.PercentLength(played_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
         row.append_value(teleostscreen.RowValue("W", teleostscreen.PercentLength(wins_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
+        if draws_exist:
+            row.append_value(teleostscreen.RowValue("D", teleostscreen.PercentLength(draws_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
         row.append_value(teleostscreen.RowValue("Pts", teleostscreen.PercentLength(points_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
         row.set_border(bottom_border=teleostscreen.LineStyle((96, 96, 96), 1));
         return row;
@@ -172,6 +178,8 @@ class StandingsFetcher(object):
         
         subset = standings[start_row:(start_row + num_rows)];
 
+        draws_exist = self.tourney.get_show_draws_column();
+
         rows = [];
         for player in subset:
             row = teleostscreen.TableRow();
@@ -179,10 +187,10 @@ class StandingsFetcher(object):
             team_colour = player_object.get_team_colour_tuple()
             if self.use_short_names:
                 display_name = player_object.get_short_name()
-                (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, points_width_pc) = self.short_name_widths
+                (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, draws_width_pc, points_width_pc) = self.short_name_widths_inc_draws if draws_exist else self.short_name_widths;
             else:
                 display_name = player_object.get_name()
-                (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, points_width_pc) = self.ordinary_name_widths
+                (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, draws_width_pc, points_width_pc) = self.ordinary_name_widths_inc_draws if draws_exist else self.ordinary_name_widths
 
             row.append_value(teleostscreen.RowValue(str(player[0]), teleostscreen.PercentLength(pos_width_pc), text_colour=pos_colour, alignment=teleostscreen.ALIGN_RIGHT));
             if team_colour:
@@ -192,6 +200,8 @@ class StandingsFetcher(object):
                 row.append_value(teleostscreen.RowValue(display_name, teleostscreen.PercentLength(name_width_pc), text_colour=name_colour));
             row.append_value(teleostscreen.RowValue(str(player[2]), teleostscreen.PercentLength(played_width_pc), text_colour=played_colour, alignment=teleostscreen.ALIGN_RIGHT));
             row.append_value(teleostscreen.RowValue(str(player[3]), teleostscreen.PercentLength(wins_width_pc), text_colour=wins_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            if draws_exist:
+                row.append_value(teleostscreen.RowValue(str(player[5]), teleostscreen.PercentLength(draws_width_pc), text_colour=wins_colour, alignment=teleostscreen.ALIGN_RIGHT));
             row.append_value(teleostscreen.RowValue(str(player[4]), teleostscreen.PercentLength(points_width_pc), text_colour=points_colour, alignment=teleostscreen.ALIGN_RIGHT));
             rows.append(row);
 

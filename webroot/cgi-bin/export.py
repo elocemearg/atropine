@@ -48,6 +48,8 @@ try:
 
 	games = tourney.get_games();
 
+        show_draws_column = tourney.get_show_draws_column()
+
 	if export_format == "html":
 		print "Content-Type: text/html; charset=utf-8";
 		print "";
@@ -70,24 +72,26 @@ try:
 		print "</p>"
 
 		print "<table class=\"standingstable\">";
-		print "<tr><th></th><th></th><th>P</th><th>W</th><th>Pts</th></tr>";
-		last_wins = None;
+		print "<tr><th></th><th></th><th>P</th><th>W</th>%s<th>Pts</th></tr>" % ("<th>D</th>" if show_draws_column else "");
+		last_wins_inc_draws = None;
 		tr_bgcolours = ["#ffdd66", "#ffff88" ];
 		bgcolour_index = 0;
 		for s in standings:
-			(pos, name, played, wins, points) = s;
+			(pos, name, played, wins, points, draws) = s;
 			if rank_method == countdowntourney.RANK_WINS_POINTS:
-				if last_wins is None:
+				if last_wins_inc_draws is None:
 					bgcolour_index = 0;
-				elif last_wins != wins:
+				elif last_wins_inc_draws != wins + 0.5 * draws:
 					bgcolour_index = (bgcolour_index + 1) % 2;
-				last_wins = wins;
+				last_wins_inc_draws = wins + 0.5 * draws;
 
 				print "<tr class=\"standingsrow\" style=\"background-color: %s\">" % tr_bgcolours[bgcolour_index];
 			print "<td class=\"standingspos\">%d</td>" % pos;
 			print "<td class=\"standingsname\">%s</td>" % name;
 			print "<td class=\"standingsplayed\">%d</td>" % played;
-			print "<td class=\"standingswins\">%d</td>" % wins;
+                        print "<td class=\"standingswins\">%d</td>" % wins;
+                        if show_draws_column:
+                            print "<td class=\"standingsdraws\">%d</td>" % draws;
 			print "<td class=\"standingspoints\">%d</td>" % points;
 			print "</tr>";
 		print "</table>";
@@ -137,9 +141,15 @@ try:
 			print "Players are ranked somehow. Your guess is as good as mine.";
 		print ""
 		max_name_len = max(map(lambda x : len(x[1]), standings));
-		header_format_string = "%%-%ds  P   W  Pts" % (max_name_len + 6);
+                if show_draws_column:
+                    header_format_string = "%%-%ds  P   W   D  Pts" % (max_name_len + 6);
+                else:
+                    header_format_string = "%%-%ds  P   W  Pts" % (max_name_len + 6);
 		print header_format_string % ""
 		for s in standings:
+                    if show_draws_column:
+			print "%3d %-*s  %3d %3d %3d %4d" % (s[0], max_name_len, s[1], s[2], s[3], s[5], s[4])
+                    else:
 			print "%3d %-*s  %3d %3d %4d" % (s[0], max_name_len, s[1], s[2], s[3], s[4])
 		print ""
 

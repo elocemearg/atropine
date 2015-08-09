@@ -43,6 +43,7 @@ player_list_submit = form.getfirst("playerlistsubmit");
 modify_player_submit = form.getfirst("modifyplayersubmit");
 rank = form.getfirst("rank");
 rank = int_or_none(rank);
+show_draws_column = int_or_none(form.getfirst("showdrawscolumn"))
 rules_submit = form.getfirst("rulessubmit");
 withdraw_player_submit = form.getfirst("withdrawplayersubmit");
 unwithdraw_player_submit = form.getfirst("unwithdrawplayersubmit");
@@ -97,6 +98,7 @@ else:
 	if request_method == "POST" and rules_submit:
 		try:
 			tourney.set_rank_method(rank);
+			tourney.set_show_draws_column(show_draws_column);
 			#tourney.set_table_size(players_per_table);
 			print "<p><strong>Rules updated successfully.</strong></p>";
 		except countdowntourney.TourneyException as e:
@@ -190,6 +192,28 @@ else:
 		print '<input type="submit" name="playerlistsubmit" value="Save Player List" />'
 		print '</form>'
 
+	rank = tourney.get_rank_method();
+	print "<h2>Tourney rules</h2>";
+	print '<form action="%s" method="post" />' % baseurl;
+	print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname);
+	print "<h3>Rank players by</h3>";
+	print "<blockquote>";
+	print '<input type="radio" name="rank" value="%d" %s /> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "");
+	print '<input type="radio" name="rank" value="%d" %s /> Points only.' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "");
+	print '</blockquote>';
+
+	print "<h3>Draws</h3>"
+	print "<blockquote>"
+	print "<input type=\"checkbox\" name=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")
+	print "Show draws column in standings table"
+	print "</blockquote>"
+
+	print "<p>"
+	print '<input type="submit" name="rulessubmit" value="Save Rules" />';
+	print "</p>"
+	print "</form>";
+
+
 	print '<h2>Team Setup</h2>'
 	print '<p>'
 	print '<a href="/cgi-bin/teamsetup.py?tourney=%s">Assign players to teams</a>' % (urllib.quote_plus(tourneyname))
@@ -231,25 +255,6 @@ else:
 		print '<input type=\"submit\" name=\"unwithdrawplayersubmit\" value=\"Reinstate Player\" />'
 		print '</p>'
 		print '</form>'
-
-	#players_per_table = tourney.get_table_size();
-	rank = tourney.get_rank_method();
-	print "<h2>Tourney rules</h2>";
-	print '<form action="%s" method="post" />' % baseurl;
-	print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname);
-	print "<h3>Rank players by</h3>";
-	print "<blockquote>";
-	print '<input type="radio" name="rank" value="%d" %s /> Wins, then points<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "");
-	print '<input type="radio" name="rank" value="%d" %s /> Points only' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "");
-	print '</blockquote>';
-	
-	#print "<h3>Players per table</h3>";
-	#print "<blockquote>";
-	#print '<input type="radio" name="playerspertable" value="2" %s /> 2<br />' % ("checked" if players_per_table == 2 else "");
-	#print '<input type="radio" name="playerspertable" value="3" %s /> 3' % ("checked" if players_per_table == 3 else "");
-	#print "</blockquote>";
-	print '<input type="submit" name="rulessubmit" value="Save Rules" />';
-	print "</form>";
 
 	if tourney.get_num_games() > 0:
 		print '<h2>Delete rounds</h2>'

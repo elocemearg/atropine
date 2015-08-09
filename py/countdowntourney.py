@@ -121,6 +121,14 @@ select p.id, sum(case when g.p_id is null then 0
 from player p left outer join heat_game_divided g on p.id = g.p_id
 group by p.id;
 
+create view if not exists player_draws as
+select p.id, sum(case when g.p_id is null then 0
+                   when g.p_score is null or g.opp_score is null then 0
+                   when g.p_score == g.opp_score then 1
+                   else 0 end) draws
+from player p left outer join heat_game_divided g on p.id = g.p_id
+group by p.id;
+
 create view if not exists player_points as
 select p.id, sum(case when g.p_score is null then 0
                   when g.tiebreak and g.p_score > g.opp_score
@@ -135,9 +143,10 @@ from player p left outer join heat_game_divided g on p.id = g.p_id
 group by p.id;
 
 create view if not exists player_standings as
-select p.id, p.name, played.played, wins.wins, points.points
-from player p, player_wins wins, player_played played, player_points points
-where p.id = wins.id and p.id = played.id and p.id = points.id;
+select p.id, p.name, played.played, wins.wins, draws.draws, points.points
+from player p, player_wins wins, player_draws draws, player_played played,
+player_points points
+where p.id = wins.id and p.id = played.id and p.id = points.id and p.id = draws.id;
 
 -- Tables for controlling the display system Teleost
 create table if not exists teleost(current_mode int);
@@ -1192,18 +1201,28 @@ where round_no = ? and seq = ?""", alterations_reordered);
     
     def get_table_size(self):
         return self.get_int_attribute("tablesize", 3);
+    
+    def set_show_draws_column(self, value):
+        self.set_attribute("showdrawscolumn", 1 if value else 0)
 
-    def get_standings(self, use_short_names=False):
+    def get_show_draws_column(self):
+        return True if self.get_int_attribute("showdrawscolumn", 0) != 0 else False
+
+    def get_standings(self):
         method = self.get_rank_method();
         if method == RANK_WINS_POINTS:
-            orderby = "order by wins desc, points desc, name";
-            rankcols = [3,4];
+            orderby = "order by wins * 2 + draws desc, points desc, name";
+            rankcols = [6,4];
         elif method == RANK_POINTS:
             orderby = "order by points desc, name";
             rankcols = [4];
         else:
             raise UnknownRankMethodException("This tourney's standings are ranked by method %d, which I don't recognise." % method);
-        return self.ranked_query("select name, played, wins, points from player_standings " + orderby, rankcols);
+        results = self.ranked_query("select name, played, wins, points, draws, wins * 2 + draws from player_standings " + orderby, rankcols);
+
+        # Don't return the extra wins * 2 + draws column on the end - we only
+        # fetched that so that ranked_query could detect ties.
+        return [ x[0:6] for x in results ]
 
     def get_logs_since(self, seq, include_new_games=False):
         cur = self.db.cursor();

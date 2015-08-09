@@ -303,7 +303,7 @@ def get_user_form(tourney, settings):
 			options.append(htmlform.HTMLFormDropDownOption("", "--- select player ---", current_player_name is None));
 			for standing in standings:
 				player = tourney.get_player_from_name(standing[1]);
-				player_string = "%d. %s (%d wins, %d points)" % (standing[0], player.get_name(), standing[3], standing[4]);
+				player_string = "%d. %s (%d wins, %d draws, %d points)" % (standing[0], player.get_name(), standing[3], standing[5], standing[4]);
 				options.append(htmlform.HTMLFormDropDownOption(player.get_name(), player_string, (player.get_name() == current_player_name)));
 				if player.get_name() == current_player_name:
 					if player in seed_players:
@@ -331,7 +331,7 @@ def get_user_form(tourney, settings):
 							player_standing = s;
 							break;
 					for s in standings:
-						if (s[3] == player_standing[3] and
+						if (s[3] * 2 + s[5] == player_standing[3] * 2 + player_standing[5] and
 								s[4] == player_standing[4] and
 								s[1] != player_standing[1] and
 								(s[1], player_standing[1]) not in ties_mentioned

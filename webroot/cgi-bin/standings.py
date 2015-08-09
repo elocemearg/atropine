@@ -60,19 +60,22 @@ try:
         cgicommon.show_team_score_table(tourney.get_team_scores())
         print '<br />'
 
+    show_draws_column = tourney.get_show_draws_column()
+
     print "<table class=\"standingstable\">";
-    print "<tr><th></th><th></th><th>P</th><th>W</th><th>Pts</th></tr>";
-    last_wins = None;
+    print "<tr><th></th><th></th><th>P</th><th>W</th>%s<th>Pts</th></tr>" % ("<th>D</th>" if show_draws_column else "");
+    last_wins_inc_draws = None;
     tr_bgcolours = ["#ffdd66", "#ffff88" ];
     bgcolour_index = 0;
     for s in standings:
-        (pos, name, played, wins, points) = s;
+        (pos, name, played, wins, points, draws) = s;
+        wins_inc_draws = wins + draws * 0.5
         if rank_method == countdowntourney.RANK_WINS_POINTS:
-            if last_wins is None:
+            if last_wins_inc_draws is None:
                 bgcolour_index = 0;
-            elif last_wins != wins:
+            elif last_wins_inc_draws != wins_inc_draws:
                 bgcolour_index = (bgcolour_index + 1) % 2;
-            last_wins = wins;
+            last_wins_inc_draws = wins_inc_draws;
 
             print "<tr class=\"standingsrow\" style=\"background-color: %s\">" % tr_bgcolours[bgcolour_index];
         print "<td class=\"standingspos\">%d</td>" % pos;
@@ -81,6 +84,8 @@ try:
         print "<td class=\"standingsname\">%s %s</td>" % (cgicommon.make_team_dot_html(team), cgi.escape(name));
         print "<td class=\"standingsplayed\">%d</td>" % played;
         print "<td class=\"standingswins\">%d</td>" % wins;
+        if show_draws_column:
+            print "<td class=\"standingsdraws\">%d</td>" % draws;
         print "<td class=\"standingspoints\">%d</td>" % points;
         print "</tr>";
     print "</table>";
