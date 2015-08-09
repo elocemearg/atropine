@@ -78,34 +78,53 @@ def generate(tourney, settings):
         raise countdowntourney.FixtureGeneratorException(excuse);
 
     tables = [];
-    random.shuffle(players);
+    
+    # Randomly shuffle the player list, but always put any patzers at the end
+    # of the list. This will ensure they all go on separate tables if possible.
+    patzers = [ p for p in players if p.rating == 0 ]
+    non_patzers = [ p for p in players if p.rating != 0 ]
+    random.shuffle(non_patzers);
+    players = non_patzers + patzers
 
     table_size = int(settings.get("tablesize"))
 
     if table_size > 0:
+        # Distribute the players across the tables
         num_tables = len(players) / table_size;
-        for table_no in range(0, num_tables):
-            table = [];
-            for i in range(0, table_size):
-                table.append(players[table_no * table_size + i]);
-            tables.append(table);
+        tables = [ [] for i in range(num_tables) ]
+        table_no = 0
+        for p in players:
+            tables[table_no].append(p)
+            table_no = (table_no + 1) % num_tables
     elif table_size == -5:
+        # Have as many tables of 3 as required to take the number of players
+        # remaining to a multiple of 5, then put the remaining players on
+        # tables of 5.
+        table_sizes = []
         players_left = len(players)
-        player_pos = 0
         while players_left % 5 != 0:
-            table = []
-            for i in range(0, 3):
-                table.append(players[player_pos + i])
-            player_pos += 3
+            table_sizes.append(3)
             players_left -= 3
-            tables.append(table)
-        while players_left > 0:
-            table = []
-            for i in range(0, 5):
-                table.append(players[player_pos + i])
-            player_pos += 5
-            players_left -= 5
-            tables = [table] + tables
+        for i in range(players_left / 5):
+            table_sizes.append(5)
+        tables = [ [] for x in table_sizes ]
+
+        # Reverse the list so we use the patzers first, and they can go 
+        # on the 3-tables
+        players.reverse()
+
+        table_pos = 0
+        for p in players:
+            iterations = 0
+            while len(tables[table_pos]) >= table_sizes[table_pos]:
+                table_pos = (table_pos + 1) % len(tables)
+                iterations += 1
+                assert(iterations <= len(tables))
+            tables[table_pos].append(p)
+            table_pos = (table_pos + 1) % len(tables)
+
+        # Reverse the table list so the 5-tables are first
+        tables.reverse()
 
     fixtures = [];
     current_games = tourney.get_games(game_type='P');
@@ -115,20 +134,7 @@ def generate(tourney, settings):
         max_round_no = max(map(lambda x : x.round_no, current_games));
 
     round_no = max_round_no + 1;
-    #table_no = 1;
-    #round_seq = 1;
     fixtures = countdowntourney.make_fixtures_from_groups(tables, round_no, table_size == -5)
-    #for table in tables:
-    #    for i in range(0, len(table)):
-    #        for j in range(i + 1, len(table)):
-    #            p1 = table[i];
-    #            p2 = table[j];
-    #            if (i + j) % 2 == 0:
-    #                (p1, p2) = (p2, p1);
-    #            fixture = countdowntourney.Game(round_no, round_seq, table_no, 'P', p1, p2);
-    #            fixtures.append(fixture);
-    #            round_seq += 1;
-    #    table_no += 1;
     
     d = dict();
     d["fixtures"] = fixtures;
