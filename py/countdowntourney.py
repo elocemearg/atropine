@@ -4,7 +4,7 @@ import sqlite3;
 import re;
 import os;
 
-SW_VERSION = "0.6.0"
+SW_VERSION = "0.6.1"
 
 RANK_WINS_POINTS = 0;
 RANK_POINTS = 1;
@@ -975,7 +975,7 @@ class Tourney(object):
             raise;
 
     def delete_round(self, round_no):
-        latest_round_no = self.get_latest_round_no(round_type='P');
+        latest_round_no = self.get_latest_round_no();
         if latest_round_no is None:
             raise NoGamesException()
         if latest_round_no != round_no:
@@ -1214,6 +1214,12 @@ where round_no = ? and seq = ?""", alterations_reordered);
         cur.execute("insert or replace into options values (?, ?)", (name, value));
         cur.close();
         self.db.commit();
+
+    def get_auto_use_vertical(self):
+        return self.get_int_attribute("autousevertical", 0) != 0
+
+    def set_auto_use_vertical(self, value):
+        self.set_attribute("autousevertical", str(int(value)))
     
     def get_rank_method(self):
         return self.get_int_attribute("rankmethod", RANK_WINS_POINTS);

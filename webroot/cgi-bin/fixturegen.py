@@ -43,12 +43,13 @@ try:
     cgicommon.show_sidebar(tourney);
 
     print "<div class=\"mainpane\">";
-    print "<h1>Fixture Generator</h1>";
     generator_name = form.getfirst("generator");
     module_list = generators.get_fixture_generator_list();
     if len(tourney.get_active_players()) == 0:
+        print "<h1>Fixture Generator</h1>";
         print "<p>You can't generate fixtures because the tournament doesn't have any active players.</p>"
     elif generator_name is None:
+        print "<h1>Fixture Generator</h1>";
         print "<p>The following fixture generators are available.</p>";
 
         print "<table border=\"1\">";
@@ -64,9 +65,11 @@ try:
             print "</tr>";
         print "</table>";
     elif generator_name not in module_list:
+        print "<h1>Fixture Generator</h1>";
         print "<p>No such generator %s.</p>" % cgi.escape(generator_name);
     else:
         fixturegen = importlib.import_module(generator_name);
+        print "<h1>%s</h1>" % (cgi.escape(fixturegen.name));
         (ready, excuse) = fixturegen.check_ready(tourney);
         fixgen_settings = dict();
         for key in form:
@@ -80,7 +83,7 @@ try:
                 fixtures = fixture_plan["fixtures"];
                 rounds = fixture_plan["rounds"];
 
-                print "<p>The fixture generator you chose has come up with the following fixtures. Click \"Accept Fixtures\" to commit them to the database.</p>";
+                print "<p>I've generated the following fixtures. Click \"Accept Fixtures\" to commit them to the database.</p>";
                 for r in rounds:
                     round_no = int(r["round"]);
                     print "<h2>%s</h2>" % r.get("name", "Round %d" % round_no);

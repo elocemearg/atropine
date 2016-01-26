@@ -40,12 +40,21 @@ else:
 
         if request_method == "POST":
             mode = form.getfirst("mode");
+            auto_use_vertical = form.getfirst("autousevertical")
             if mode is not None:
                 try:
                     mode = int(mode);
                     tourney.set_teleost_mode(mode);
                 except ValueError:
                     pass;
+            if auto_use_vertical is not None:
+                try:
+                    auto_use_vertical = int(auto_use_vertical)
+                    tourney.set_auto_use_vertical(auto_use_vertical != 0)
+                except ValueError:
+                    pass
+            else:
+                tourney.set_auto_use_vertical(False)
 
         views = tourney.get_teleost_modes();
         print "<h1>Display control</h1>";
@@ -60,6 +69,12 @@ else:
             print "<input type=\"radio\" name=\"mode\" value=\"%d\" %s />" % (view_num, "checked" if view_selected else "");
             print "<strong>%s</strong>: %s" % (cgi.escape(view_name), cgi.escape(view_desc));
             print "<br />";
+            if view_num == 0:
+                use_vertical = tourney.get_auto_use_vertical()
+                print "<span style=\"padding-left: 2em\">"
+                print "<input type=\"checkbox\" name=\"autousevertical\" value=\"1\" %s /> Use vertical standings/results format between rounds" % ("checked" if use_vertical else "")
+                print "</span>"
+                print "<br />"
         print "</p>";
 
         print "<input type=\"submit\" name=\"submit\" value=\"Apply Settings\" />";

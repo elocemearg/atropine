@@ -111,7 +111,7 @@ try:
     standings_results.add_view(teleostscreen.TableWidget(table_results_fetcher, 4, scroll_interval=5), top_pc=73, height_pc=26, left_pc=0, width_pc=100);
     standings_results.add_view(team_score_widget, top_pc=5, height_pc=7, left_pc=5, width_pc=20);
     
-    standings_results_vert = teleostscreen.View(name="Standings / Table Results (vertical)", desc="Standings table on the left half of the screen, this rounds fixtures and results on the right.")
+    standings_results_vert = teleostscreen.View(name="Standings / Table Results (vertical)", desc="Standings table on the left half of the screen, this round's fixtures and results on the right.")
     standings_results_vert.add_view(vertical_standings_widget, top_pc=5, height_pc=90, left_pc=2, width_pc=46)
     standings_results_vert.add_view(teleostscreen.TableWidget(short_table_results_fetcher, 15, scroll_interval=12), top_pc=5, height_pc=90, left_pc=52, width_pc=46)
     standings_results_vert.add_view(team_score_widget, top_pc=5, height_pc=7, left_pc=5, width_pc=20);
@@ -189,6 +189,7 @@ try:
             teleost_mode = tourney.get_current_teleost_mode();
             last_mode_check = time.time();
             if teleost_mode == 0:
+                auto_use_vertical = tourney.get_auto_use_vertical();
                 knockout_phase = False;
                 latest_round_no = tourney.get_latest_round_no();
                 if not latest_round_no:
@@ -213,10 +214,10 @@ try:
                     elif played > 0 and unplayed == 0:
                         # All games in this round have been played - we
                         # want the standings and results screen, but if
-                        # we don't have three games to a table then
-                        # then we want the vertical standings and
-                        # results screen.
-                        if largest_table_size == 3:
+                        # we don't have three games to a table or if 
+                        # auto_use_vertical is set then we want the vertical
+                        # standings and results screen.
+                        if largest_table_size == 3 and not(auto_use_vertical):
                             if current_view_index != 1:
                                 new_view_index = 1;
                         else:

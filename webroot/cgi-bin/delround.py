@@ -74,7 +74,7 @@ else:
         cgicommon.show_sidebar(tourney);
         print "<div class=\"mainpane\">";
         print "<h1>Delete round</h1>";
-        latest_round_no = tourney.get_latest_round_no('P')
+        latest_round_no = tourney.get_latest_round_no()
         if latest_round_no is None:
             print '<p>There are no rounds to delete!</p>'
             print '<p><a href="/cgi-bin/tourneysetup.py?tourney=%s">Back to tourney setup</a></p>' % urllib.quote_plus(tourneyname)

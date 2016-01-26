@@ -81,7 +81,8 @@ var gerunds = ["Reticulating", "Exaggerating", "Refrigerating",
             "Verifying", "Flushing", "Contextualising", "Deconstructing",
             "Justifying", "Hacking", "Redrawing", "Reimagining",
             "Reinterpreting", "Reasoning with", "Impersonating",
-            "Abbreviating", "Underestimating", "Misappropriating"];
+            "Abbreviating", "Underestimating", "Misappropriating",
+            "Constructing", "Preparing", "Redelivering", "Arguing over" ];
 var nouns = ["seeding list", "rule book", "hypergrid",
             "network services", "timestamps", "multidimensional array",
             "decision tree", "player list", "weighting matrix",
@@ -91,15 +92,14 @@ var nouns = ["seeding list", "rule book", "hypergrid",
             "linked lists", "hash tables", "system clock", "file descriptors",
             "syntax tree", "binary tree", "dictionary", "homework",
             "breakfast", "contextualiser", "splines", "supercluster",
-            "record books", "sandwiches", "grouping strategy",
-            "reality"];
+            "record books", "sandwiches", "grouping strategy", "reality" ];
 
 var endings = [
     "Bribing officials", "Talking bollocks", "Feeding cat",
     "Rewinding tape", "Invading privacy", "Falling off cliff",
     "Kicking tyres", "Tapping barometer", "Serving hot",
     "Deploying parachute", "Cleaning up mess", "Straightening tie",
-    "Seasoning to taste", "Stealing towels"
+    "Seasoning to taste", "Stealing towels", "Reversing polarity"
 ];
 
 function spam_progress_label() {
