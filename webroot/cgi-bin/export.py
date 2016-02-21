@@ -44,11 +44,13 @@ if tourney_name is None:
 try:
     tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
 
-    standings = tourney.get_standings();
-
     games = tourney.get_games();
 
     show_draws_column = tourney.get_show_draws_column()
+
+    rank_method = tourney.get_rank_method()
+    show_points_column = (rank_method in [countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_POINTS])
+    show_spread_column = (rank_method == countdowntourney.RANK_WINS_SPREAD)
 
     if export_format == "html":
         print "Content-Type: text/html; charset=utf-8";
@@ -61,48 +63,31 @@ try:
 
         print "<h1>%s - Standings</h1>" % tourney_name
 
+        num_divisions = tourney.get_num_divisions()
+
         print "<p>"
         rank_method = tourney.get_rank_method();
         if rank_method == countdowntourney.RANK_WINS_POINTS:
             print "Players are ranked by wins, then points."
-            for s in standings:
-                if s[5] > 0:
-                    print "Draws count as half a win."
-                    break
+        elif rank_method == countdowntourney.RANK_WINS_SPREAD:
+            print "Players are ranked by wins, then cumulative winning margin."
         elif rank_method == countdowntourney.RANK_POINTS:
             print "Players are ranked by points.";
         else:
             print "Players are ranked somehow. Your guess is as good as mine.";
+        if show_draws_column:
+            print "Draws count as half a win."
         print "</p>"
 
-        print "<table class=\"standingstable\">";
-        print "<tr><th></th><th></th><th>P</th><th>W</th>%s<th>Pts</th></tr>" % ("<th>D</th>" if show_draws_column else "");
-        last_wins_inc_draws = None;
-        tr_bgcolours = ["#ffdd66", "#ffff88" ];
-        bgcolour_index = 0;
-        for s in standings:
-            (pos, name, played, wins, points, draws) = s;
-            if rank_method == countdowntourney.RANK_WINS_POINTS:
-                if last_wins_inc_draws is None:
-                    bgcolour_index = 0;
-                elif last_wins_inc_draws != wins + 0.5 * draws:
-                    bgcolour_index = (bgcolour_index + 1) % 2;
-                last_wins_inc_draws = wins + 0.5 * draws;
-
-                print "<tr class=\"standingsrow\" style=\"background-color: %s\">" % tr_bgcolours[bgcolour_index];
-            print "<td class=\"standingspos\">%d</td>" % pos;
-            print "<td class=\"standingsname\">%s</td>" % name;
-            print "<td class=\"standingsplayed\">%d</td>" % played;
-            print "<td class=\"standingswins\">%d</td>" % wins;
-            if show_draws_column:
-                print "<td class=\"standingsdraws\">%d</td>" % draws;
-            print "<td class=\"standingspoints\">%d</td>" % points;
-            print "</tr>";
-        print "</table>";
+        rank_method = tourney.get_rank_method()
+        cgicommon.show_standings_table(tourney, rank_method in (countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_WINS_SPREAD), tourney.get_show_draws_column(), rank_method in (countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_POINTS), rank_method == countdowntourney.RANK_WINS_SPREAD, False)
 
         print "<h1>Results</h1>"
         prev_round_no = None
         prev_table_no = None
+        prev_division = None
+        show_table_numbers = None
+        game_seq = 0
         for g in games:
             if prev_round_no is None or prev_round_no != g.round_no:
                 if prev_round_no is not None:
@@ -113,8 +98,26 @@ try:
                     print "<h2>%s</h2>" % tourney.get_round_name(g.round_no)
                     print "<table class=\"resultstable\">"
                 prev_table_no = None
+                prev_division = None
+            if prev_division is None or prev_division != g.division:
+                if num_divisions > 1:
+                    print "<tr class=\"exportdivisionnumber\"><th class=\"exportdivisionnumber\" colspan=\"3\">%s</th></tr>" % (cgi.escape(tourney.get_division_name(g.division)))
+
+                # If this division has a table with more than one game on it
+                # then show the table numbers, otherwise don't bother.
+                prev_table_no = g.table_no
+                show_table_numbers = False
+                i = 1
+                while game_seq + i < len(games) and games[game_seq + i].round_no == g.round_no and games[game_seq + i].division == g.division:
+                    if games[game_seq + i].table_no == prev_table_no:
+                        show_table_numbers = True
+                        break
+                    prev_table_no = games[game_seq + i].table_no
+                    i += 1
+                prev_table_no = None
             if prev_table_no is None or prev_table_no != g.table_no:
-                print "<tr class=\"exporttablenumber\"><th class=\"exporttablenumber\" colspan=\"3\">Table %d</th></tr>" % g.table_no
+                if show_table_numbers:
+                    print "<tr class=\"exporttablenumber\"><th class=\"exporttablenumber\" colspan=\"3\">Table %d</th></tr>" % g.table_no
             print "<tr class=\"exportgamerow\">"
             names = g.get_player_names();
             print "<td class=\"exportleftplayer\">%s</td>" % names[0];
@@ -126,6 +129,8 @@ try:
             print "</tr>"
             prev_table_no = g.table_no
             prev_round_no = g.round_no
+            prev_division = g.division
+            game_seq += 1
         if prev_round_no is not None:
             print "</table>"
 
@@ -139,40 +144,78 @@ try:
         rank_method = tourney.get_rank_method();
         if rank_method == countdowntourney.RANK_WINS_POINTS:
             print "Players are ranked by wins, then points.";
-            for s in standings:
-                if s[5] > 0:
-                    print "Draws count as half a win."
-                    break
+        elif rank_method == countdowntourney.RANK_WINS_SPREAD:
+            print "Players are ranked by wins, then cumulative winning margin."
         elif rank_method == countdowntourney.RANK_POINTS:
             print "Players are ranked by points.";
         else:
             print "Players are ranked somehow. Your guess is as good as mine.";
-        print ""
-        max_name_len = max(map(lambda x : len(x[1]), standings));
         if show_draws_column:
-            header_format_string = "%%-%ds  P   W   D  Pts" % (max_name_len + 6);
-        else:
-            header_format_string = "%%-%ds  P   W  Pts" % (max_name_len + 6);
-        print header_format_string % ""
-        for s in standings:
-            if show_draws_column:
-                print "%3d %-*s  %3d %3d %3d %4d" % (s[0], max_name_len, s[1], s[2], s[3], s[5], s[4])
-            else:
-                print "%3d %-*s  %3d %3d %4d" % (s[0], max_name_len, s[1], s[2], s[3], s[4])
+            print "Draws count as half a win."
         print ""
+        print ""
+
+        num_divisions = tourney.get_num_divisions()
+
+        # First, work out how much room we need for the longest name
+        max_name_len = 0
+        for div_index in range(num_divisions):
+            standings = tourney.get_standings(div_index)
+            m = max(map(lambda x : len(x[1]), standings));
+            if m > max_name_len:
+                max_name_len = m
+
+        for div_index in range(num_divisions):
+            standings = tourney.get_standings(div_index)
+            if num_divisions > 1:
+                print tourney.get_division_name(div_index)
+            header_format_string = "%%-%ds  P   W%s%s%s" % (max_name_len + 6, "   D" if show_draws_column else "", "  Pts" if show_points_column else "", "   Spr" if show_spread_column else "")
+            print header_format_string % ""
+            for s in standings:
+                sys.stdout.write("%3d %-*s  %3d %3d " % (s[0], max_name_len, s[1], s[2], s[3]))
+                if show_draws_column:
+                    sys.stdout.write("%3d " % s[5])
+                if show_points_column:
+                    sys.stdout.write("%4d " % s[4])
+                if show_spread_column:
+                    sys.stdout.write("%+5d " % s[6])
+                print ""
+            print ""
+            print ""
 
         print "RESULTS"
 
         prev_round_no = None
         prev_table_no = None
+        prev_division = None
+        show_table_numbers = False
+        game_seq = 0
         for g in games:
             if prev_round_no is None or prev_round_no != g.round_no:
                 print ""
                 print tourney.get_round_name(g.round_no)
                 prev_table_no = None
+                prev_division = None
+            if prev_division is None or prev_division != g.division:
+                if num_divisions > 1:
+                    print ""
+                    print tourney.get_division_name(g.division)
+                i = 1
+                prev_table_no = g.table_no
+                show_table_numbers = False
+                # If this division in this round has a table with more than
+                # one game on it, show the table numbers, else don't.
+                while game_seq + i < len(games) and games[game_seq + i].round_no == g.round_no and games[game_seq + i].division == g.division:
+                    if games[game_seq + i].table_no == prev_table_no:
+                        show_table_numbers = True
+                        break
+                    prev_table_no = games[game_seq + i].table_no
+                    i += 1
+                prev_table_no = None
             if prev_table_no is None or prev_table_no != g.table_no:
-                print ""
-                print "Table %d" % g.table_no
+                if show_table_numbers:
+                    print ""
+                    print "Table %d" % g.table_no
             if g.s1 is None or g.s2 is None:
                 score_str = "    -    "
             else:
@@ -181,6 +224,8 @@ try:
             print "%*s %-9s %s" % (max_name_len, names[0], score_str, names[1])
             prev_round_no = g.round_no
             prev_table_no = g.table_no
+            prev_division = g.division
+            game_seq += 1
     else:
         show_error("Unknown export format: %s" % export_format);
 except countdowntourney.TourneyException as e:

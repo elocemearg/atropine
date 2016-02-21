@@ -75,10 +75,11 @@ def simulate_tourney(num_players, num_rounds, group_size, limit_ms):
         round_games = [];
         table_no = 1;
         round_seq = 1;
+        division = 0
         for g in groups:
             for pi1 in range(0, len(g) - 1):
                 for pi2 in range(pi1 + 1, len(g)):
-                    round_games.append(countdowntourney.Game(round_no, round_seq, table_no, 'P', g[pi1], g[pi2]))
+                    round_games.append(countdowntourney.Game(round_no, round_seq, table_no, division, 'P', g[pi1], g[pi2]))
                     round_seq += 1
             table_no += 1
 

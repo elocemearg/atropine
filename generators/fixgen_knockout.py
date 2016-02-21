@@ -131,6 +131,7 @@ def make_round_name(num_players):
 def generate_knockout(tourney, seeds, next_round_no=None):
     rounds = [];
     fixtures = [];
+    division = 0
 
     num_players = len(seeds);
 
@@ -162,7 +163,7 @@ def generate_knockout(tourney, seeds, next_round_no=None):
         right = len(nonbyed) - 1;
         seq = 1;
         while left < right:
-            g = countdowntourney.Game(next_round_no, seq, seq, short_name, nonbyed[left], nonbyed[right]);
+            g = countdowntourney.Game(next_round_no, seq, seq, division, short_name, nonbyed[left], nonbyed[right]);
             seq += 1;
             left += 1;
             right -= 1;
@@ -185,7 +186,7 @@ def generate_knockout(tourney, seeds, next_round_no=None):
         round_name = make_round_name(num_players);
         seeds_next_round = [];
         while left < right:
-            g = countdowntourney.Game(next_round_no, seq, seq, short_name, seeds[left], seeds[right]);
+            g = countdowntourney.Game(next_round_no, seq, seq, division, short_name, seeds[left], seeds[right]);
             left += 1;
             right -= 1;
             seq += 1;

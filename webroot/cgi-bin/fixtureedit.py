@@ -86,13 +86,13 @@ try:
         alterations = [];
         for g in games:
             seq = g.seq;
-            set1 = form.getfirst("game%dp1" % seq);
-            set2 = form.getfirst("game%dp2" % seq);
+            set1 = form.getfirst("gamep1_%d_%d" % (g.round_no, g.seq));
+            set2 = form.getfirst("gamep2_%d_%d" % (g.round_no, g.seq));
             new_p1 = lookup_player(players, set1);
             new_p2 = lookup_player(players, set2);
 
             if new_p1 == new_p2:
-                remarks[seq] = "Not updated (%s v %s): players can't play themselves" % (new_p1.get_name(), new_p2.get_name());
+                remarks[(g.round_no, g.seq)] = "Not updated (%s v %s): players can't play themselves" % (new_p1.get_name(), new_p2.get_name());
             elif g.p1 != new_p1 or g.p2 != new_p2:
                 alterations.append((round_no, seq, new_p1, new_p2));
 
@@ -102,8 +102,6 @@ try:
         for (round_no, seq, new_p1, new_p2) in alterations:
             remarks[seq] = "Updated";
 
-    games = tourney.get_games(round_no=round_no);
-
     print "<p>"
     print "<a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%d\">Back to the score editor</a>" % (urllib.quote_plus(tourney_name), round_no);
     print "</p>"
@@ -111,63 +109,71 @@ try:
     if num_games_updated:
         print "<p>%d games updated.</p>" % num_games_updated;
 
+    num_divisions = tourney.get_num_divisions()
+
     print "<div class=\"scorestable\">";
     print "<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.quote_plus(tourney_name), round_no);
     print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourney_name, True);
     print "<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no;
+    for div_index in range(num_divisions):
+        games = tourney.get_games(round_no=round_no, division=div_index);
 
-    print "<table class=\"scorestable\">";
-    print "<tr>";
-    print "<th>Table</th><th></th><th></th>";
-    print "<th>Player 1</th><th>Score</th><th>Player 2</th><th></th></tr>";
+        if num_divisions > 1:
+            print "<h2>%s</h2>" % (tourney.get_division_name(div_index))
 
-    gamenum = 0;
-    last_table_no = None;
-    for g in games:
-        game_player_names = g.get_player_names();
-        tr_classes = ["gamerow"];
+        print "<table class=\"scorestable\">";
+        print "<tr>";
+        print "<th>Table</th><th></th><th></th>";
+        print "<th>Player 1</th><th>Score</th><th>Player 2</th><th></th></tr>";
 
-        if last_table_no is None or last_table_no != g.table_no:
-            tr_classes.append("firstgameintable");
-            # Count how many consecutive games appear with this table
-            # number, so we can group them together in the table.
-            num_games_on_table = 0;
-            while gamenum + num_games_on_table < len(games) and games[gamenum + num_games_on_table].table_no == g.table_no:
-                num_games_on_table += 1;
-            first_game_in_table = True;
-        else:
-            first_game_in_table = False;
+        gamenum = 0;
+        last_table_no = None;
+        for g in games:
+            game_player_names = g.get_player_names();
+            tr_classes = ["gamerow"];
 
-        print "<tr class=\"%s\">" % " ".join(tr_classes);
-        if first_game_in_table:
-            print "<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, g.table_no);
-        print "<td class=\"gameseq\">%d</td>" % g.seq;
-        print "<td class=\"gametype\">%s</td>" % cgi.escape(g.game_type);
+            if last_table_no is None or last_table_no != g.table_no:
+                tr_classes.append("firstgameintable");
+                # Count how many consecutive games appear with this table
+                # number, so we can group them together in the table.
+                num_games_on_table = 0;
+                while gamenum + num_games_on_table < len(games) and games[gamenum + num_games_on_table].table_no == g.table_no:
+                    num_games_on_table += 1;
+                first_game_in_table = True;
+            else:
+                first_game_in_table = False;
 
-        print "<td class=\"gameplayer1\" align=\"right\">"
-        show_player_selection(players, "game%dp1" % g.seq, game_player_names[0]);
-        print "</td>";
+            print "<tr class=\"%s\">" % " ".join(tr_classes);
+            if first_game_in_table:
+                print "<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, g.table_no);
+            print "<td class=\"gameseq\">%d</td>" % g.seq;
+            print "<td class=\"gametype\">%s</td>" % cgi.escape(g.game_type);
 
-        if g.is_complete():
-            score_str = g.format_score();
-        else:
-            score_str = "-";
-        print "<td class=\"gamescore\" align=\"center\">%s</td>" % cgi.escape(score_str);
+            print "<td class=\"gameplayer1\" align=\"right\">"
+            show_player_selection(players, "gamep1_%d_%d" % (g.round_no, g.seq), game_player_names[0]);
+            print "</td>";
 
-        print "<td class=\"gameplayer2\" align=\"right\">"
-        show_player_selection(players, "game%dp2" % g.seq, game_player_names[1]);
-        print "</td>";
-        
-        print "<td class=\"remarks\">";
-        print cgi.escape(remarks.get(g.seq, ""));
-        print "</td>";
-        print "</tr>";
-        gamenum += 1;
-        last_table_no = g.table_no;
+            if g.is_complete():
+                score_str = g.format_score();
+            else:
+                score_str = "-";
+            print "<td class=\"gamescore\" align=\"center\">%s</td>" % cgi.escape(score_str);
 
-    print "</table>";
+            print "<td class=\"gameplayer2\" align=\"right\">"
+            show_player_selection(players, "gamep2_%d_%d" % (g.round_no, g.seq), game_player_names[1]);
+            print "</td>";
+            
+            print "<td class=\"remarks\">";
+            print cgi.escape(remarks.get((g.round_no, g.seq), ""));
+            print "</td>";
+            print "</tr>";
+            gamenum += 1;
+            last_table_no = g.table_no;
+        print "</table>";
 
+    print "<p>"
     print "<input type=\"submit\" name=\"save\" value=\"Save\" />";
+    print "</p>"
     print "</form>";
 
     print "</div>"; # scorestable

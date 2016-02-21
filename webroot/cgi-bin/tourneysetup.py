@@ -144,6 +144,15 @@ else:
         print "none withdrawn."
     print "</p>"
 
+    num_divisions = tourney.get_num_divisions()
+    if num_divisions > 1:
+        print "<p>The players are distributed into %d divisions.</p>" % (num_divisions)
+        print "<blockquote>"
+        for div_index in range(num_divisions):
+            print "<li>%s: %d active players.</li>" % (tourney.get_division_name(div_index), tourney.get_num_active_players(div_index))
+        print "</blockquote>"
+
+
     if tourney.get_num_games() > 0:
         print "<h2>Modify player</h2>"
         print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
@@ -230,6 +239,7 @@ else:
     print "<h3>Rank players by</h3>";
     print "<blockquote>";
     print '<input type="radio" name="rank" value="%d" %s /> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "");
+    print '<input type="radio" name="rank" value="%d" %s /> Wins, then cumulative winning margin. Draws are worth half a win.<br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")
     print '<input type="radio" name="rank" value="%d" %s /> Points only.' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "");
     print '</blockquote>';
 
@@ -244,6 +254,10 @@ else:
     print "</p>"
     print "</form>";
 
+    print '<h2>Division Setup</h2>'
+    print "<p>"
+    print '<a href="/cgi-bin/divsetup.py?tourney=%s">Assign players to divisions</a>' % (urllib.quote_plus(tourneyname))
+    print "</p>"
 
     print '<h2>Team Setup</h2>'
     print '<p>'

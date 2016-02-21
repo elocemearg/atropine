@@ -218,6 +218,7 @@ def generate(tourney, settings):
     table_no = 1;
     round_seq = 1;
     group_index = 0;
+    division = 0
     for g in groups:
         for i in range(0, len(g)):
             for j in range(i + 1, len(g)):
@@ -225,7 +226,7 @@ def generate(tourney, settings):
                 p2 = g[j];
                 if (i + j) % 2 == 0:
                     (p1, p2) = (p2, p1);
-                fixture = countdowntourney.Game(round_no, round_seq, table_no, 'P', p1, p2);
+                fixture = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', p1, p2);
                 fixtures.append(fixture);
                 round_seq += 1;
         if table_size == 3 and len(g) == 2:
@@ -236,20 +237,20 @@ def generate(tourney, settings):
                     # fixture pairing the first player of this group with the
                     # second of the next group.
                     nextg = groups[group_index + 1];
-                    fixture = countdowntourney.Game(round_no, round_seq, table_no, 'P', nextg[1], g[0]);
+                    fixture = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', nextg[1], g[0]);
                 elif group_index == len(groups) - 1:
                     # If this is the second of the two groups of two, add a
                     # fixture pairing the first player of this group with the
                     # second of the previous two-person group.
                     prevg = groups[group_index - 1];
-                    fixture = countdowntourney.Game(round_no, round_seq, table_no, 'P', prevg[1], g[0]);
+                    fixture = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', prevg[1], g[0]);
                 if fixture:
                     fixtures.append(fixture);
                     round_seq += 1;
             elif len(players) % 3 == 2:
                 # One table of two... get these two players to play each other
                 # a second time.
-                fixture = countdowntourney.Game(round_no, round_seq, table_no, 'P', g[1], g[0]);
+                fixture = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', g[1], g[0]);
                 fixtures.append(fixture);
                 round_seq += 1;
         table_no += 1;

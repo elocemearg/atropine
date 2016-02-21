@@ -165,7 +165,7 @@ class StandingsFetcher(object):
         pos_colour = (255, 255, 0);
         name_colour = (255,255,255);
         played_colour = (0, 128, 128);
-        if self.tourney.get_rank_method() == countdowntourney.RANK_WINS_POINTS:
+        if self.tourney.get_rank_method() in (countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_WINS_SPREAD):
             wins_colour = (0, 255, 255)
         else:
             wins_colour = (0, 128, 128)

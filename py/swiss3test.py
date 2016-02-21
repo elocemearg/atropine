@@ -75,10 +75,11 @@ def simulate_tourney(num_players, num_rounds, limit_ms):
         round_games = [];
         table_no = 1;
         round_seq = 1;
+        division = 0
         for g in groups:
-            round_games.append(countdowntourney.Game(round_no, round_seq, table_no, 'P', g[0], g[1]));
-            round_games.append(countdowntourney.Game(round_no, round_seq + 1, table_no, 'P', g[1], g[2]));
-            round_games.append(countdowntourney.Game(round_no, round_seq + 2, table_no, 'P', g[2], g[0]));
+            round_games.append(countdowntourney.Game(round_no, round_seq, table_no, division, 'P', g[0], g[1]));
+            round_games.append(countdowntourney.Game(round_no, round_seq + 1, table_no, division, 'P', g[1], g[2]));
+            round_games.append(countdowntourney.Game(round_no, round_seq + 2, table_no, division, 'P', g[2], g[0]));
             round_seq += 3;
             table_no += 1;
 

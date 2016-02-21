@@ -5,31 +5,29 @@ import time
 import countdowntourney
 import random
 
+HUGE_PENALTY = 1000000000
+
 class StandingsPlayer(object):
-    def __init__(self, name, rating):
+    def __init__(self, name, rating, wins, position, played, played_first):
         self.name = name;
+        self.rating = rating
         if rating == 0:
             self.is_patzer = True;
         else:
             self.is_patzer = False;
-        self.wins = 0
-        self.points = 0
-        self.rating = rating
+        self.wins = wins
+        self.position = position
+        self.games_played = played
+        self.games_played_first = played_first
 
     def get_name(self):
         return self.name
 
     def get_rating(self):
         return self.rating
-    
-    def post_result(self, myscore, theirscore, tb=False):
-        if myscore > theirscore:
-            self.wins += 1;
-        if tb:
-            self.points += min(myscore, theirscore);
-        else:
-            self.points += myscore;
 
+    def get_played_first_pc(self):
+        return float(100 * self.games_played_first) / self.games_played
 
 class UnknownPlayerException(BaseException):
     pass;
@@ -40,49 +38,53 @@ class IllegalNumberOfPlayersException(BaseException):
 class InvalidGroupSizeListException(BaseException):
     pass;
 
-def add_game(games, players, round_no, table_no, name1, score1, score2, name2, tb=False):
-    p1 = None;
-    p2 = None;
+class PlayerNotInStandingsException(BaseException):
+    description = "I've been asked to arrange fixtures for a player who isn't in the standings table. This is a bug."
+    pass;
 
-    round_seq = len(filter(lambda x : x.round_no == round_no, games)) + 1;
+#def add_game(games, players, round_no, table_no, name1, score1, score2, name2, tb=False):
+#    p1 = None;
+#    p2 = None;
+#    division = 0
+#
+#    round_seq = len(filter(lambda x : x.round_no == round_no, games)) + 1;
+#
+#    for p in players:
+#        if name1 == p.name:
+#            p1 = p;
+#            break;
+#    else:
+#        print "Unknown player %s" % name1;
+#        raise UnknownPlayerException();
+#
+#    for p in players:
+#        if name2 == p.name:
+#            p2 = p;
+#            break;
+#    else:
+#        print "Unknown player %s" % name2;
+#        raise UnknownPlayerException();
+#    
+#    g = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', p1, p2, score1, score2, tb);
+#    games.append(g);
 
-    for p in players:
-        if name1 == p.name:
-            p1 = p;
-            break;
-    else:
-        print "Unknown player %s" % name1;
-        raise UnknownPlayerException();
 
-    for p in players:
-        if name2 == p.name:
-            p2 = p;
-            break;
-    else:
-        print "Unknown player %s" % name2;
-        raise UnknownPlayerException();
-    
-    g = countdowntourney.Game(round_no, round_seq, table_no, 'P', p1, p2, score1, score2, tb);
-    games.append(g);
-
-
-
-# Calculate number of penalty points associated with p1 playing p2. This is
-# also called the "weighting".
-def get_penalty(games, p1, p2, rank_by_wins=True):
+# Calculate number of penalty points associated with p1 playing p2, taking
+# into account that they've played before num_played times, and p1's win count
+# differs from p2's win count by win_diff (which is always non-negative).
+# This is also called the "weighting".
+def get_penalty(games, p1, p2, num_played, win_diff, rank_by_wins=True):
     pen = 0;
 
     if p1.name == p2.name:
-        return 100000000;
+        return HUGE_PENALTY ** 2;
 
     # Don't want two players meeting twice
-    for g in games:
-        if g.is_between_names(p1.name, p2.name):
-            pen += 1000000;
+    pen += HUGE_PENALTY * num_played
 
     # Don't want two prunes drawn against each other
     if p1.is_patzer and p2.is_patzer:
-        pen += 1000000;
+        pen += HUGE_PENALTY;
 
     # If one of these two players is a patzer, then if the other player has
     # played a patzer before, make it unlikely they will play a patzer again
@@ -97,23 +99,22 @@ def get_penalty(games, p1, p2, rank_by_wins=True):
         for g in games:
             if g.p1.get_name() == human.get_name():
                 if g.p2.get_rating() == 0:
-                    pen += 1000000
+                    pen += HUGE_PENALTY
             elif g.p2.get_name() == human.get_name():
                 if g.p1.get_rating() == 0:
-                    pen += 1000000
+                    pen += HUGE_PENALTY
     
     # If two players have a different number of wins, apply a penalty.
     # Fixtures between players whose win counts differ by 1 are usually
     # unavoidable, but there should be exponentially harsher penalties for
     # putting people on the same table whose win counts differ by more.
-    # Take the difference in points into consideration as well, so that
-    # we group together people in roughly the same part of the standings.
-    if rank_by_wins and (p1.wins != p2.wins or p1.points != p2.points):
-        pen += 10 ** min([abs((float(p1.wins) + float(p1.points) / 500.0) - (float(p2.wins) + float(p2.points) / 500.0)), 5]);
-
-    # Small penalty if two players have a markedly different number of points.
-    if not rank_by_wins:
-        pen += abs(p1.points - p2.points) / 4;
+    # Take the difference in standings position into consideration as well, so
+    # that we group together people in roughly the same part of the standings.
+    pos_diff = abs(p1.position - p2.position)
+    if rank_by_wins:
+        pen += ( 10 ** min(float(win_diff), 5) ) * ( 10 * (float(pos_diff) / float(pos_diff + 1)))
+    else:
+        pen += 10 * (float(pos_diff) / float(pos_diff + 1))
 
     # Square the penalty, to magnify the difference between a large
     # penalty and a smaller one.
@@ -122,17 +123,24 @@ def get_penalty(games, p1, p2, rank_by_wins=True):
     return pen;
 
 # Calculate the matrix of penalties for each pair of players.
-def calculate_weight_matrix(games, players, rank_by_wins=True):
+def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank_by_wins=True):
     matrix_size = len(players);
     matrix = [];
-    for p1 in players:
+    for i1 in range(matrix_size):
+        p1 = players[i1]
         vector = [];
+
         # To make the graph symmetric, in case get_penalty(p1, p2) does not
         # equal get_penalty(p2, p1) for some reason, the weight between p1
         # and p2 is max(penalty(p1, p2), penalty(p2, p1))
 
-        for p2 in players:
-            pen = max(get_penalty(games, p1, p2, rank_by_wins), get_penalty(games, p2, p1, rank_by_wins));
+        for i2 in range(matrix_size):
+            p2 = players[i2]
+            pen = max(get_penalty(games, p1, p2, played_matrix[i1][i2],
+                win_diff_matrix[i1][i2], rank_by_wins),
+                get_penalty(games, p2, p1, played_matrix[i2][i1],
+                    win_diff_matrix[i2][i1], rank_by_wins)
+            );
             vector.append(pen);
 
         matrix.append(vector);
@@ -265,38 +273,28 @@ def swissN_first_round(cdt_players, group_size):
         player_list = [];
         for j in range(group_size):
             player_list.append(players[j * num_groups + i]);
+        if len(player_list) == 2:
+            if random.random() >= 0.5:
+                player_list = [player_list[1], player_list[0]]
         groups.append(PlayerGroup(player_list, 0));
     return (0, groups);
 
-def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, init_max_rematches=0, init_max_win_diff=0):
+def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_ms=None, init_max_rematches=0, init_max_win_diff=0, ignore_rematches_before=None):
     log = True
     players = [];
     for p in cdt_players:
-        players.append(StandingsPlayer(p.name, p.rating));
-
-    # Work out wins and points totals for all the players
-    for g in games:
-        for p in players:
-            if p.name == g.p1.name:
-                p.post_result(g.s1, g.s2, g.tb);
-            elif p.name == g.p2.name:
-                p.post_result(g.s2, g.s1, g.tb);
-    
-    def player_cmp(p1, p2):
-        if p1.wins < p2.wins:
-            return -1;
-        elif p1.wins > p2.wins:
-            return 1;
-        elif p1.points < p2.points:
-            return -1;
-        elif p1.points > p2.points:
-            return 1;
+        for s in standings:
+            if s.name == p.name:
+                players.append(StandingsPlayer(p.name, p.rating, s.wins + float(s.draws) / 2, s.position, s.played, s.played_first));
+                break
         else:
-            return 0;
+            print p.name + " not in standings table for this division"
+            raise PlayerNotInStandingsException()
 
-    players = sorted(players, cmp=player_cmp, reverse=True);
-    matrix = calculate_weight_matrix(games, players, rank_by_wins);
-    matrix_size = len(players);
+    # Sort "players" by their position in the standings table, as that means
+    # we try the most likely combinations first when later on we generate all
+    # the combinations we can in a limited time.
+    players = sorted(players, key=lambda x : x.position)
 
     if group_size == -5:
         if len(players) < 8:
@@ -311,7 +309,7 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, ini
         for opponent in players:
             count = 0
             for g in games:
-                if g.is_between_names(p.name, opponent.name):
+                if g.is_between_names(p.name, opponent.name) and (ignore_rematches_before is None or g.round_no >= ignore_rematches_before):
                     count += 1
             played_row.append(count)
         played_matrix.append(played_row)
@@ -322,6 +320,9 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, ini
         for opponent in players:
             win_diff_row.append(abs(p.wins - opponent.wins))
         win_diff_matrix.append(win_diff_row)
+
+    matrix = calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank_by_wins);
+    matrix_size = len(players);
 
     best_grouping = None
     best_weight = None
@@ -342,7 +343,7 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, ini
             max_wins_diff = 0
         else:
             max_wins_diff = 1
-            for wins in range(min_wins, max_wins + 1):
+            for wins in range(int(min_wins), int(max_wins + 1.5)):
                 num = len(filter(lambda x : x.wins == wins, players))
                 if num % group_size != 0:
                     if log:
@@ -383,16 +384,16 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, ini
     weight = best_weight
     groups = best_grouping
 
-    # Sort the groups so the highest-performing players are on low-numbered
-    # tables
-    groups = sorted(groups, key=lambda x : sum(map(lambda y : (players[y].wins * 10000 + players[y].points), x)), reverse=True);
+    # Sort the groups so the players high up in the standings are on
+    # low-numbered tables
+    groups = sorted(groups, key=lambda x : sum(map(lambda y : (players[y].position), x)));
 
     if log:
         group_no = 1
         for g in groups:
             sys.stderr.write("[swissN] Table %2d:" % group_no)
             for p in g:
-                sys.stderr.write(" [%d %s (%dw)]" % (p + 1, players[p].name, players[p].wins))
+                sys.stderr.write(" [%d %s (%d, %dw)]" % (p + 1, players[p].name, players[p].position, players[p].wins))
             sys.stderr.write("\n")
             group_no += 1
 
@@ -401,6 +402,19 @@ def swissN(games, cdt_players, group_size, rank_by_wins=True, limit_ms=None, ini
         # "groups" is a list of tuples of integers, which are indices into
         # "players". Look up the player's name in "players"
         player_group = [];
+        if len(g) == 2:
+            # If it's a group of 2, and the first player in the group has played
+            # first more than the second player in the group, swap them over.
+            # If they've played first the same number of times, swap them over
+            # with 50% probability.
+            swap = False
+            if players[g[0]].get_played_first_pc() > players[g[1]].get_played_first_pc():
+                swap = True
+            elif players[g[0]].get_played_first_pc() == players[g[1]].get_played_first_pc() and random.random() >= 0.5:
+                swap = True
+            if swap:
+                g = [g[1], g[0]]
+
         for i in g:
             standings_player = players[i];
             for player in cdt_players:

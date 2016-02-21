@@ -27,6 +27,60 @@ import generators;
 import countdowntourney;
 import htmlform;
 
+# Class representing the settings passed to a fixture generator. It emulates
+# a dictionary. The settings that were passed to the generator the last time
+# it generated something for this tourney are also stored in the object and
+# individual name-value pairs can be loaded from that into the object's main
+# dictionary by the fixture generator.
+class FixtureGeneratorSettings(object):
+    def __init__(self, default_settings):
+        self.default_settings = default_settings
+        self.settings = dict()
+
+    def __len__(self):
+        return len(self.settings)
+    
+    def __getitem__(self, key):
+        return self.settings[key]
+
+    def __setitem__(self, key, value):
+        self.settings[key] = value
+
+    def __delitem__(self, key):
+        del self.settings[key]
+
+    def __iter__(self):
+        return self.settings.__iter__()
+
+    def __contains__(self, key):
+        return (key in self.settings)
+    
+    def get(self, key, default_value=None):
+        return self.settings.get(key, default_value)
+    
+    def load_from_previous(self, key):
+        if key in self.default_settings:
+            self.settings[key] = self.default_settings[key]
+
+    def get_previous(self, key, default_value=None):
+        return self.default_settings.get(key, default_value)
+
+    def get_previous_settings(self):
+        return self.default_settings
+
+
+def ordinal_number(n):
+    if (n / 10) % 10 == 1:
+        return "%dth" % (n)
+    elif n % 10 == 1:
+        return "%dst" % (n)
+    elif n % 10 == 2:
+        return "%dnd" % (n)
+    elif n % 10 == 3:
+        return "%drd" % (n)
+    else:
+        return "%dth" % (n)
+
 cgicommon.print_html_head("Fixture Generator: " + str(tourney_name));
 
 print "<body>";
@@ -71,7 +125,9 @@ try:
         fixturegen = importlib.import_module(generator_name);
         print "<h1>%s</h1>" % (cgi.escape(fixturegen.name));
         (ready, excuse) = fixturegen.check_ready(tourney);
-        fixgen_settings = dict();
+        fixgen_settings = FixtureGeneratorSettings(tourney.get_fixgen_settings(generator_name));
+        for key in fixgen_settings:
+            print "(%s, %s)" % (key, value)
         for key in form:
             fixgen_settings[key] = form.getfirst(key);
         if ready:
@@ -82,45 +138,63 @@ try:
                 fixture_plan = fixturegen.generate(tourney, fixgen_settings);
                 fixtures = fixture_plan["fixtures"];
                 rounds = fixture_plan["rounds"];
+                
+                # Persist the settings used to generate these fixtures,
+                # in case the fixture generator wants to refer to them
+                # when we call it later on
+                tourney.store_fixgen_settings(generator_name, fixgen_settings)
 
                 print "<p>I've generated the following fixtures. Click \"Accept Fixtures\" to commit them to the database.</p>";
+                num_divisions = tourney.get_num_divisions()
                 for r in rounds:
                     round_no = int(r["round"]);
                     print "<h2>%s</h2>" % r.get("name", "Round %d" % round_no);
 
-                    print "<table class=\"fixturetable\">";
-                    print "<tr><th>Table</th><th>Type</th><th></th><th></th><th></th></tr>";
+                    for div_index in range(num_divisions):
+                        standings = tourney.get_standings(division=div_index)
+                        standings_dict = dict()
+                        for s in standings:
+                            standings_dict[s.name] = s
+                        if num_divisions > 1:
+                            print "<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))
+                        print "<table class=\"fixturetable\">";
+                        print "<tr><th>Table</th><th>Type</th><th></th><th></th><th></th></tr>";
 
-                    round_fixtures = filter(lambda x : x.round_no == round_no, fixtures);
-                    fixnum = 0;
-                    last_table_no = None;
-                    for f in round_fixtures:
-                        if last_table_no is None or last_table_no != f.table_no:
-                            num_games_on_table = len(filter(lambda x : x.table_no == f.table_no, round_fixtures));
-                            first_game_on_table = True;
-                            print "<tr class=\"firstgameintable\">";
-                        else:
-                            first_game_on_table = False;
-                            print "<tr>";
+                        round_fixtures = filter(lambda x : x.round_no == round_no and x.division == div_index, fixtures);
+                        fixnum = 0;
+                        last_table_no = None;
+                        for f in round_fixtures:
+                            if last_table_no is None or last_table_no != f.table_no:
+                                num_games_on_table = len(filter(lambda x : x.table_no == f.table_no, round_fixtures));
+                                first_game_on_table = True;
+                                print "<tr class=\"firstgameintable\">";
+                            else:
+                                first_game_on_table = False;
+                                print "<tr>";
 
-                        #print "<td class=\"roundno\" align=\"center\">%d</td>" % f.round_no;
-                        #print "<input type=\"hidden\" name=\"game%dround\" value=\"%d\" />" % (fixnum, f.round_no);
+                            if first_game_on_table:
+                                print "<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, f.table_no);
 
-                        if first_game_on_table:
-                            print "<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, f.table_no);
+                            print "<td class=\"gametype\">%s</td>" % cgi.escape(f.game_type);
+                            player_td_html = []
+                            for name in [f.p1.name, f.p2.name]:
+                                standings_row = standings_dict.get(name, None)
+                                if standings_row is None:
+                                    player_td_html.append("<strong>%s</strong>" % (cgi.escape(name)) + " ?")
+                                else:
+                                    player_td_html.append("<strong>%s</strong>" % (cgi.escape(name)) +
+                                            " (%s, %d win%s%s)" % (
+                                                ordinal_number(standings_row.position),
+                                                standings_row.wins,
+                                                "" if standings_row.wins == 1 else "s",
+                                                "" if standings_row.draws == 0 else ", %d draw%s" % (standings_row.draws, "" if standings_row.draws == 1 else "s")))
 
-                        #print "<input type=\"hidden\" name=\"game%dtable\" value=\"%d\" />" % (fixnum, f.table_no);
-                        print "<td class=\"gametype\">%s</td>" % cgi.escape(f.game_type);
-                        #print "<input type=\"hidden\" name=\"game%dtype\" value=\"%s\" />" % (fixnum, cgi.escape(f.game_type));
-                        players = (str(f.p1), str(f.p2));
-                        print "<td class=\"gameplayer1\">%s</td><td class=\"gamescore\">v</td><td class=\"gameplayer2\">%s</td>" % tuple(map(cgi.escape, players));
-                        #print "<input type=\"hidden\" name=\"game%dp1\" value=\"%s\" />" % (fixnum, cgi.escape(players[0]));
-                        #print "<input type=\"hidden\" name=\"game%dp2\" value=\"%s\" />" % (fixnum, cgi.escape(players[1]));
-                        print "</tr>";
-                        fixnum += 1;
-                        last_table_no = f.table_no;
+                            print "<td class=\"gameplayer1\">%s</td><td class=\"gamescore\">v</td><td class=\"gameplayer2\">%s</td>" % tuple(player_td_html);
+                            print "</tr>";
+                            fixnum += 1;
+                            last_table_no = f.table_no;
 
-                    print "</table>";
+                        print "</table>";
                 print "<form method=\"POST\" action=\"/cgi-bin/fixturegen.py\">";
                 print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourney_name, True);
                 print "<input type=\"hidden\" name=\"generator\" value=\"%s\" />" % cgi.escape(generator_name, True);
@@ -155,6 +229,7 @@ try:
                         round_no = int(f["round_no"])
                         table_no = int(f["table_no"]);
                         round_seq = int(f["round_seq"]);
+                        division = int(f["division"])
                         game_type = f["game_type"];
                         name1 = f.get("p1");
                         if name1:
@@ -171,7 +246,7 @@ try:
                             earliest_round_no = round_no;
 
                         f = countdowntourney.Game(round_no, round_seq, table_no,
-                                game_type, p1, p2);
+                                division, game_type, p1, p2);
                         fixtures.append(f);
                 except countdowntourney.TourneyException as e:
                     cgicommon.show_tourney_exception(e);

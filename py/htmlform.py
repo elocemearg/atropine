@@ -88,15 +88,21 @@ class HTMLFormCheckBox(HTMLFormElement):
         return s;
 
 class HTMLFormHiddenInput(HTMLFormElement):
-    def __init__(self, name, value):
+    def __init__(self, name, value, other_attrs=None):
         super(HTMLFormHiddenInput, self).__init__(name);
         self.value = value;
+        self.other_attrs = other_attrs
     
     def get_value(self):
         return self.value;
     
     def html(self):
-        return "<input type=\"hidden\" name=\"%s\" value=\"%s\">\n" % (cgi.escape(self.name, True), cgi.escape(self.value, True));
+        s = "<input type=\"hidden\" name=\"%s\" value=\"%s\" " % (cgi.escape(self.name, True), cgi.escape(self.value, True));
+        if self.other_attrs:
+            for name in self.other_attrs:
+                s += " %s=\"%s\"" % (cgi.escape(name), cgi.escape(self.other_attrs[name], True));
+        s += "/>\n"
+        return s
 
 class HTMLFormTextInput(HTMLFormElement):
     def __init__(self, label, name, value, other_attrs=None):

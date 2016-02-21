@@ -99,7 +99,7 @@ def show_games_as_html_table(games, editable=True, remarks=None):
     print "<th>Player 1</th><th>Score</th><th>Player 2</th><th></th>";       
     print "</tr>"
     last_table_no = None;
-    gamenum = 0;
+    game_seq = 0
     for g in games:
         player_names = g.get_player_names();
         player_strings = (str(g.p1), str(g.p2));
@@ -110,7 +110,7 @@ def show_games_as_html_table(games, editable=True, remarks=None):
             # Count how many consecutive games appear with this table
             # number, so we can group them together in the table.
             num_games_on_table = 0;
-            while gamenum + num_games_on_table < len(games) and games[gamenum + num_games_on_table].table_no == g.table_no:
+            while game_seq + num_games_on_table < len(games) and games[game_seq + num_games_on_table].table_no == g.table_no:
                 num_games_on_table += 1;
             first_game_in_table = True;
         else:
@@ -149,18 +149,64 @@ def show_games_as_html_table(games, editable=True, remarks=None):
         if g.are_players_known():
             if editable:
                 print """
-<input class="gamescore" id="game%dscore" type="text" size="10"
-name="game%dscore" value="%s"
-onchange="score_modified('game%dscore');" />""" % (gamenum, gamenum, cgi.escape(score, True), gamenum);
+<input class="gamescore" id="gamescore_%d_%d" type="text" size="10"
+name="gamescore_%d_%d" value="%s"
+onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.round_no, g.seq, cgi.escape(score, True), g.round_no, g.seq);
             else:
                 print cgi.escape(score)
 
         print "</td>";
         team_string = make_player_dot_html(g.p2)
         print "<td class=\"%s\" align=\"left\">%s %s</td>" % (" ".join(p2_classes), team_string, cgi.escape(player_strings[1]));
-        print "<td class=\"gameremarks\">%s</td>" % cgi.escape(remarks.get(gamenum, ""));
+        print "<td class=\"gameremarks\">%s</td>" % cgi.escape(remarks.get((g.round_no, g.seq), ""));
         print "</tr>";
-        gamenum += 1;
         last_table_no = g.table_no;
+        game_seq += 1
     
     print "</table>";
+
+def show_standings_table(tourney, ranking_by_wins, show_draws_column, show_points_column, show_spread_column, show_first_second_column=False):
+    num_divisions = tourney.get_num_divisions()
+    print "<table class=\"standingstable\">";
+    for div_index in range(num_divisions):
+        standings = tourney.get_standings(div_index)
+        if num_divisions > 1:
+            div_string = tourney.get_division_name(div_index)
+        else:
+            div_string = ""
+        if div_index > 0:
+            print "<tr class=\"standingstabledivspacer\"><td></td></tr>"
+        print "<tr><th colspan=\"2\">%s</th><th>Played</th><th>Wins</th>%s%s%s%s</tr>" % (
+                cgi.escape(div_string),
+                "<th>Draws</th>" if show_draws_column else "",
+                "<th>Points</th>" if show_points_column else "",
+                "<th>Spread</th>" if show_spread_column else "",
+                "<th>1st/2nd</th>" if show_first_second_column else "");
+        last_wins_inc_draws = None;
+        tr_bgcolours = ["#ffdd66", "#ffff88" ];
+        bgcolour_index = 0;
+        for s in standings:
+            (pos, name, played, wins, points, draws, spread, num_first) = s[0:8];
+            if ranking_by_wins:
+                if last_wins_inc_draws is None:
+                    bgcolour_index = 0;
+                elif last_wins_inc_draws != wins + 0.5 * draws:
+                    bgcolour_index = (bgcolour_index + 1) % 2;
+                last_wins_inc_draws = wins + 0.5 * draws;
+
+                print "<tr class=\"standingsrow\" style=\"background-color: %s\">" % tr_bgcolours[bgcolour_index];
+            print "<td class=\"standingspos\">%d</td>" % pos;
+            print "<td class=\"standingsname\">%s</td>" % name;
+            print "<td class=\"standingsplayed\">%d</td>" % played;
+            print "<td class=\"standingswins\">%d</td>" % wins;
+            if show_draws_column:
+                print "<td class=\"standingsdraws\">%d</td>" % draws;
+            if show_points_column:
+                print "<td class=\"standingspoints\">%d</td>" % points;
+            if show_spread_column:
+                print "<td class=\"standingsspread\">%+d</td>" % spread;
+            if show_first_second_column:
+                print "<td class=\"standingsfirstsecond\">%d/%d</td>" % (num_first, played - num_first)
+            print "</tr>";
+    print "</table>";
+

@@ -65,7 +65,7 @@ tr.gamerow td {
 }
 
 tr.firstgameintable td {
-	border-top: 3px solid black;
+	border-top: 2px solid black;
 }
 
 tr.unplayedgame td.gameplayer1 {
@@ -131,6 +131,10 @@ table.standingstable {
 	border-collapse: collapse;
 }
 
+tr.standingstabledivspacer {
+	height: 2ex;
+}
+
 table.standingstable td {
 	padding-left: 0.5em;
 	padding-right: 0.5em;
@@ -172,6 +176,17 @@ td.standingsdraws {
 
 td.standingspoints {
 	text-align: right;
+	border-right: 1px solid gray;
+}
+
+td.standingsspread {
+	text-align: right;
+	border-right: 1px solid gray;
+}
+
+td.standingsfirstsecond {
+	text-align: right;
+	border-right: 1px solid gray;
 }
 
 table.resultstable {
@@ -196,6 +211,9 @@ td.exportscore {
 tr.exporttablenumber {
 }
 
+tr.exportdivisionnumber {
+}
+
 tr.exportgamerow {
 	background-color: #ccffff;
 }
@@ -204,6 +222,11 @@ th.exporttablenumber {
 	background-color: #66ccff;
 	text-align: center;
 	/* border-top: 1ex solid white;*/
+}
+
+th.exportdivisionnumber {
+	background-color: #66ccff;
+	text-align: center;
 }
 
 table.teamscorestable {

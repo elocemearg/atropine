@@ -39,6 +39,7 @@ class IllegalNumberOfPlayersException(object):
 def add_game(games, players, round_no, table_no, name1, score1, score2, name2, tb=False):
     p1 = None;
     p2 = None;
+    division = 0
 
     round_seq = len(filter(lambda x : x.round_no == round_no, games)) + 1;
 
@@ -58,7 +59,7 @@ def add_game(games, players, round_no, table_no, name1, score1, score2, name2, t
         print "Unknown player %s" % name2;
         raise UnknownPlayerException();
     
-    g = countdowntourney.Game(round_no, round_seq, table_no, 'P', p1, p2, score1, score2, tb);
+    g = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', p1, p2, score1, score2, tb);
     games.append(g);
 
 
