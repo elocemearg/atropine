@@ -22,6 +22,7 @@ class VideprinterFetcher(object):
 
         rows = [];
         row_padding = teleostscreen.PercentLength(2);
+        num_divisions = self.tourney.get_num_divisions()
         for log_row in logs:
             l = {
                     "seq" : log_row[0],
@@ -35,7 +36,8 @@ class VideprinterFetcher(object):
                     "p2" : log_row[8],
                     "s2" : log_row[9],
                     "tiebreak" : log_row[10],
-                    "log_type" : log_row[11]
+                    "log_type" : log_row[11],
+                    "division" : log_row[12]
             };
             if l["seq"] > self.last_log_seq:
                 self.last_log_seq = l["seq"];
@@ -45,7 +47,11 @@ class VideprinterFetcher(object):
                 timestamp = None;
             game_type = l["game_type"];
             if game_type == "P":
-                round_desc = "R%dT%d" % (l["round_no"], l["table_no"]);
+                if num_divisions > 1:
+                    round_desc = "R%d %s" % (l["round_no"], self.tourney.get_short_division_name(l["division"]));
+                else:
+                    round_desc = "R%dT%d" % (l["round_no"], l["table_no"]);
+
             else:
                 round_desc = game_type + "." + str(l["round_seq"]);
             name1 = l["p1"];
@@ -131,6 +137,23 @@ class TeamScoreFetcher(object):
             row.append_value(teleostscreen.RowValue(str(score), teleostscreen.PercentLength(pc_width_per_team), text_colour, teleostscreen.ALIGN_CENTRE, bg_colour=(bgred, bggreen, bgblue)));
         return [row]
 
+def row_to_div_and_offset(div_standings, start_row, page_length):
+    # Given that the screen has space for page_length rows, and every division
+    # starts on a new page, work out which division we're displaying.
+    div_num_pages = []
+    for standings in div_standings:
+        div_num_pages.append((len(standings) + page_length - 1) / page_length)
+
+    div_start_offset = start_row
+    selected_division = None
+    for div_index in range(len(div_standings)):
+        if div_start_offset < div_num_pages[div_index] * page_length:
+            selected_division = div_index
+            break
+        else:
+            div_start_offset -= div_num_pages[div_index] * page_length
+
+    return (selected_division, div_start_offset)
 
 class StandingsFetcher(object):
     def __init__(self, tourney, use_short_names=False):
@@ -140,9 +163,25 @@ class StandingsFetcher(object):
         self.short_name_widths_inc_draws = (12, 38, 10, 10, 10, 20)
         self.ordinary_name_widths = (10, 55, 10, 10, 0, 15)
         self.ordinary_name_widths_inc_draws = (10, 45, 10, 10, 10, 15)
-    
+
     def fetch_header_row(self):
-        standings = self.tourney.get_standings();
+        return self.fetch_header_row_for_page()
+
+    def fetch_header_row_for_page(self, start_row=None, page_length=None):
+        if start_row is not None and page_length is not None:
+            num_divisions = self.tourney.get_num_divisions()
+            if num_divisions <= 1:
+                division_name = ""
+            else:
+                div_standings = [ self.tourney.get_standings(div_index) for div_index in range(num_divisions) ]
+                (selected_division, div_start_offset) = row_to_div_and_offset(div_standings, start_row, page_length)
+                if selected_division is not None:
+                    division_name = self.tourney.get_division_name(selected_division)
+                else:
+                    division_name = ""
+        else:
+            division_name = ""
+
         draws_exist = self.tourney.get_show_draws_column()
         if self.use_short_names:
             (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, draws_width_pc, points_width_pc) = self.short_name_widths_inc_draws if draws_exist else self.short_name_widths
@@ -151,13 +190,18 @@ class StandingsFetcher(object):
 
         row = teleostscreen.TableRow();
         grey = (128, 128, 128);
+        white = (255, 255, 255);
+        green = (32, 255, 32)
         row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(pos_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
-        row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(name_width_pc), text_colour=grey));
+        row.append_value(teleostscreen.RowValue(division_name, teleostscreen.PercentLength(name_width_pc), text_colour=green));
         row.append_value(teleostscreen.RowValue("P", teleostscreen.PercentLength(played_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
         row.append_value(teleostscreen.RowValue("W", teleostscreen.PercentLength(wins_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
         if draws_exist:
             row.append_value(teleostscreen.RowValue("D", teleostscreen.PercentLength(draws_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
-        row.append_value(teleostscreen.RowValue("Pts", teleostscreen.PercentLength(points_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
+        if self.tourney.get_rank_method() == countdowntourney.RANK_WINS_SPREAD:
+            row.append_value(teleostscreen.RowValue("Spr", teleostscreen.PercentLength(points_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
+        else:
+            row.append_value(teleostscreen.RowValue("Pts", teleostscreen.PercentLength(points_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
         row.set_border(bottom_border=teleostscreen.LineStyle((96, 96, 96), 1));
         return row;
     
@@ -171,12 +215,24 @@ class StandingsFetcher(object):
             wins_colour = (0, 128, 128)
         points_colour = (0, 255, 255);
 
-        standings = self.tourney.get_standings();
+        div_standings = []
+        num_divisions = self.tourney.get_num_divisions()
+        for div_index in range(num_divisions):
+            standings = self.tourney.get_standings(division=div_index)
+            div_standings.append(standings)
 
-        if start_row >= len(standings):
+        (selected_division, div_start_offset) = row_to_div_and_offset(div_standings, start_row, num_rows)
+
+        # Past the end
+        if selected_division is None:
+            return None
+
+        standings = div_standings[selected_division]
+
+        if div_start_offset >= len(standings):
             return None;
         
-        subset = standings[start_row:(start_row + num_rows)];
+        subset = standings[div_start_offset:(div_start_offset + num_rows)];
 
         draws_exist = self.tourney.get_show_draws_column();
 
@@ -202,7 +258,10 @@ class StandingsFetcher(object):
             row.append_value(teleostscreen.RowValue(str(player[3]), teleostscreen.PercentLength(wins_width_pc), text_colour=wins_colour, alignment=teleostscreen.ALIGN_RIGHT));
             if draws_exist:
                 row.append_value(teleostscreen.RowValue(str(player[5]), teleostscreen.PercentLength(draws_width_pc), text_colour=wins_colour, alignment=teleostscreen.ALIGN_RIGHT));
-            row.append_value(teleostscreen.RowValue(str(player[4]), teleostscreen.PercentLength(points_width_pc), text_colour=points_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            if self.tourney.get_rank_method() == countdowntourney.RANK_WINS_SPREAD:
+                row.append_value(teleostscreen.RowValue("%+d" % (player.spread), teleostscreen.PercentLength(points_width_pc), text_colour=points_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            else:
+                row.append_value(teleostscreen.RowValue(str(player.points), teleostscreen.PercentLength(points_width_pc), text_colour=points_colour, alignment=teleostscreen.ALIGN_RIGHT));
             rows.append(row);
 
         return rows;
@@ -234,35 +293,59 @@ class TableResultsFetcher(object):
         games = self.tourney.get_games(round_no=latest_round_no);
         games = sorted(games, key=lambda x : x.table_no);
 
+        # If each table has only one game on it, group the matches by
+        # division rather than putting in a new heading (containing the table
+        # number) for each match.
         prev_table_no = None
+        for g in games:
+            if prev_table_no == g.table_no:
+                get_group_number = lambda x : x.table_no
+                get_group_name = lambda x : "Table %d" % (x)
+                break
+            prev_table_no = g.table_no
+        else:
+            get_group_number = lambda x : x.division
+            if self.tourney.get_num_divisions() <= 1:
+                get_group_name = lambda x : ""
+            else:
+                get_group_name = lambda x : self.tourney.get_division_name(x)
+
+        prev_group_no = None
 
         for g in games:
-            if prev_table_no is None or prev_table_no != g.table_no:
-                # New table... if the number of games on this table will
+            add_header = False
+            add_gap_before_header = False
+            if prev_group_no is None or prev_group_no != get_group_number(g):
+                # New group... if the number of games in this group will
                 # fit onto this page, draw them on this page, otherwise
                 # open a new page
-                games_on_table = len(filter(lambda x : x.table_no == g.table_no, games))
+                group_no = get_group_number(g)
+                games_in_group = len(filter(lambda x : get_group_number(x) == group_no, games))
                 if len(current_page) > 0:
-                    gap = 1
-                else:
-                    gap = 0
+                    add_gap_before_header = True
 
-                if len(current_page) > 0 and len(current_page) + gap + 1 + games_on_table > num_rows_to_fetch:
+                if len(current_page) > 0 and len(current_page) + int(add_gap_before_header) + 1 + games_in_group > num_rows_to_fetch:
                     pages.append(current_page)
                     current_page = []
-                    gap = 0
+                    add_gap_before_header = False
 
+                add_header = True
+            elif len(current_page) >= num_rows_to_fetch:
+                # We're out of space on the screen, force a new page.
+                pages.append(current_page)
+                current_page = []
+                add_header = True
+                add_gap_before_header = False
+
+            if add_gap_before_header:
+                current_page.append(teleostscreen.TableRow())
+
+            if add_header:
                 top_row = teleostscreen.TableRow();
                 top_row_colour = (0, 192, 192);
                 name_colour = (255, 255, 255);
                 score_colour = (255, 255, 255);
-                top_row.append_value(teleostscreen.RowValue("%s   Table %d" % (latest_round_name, g.table_no), teleostscreen.PercentLength(100), text_colour=top_row_colour, alignment=teleostscreen.ALIGN_CENTRE));
-
-                # If we've already put a table on this page, put a blank row
-                # between the last result of the previous table and the header
-                # row of this table
-                if gap:
-                    current_page.append(teleostscreen.TableRow())
+                top_row.append_value(teleostscreen.RowValue("%s   %s" % (latest_round_name, get_group_name(group_no)), teleostscreen.PercentLength(100), text_colour=top_row_colour, alignment=teleostscreen.ALIGN_CENTRE));
                 current_page.append(top_row);
 
             green = (0, 255, 0, 64);
@@ -330,7 +413,7 @@ class TableResultsFetcher(object):
             row.append_value(teleostscreen.RowValue(names[1], teleostscreen.PercentLength(name2_pc), text_colour=name_colour, alignment=teleostscreen.ALIGN_LEFT, hgradientpair=hgradientpair_right));
 
             current_page.append(row)
-            prev_table_no = g.table_no
+            prev_group_no = group_no
 
         pages.append(current_page)
         

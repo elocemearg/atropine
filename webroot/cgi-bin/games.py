@@ -25,7 +25,7 @@ def set_random_score(game, rounds, scrabble):
     p1_threshold *= 0.8
     p2_threshold = 1 - ((1 - p2_threshold) * 0.8)
 
-    #print "%d %d %.3f %.3f" % (game.p1.rating, game.p2.rating, p1_threshold, p2_threshold);
+    #print "%g %g %.3f %.3f" % (game.p1.rating, game.p2.rating, p1_threshold, p2_threshold);
 
     p1_score = 0;
     p2_score = 0;

@@ -537,6 +537,11 @@ class TableWidget(Widget):
                 self.current_row = 0;
                 table_rows = self.table_fetcher.fetch_data_rows(self.current_row, data_rows_to_fetch);
 
+            try:
+                header_row = self.table_fetcher.fetch_header_row_for_page(start_row=self.current_row, page_length=data_rows_to_fetch);
+            except AttributeError:
+                header_row = self.table_fetcher.fetch_header_row();
+
             row_height_px = surface.get_height() / self.num_rows_on_screen;
 
             font = get_sensible_font(self.default_font_name, row_height_px);
@@ -589,39 +594,49 @@ class PagedFixturesWidget(Widget):
 
         # Divide these games up into pages, putting no more than num_lines
         # games onto the screen. Don't split a clump of games on the same
-        # table across multiple pages if we can avoid it.
+        # table across multiple pages if we can avoid it. Also, a new
+        # division always starts on a new page.
         page = [];
         games = sorted(games, key=lambda x : (x.round_no, x.table_no));
         prev_round_no = None;
+        prev_division = None
+
+        num_divisions = 0
+        div_numbers = set()
+        for g in games:
+            if g.division not in div_numbers:
+                num_divisions += 1
+            div_numbers.add(g.division)
 
         # The page always starts with the round title, and any other rounds
         # on the same page have a title. This title takes up one line on the
         # page, so take that into account when deciding whether we can fit
         # a set of games on this page.
 
-        num_round_titles = 1;
+        num_titles = 1;
         while games:
             round_no = games[0].round_no;
             table_no = games[0].table_no;
+            division = games[0].division;
 
             # How many games on this table?
             table_games = filter(lambda x : x.round_no == round_no and x.table_no == table_no, games);
             
-            # Is this a different round from what we've already got on the
-            # page? If so, and if we can't also fit all the games from this
-            # round on the same page, start a new page
-            if prev_round_no is not None and prev_round_no != round_no and len(page) > 0:
-                # How many games have we got in this round?
-                num_games_this_round = len(filter(lambda x : x.round_no == round_no, games));
-                if len(page) + num_round_titles + 1 + num_games_this_round > self.lines_per_page:
+            # Is this a different round or division from what we've already got
+            # on the page? If so, and if we can't also fit all the games from
+            # this round on the same page, start a new page
+            if ((prev_round_no is not None and prev_round_no != round_no) or (prev_division is not None and prev_division != division)) and len(page) > 0:
+                # How many games have we got in this round and division?
+                num_games_this_round_div = len(filter(lambda x : x.round_no == round_no and x.division == division, games));
+                if len(page) + num_titles + 1 + num_games_this_round_div > self.lines_per_page:
                     # New page
                     pages.append(page[:]);
                     page = [];
                 else:
                     # Put this round's games on this page
-                    num_round_titles += 1;
+                    num_titles += 1;
             # Will they fit on the page? If not, get a new page
-            elif len(page) + len(table_games) + num_round_titles > self.lines_per_page:
+            elif len(page) + len(table_games) + num_titles > self.lines_per_page:
                 if len(page) > 0:
                     pages.append(page[:]);
                     page = [];
@@ -637,6 +652,7 @@ class PagedFixturesWidget(Widget):
 
             games = games[len(games_to_take):];
             prev_round_no = round_no;
+            prev_division = division
         if page:
             pages.append(page[:]);
 
@@ -709,26 +725,31 @@ class PagedFixturesWidget(Widget):
         # Divide the games in "page" into tables
         tables = [];
         prev_table_no = None;
+        prev_division = None;
         prev_round_no = None;
         table = [];
         for g in page:
-            if g is None or (prev_table_no is not None and prev_table_no != g.table_no) or (prev_round_no is not None and prev_round_no != g.round_no):
+            if g is None or (prev_table_no is not None and prev_table_no != g.table_no) or (prev_round_no is not None and prev_round_no != g.round_no) or (prev_division is not None and prev_division != g.division):
                 tables.append(table[:]);
                 table = [];
             if g is not None:
                 table.append(g);
                 prev_table_no = g.table_no;
                 prev_round_no = g.round_no;
+                prev_division = g.division
         if table:
             tables.append(table[:]);
 
         # Draw the tables
         prev_round_no = None;
+        prev_division = None;
         for t in tables:
-            if prev_round_no != t[0].round_no:
+            if prev_round_no != t[0].round_no or prev_division != t[0].division:
                 # New round, so print the round name
                 font = get_sensible_font(self.font_name, int(0.8 * line_height));
                 round_name = self.fetcher.get_round_name(t[0].round_no);
+                if num_divisions > 1:
+                    round_name += "   " + countdowntourney.get_general_division_name(t[0].division)
                 round_name_label = font.render(round_name, 1, round_name_colour);
                 surface.blit(round_name_label, (round_name_left, int(table_y_pos + 0.2 * line_height)));
                 table_y_pos += line_height;
@@ -847,6 +868,7 @@ class PagedFixturesWidget(Widget):
             # inter-table vertical padding.
             table_y_pos += line_height * len(t);
             prev_round_no = t[0].round_no;
+            prev_division = t[0].division
 
 class LabelWidget(Widget):
     def __init__(self, text, left_pc, top_pc, width_pc, height_pc, text_colour=(255,255,255), bg_colour=None, font_name="sans-serif"):

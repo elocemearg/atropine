@@ -76,6 +76,7 @@ class PlayerNotInStandingsException(BaseException):
 def get_penalty(games, p1, p2, num_played, win_diff, rank_by_wins=True):
     pen = 0;
 
+    # No, you are not allowed to play yourself
     if p1.name == p2.name:
         return HUGE_PENALTY ** 2;
 
@@ -232,7 +233,7 @@ def generate_all_groupings_aux(group_size_list, possible_opponents, depth, start
 
         
 
-def generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, start_time, limit_ms):
+def generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, patzer_set, start_time, limit_ms):
     num_players = len(played_matrix)
     possible_opponents = dict()
     if sum(group_size_list) != num_players:
@@ -241,7 +242,7 @@ def generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_
         opponents = []
         for opp in range(num_players):
             if p != opp:
-                if played_matrix[p][opp] <= max_rematches and win_diff_matrix[p][opp] <= max_wins_diff:
+                if played_matrix[p][opp] <= max_rematches and win_diff_matrix[p][opp] <= max_wins_diff and not(p in patzer_set and opp in patzer_set):
                     #print "played_matrix[%d][%d] %d" % (p, opp, played_matrix[p][opp])
                     opponents.append(opp)
         possible_opponents[p] = opponents
@@ -314,6 +315,21 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
             played_row.append(count)
         played_matrix.append(played_row)
 
+    # Identify the patzers, and put their indices in the patzer_set set
+    patzer_set = set()
+    for pi in range(len(players)):
+        if players[pi].rating == 0:
+            patzer_set.add(pi)
+
+    # Adjust the played_matrix so that if you've played one patzer, you've
+    # effectively played them all
+    for pi in range(len(players)):
+        p = players[i]
+        num_patzer_matches = sum(played_matrix[pi][x] for x in patzer_set)
+        for x in patzer_set:
+            played_matrix[pi][x] = num_patzer_matches
+            played_matrix[x][pi] = num_patzer_matches
+
     win_diff_matrix = []
     for p in players:
         win_diff_row = []
@@ -355,7 +371,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
     while best_grouping is None:
         if log:
             sys.stderr.write("[swissN] Trying with max_wins_diff %d, max_rematches %d\n" % (max_wins_diff, max_rematches))
-        for groups in generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, start_time, limit_ms):
+        for groups in generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, patzer_set, start_time, limit_ms):
             weight = total_penalty(matrix, groups, table_penalty_cache)
             if best_weight is None or weight < best_weight:
                 best_weight = weight

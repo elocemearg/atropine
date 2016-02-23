@@ -22,7 +22,7 @@ begin transaction;
 create table if not exists player (
     id integer primary key autoincrement,
     name text,
-    rating int,
+    rating float,
     team_id int,
     short_name text,
     withdrawn int not null default 0,
@@ -190,6 +190,38 @@ create table if not exists teleost(current_mode int);
 delete from teleost;
 insert into teleost values(0);
 create table if not exists teleost_modes(num int, name text, desc text);
+
+create table if not exists tr_opts (
+    bonus float,
+    rating_diff_cap float
+);
+delete from tr_opts;
+insert into tr_opts (bonus, rating_diff_cap) values (50, 40);
+
+-- View for working out tournament ratings
+-- For each game, you get 50 + your opponent's rating if you win,
+-- your opponent's rating if you draw, and your opponent's rating - 50 if
+-- you lost. For the purpose of this calculation, your opponent's rating
+-- is your opponent's rating at the start of the tourney, except where that
+-- is more than 40 away from your own, in which case it's your rating +40 or
+-- -40 as appropriate.
+create view tournament_rating as
+    select p.id, p.name,
+        avg(case when hgd.p_score > hgd.opp_score then rel_ratings.opp_rating + tr_opts.bonus
+                 when hgd.p_score = hgd.opp_score then rel_ratings.opp_rating
+                 else rel_ratings.opp_rating - tr_opts.bonus end) tournament_rating
+    from player p, heat_game_divided hgd on p.id = hgd.p_id,
+        (select me.id p_id, you.id opp_id,
+            case when you.rating < me.rating - tr_opts.rating_diff_cap
+                then me.rating - tr_opts.rating_diff_cap
+                when you.rating > me.rating + tr_opts.rating_diff_cap
+                then me.rating + tr_opts.rating_diff_cap
+                else you.rating end opp_rating
+             from player me, player you, tr_opts) rel_ratings
+             on rel_ratings.p_id = p.id and hgd.opp_id = rel_ratings.opp_id,
+             tr_opts
+    where hgd.p_score is not null and hgd.opp_score is not null
+    group by p.id, p.name;
 
 commit;
 """;
@@ -612,6 +644,22 @@ class Game(object):
         return [self.round_no, self.seq, self.table_no, self.division, self.game_type, str(self.p1), self.s1, str(self.p2), self.s2, self.tb ][key];
 
 
+def get_general_division_name(num):
+    if num < 0:
+        return "Invalid division number %d" % (num)
+    elif num > 25:
+        return "Division %d" % (num + 1)
+    else:
+        return "Division %s" % (chr(ord('A') + num))
+
+def get_general_short_division_name(num):
+    if num < 0:
+        return ""
+    elif num > 25:
+        return int(num + 1)
+    else:
+        return chr(ord('A') + num)
+
 class Tourney(object):
     def __init__(self, filename, tourney_name):
         self.filename = filename;
@@ -696,7 +744,7 @@ class Tourney(object):
 
     # players must be a list of two-tuples. Each tuple is (name, rating).
     # Alternatively they can be Player objects, which pretend to be 2-tuples.
-    # Rating should be an integer. The rating may be None for all players,
+    # Rating should be a number. The rating may be None for all players,
     # in which case the first player is given a rating of 2000 and subsequent
     # players are rated progressively lower. It is an error to specify a
     # rating for some players and not others.
@@ -737,11 +785,11 @@ class Tourney(object):
         for p in players:
             try:
                 if p[1] is not None:
-                    rating = int(p[1]);
+                    rating = float(p[1]);
                     if rating != 0 and auto_rating_behaviour != RATINGS_MANUAL:
                         # Can't specify any non-zero ratings if automatic
                         # rating is enabled.
-                        raise InvalidRatingException("Player \"%s\" has been given a rating (%d) but you have selected automatic rating. If automatic rating is used, players may not be given manual ratings in the initial player list except a rating of 0 to indicate a patzer." % (p[0], rating))
+                        raise InvalidRatingException("Player \"%s\" has been given a rating (%g) but you have selected automatic rating. If automatic rating is used, players may not be given manual ratings in the initial player list except a rating of 0 to indicate a patzer." % (p[0], rating))
                 else:
                     if auto_rating_behaviour == RATINGS_MANUAL:
                         # Can't have unrated players if automatic rating
@@ -750,7 +798,7 @@ class Tourney(object):
                     rating = None;
                 new_players.append((p[0], rating, p[2]));
             except ValueError:
-                raise InvalidRatingException("Player \"%s\" has an invalid rating \"%s\". A player's rating must be an integer." % (p[0], p[1]));
+                raise InvalidRatingException("Player \"%s\" has an invalid rating \"%s\". A player's rating must be a number." % (p[0], p[1]));
         players = new_players;
 
         #ratings = map(lambda x : x[1], filter(lambda x : x[1] is not None, players));
@@ -777,7 +825,7 @@ class Tourney(object):
                 if num_unrated_players == 1:
                     rating = max_rating
                 else:
-                    rating = int(max_rating - num_players_given_auto_rating * (max_rating - min_rating) / (num_unrated_players - 1))
+                    rating = float(max_rating - num_players_given_auto_rating * (max_rating - min_rating) / (num_unrated_players - 1))
                 if p[1] is None:
                     new_players.append((p[0], rating, p[2]));
                     num_players_given_auto_rating += 1
@@ -839,7 +887,7 @@ class Tourney(object):
     
     def rerate_player(self, name, rating):
         try:
-            rating = int(rating)
+            rating = float(rating)
         except ValueError:
             raise InvalidRatingException("Cannot set %s's rating - invalid rating." % name);
         cur = self.db.cursor();
@@ -1440,12 +1488,10 @@ where round_no = ? and seq = ?""", alterations_reordered);
         return value
  
     def get_division_name(self, num):
-        if num < 0:
-            return "Invalid division number %d" % (num)
-        elif num > 25:
-            return "Division %d" % (num + 1)
-        else:
-            return "Division %s" % (chr(ord('A') + num))
+        return get_general_division_name(num)
+    
+    def get_short_division_name(self, num):
+        return get_general_short_division_name(num)
 
     def get_standings(self, division=None):
         method = self.get_rank_method();
@@ -1474,7 +1520,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
         cur = self.db.cursor();
         sql = """select seq, datetime(ts, 'localtime') ts, round_no,
                 round_seq, table_no, game_type, p1.name p1, p1_score,
-                p2.name p2, p2_score, tiebreak, log_type
+                p2.name p2, p2_score, tiebreak, log_type, game_log.division
                 from game_log, player p1, player p2
                 where p1 = p1.id and p2 = p2.id and seq > ?""";
         if not(include_new_games):

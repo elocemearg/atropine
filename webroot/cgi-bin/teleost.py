@@ -72,7 +72,7 @@ else:
             if view_num == 0:
                 use_vertical = tourney.get_auto_use_vertical()
                 print "<span style=\"padding-left: 2em\">"
-                print "<input type=\"checkbox\" name=\"autousevertical\" value=\"1\" %s /> Use vertical standings/results format between rounds" % ("checked" if use_vertical else "")
+                print "<input type=\"checkbox\" name=\"autousevertical\" value=\"1\" %s /> Use vertical standings/results format between rounds regardless of table size" % ("checked" if use_vertical else "")
                 print "</span>"
                 print "<br />"
         print "</p>";

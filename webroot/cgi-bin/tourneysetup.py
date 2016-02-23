@@ -20,7 +20,7 @@ def show_player_drop_down_box(players, control_name):
     print "<select name=\"%s\">" % (control_name)
     print "<option value=\"\">-- select player --</option>"
     for p in players:
-        print "<option value=\"%s\">%s (%d)</option>" % (cgi.escape(p.name, True), cgi.escape(p.name), p.rating);
+        print "<option value=\"%s\">%s (%g)</option>" % (cgi.escape(p.name, True), cgi.escape(p.name), p.rating);
     print "</select>"
 
 cgitb.enable();
@@ -113,7 +113,7 @@ else:
                     cur_name = new_name;
                 if new_rating:
                     try:
-                        new_rating = int(new_rating);
+                        new_rating = float(new_rating);
                         tourney.rerate_player(cur_name, new_rating);
                     except ValueError:
                         print "<p><strong>Failed to rerate player: \"%s\" is not a valid rating.</strong></p>" % cgi.escape(new_rating);
@@ -201,7 +201,7 @@ else:
                 if auto_rating != countdowntourney.RATINGS_MANUAL and rating != 0:
                     writer.writerow((cgi.escape(name),));
                 else:
-                    writer.writerow((cgi.escape(name), str(rating)));
+                    writer.writerow((cgi.escape(name), "%g" % (rating)));
         print "</textarea>";
         print "</p>"
 
