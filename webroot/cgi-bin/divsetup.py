@@ -83,6 +83,9 @@ else:
     if request_method in ["GET", "POST"]:
         players = tourney.get_players()
         num_divisions = tourney.get_num_divisions()
+        print "<p>"
+        print "<strong>N.B.</strong> The tourney has already started. Redistributing players using this page will not take account of withdrawn players. To change the division assignment of individual players, use the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page." % (urllib.quote_plus(tourneyname))
+        print "</p>"
         print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
         print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourneyname))
         print "<p>"
@@ -110,7 +113,7 @@ else:
             print "<th>Name</th><th>Rating</th><th>Promote to top division</th>"
             for p in div_players[div_index]:
                 print "<tr>"
-                print "<td>%s</td><td align=\"right\">%g</td><td align=\"center\"><input type=\"checkbox\" name=\"promote%d\" value=\"1\" %s />" % (cgi.escape(p.get_name()), p.get_rating(), player_seq, "checked" if p.is_division_fixed() else "")
+                print "<td>%s</td><td align=\"right\">%g</td><td align=\"center\"><input type=\"checkbox\" name=\"promote%d\" value=\"1\" %s />" % (cgicommon.player_to_link(p, tourney.get_name()), p.get_rating(), player_seq, "checked" if p.is_division_fixed() else "")
                 print "<input type=\"hidden\" name=\"promotename%d\" value=\"%s\" />" % (player_seq, cgi.escape(p.get_name(), True))
                 print "</tr>"
                 player_seq += 1

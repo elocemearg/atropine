@@ -102,33 +102,6 @@ else:
             print "<p><strong>Rules updated successfully.</strong></p>";
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
-    if request_method == "POST" and modify_player_submit:
-        try:
-            cur_name = form.getfirst("playername")
-            if cur_name:
-                new_name = form.getfirst("newplayername")
-                new_rating = form.getfirst("newplayerrating")
-                if new_name:
-                    tourney.rename_player(cur_name, new_name);
-                    cur_name = new_name;
-                if new_rating:
-                    try:
-                        new_rating = float(new_rating);
-                        tourney.rerate_player(cur_name, new_rating);
-                    except ValueError:
-                        print "<p><strong>Failed to rerate player: \"%s\" is not a valid rating.</strong></p>" % cgi.escape(new_rating);
-        except countdowntourney.TourneyException as e:
-            cgicommon.show_tourney_exception(e);
-    if request_method == "POST" and withdraw_player_submit and withdraw_player_name: 
-        try:
-            tourney.withdraw_player(withdraw_player_name)
-        except countdowntourney.TourneyException as e:
-            cgicommon.show_tourney_exception(e);
-    if request_method == "POST" and unwithdraw_player_submit and unwithdraw_player_name:
-        try:
-            tourney.unwithdraw_player(unwithdraw_player_name)
-        except countdowntourney.TourneyException as e:
-            cgicommon.show_tourney_exception(e)
 
     players = tourney.get_players();
     players = sorted(players, key=lambda x : x.name);
@@ -153,25 +126,7 @@ else:
         print "</blockquote>"
 
 
-    if tourney.get_num_games() > 0:
-        print "<h2>Modify player</h2>"
-        print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
-        print "<p>"
-        print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourneyname, True)
-        show_player_drop_down_box(players, "playername")
-        print "</p>"
-
-        print "<p>"
-        print "New name <input type=\"text\" name=\"newplayername\" /> (blank to leave unchanged)"
-        print "</p>"
-        print "<p>"
-        print "New rating <input type=\"text\" name=\"newplayerrating\" /> (blank to leave unchanged)"
-        print "</p>"
-        print "<p>"
-        print "<input type=\"submit\" name=\"modifyplayersubmit\" value=\"Modify Player\" />"
-        print "</p>"
-        print "</form>"
-    else:
+    if tourney.get_num_games() == 0:
         players = tourney.get_players();
         print "<h2>Player list</h2>";
         print "<p>"
@@ -254,33 +209,6 @@ else:
     print "</p>"
     print "</form>";
 
-    print '<h2>Division Setup</h2>'
-    print "<p>"
-    print '<a href="/cgi-bin/divsetup.py?tourney=%s">Assign players to divisions</a>' % (urllib.quote_plus(tourneyname))
-    print "</p>"
-
-    print '<h2>Team Setup</h2>'
-    print '<p>'
-    print '<a href="/cgi-bin/teamsetup.py?tourney=%s">Assign players to teams</a>' % (urllib.quote_plus(tourneyname))
-    print '</p>'
-
-    active_players = tourney.get_active_players();
-    active_players = sorted(active_players, key=lambda x : x.name);
-    if len(active_players) > 0:
-        print '<h2>Withdraw player</h2>'
-        print '<p>'
-        print 'If you withdraw a player, they will not be included in future rounds unless and until they are reinstated.'
-        print 'Withdrawn players will still appear in the standings table, and any fixtures already played or generated will stand.'
-        print '</p>'
-        print '<form action="%s?tourney=%s" method="post" />' % (baseurl, urllib.quote_plus(tourneyname))
-        print '<p>'
-        show_player_drop_down_box(active_players, "withdrawplayername")
-        print '</p><p>'
-        print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname);
-        print "<input type=\"submit\" name=\"withdrawplayersubmit\" value=\"Withdraw Player\" />"
-        print '</p>'
-        print '</form>'
-
     withdrawn_players = tourney.get_withdrawn_players()
     if withdrawn_players:
         withdrawn_players = sorted(withdrawn_players, key=lambda x : x.name)
@@ -288,18 +216,10 @@ else:
         print '<p>The following players are currently withdrawn from the tourney.</p>'
         print '<blockquote>'
         for p in withdrawn_players:
-            print '<li>%s</li>' % (cgi.escape(p.name))
+            print '<li>%s</li>' % (cgicommon.player_to_link(p, tourneyname))
         print '</blockquote>'
 
-        print '<p>These players will not be included in future rounds until reinstated below.</p>'
-        print '<form action="%s?tourney=%s" method="post" />' % (baseurl, urllib.quote_plus(tourneyname))
-        print '<p>'
-        show_player_drop_down_box(withdrawn_players, "unwithdrawplayername")
-        print '</p><p>'
-        print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname);
-        print '<input type=\"submit\" name=\"unwithdrawplayersubmit\" value=\"Reinstate Player\" />'
-        print '</p>'
-        print '</form>'
+        print '<p>These players will not be included in future rounds until reinstated.</p>'
 
     if tourney.get_num_games() > 0:
         print '<h2>Delete rounds</h2>'

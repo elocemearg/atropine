@@ -8,6 +8,12 @@ import time;
 
 show_timestamps = False;
 
+def make_round_desc(num_divisions, round_no, table_no, division):
+    if num_divisions > 1:
+        return "R%d %s" % (round_no, countdowntourney.get_general_short_division_name(division))
+    else:
+        return "R%dT%d" % (round_no, table_no)
+
 class VideprinterFetcher(object):
     def __init__(self, tourney):
         self.tourney = tourney;
@@ -431,12 +437,13 @@ class HighestWinningScoresFetcher(object):
         return None;
     
     def fetch_data_rows(self, start_row, num_rows):
+        num_divisions = self.tourney.get_num_divisions()
         results = self.tourney.ranked_query("""
                 select round_no, seq, table_no,
                 case when p1_score > p2_score then p1.name else p2.name end winner,
                 case when p1_score > p2_score then p1_score else p2_score end winning_score,
                 case when p1_score <= p2_score then p1.name else p2.name end loser,
-                case when p1_score <= p2_score then p1_score else p2_score end losing_score, tiebreak
+                case when p1_score <= p2_score then p1_score else p2_score end losing_score, tiebreak, g.division
                 from game g, player p1, player p2
                 where g.p1 = p1.id
                 and g.p2 = p2.id
@@ -448,7 +455,7 @@ class HighestWinningScoresFetcher(object):
         rows = [];
         for r in results:
             row = teleostscreen.TableRow();
-            round_desc = "R%dT%d" % (r[1], r[3]);
+            round_desc = make_round_desc(num_divisions, r[1], r[3], r[9]);
             winner_name = r[4];
             winner_score = r[5];
             loser_name = r[6];
@@ -479,9 +486,10 @@ class HighestJointScoresFetcher(object):
         return None;
     
     def fetch_data_rows(self, start_row, num_rows):
+        num_divisions = self.tourney.get_num_divisions()
         results = self.tourney.ranked_query("""
                 select round_no, seq, table_no, p1.name, p1_score, p2.name,
-                    p2_score, p1_score + p2_score joint, tiebreak
+                    p2_score, p1_score + p2_score joint, tiebreak, g.division
                 from game g, player p1, player p2
                 where g.p1 = p1.id and g.p2 = p2.id
                 and g.game_type = 'P'
@@ -492,7 +500,7 @@ class HighestJointScoresFetcher(object):
         rows = [];
         for r in results:
             row = teleostscreen.TableRow();
-            round_desc = "R%dT%d" % (r[1], r[3]);
+            round_desc = make_round_desc(num_divisions, r[1], r[3], r[10]);
             name1 = r[4];
             score1 = r[5];
             name2 = r[6];
@@ -573,13 +581,14 @@ class HighestLosingScoresFetcher(object):
         return None;
     
     def fetch_data_rows(self, start_row, num_rows):
+        num_divisions = self.tourney.get_num_divisions()
         results = self.tourney.ranked_query("""
                 select round_no, seq, table_no,
                 case when p1_score <= p2_score then p1.name else p2.name end loser,
                 case when p1_score <= p2_score then p1_score else p2_score end losing_score,
                 case when p1_score > p2_score then p1.name else p2.name end winner,
                 case when p1_score > p2_score then p1_score else p2_score end winning_score,
-                tiebreak
+                tiebreak, g.division
                 from game g, player p1, player p2
                 where g.p1 = p1.id
                 and g.p2 = p2.id
@@ -591,7 +600,7 @@ class HighestLosingScoresFetcher(object):
         rows = [];
         for r in results:
             row = teleostscreen.TableRow();
-            round_desc = "R%dT%d" % (r[1], r[3]);
+            round_desc = make_round_desc(num_divisions, r[1], r[3], r[9]);
             loser_name = r[4];
             loser_score = r[5];
             winner_name = r[6];
@@ -621,37 +630,50 @@ class OverachieversFetcher(object):
     def fetch_header_row(self):
         row = teleostscreen.TableRow();
 
+        num_divisions = self.tourney.get_num_divisions()
+        if num_divisions > 1:
+            col_widths = [10, 50, 10, 10, 10, 10]
+        else:
+            col_widths = [10, 60, 0, 10, 10, 10]
+        col_widths = map(teleostscreen.PercentLength, col_widths)
+
         heading_colour = (255, 255, 255);
-        row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(10), text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
-        row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(60), text_colour=heading_colour, alignment=teleostscreen.ALIGN_LEFT));
-        row.append_value(teleostscreen.RowValue("Seed", teleostscreen.PercentLength(10), text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
-        row.append_value(teleostscreen.RowValue("Pos", teleostscreen.PercentLength(10), text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
-        row.append_value(teleostscreen.RowValue("+/-", teleostscreen.PercentLength(10), text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue("", col_widths[0], text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue("", col_widths[1], text_colour=heading_colour, alignment=teleostscreen.ALIGN_LEFT));
+        if num_divisions > 1:
+            row.append_value(teleostscreen.RowValue("Div", col_widths[2], text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue("Seed", col_widths[3], text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue("Pos", col_widths[4], text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue("+/-", col_widths[5], text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
         
         return row;
 
     
     def fetch_data_rows(self, start_row, num_rows):
-        standings = self.tourney.get_standings();
-        players = self.tourney.get_players();
-        players = sorted(players, key=lambda x : x.rating, reverse=True);
-
         seeds = dict();
-        seed_no = 0;
-        joint = 0;
-        prev_rating = None;
-        for p in players:
-            if p.rating == prev_rating:
-                joint += 1;
-            else:
-                seed_no += 1 + joint;
-                joint = 0;
-            seeds[p.name] = seed_no;
-            prev_rating = p.rating;
-
         positions = dict();
-        for s in standings:
-            positions[s[1]] = s[0];
+
+        num_divisions = self.tourney.get_num_divisions()
+        players = self.tourney.get_players();
+
+        for div in range(num_divisions):
+            standings = self.tourney.get_standings(div);
+            div_players = sorted(filter(lambda x : x.get_division() == div, players), key=lambda x : x.rating, reverse=True);
+
+            seed_no = 0;
+            joint = 0;
+            prev_rating = None;
+            for p in div_players:
+                if p.rating == prev_rating:
+                    joint += 1;
+                else:
+                    seed_no += 1 + joint;
+                    joint = 0;
+                seeds[p.name] = seed_no;
+                prev_rating = p.rating;
+
+            for s in standings:
+                positions[s[1]] = s[0];
 
         def overac_cmp(p1, p2):
             diff1 = positions[p1.name] - seeds[p1.name];
@@ -681,25 +703,35 @@ class OverachieversFetcher(object):
             else:
                 rank += 1 + joint;
                 joint = 0;
-            overac_records.append((rank, p.name, seed, positions[p.name], -overac));
+            overac_records.append((rank, p.name, p.get_division(), seed, positions[p.name], -overac));
             prev_overac = overac;
 
         rank_colour = (255, 255, 0);
         name_colour = (255, 255, 255);
+        div_colour = (0, 128, 128);
         seed_colour = (0, 128, 128);
         pos_colour = (0, 128, 128);
         overac_colour = (0, 255, 255);
 
+        num_divisions = self.tourney.get_num_divisions()
+        if num_divisions > 1:
+            col_widths = [10, 50, 10, 10, 10, 10]
+        else:
+            col_widths = [10, 60, 0, 10, 10, 10]
+        col_widths = map(teleostscreen.PercentLength, col_widths)
+
         rows = [];
         for r in overac_records[0:num_rows]:
             row = teleostscreen.TableRow();
-            (rank, name, seed, pos, overac) = r;
+            (rank, name, div, seed, pos, overac) = r;
 
-            row.append_value(teleostscreen.RowValue(str(rank), teleostscreen.PercentLength(10), text_colour=rank_colour, alignment=teleostscreen.ALIGN_RIGHT));
-            row.append_value(teleostscreen.RowValue(name, teleostscreen.PercentLength(60), text_colour=name_colour, alignment=teleostscreen.ALIGN_LEFT));
-            row.append_value(teleostscreen.RowValue(str(seed), teleostscreen.PercentLength(10), text_colour=seed_colour, alignment=teleostscreen.ALIGN_RIGHT));
-            row.append_value(teleostscreen.RowValue(str(pos), teleostscreen.PercentLength(10), text_colour=pos_colour, alignment=teleostscreen.ALIGN_RIGHT));
-            row.append_value(teleostscreen.RowValue(("%+d" if overac != 0 else "%d") % overac, teleostscreen.PercentLength(10), text_colour=overac_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            row.append_value(teleostscreen.RowValue(str(rank), col_widths[0], text_colour=rank_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            row.append_value(teleostscreen.RowValue(name, col_widths[1], text_colour=name_colour, alignment=teleostscreen.ALIGN_LEFT));
+            if num_divisions > 1:
+                row.append_value(teleostscreen.RowValue(self.tourney.get_short_division_name(div), col_widths[2], text_colour=div_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            row.append_value(teleostscreen.RowValue(str(seed), col_widths[3], text_colour=seed_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            row.append_value(teleostscreen.RowValue(str(pos), col_widths[4], text_colour=pos_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            row.append_value(teleostscreen.RowValue(("%+d" if overac != 0 else "%d") % overac, col_widths[5], text_colour=overac_colour, alignment=teleostscreen.ALIGN_RIGHT));
             rows.append(row);
 
         return rows;

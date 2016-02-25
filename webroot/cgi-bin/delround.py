@@ -86,7 +86,7 @@ else:
             for div_index in range(num_divisions):
                 print "<h2>%s</h2>" % cgi.escape(tourney.get_division_name(div_index))
                 games = tourney.get_games(round_no=latest_round_no, division=div_index)
-                cgicommon.show_games_as_html_table(games, editable=False)
+                cgicommon.show_games_as_html_table(games, False, None, False, None, lambda x : cgicommon.player_to_link(x, tourneyname))
 
             print """<p><strong>WARNING:</strong> You are about to delete this
 round and all the fixtures in it. <strong>This cannot be undone</strong>. Are

@@ -215,7 +215,7 @@ function score_modified(control_name) {
 
             div_games = tourney.get_games(round_no=round_no, only_players_known=False, division=div_index);
 
-            cgicommon.show_games_as_html_table(div_games, editable=True, remarks=remarks)
+            cgicommon.show_games_as_html_table(div_games, editable=True, remarks=remarks, include_round_column=False, round_namer=None, player_to_link=lambda x : cgicommon.player_to_link(x, tourney.get_name(), False, True))
 
         print "<p><input type=\"submit\" name=\"save\" value=\"Save\" onclick=\"unset_unsaved_data_warning();\" /></p>";
 

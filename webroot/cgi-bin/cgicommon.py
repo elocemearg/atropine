@@ -42,8 +42,14 @@ def show_sidebar(tourney):
     print "<a href=\"/cgi-bin/home.py\">Home</a><br />";
     if tourney:
         print "<p><strong>%s</strong></p>" % cgi.escape(tourney.name);
-        print "<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Setup</a><br />" % urllib.quote_plus(tourney.name);
-        print "<br />";
+        print "<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a><br />" % urllib.quote_plus(tourney.name);
+        #print "<br />";
+
+        print "<li><a href=\"/cgi-bin/player.py?tourney=%s\">Players</a></li>" % (urllib.quote_plus(tourney.name))
+        print "<li><a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions</a></li>" % (urllib.quote_plus(tourney.name))
+        print "<li><a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Teams</a></li>" % (urllib.quote_plus(tourney.name))
+
+        print "<br />"
 
         print "<a href=\"/cgi-bin/teleost.py?tourney=%s\">Display Control</a><br />" % urllib.quote_plus(tourney.name);
         print "<br />";
@@ -89,32 +95,49 @@ def show_team_score_table(team_scores):
         print '</tr>'
     print '</table>'
 
-def show_games_as_html_table(games, editable=True, remarks=None):
+def show_games_as_html_table(games, editable=True, remarks=None, include_round_column=False, round_namer=None, player_to_link=None):
     if remarks is None:
         remarks = dict()
+     
+    if round_namer is None:
+        round_namer = lambda x : ("Round %d" % (x))
+
+    if player_to_link is None:
+        player_to_link = lambda x : cgi.escape(x.get_name())
 
     print "<table class=\"scorestable\">";
     print "<tr>";
+    if include_round_column:
+        print "<th>Round</th>"
     print "<th>Table</th><th>Type</th>";
     print "<th>Player 1</th><th>Score</th><th>Player 2</th><th></th>";       
     print "</tr>"
     last_table_no = None;
+    last_round_no = None
     game_seq = 0
     for g in games:
-        player_names = g.get_player_names();
-        player_strings = (str(g.p1), str(g.p2));
+        player_html_strings = (player_to_link(g.p1), player_to_link(g.p2));
         tr_classes = ["gamerow"];
 
-        if last_table_no is None or last_table_no != g.table_no:
+        if last_round_no is None or last_round_no != g.round_no or last_table_no is None or last_table_no != g.table_no:
             tr_classes.append("firstgameintable");
             # Count how many consecutive games appear with this table
             # number, so we can group them together in the table.
             num_games_on_table = 0;
-            while game_seq + num_games_on_table < len(games) and games[game_seq + num_games_on_table].table_no == g.table_no:
+            while game_seq + num_games_on_table < len(games) and games[game_seq + num_games_on_table].table_no == g.table_no and games[game_seq + num_games_on_table].round_no == g.round_no:
                 num_games_on_table += 1;
             first_game_in_table = True;
         else:
             first_game_in_table = False;
+
+        if last_round_no is None or last_round_no != g.round_no:
+            tr_classes.append("firstgameinround")
+            num_games_in_round = 0
+            while game_seq + num_games_in_round < len(games) and games[game_seq + num_games_in_round].round_no == g.round_no:
+                num_games_in_round += 1
+            first_game_in_round = True
+        else:
+            first_game_in_round = False
         
         if g.is_complete():
             tr_classes.append("completedgame");
@@ -122,7 +145,8 @@ def show_games_as_html_table(games, editable=True, remarks=None):
             tr_classes.append("unplayedgame");
 
         print "<tr class=\"%s\">" % " ".join(tr_classes);
-        #print "<td class=\"roundno\">%d</td>" % round_no;
+        if first_game_in_round and include_round_column:
+            print "<td class=\"roundno\" rowspan=\"%d\">%s</td>" % (num_games_in_round, round_namer(g.round_no))
         if first_game_in_table:
             print "<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, g.table_no);
         print "<td class=\"gametype\">%s</td>" % cgi.escape(g.game_type);
@@ -142,7 +166,7 @@ def show_games_as_html_table(games, editable=True, remarks=None):
         
         team_string = make_player_dot_html(g.p1)
 
-        print "<td class=\"%s\" align=\"right\">%s %s</td>" % (" ".join(p1_classes), cgi.escape(player_strings[0]), team_string);
+        print "<td class=\"%s\" align=\"right\">%s %s</td>" % (" ".join(p1_classes), player_html_strings[0], team_string);
         score = g.format_score();
         print "<td class=\"gamescore\" align=\"center\">";
 
@@ -157,16 +181,23 @@ onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.roun
 
         print "</td>";
         team_string = make_player_dot_html(g.p2)
-        print "<td class=\"%s\" align=\"left\">%s %s</td>" % (" ".join(p2_classes), team_string, cgi.escape(player_strings[1]));
+        print "<td class=\"%s\" align=\"left\">%s %s</td>" % (" ".join(p2_classes), team_string, player_html_strings[1]);
         print "<td class=\"gameremarks\">%s</td>" % cgi.escape(remarks.get((g.round_no, g.seq), ""));
         print "</tr>";
+        last_round_no = g.round_no
         last_table_no = g.table_no;
         game_seq += 1
     
     print "</table>";
 
-def show_standings_table(tourney, ranking_by_wins, show_draws_column, show_points_column, show_spread_column, show_first_second_column=False):
+def show_standings_table(tourney, ranking_by_wins, show_draws_column, show_points_column, show_spread_column, show_first_second_column=False, linkify_players=False):
     num_divisions = tourney.get_num_divisions()
+
+    if linkify_players:
+        linkfn = lambda x : player_to_link(x, tourney.get_name())
+    else:
+        linkfn = lambda x : cgi.escape(x.get_name())
+
     print "<table class=\"standingstable\">";
     for div_index in range(num_divisions):
         standings = tourney.get_standings(div_index)
@@ -187,6 +218,7 @@ def show_standings_table(tourney, ranking_by_wins, show_draws_column, show_point
         bgcolour_index = 0;
         for s in standings:
             (pos, name, played, wins, points, draws, spread, num_first) = s[0:8];
+            player = tourney.get_player_from_name(name)
             if ranking_by_wins:
                 if last_wins_inc_draws is None:
                     bgcolour_index = 0;
@@ -196,7 +228,7 @@ def show_standings_table(tourney, ranking_by_wins, show_draws_column, show_point
 
                 print "<tr class=\"standingsrow\" style=\"background-color: %s\">" % tr_bgcolours[bgcolour_index];
             print "<td class=\"standingspos\">%d</td>" % pos;
-            print "<td class=\"standingsname\">%s</td>" % name;
+            print "<td class=\"standingsname\">%s</td>" % (linkfn(player));
             print "<td class=\"standingsplayed\">%d</td>" % played;
             print "<td class=\"standingswins\">%d</td>" % wins;
             if show_draws_column:
@@ -210,3 +242,17 @@ def show_standings_table(tourney, ranking_by_wins, show_draws_column, show_point
             print "</tr>";
     print "</table>";
 
+def player_to_link(player, tourney_name, emboldenise=False, disable_tab_order=False):
+    return "<a class=\"playerlink%s\" href=\"player.py?tourney=%s&id=%d\" %s>%s</a>" % (" thisplayerlink" if emboldenise else "", urllib.quote_plus(tourney_name), player.get_id(), "tabindex=\"-1\" " if disable_tab_order else "", cgi.escape(player.get_name()))
+
+def ordinal_number(n):
+    if (n / 10) % 10 == 1:
+        return "%dth" % (n)
+    elif n % 10 == 1:
+        return "%dst" % (n)
+    elif n % 10 == 2:
+        return "%dnd" % (n)
+    elif n % 10 == 3:
+        return "%drd" % (n)
+    else:
+        return "%dth" % (n)

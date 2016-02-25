@@ -307,7 +307,7 @@ class DBVersionMismatchException(TourneyException):
     pass
 
 class Player(object):
-    def __init__(self, name, rating=0, team=None, short_name=None, withdrawn=False, division=0, division_fixed=False):
+    def __init__(self, name, rating=0, team=None, short_name=None, withdrawn=False, division=0, division_fixed=False, player_id=None):
         self.name = name;
         self.rating = rating;
         self.team = team;
@@ -321,6 +321,8 @@ class Player(object):
         # If true, player has been manually put in this division rather than
         # happened to fall into it because of their rating
         self.division_fixed = division_fixed
+
+        self.player_id = player_id
     
     def __eq__(self, other):
         if other is None:
@@ -363,6 +365,9 @@ class Player(object):
     
     def get_rating(self):
         return self.rating
+    
+    def get_id(self):
+        return self.player_id
     
     def get_team_colour_tuple(self):
         if self.team:
@@ -536,9 +541,9 @@ class Game(object):
     
     def __str__(self):
         if self.is_complete():
-            return "Round %d, division %d, table %d, %s %s %s" % (self.round_no, self.division, self.table_no, str(self.p1), self.format_score(), str(self.p2));
+            return "Round %d, %s, Table %d, %s %s %s" % (self.round_no, get_general_division_name(self.division), self.table_no, str(self.p1), self.format_score(), str(self.p2));
         else:
-            return "Round %d, division %d, table %d, %s v %s" % (self.round_no, self.division, self.table_no, str(self.p1), str(self.p2));
+            return "Round %d, %s, Table %d, %s v %s" % (self.round_no, get_general_division_name(self.division), self.table_no, str(self.p1), str(self.p2));
     
     def make_dict(self):
         names = self.get_player_names();
@@ -666,6 +671,9 @@ class Tourney(object):
         self.name = tourney_name;
         self.db = sqlite3.connect(filename);
     
+    def get_name(self):
+        return self.name
+    
     # Number of games in the GAME table - that is, number of games played
     # or in progress.
     def get_num_games(self):
@@ -690,6 +698,17 @@ class Tourney(object):
     def get_round_name(self, round_no):
         cur = self.db.cursor();
         cur.execute("select name from rounds where id = ?", (round_no,));
+        row = cur.fetchone();
+        if not row:
+            cur.close();
+            return None;
+        else:
+            cur.close();
+            return row[0];
+    
+    def get_short_round_name(self, round_no):
+        cur = self.db.cursor();
+        cur.execute("select case when type = 'P' then cast(id as text) else type end short_name from rounds where id = ?", (round_no,));
         row = cur.fetchone();
         if not row:
             cur.close();
@@ -741,6 +760,21 @@ class Tourney(object):
         self.db.commit()
         cur.close()
         return count;
+    
+    def add_player(self, name, rating, division=0):
+        cur = self.db.cursor()
+        cur.execute("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed) values(?, ?, ?, ?, ?, ?, ?)",
+                (name, rating, None, "", 0, division, 0))
+        cur.close()
+        self.db.commit()
+
+        # Recalculate everyone's short names
+        cur = self.db.cursor()
+        players = self.get_players()
+        for p in players:
+            short_name = get_short_name(p.get_name(), players)
+            cur.execute("update player set short_name = ? where name = ?", (short_name, p.get_name()))
+        self.db.commit()
 
     # players must be a list of two-tuples. Each tuple is (name, rating).
     # Alternatively they can be Player objects, which pretend to be 2-tuples.
@@ -854,16 +888,16 @@ class Tourney(object):
     def get_players(self, exclude_withdrawn=False):
         cur = self.db.cursor();
         if exclude_withdrawn:
-            cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed from player p left outer join team t on p.team_id = t.id where p.withdrawn = 0 order by p.rating desc, p.name")
+            cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id from player p left outer join team t on p.team_id = t.id where p.withdrawn = 0 order by p.rating desc, p.name")
         else:
-            cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed from player p left outer join team t on p.team_id = t.id order by p.rating desc, p.name");
+            cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id from player p left outer join team t on p.team_id = t.id order by p.rating desc, p.name");
         players = [];
         for row in cur:
             if row[2] is not None:
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
-            players.append(Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8]));
+            players.append(Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8], row[9]));
         cur.close();
         return players;
     
@@ -922,7 +956,14 @@ class Tourney(object):
             short_name = get_short_name(p.get_name(), players)
             cur.execute("update player set short_name = ? where name = ?", (short_name, p.get_name()))
 
+        cur.close()
         self.db.commit();
+
+    def set_player_division(self, player_name, new_division):
+        cur = self.db.cursor()
+        cur.execute("update player set division = ? where name = ?", (new_division, player_name))
+        cur.close()
+        self.db.commit()
 
     # Put each player in a division. The players are split into num_divisions
     # divisions, each of which must have a multiple of division_size_multiple
@@ -1227,19 +1268,19 @@ where round_no = ? and seq = ?""", alterations_reordered);
         return rows_updated;
     
     def get_player_from_name(self, name):
-        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed from player p left outer join team t on p.team_id = t.id where p.name = ?";
+        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id from player p left outer join team t on p.team_id = t.id where p.name = ?";
         cur = self.db.cursor();
         cur.execute(sql, (name,));
         row = cur.fetchone();
         cur.close();
         if row is None:
-            raise PlayerDoesNotExistException("Player with name \"%s\" does not exist" % name);
+            raise PlayerDoesNotExistException("Player with name \"%s\" does not exist." % name);
         else:
             if row[2] is not None:
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
-            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8]);
+            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], row[9]);
     
     def get_player_from_id(self, player_id):
         sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed from player p left outer join team t on p.team_id = t.id where p.id = ?";
@@ -1254,7 +1295,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
                 team = None
             else:
                 team = Team(row[2], row[3], row[4])
-            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8]);
+            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], player_id);
     
     def get_latest_round_no(self, round_type=None):
         cur = self.db.cursor();

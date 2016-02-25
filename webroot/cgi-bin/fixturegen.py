@@ -68,19 +68,6 @@ class FixtureGeneratorSettings(object):
     def get_previous_settings(self):
         return self.default_settings
 
-
-def ordinal_number(n):
-    if (n / 10) % 10 == 1:
-        return "%dth" % (n)
-    elif n % 10 == 1:
-        return "%dst" % (n)
-    elif n % 10 == 2:
-        return "%dnd" % (n)
-    elif n % 10 == 3:
-        return "%drd" % (n)
-    else:
-        return "%dth" % (n)
-
 cgicommon.print_html_head("Fixture Generator: " + str(tourney_name));
 
 print "<body>";
@@ -184,7 +171,7 @@ try:
                                 else:
                                     player_td_html.append("<strong>%s</strong>" % (cgi.escape(name)) +
                                             " (%s, %d win%s%s)" % (
-                                                ordinal_number(standings_row.position),
+                                                cgicommon.ordinal_number(standings_row.position),
                                                 standings_row.wins,
                                                 "" if standings_row.wins == 1 else "s",
                                                 "" if standings_row.draws == 0 else ", %d draw%s" % (standings_row.draws, "" if standings_row.draws == 1 else "s")))
