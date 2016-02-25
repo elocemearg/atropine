@@ -156,7 +156,7 @@ if tourneyname is None:
 elif not tourney:
     print "<p>No valid tourney name specified</p>";
 else:
-    print '<p><a href="/cgi-bin/tourneysetup.py?tourney=%s">Back to tourney setup</a></p>' % (urllib.quote_plus(tourneyname));
+    num_players = len(tourney.get_players())
 
     if player_teams_set:
         print "<p><strong>Teams set successfully.</strong></p>"
@@ -168,70 +168,75 @@ else:
     teams = tourney.get_teams()
     player_teams = sorted(tourney.get_player_teams(), key=lambda x : x[0].get_rating(), reverse=True)
 
-    print '<h2>Teams</h2>'
-    for team in teams:
-        print '<p>'
-        print '<font color="#%s">&bull;</font> %s' % (team.get_hex_colour(), team.get_name())
-        player_name_list = [ cgi.escape(p.get_name()) for (p, pt) in player_teams if pt is not None and pt.get_id() == team.get_id() ]
+    if num_players == 0:
+        print "<p>This tourney doesn't have any players, so you can't specify teams yet.</p>"
+        print '<p><a href="/cgi-bin/tourneysetup.py?tourney=%s">Back to Tourney Setup</a></p>' % (urllib.quote_plus(tourneyname));
+    else:
+        #print '<p><a href="/cgi-bin/tourneysetup.py?tourney=%s">Back to tourney setup</a></p>' % (urllib.quote_plus(tourneyname));
+        print '<h2>Teams</h2>'
+        for team in teams:
+            print '<p>'
+            print '<font color="#%s">&bull;</font> %s' % (team.get_hex_colour(), team.get_name())
+            player_name_list = [ cgi.escape(p.get_name()) for (p, pt) in player_teams if pt is not None and pt.get_id() == team.get_id() ]
 
-        if player_name_list:
-            print " (%d): %s" % (len(player_name_list), ", ".join(player_name_list));
-        else:
-            print " (no players)"
-        print '</p>'
+            if player_name_list:
+                print " (%d): %s" % (len(player_name_list), ", ".join(player_name_list));
+            else:
+                print " (no players)"
+            print '</p>'
 
-    print '<h2>Players</h2>'
-    print '<form action="%s?tourney=%s" method="POST">' % (cgi.escape(baseurl, True), urllib.quote_plus(tourneyname))
-    print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True)
-    print '<table border="1">'
-    print '<tr><th>Player</th>'
-    print '<th>No team</th>'
-    for team in teams:
-        print '<th>%s</th>' % (cgi.escape(team.get_name()))
-    print '</tr>'
-
-    index = 0
-    for player_team in player_teams:
-        player = player_team[0]
-        team = player_team[1]
-
-        print '<tr>'
-        print '<td align="left">%s<input type="hidden" name="player%d" value="%s" /></td>' % (cgi.escape(player.get_name()), index, cgi.escape(player.get_name()))
-
-        # Radio button for "no team"
-        print '<td align="center"><input type="radio" name="team%d" value="%d" %s /></td>' % (index, -1, "checked" if team is None else "")
-        for t in teams:
-            print '<td align="center" bgcolor="#%s"><input type="radio" name="team%d" value="%d" %s /></td>' % (t.get_hex_colour(), index, t.get_id(), "checked" if team is not None and team.get_id() == t.get_id() else "")
+        print '<h2>Players</h2>'
+        print '<form action="%s?tourney=%s" method="POST">' % (cgi.escape(baseurl, True), urllib.quote_plus(tourneyname))
+        print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True)
+        print '<table border="1">'
+        print '<tr><th>Player</th>'
+        print '<th>No team</th>'
+        for team in teams:
+            print '<th>%s</th>' % (cgi.escape(team.get_name()))
         print '</tr>'
-        index += 1
-    print '</table>'
 
-    print '<p>'
-    print '<input type="submit" name="playerteamsubmit" value="Set Teams" />'
-    print '</p>'
-    print '</form>'
+        index = 0
+        for player_team in player_teams:
+            player = player_team[0]
+            team = player_team[1]
 
-    print '<h2>Automatic random team assignment</h2>'
-    print '<form action="%s?tourney=%s" method="POST">' % (cgi.escape(baseurl, True), urllib.quote_plus(tourneyname))
-    print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True)
-    print '<p>'
-    print 'Divide players by rating into groups of <input type="text" name="randomgroupsize" value="%d" size="5"> and randomly distribute each group as evenly as possible among the teams. Set to 0 to divide the whole player list randomly into teams, ignoring rating.' % random_group_size
-    print '</p>'
-    print '<p>'
-    print '<input type="submit" name="randomassignmentsubmit" value="Randomly assign players to teams" />'
-    print '</p>'
-    print '</form>'
+            print '<tr>'
+            print '<td align="left">%s<input type="hidden" name="player%d" value="%s" /></td>' % (cgi.escape(player.get_name()), index, cgi.escape(player.get_name()))
 
-    print '<h2>Clear teams</h2>'
-    print '<form action="%s?tourney=%s" method="POST">' % (cgi.escape(baseurl, True), urllib.quote_plus(tourneyname))
-    print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True)
-    print '<p>'
-    print 'Remove all players from their teams.'
-    print '</p>'
-    print '<p>'
-    print '<input type="submit" name="clearteams" value="Clear team assignments"/>'
-    print '</p>'
-    print '</form>'
+            # Radio button for "no team"
+            print '<td align="center"><input type="radio" name="team%d" value="%d" %s /></td>' % (index, -1, "checked" if team is None else "")
+            for t in teams:
+                print '<td align="center" bgcolor="#%s"><input type="radio" name="team%d" value="%d" %s /></td>' % (t.get_hex_colour(), index, t.get_id(), "checked" if team is not None and team.get_id() == t.get_id() else "")
+            print '</tr>'
+            index += 1
+        print '</table>'
+
+        print '<p>'
+        print '<input type="submit" name="playerteamsubmit" value="Set Teams" />'
+        print '</p>'
+        print '</form>'
+
+        print '<h2>Automatic random team assignment</h2>'
+        print '<form action="%s?tourney=%s" method="POST">' % (cgi.escape(baseurl, True), urllib.quote_plus(tourneyname))
+        print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True)
+        print '<p>'
+        print 'Divide players by rating into groups of <input type="text" name="randomgroupsize" value="%d" size="5"> and randomly distribute each group as evenly as possible among the teams. Set to 0 to divide the whole player list randomly into teams, ignoring rating.' % random_group_size
+        print '</p>'
+        print '<p>'
+        print '<input type="submit" name="randomassignmentsubmit" value="Randomly assign players to teams" />'
+        print '</p>'
+        print '</form>'
+
+        print '<h2>Clear teams</h2>'
+        print '<form action="%s?tourney=%s" method="POST">' % (cgi.escape(baseurl, True), urllib.quote_plus(tourneyname))
+        print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True)
+        print '<p>'
+        print 'Remove all players from their teams.'
+        print '</p>'
+        print '<p>'
+        print '<input type="submit" name="clearteams" value="Clear team assignments"/>'
+        print '</p>'
+        print '</form>'
     #print '</p>'
 
 print '</div>'

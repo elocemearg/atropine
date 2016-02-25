@@ -109,32 +109,35 @@ else:
     print "<p>"
     if tourney.get_num_games() > 0:
         print "The tournament has started."
-    print "There are %d players," % len(players)
-    num_active = len(filter(lambda x : not x.is_withdrawn(), players))
-    if num_active != len(players):
-        print "of whom %d are active and %d withdrawn." % (num_active, len(players) - num_active)
+    if len(players) == 0:
+        print "There are no players in the tourney yet."
     else:
-        print "none withdrawn."
+        print "There are <a href=\"player.py?tourney=%s\">%d players</a>," % (urllib.quote_plus(tourney.get_name()), len(players))
+        num_active = len(filter(lambda x : not x.is_withdrawn(), players))
+        if num_active != len(players):
+            print "of whom %d %s active and %d %s withdrawn." % (num_active, "is" if num_active == 1 else "are", len(players) - num_active, "has" if len(players) - num_active == 1 else "have")
+        else:
+            print "none withdrawn."
     print "</p>"
 
     num_divisions = tourney.get_num_divisions()
     if num_divisions > 1:
-        print "<p>The players are distributed into %d divisions.</p>" % (num_divisions)
+        print "<p>The players are distributed into <a href=\"divsetup.py?tourney=%s\">%d divisions</a>.</p>" % (urllib.quote_plus(tourney.get_name()), num_divisions)
         print "<blockquote>"
         for div_index in range(num_divisions):
             print "<li>%s: %d active players.</li>" % (tourney.get_division_name(div_index), tourney.get_num_active_players(div_index))
         print "</blockquote>"
 
-
     if tourney.get_num_games() == 0:
         players = tourney.get_players();
+        print "<hr />"
         print "<h2>Player list</h2>";
         print "<p>"
         print "Enter player names in this box, one player per line. Blank lines are ignored."
         print "</p><p>"
         print "To give a player a rating, put a comma after the player's name and put the rating number after that, e.g. <tt>Harry Peters,1860</tt>"
         print "</p><p>"
-        print "To indicate that a player is a patzer, give them a rating of zero: <tt>Apterous Prune,0</tt>"
+        print "To indicate that a player is a patzer or bye (this affects how the fixture generators assign fixtures), give them a rating of zero: <tt>Apterous Prune,0</tt>"
         print "</p>"
         print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
         print "<p>"
@@ -182,10 +185,16 @@ else:
         print "A player's rating may still be changed after the tournament has started."
         print "</p>"
 
+        if len(players) and num_divisions > 1:
+            print "<p>"
+            print "<strong>Warning:</strong> There is already a player list defined. If you submit a new list using this form, these new players will replace any existing players, and <strong>any division setup will be lost</strong>."
+            print "</p>"
+
         print "<p>"
         print '<input type="submit" name="playerlistsubmit" value="Save Player List" />'
         print "</p>"
         print '</form>'
+        print "<hr />"
 
     rank = tourney.get_rank_method();
     print "<h2>Tourney rules</h2>";
@@ -209,19 +218,8 @@ else:
     print "</p>"
     print "</form>";
 
-    withdrawn_players = tourney.get_withdrawn_players()
-    if withdrawn_players:
-        withdrawn_players = sorted(withdrawn_players, key=lambda x : x.name)
-        print '<h2>Reinstate player</h2>'
-        print '<p>The following players are currently withdrawn from the tourney.</p>'
-        print '<blockquote>'
-        for p in withdrawn_players:
-            print '<li>%s</li>' % (cgicommon.player_to_link(p, tourneyname))
-        print '</blockquote>'
-
-        print '<p>These players will not be included in future rounds until reinstated.</p>'
-
     if tourney.get_num_games() > 0:
+        print "<hr />"
         print '<h2>Delete rounds</h2>'
         print '<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>'
         print '<form action="/cgi-bin/delround.py" method="get" />'
@@ -230,6 +228,7 @@ else:
         print '</form>'
     
     if len(players) > 0:
+        print "<hr />"
         print '<h2>Export standings and results</h2>'
         print '<p>'
         print '<a href="/cgi-bin/export.py?tourney=%s&format=html" target="_blank">HTML (opens in new window)</a>' % urllib.quote_plus(tourneyname)

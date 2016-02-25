@@ -291,7 +291,10 @@ if player:
     print "<hr />"
 
     print "<h2>Games</h2>"
-    cgicommon.show_games_as_html_table(games, False, None, True, lambda x : tourney.get_short_round_name(x), player_to_link)
+    if not games:
+        print "<p>None.</p>"
+    else:
+        cgicommon.show_games_as_html_table(games, False, None, True, lambda x : tourney.get_short_round_name(x), player_to_link)
 
     print "<hr />"
 
@@ -321,15 +324,24 @@ else:
     num_divisions = tourney.get_num_divisions()
     num_withdrawn = len(players) - len(active_players)
 
-    sys.stdout.write("<p>Your tourney has %d players" % (len(players)))
-    if num_divisions > 1:
-        sys.stdout.write(" in %d divisions" % (num_divisions))
-    if len(active_players) != len(players):
-        print ". %d of these players %s withdrawn." % (num_withdrawn, "has" if num_withdrawn == 1 else "have")
+    if len(players):
+        sys.stdout.write("<p>Your tourney has %d players" % (len(players)))
+        if num_divisions > 1:
+            sys.stdout.write(" in %d divisions" % (num_divisions))
+        if len(active_players) != len(players):
+            print ". %d of these players %s withdrawn." % (num_withdrawn, "has" if num_withdrawn == 1 else "have")
+        else:
+            print "."
+        print "</p>"
+        print "<p>Click on a player's name to view or edit information about them.</p>"
     else:
-        print "."
-    print "</p>"
-    print "<p>Click on a player's name to view or edit information about them.</p>"
+        print "<p>"
+        print "Your tourney doesn't have any players yet."
+        if tourney.get_num_games() == 0:
+            print "You can add players below or you can paste a list of players on the <a href=\"tourneysetup.py?tourney=%s\">Tourney Setup</a> page." % (urllib.quote_plus(tourney.get_name()))
+        else:
+            print "Yet somehow you've managed to create fixtures. I'm not quite sure how you've managed that, but meh. You can add players using the form below."
+        print "</p>"
 
     for div in range(num_divisions):
         div_players = filter(lambda x : x.get_division() == div, players)

@@ -327,7 +327,6 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
     # Adjust the played_matrix so that if you've played one patzer, you've
     # effectively played them all
     for pi in range(len(players)):
-        p = players[i]
         num_patzer_matches = sum(played_matrix[pi][x] for x in patzer_set)
         for x in patzer_set:
             played_matrix[pi][x] = num_patzer_matches

@@ -978,15 +978,18 @@ class Tourney(object):
         cur.close()
         self.db.commit()
 
-    # Put each player in a division. The players are split into num_divisions
-    # divisions, each of which must have a multiple of division_size_multiple
-    # players. Names are listed as strings in automatic_top_div_players
-    # are put in the top division. Beyond that, players are distributed
-    # among the divisions so as to make their sizes as equal as possible,
-    # while still preserving that the size of every division must be a
-    # multiple of division_size_multiple.
+    # Put each player in a division. The active players are split into
+    # num_divisions divisions, each of which must have a multiple of
+    # division_size_multiple players. Names listed as strings in
+    # automatic_top_div_players are put in the top division. Beyond that,
+    # players are distributed among the divisions so as to make their sizes
+    # as equal as possible, while still preserving that the size of every
+    # division must be a multiple of division_size_multiple.
     def set_player_divisions(self, num_divisions, division_size_multiple, automatic_top_div_players=[]):
-        players = self.get_players(exclude_withdrawn=False)
+        players = self.get_players(exclude_withdrawn=True)
+
+        if len(players) % division_size_multiple != 0:
+            raise IllegalDivisionException()
 
         div_players = [ [] for i in range(num_divisions) ]
 
@@ -1055,6 +1058,21 @@ class Tourney(object):
                     # This division needs an extra tablesworth
                     div_players[division] += remaining_players[0:division_size_multiple]
                     remaining_players = remaining_players[division_size_multiple:]
+
+        # Finally, take the withdrawn players, which we haven't put into any
+        # division, and put them into the division appropriate for their
+        # rating.
+
+        div_rating_ranges = []
+        for div_index in range(num_divisions):
+            div_rating_ranges.append((max(x.get_rating() for x in div_players[div_index]), min(x.get_rating() for x in div_players[div_index])))
+
+        withdrawn_players = filter(lambda x : x.is_withdrawn(), self.get_players(exclude_withdrawn=False))
+        for p in withdrawn_players:
+            for div in range(num_divisions):
+                if div == num_divisions - 1 or p.get_rating() >= div_rating_ranges[div][1]:
+                    div_players[div].append(p)
+                    break
 
         sql_params = []
         division = 0
