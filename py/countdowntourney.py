@@ -761,7 +761,20 @@ class Tourney(object):
         cur.close()
         return count;
     
+    def player_name_exists(self, name):
+        cur = self.db.cursor()
+        cur.execute("select count(*) from player where name = ?", (name,))
+        row = cur.fetchone()
+        if row[0]:
+            cur.close()
+            return True
+        else:
+            cur.close()
+            return False
+    
     def add_player(self, name, rating, division=0):
+        if self.player_name_exists(name):
+            raise PlayerExistsException("Can't add player \"%s\" because there is already a player with that name." % (name))
         cur = self.db.cursor()
         cur.execute("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed) values(?, ?, ?, ?, ?, ?, ?)",
                 (name, rating, None, "", 0, division, 0))
