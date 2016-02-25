@@ -101,7 +101,7 @@ else:
             print "<p>"
             print "Number of divisions: <input type=\"number\" min=\"1\" size=\"4\" maxlength=\"4\" name=\"numdivisions\" value=\"%d\" />" % (num_divisions)
             print "</p><p>"
-            print "When assigning divisions by rating, ensure the number of players in a division is a multiple of "
+            print "When assigning divisions by rating, ensure the number of active players in a division is a multiple of "
             print "<input type=\"number\" name=\"divsizemultiple\" min=\"1\" size=\"4\" maxlength=\"4\" value=\"%d\" />" % (division_size_multiple)
             print "</p>"
 
