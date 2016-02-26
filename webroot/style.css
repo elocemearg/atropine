@@ -184,8 +184,8 @@ tr.standingstabledivspacer {
 }
 
 table.standingstable td {
-	padding-left: 0.5em;
-	padding-right: 0.5em;
+	padding-left: 0.3em;
+	padding-right: 0.3em;
 }
 
 tr.standingsrow td {
@@ -195,6 +195,8 @@ tr.standingsrow td {
 table.standingstable th {
 	border-bottom: 1px solid black;
 	background-color: #dddddd;
+	padding-left: 0.3em;
+	padding-right: 0.3em;
 }
 
 td.standingspos {
@@ -233,6 +235,11 @@ td.standingsspread {
 }
 
 td.standingsfirstsecond {
+	text-align: right;
+	border-right: 1px solid gray;
+}
+
+td.standingstournamentrating {
 	text-align: right;
 	border-right: 1px solid gray;
 }

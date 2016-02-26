@@ -205,6 +205,7 @@ insert into tr_opts (bonus, rating_diff_cap) values (50, 40);
 -- is your opponent's rating at the start of the tourney, except where that
 -- is more than 40 away from your own, in which case it's your rating +40 or
 -- -40 as appropriate.
+-- The 50 and 40 are configurable, in the tr_opts table.
 create view tournament_rating as
     select p.id, p.name,
         avg(case when hgd.p_score > hgd.opp_score then rel_ratings.opp_rating + tr_opts.bonus
@@ -487,7 +488,7 @@ class Team(object):
         return ((self.colour >> 16) & 0xff, (self.colour >> 8) & 0xff, self.colour & 0xff)
 
 class StandingsRow(object):
-    def __init__(self, position, name, played, wins, points, draws, spread, played_first, rating):
+    def __init__(self, position, name, played, wins, points, draws, spread, played_first, rating, tournament_rating):
         self.position = position
         self.name = name
         self.played = played
@@ -497,6 +498,7 @@ class StandingsRow(object):
         self.spread = spread
         self.played_first = played_first
         self.rating = rating
+        self.tournament_rating = tournament_rating
 
     def __str__(self):
         return "%3d. %-25s %3dw %3dd %4dp" % (self.position, self.name, self.wins, self.draws, self.points)
@@ -914,24 +916,6 @@ class Tourney(object):
         cur.close();
         return players;
     
-    #def add_player(self, name, rating):
-    #    if self.get_num_games() > 0:
-    #        raise TourneyInProgressException("Adding or removing players is not permitted once the tournament has started.");
-    #    self.db.execute("insert into player(name, rating, team_id) values (?, ?, null)", (name, rating));
-    #    self.db.commit();
-    #
-    #def remove_player(self, name):
-    #    if self.get_num_games() > 0:
-    #        raise TourneyInProgressException("Adding or removing players is not permitted once the tournament has started.");
-
-    #    cur = self.db.cursor();
-    #    cur.execute("delete from player where name = ?", (name));
-    #    if cur.rowcount < 1:
-    #        self.db.rollback();
-    #        raise PlayerDoesNotExistException("Cannot remove player \"" + name + "\" because such a player does not exist.");
-    #    cur.close();
-    #    self.db.commit();
-    
     def rerate_player(self, name, rating):
         try:
             rating = float(rating)
@@ -1114,6 +1098,50 @@ class Tourney(object):
         cur.close();
         self.db.commit();
         return rows[0];
+
+    def get_player_tournament_rating(self, name):
+        cur = self.db.cursor()
+        cur.execute("select tournament_rating from tournament_rating where name = ?", (name,))
+        row = cur.fetchone()
+        if row is None:
+            raise PlayerDoesNotExistException()
+        tournament_rating = row[0]
+        cur.close()
+        return tournament_rating
+
+    def get_tournament_rating_bonus_value(self):
+        cur = self.db.cursor()
+        cur.execute("select bonus from tr_opts")
+        row = cur.fetchone()
+        if row is None:
+            bonus = 50
+        else:
+            bonus = row[0]
+        cur.close()
+        return bonus
+    
+    def get_tournament_rating_diff_cap(self):
+        cur = self.db.cursor()
+        cur.execute("select rating_diff_cap from tr_opts")
+        row = cur.fetchone()
+        if row is None:
+            diff_cap = 40
+        else:
+            diff_cap = row[0]
+        cur.close()
+        return diff_cap
+
+    def set_tournament_rating_config(self, bonus=50, diff_cap=40):
+        cur = self.db.cursor()
+        cur.execute("update tr_opts set bonus = ?, rating_diff_cap = ?", (bonus, diff_cap))
+        cur.close()
+        self.db.commit()
+
+    def get_show_tournament_rating_column(self):
+        return bool(self.get_int_attribute("showtournamentratingcolumn", 0))
+    
+    def set_show_tournament_rating_column(self, value):
+        self.set_attribute("showtournamentratingcolumn", str(int(value)))
 
     # games is a list of tuples:
     # (round_no, seq, table_no, game_type, name1, score1, name2, score2, tiebreak)
@@ -1518,6 +1546,15 @@ where round_no = ? and seq = ?""", alterations_reordered);
     
     def get_rank_method(self):
         return self.get_int_attribute("rankmethod", RANK_WINS_POINTS);
+    
+    def is_ranking_by_wins(self):
+        return self.get_rank_method() in [ RANK_WINS_POINTS, RANK_WINS_SPREAD ]
+    
+    def is_ranking_by_points(self):
+        return self.get_rank_method() in [ RANK_WINS_POINTS, RANK_POINTS ]
+    
+    def is_ranking_by_spread(self):
+        return self.get_rank_method() == RANK_WINS_SPREAD
 
     def set_rank_method(self, method):
         if method not in [RANK_WINS_POINTS, RANK_WINS_SPREAD, RANK_POINTS]:
@@ -1569,10 +1606,10 @@ where round_no = ? and seq = ?""", alterations_reordered);
         method = self.get_rank_method();
         if method == RANK_WINS_POINTS:
             orderby = "order by s.wins * 2 + s.draws desc, s.points desc, p.name";
-            rankcols = [9,4];
+            rankcols = [10,4];
         elif method == RANK_WINS_SPREAD:
             orderby = "order by s.wins * 2 + s.draws desc, s.points - s.points_against desc, p.name"
-            rankcols = [9,6]
+            rankcols = [10,6]
         elif method == RANK_POINTS:
             orderby = "order by s.points desc, p.name";
             rankcols = [4];
@@ -1584,9 +1621,9 @@ where round_no = ? and seq = ?""", alterations_reordered);
         else:
             condition = ""
 
-        results = self.ranked_query("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, s.wins * 2 + s.draws from player_standings s, player p on p.id = s.id " + condition + orderby, rankcols);
+        results = self.ranked_query("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws from player_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id " + condition + orderby, rankcols);
 
-        return [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8]) for x in results ]
+        return [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9]) for x in results ]
     
     def get_logs_since(self, seq, include_new_games=False):
         cur = self.db.cursor();

@@ -260,6 +260,13 @@ if player:
 
         print "<table class=\"statscorner\">"
         print "<tr class=\"statsrow\"><th colspan=\"2\">%s</th></tr>" % (cgi.escape(player.get_name()))
+        print "<tr class=\"statsrow\"><td class=\"statsname\">Rating</td>"
+        print "<td class=\"statsnumvalue\">%g</td></tr>" % (player.get_rating())
+        print "<tr class=\"statsrow\"><td class=\"statsname\">Tournament rating</td>"
+        if standing.tournament_rating is not None:
+            print "<td class=\"statsnumvalue\">%.2f</td></tr>" % (standing.tournament_rating)
+        else:
+            print "<td class=\"statsnumvalue\"></td></tr>"
         print "<tr class=\"statsrow\"><td class=\"statsname\">Position%s</td>" % (indiv_string)
         print "<td class=\"statsnumvalue\">%s</td></tr>" % (cgicommon.ordinal_number(standing.position))
         if seed is not None:

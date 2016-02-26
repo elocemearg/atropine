@@ -16,6 +16,14 @@ def int_or_none(s):
     except ValueError:
         return None;
 
+def float_or_none(s):
+    if s is None:
+        return None;
+    try:
+        return float(s);
+    except ValueError:
+        return None;
+
 def show_player_drop_down_box(players, control_name):
     print "<select name=\"%s\">" % (control_name)
     print "<option value=\"\">-- select player --</option>"
@@ -43,12 +51,10 @@ modify_player_submit = form.getfirst("modifyplayersubmit");
 rank = form.getfirst("rank");
 rank = int_or_none(rank);
 show_draws_column = int_or_none(form.getfirst("showdrawscolumn"))
+show_tournament_rating = bool(int_or_none(form.getfirst("showtournamentratingcolumn")))
+tr_bonus = float_or_none(form.getfirst("tournamentratingbonus"))
+tr_diff_cap = float_or_none(form.getfirst("tournamentratingdiffcap"))
 rules_submit = form.getfirst("rulessubmit");
-withdraw_player_submit = form.getfirst("withdrawplayersubmit");
-unwithdraw_player_submit = form.getfirst("unwithdrawplayersubmit");
-withdraw_player_name = form.getfirst("withdrawplayername");
-unwithdraw_player_name = form.getfirst("unwithdrawplayername");
-
 
 tourney = None;
 request_method = os.environ.get("REQUEST_METHOD", "");
@@ -98,6 +104,8 @@ else:
         try:
             tourney.set_rank_method(rank);
             tourney.set_show_draws_column(show_draws_column);
+            tourney.set_show_tournament_rating_column(show_tournament_rating)
+            tourney.set_tournament_rating_config(tr_bonus, tr_diff_cap)
             #tourney.set_table_size(players_per_table);
             print "<p><strong>Rules updated successfully.</strong></p>";
         except countdowntourney.TourneyException as e:
@@ -194,47 +202,64 @@ else:
         print '<input type="submit" name="playerlistsubmit" value="Save Player List" />'
         print "</p>"
         print '</form>'
-        print "<hr />"
 
-    rank = tourney.get_rank_method();
+    print "<hr />"
+
     print "<h2>Tourney rules</h2>";
+    rank = tourney.get_rank_method();
     print '<form action="%s?tourney=%s" method="post" />' % (baseurl, urllib.quote_plus(tourneyname));
     print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True);
-    print "<h3>Rank players by</h3>";
-    print "<blockquote>";
+    print "<h3>Ranking order</h3>";
+    print "<p>How do you want to rank players in the standings table?</p>";
     print '<input type="radio" name="rank" value="%d" %s /> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "");
-    print '<input type="radio" name="rank" value="%d" %s /> Wins, then cumulative winning margin. Draws are worth half a win.<br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")
+    print '<input type="radio" name="rank" value="%d" %s /> Wins, then cumulative winning margin (spread). Draws are worth half a win.<br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")
     print '<input type="radio" name="rank" value="%d" %s /> Points only.' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "");
-    print '</blockquote>';
+    print '</p>';
 
     print "<h3>Draws</h3>"
-    print "<blockquote>"
+    print "<p>"
+    print "Tick this box if draws are possible in your tournament."
+    print "</p><p>"
     print "<input type=\"checkbox\" name=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")
     print "Show draws column in standings table"
-    print "</blockquote>"
-
-    print "<p>"
-    print '<input type="submit" name="rulessubmit" value="Save Rules" />';
     print "</p>"
+
+    print "<h3>Tournament Ratings</h3>"
+    print "<p>"
+    print "<input type=\"checkbox\" name=\"showtournamentratingcolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_tournament_rating_column() else "")
+    print "Show tournament ratings in standings table"
+    print "</p>"
+    print "<p>"
+    print "For each game you play, your tournament rating is calculated as follows."
+    print "</p>"
+    print "<ul>"
+    print "<li>If you win, your opponent's <em>effective rating</em> plus the <em>win value</em>.</li>"
+    print "<li>If you draw, your opponent's <em>effective rating</em>.</li>"
+    print "<li>If you lose, your opponent's <em>effective rating</em> minus the <em>win value</em>.</li>"
+    print "</ul>"
+    print "<p>"
+    print "The <em>win value</em> is <input type=\"number\" name=\"tournamentratingbonus\" value=\"%g\" maxlength=\"5\" />" % (tourney.get_tournament_rating_bonus_value())
+    print "</p><p>"
+    print "Your opponent's <em>effective rating</em> for a game is their rating at the start of the tournament, capped to within"
+    print "<input type=\"number\" name=\"tournamentratingdiffcap\" value=\"%g\" maxlength=\"5\" />" % (tourney.get_tournament_rating_diff_cap())
+    print "of your own."
+    print "</p>"
+    print "<p>"
+    print "Your overall tournament rating is the mean average from all your games."
+    print "</p>"
+    print '<p><input type="submit" name="rulessubmit" value="Save Rules" /></p>'
     print "</form>";
 
     if tourney.get_num_games() > 0:
         print "<hr />"
         print '<h2>Delete rounds</h2>'
         print '<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>'
+        print "<p>"
         print '<form action="/cgi-bin/delround.py" method="get" />'
         print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname)
         print '<input type="submit" name="delroundsetupsubmit" value="Delete most recent round" />'
         print '</form>'
-    
-    if len(players) > 0:
-        print "<hr />"
-        print '<h2>Export standings and results</h2>'
-        print '<p>'
-        print '<a href="/cgi-bin/export.py?tourney=%s&format=html" target="_blank">HTML (opens in new window)</a>' % urllib.quote_plus(tourneyname)
-        print '</p><p>'
-        print '<a href="/cgi-bin/export.py?tourney=%s&format=text" target="_blank">Plain text (opens in new window)</a>' % urllib.quote_plus(tourneyname)
-        print '</p>'
+        print "</p>"
 
 print "</div>";
 

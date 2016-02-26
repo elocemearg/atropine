@@ -70,9 +70,20 @@ def show_sidebar(tourney):
         print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Generate new round...</a>" % (urllib.quote_plus(tourney.name));
         print "</div>";
 
+        print "<br />"
+
         print "<div class=\"standingslink\">";
         print "<a href=\"/cgi-bin/standings.py?tourney=%s\">Standings</a>" % (urllib.quote_plus(tourney.name));
         print "</div>";
+
+        print "<br />"
+
+        print "<div class=\"exportlink\">"
+        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=html\" target=\"_blank\">Results (HTML)</a>" % (urllib.quote_plus(tourney.name))
+        print "</div>"
+        print "<div class=\"exportlink\">"
+        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=text\" target=\"_blank\">Results (text)</a>" % (urllib.quote_plus(tourney.name))
+        print "</div>"
     print "</div>";
 
 def make_team_dot_html(team):
@@ -190,8 +201,9 @@ onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.roun
     
     print "</table>";
 
-def show_standings_table(tourney, ranking_by_wins, show_draws_column, show_points_column, show_spread_column, show_first_second_column=False, linkify_players=False):
+def show_standings_table(tourney, show_draws_column, show_points_column, show_spread_column, show_first_second_column=False, linkify_players=False, show_tournament_rating_column=False):
     num_divisions = tourney.get_num_divisions()
+    ranking_by_wins = tourney.is_ranking_by_wins()
 
     if linkify_players:
         linkfn = lambda x : player_to_link(x, tourney.get_name())
@@ -207,17 +219,19 @@ def show_standings_table(tourney, ranking_by_wins, show_draws_column, show_point
             div_string = ""
         if div_index > 0:
             print "<tr class=\"standingstabledivspacer\"><td></td></tr>"
-        print "<tr><th colspan=\"2\">%s</th><th>Played</th><th>Wins</th>%s%s%s%s</tr>" % (
+        print "<tr><th colspan=\"2\">%s</th><th>Played</th><th>Wins</th>%s%s%s%s%s</tr>" % (
                 cgi.escape(div_string),
                 "<th>Draws</th>" if show_draws_column else "",
                 "<th>Points</th>" if show_points_column else "",
                 "<th>Spread</th>" if show_spread_column else "",
-                "<th>1st/2nd</th>" if show_first_second_column else "");
+                "<th>1st/2nd</th>" if show_first_second_column else "",
+                "<th>Tournament Rating</th>" if show_tournament_rating_column else "");
         last_wins_inc_draws = None;
         tr_bgcolours = ["#ffdd66", "#ffff88" ];
         bgcolour_index = 0;
         for s in standings:
             (pos, name, played, wins, points, draws, spread, num_first) = s[0:8];
+            tournament_rating = s.tournament_rating
             player = tourney.get_player_from_name(name)
             if ranking_by_wins:
                 if last_wins_inc_draws is None:
@@ -227,18 +241,39 @@ def show_standings_table(tourney, ranking_by_wins, show_draws_column, show_point
                 last_wins_inc_draws = wins + 0.5 * draws;
 
                 print "<tr class=\"standingsrow\" style=\"background-color: %s\">" % tr_bgcolours[bgcolour_index];
+            
+            bold_style = "style=\"font-weight: bold;\""
+            if ranking_by_wins:
+                wins_style = bold_style
+                draws_style = bold_style
+            else:
+                wins_style = ""
+                draws_style = ""
+            if tourney.is_ranking_by_points():
+                points_style = bold_style
+            else:
+                points_style = ""
+            if tourney.is_ranking_by_spread():
+                spread_style = bold_style
+            else:
+                spread_style = ""
             print "<td class=\"standingspos\">%d</td>" % pos;
             print "<td class=\"standingsname\">%s</td>" % (linkfn(player));
             print "<td class=\"standingsplayed\">%d</td>" % played;
-            print "<td class=\"standingswins\">%d</td>" % wins;
+            print "<td class=\"standingswins\" %s >%d</td>" % (wins_style, wins);
             if show_draws_column:
-                print "<td class=\"standingsdraws\">%d</td>" % draws;
+                print "<td class=\"standingsdraws\" %s >%d</td>" % (draws_style, draws);
             if show_points_column:
-                print "<td class=\"standingspoints\">%d</td>" % points;
+                print "<td class=\"standingspoints\" %s >%d</td>" % (points_style, points);
             if show_spread_column:
-                print "<td class=\"standingsspread\">%+d</td>" % spread;
+                print "<td class=\"standingsspread\" %s >%+d</td>" % (spread_style, spread);
             if show_first_second_column:
                 print "<td class=\"standingsfirstsecond\">%d/%d</td>" % (num_first, played - num_first)
+            if show_tournament_rating_column:
+                print "<td class=\"standingstournamentrating\">"
+                if tournament_rating is not None:
+                    print "%.2f" % (tournament_rating)
+                print "</td>"
             print "</tr>";
     print "</table>";
 

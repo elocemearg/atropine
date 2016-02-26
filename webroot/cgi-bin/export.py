@@ -51,6 +51,7 @@ try:
     rank_method = tourney.get_rank_method()
     show_points_column = (rank_method in [countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_POINTS])
     show_spread_column = (rank_method == countdowntourney.RANK_WINS_SPREAD)
+    show_tournament_rating_column = tourney.get_show_tournament_rating_column()
 
     if export_format == "html":
         print "Content-Type: text/html; charset=utf-8";
@@ -80,7 +81,7 @@ try:
         print "</p>"
 
         rank_method = tourney.get_rank_method()
-        cgicommon.show_standings_table(tourney, rank_method in (countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_WINS_SPREAD), tourney.get_show_draws_column(), rank_method in (countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_POINTS), rank_method == countdowntourney.RANK_WINS_SPREAD, False)
+        cgicommon.show_standings_table(tourney, tourney.get_show_draws_column(), rank_method in (countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_POINTS), rank_method == countdowntourney.RANK_WINS_SPREAD, False, False, show_tournament_rating_column)
 
         print "<h1>Results</h1>"
         prev_round_no = None
@@ -161,15 +162,21 @@ try:
         max_name_len = 0
         for div_index in range(num_divisions):
             standings = tourney.get_standings(div_index)
-            m = max(map(lambda x : len(x[1]), standings));
-            if m > max_name_len:
-                max_name_len = m
+            if len(standings) > 0:
+                m = max(map(lambda x : len(x[1]), standings));
+                if m > max_name_len:
+                    max_name_len = m
 
         for div_index in range(num_divisions):
             standings = tourney.get_standings(div_index)
             if num_divisions > 1:
                 print tourney.get_division_name(div_index)
-            header_format_string = "%%-%ds  P   W%s%s%s" % (max_name_len + 6, "   D" if show_draws_column else "", "  Pts" if show_points_column else "", "   Spr" if show_spread_column else "")
+            header_format_string = "%%-%ds  P   W%s%s%s%s" % (
+                    max_name_len + 6,
+                    "   D" if show_draws_column else "",
+                    "  Pts" if show_points_column else "",
+                    "   Spr" if show_spread_column else "",
+                    "      TR" if show_tournament_rating_column else "")
             print header_format_string % ""
             for s in standings:
                 sys.stdout.write("%3d %-*s  %3d %3d " % (s[0], max_name_len, s[1], s[2], s[3]))
@@ -179,6 +186,11 @@ try:
                     sys.stdout.write("%4d " % s[4])
                 if show_spread_column:
                     sys.stdout.write("%+5d " % s[6])
+                if show_tournament_rating_column:
+                    if s.tournament_rating is not None:
+                        sys.stdout.write("%7.2f " % s.tournament_rating)
+                    else:
+                        sys.stdout.write("        ")
                 print ""
             print ""
             print ""
