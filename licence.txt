@@ -1,0 +1,5 @@
+ATROPINE 0.7.0
+by Graeme Cole
+
+Atropine and Teleost are released under a Creative Commons Attribution Licence:
+http://creativecommons.org/licenses/by/4.0/
