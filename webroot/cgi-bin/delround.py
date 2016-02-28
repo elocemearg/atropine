@@ -83,8 +83,9 @@ else:
             print '<p>The most recent round is this one:</p>'
 
             num_divisions = tourney.get_num_divisions()
+            print "<h2>%s</h2>" % (round_name)
             for div_index in range(num_divisions):
-                print "<h2>%s</h2>" % cgi.escape(tourney.get_division_name(div_index))
+                print "<h3>%s</h3>" % cgi.escape(tourney.get_division_name(div_index))
                 games = tourney.get_games(round_no=latest_round_no, division=div_index)
                 cgicommon.show_games_as_html_table(games, False, None, False, None, lambda x : cgicommon.player_to_link(x, tourneyname))
 

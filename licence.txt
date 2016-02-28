@@ -1,5 +1,11 @@
-ATROPINE 0.7.0
-by Graeme Cole
+Atropine was developed as a way to administer a Countdown tournament using a
+web browser. Later it was adapted to support some of the features of Scrabble
+tournaments.
 
-Atropine and Teleost are released under a Creative Commons Attribution Licence:
+Teleost is a pygame-based program intended to run on a separate screen, which
+monitors a tournament database managed by atropine and displays information
+to players.
+
+Atropine and Teleost are developed by Graeme Cole (graeme@greem.co.uk) and
+released under a Creative Commons Attribution Licence:
 http://creativecommons.org/licenses/by/4.0/

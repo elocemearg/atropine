@@ -157,6 +157,12 @@ class View(object):
             sub_view.refresh(sub_surface);
             #surface.blit(sub_surface, (left_px, top_px));
 
+    def bump(self, surface):
+        for (sub_view, a, b, c, d) in self.sub_views:
+            sub_view.bump(None)
+        if surface:
+            self.refresh(self, surface)
+
 class TimedViewCycler(View):
     def __init__(self, name="", desc="", default_interval=10):
         self.sub_views = [];
@@ -436,6 +442,9 @@ class Widget(object):
     def refresh(self):
         pass;
 
+    def bump(self, surface):
+        pass
+
 class VideprinterWidget(Widget):
     def __init__(self, table_fetcher, num_rows, default_font_name="sans-serif"):
         self.table_fetcher = table_fetcher;
@@ -446,7 +455,7 @@ class VideprinterWidget(Widget):
     
     def restart(self):
         self.num_refreshes = 0;
-    
+
     def refresh(self, surface):
         try:
             header_row = self.table_fetcher.fetch_header_row();
@@ -515,6 +524,11 @@ class TableWidget(Widget):
         self.current_row = 0;
         self.last_scroll_time = time.time();
 
+    def bump(self, surface):
+        self.last_scroll_time = 0
+        if surface:
+            self.refresh(surface)
+
     def refresh(self, surface):
         try:
             header_row = self.table_fetcher.fetch_header_row();
@@ -576,7 +590,12 @@ class PagedFixturesWidget(Widget):
     def restart(self):
         self.last_scroll_time = time.time();
         self.current_page = 0;
-    
+ 
+    def bump(self, surface):
+        self.last_scroll_time = 0
+        if surface:
+            self.refresh(surface)
+
     def refresh(self, surface):
         try:
             return self.refresh_aux(surface);
@@ -880,7 +899,7 @@ class LabelWidget(Widget):
         self.top_pc = top_pc;
         self.width_pc = width_pc;
         self.height_pc = height_pc;
-    
+
     def refresh(self, surface):
         if self.width_pc is None:
             # If width part of rect is None, we can use as much horizontal

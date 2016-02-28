@@ -174,6 +174,7 @@ try:
     mode_check_interval = 2;
     title_bar = True;
     db_mode_checks = not local_view_switching;
+    bumps = 0
 
     while True:
         if resized:
@@ -239,7 +240,7 @@ try:
             last_redraw = 0;
             new_view_index = None;
 
-        if time.time() > last_redraw + redraw_interval:
+        if time.time() > last_redraw + redraw_interval or bumps > 0:
             screen.fill((0, 0, 32, 0));
             if background:
                 if not background_scaled:
@@ -259,6 +260,10 @@ try:
                     #print "%d,%d" % (bg_scaled_left, bg_scaled_top);
                 screen.blit(background_scaled, dest=(0,0), area=(bg_scaled_left, bg_scaled_top, bg_scaled_left + screen.get_width(), bg_scaled_top + screen.get_height()));
             #standings_videprinter.refresh(screen);
+            
+            while bumps > 0:
+                view_list[current_view_index].bump(None)
+                bumps -= 1
 
             # Use the currently selected view to refresh the screen
             view_list[current_view_index].refresh(screen);
@@ -306,6 +311,8 @@ try:
                             fullscreen = True;
                             background_scaled = None;
                             last_redraw = 0; # force refresh
+                elif event.key == pygame.K_SPACE:
+                    bumps += 1
 
             event = pygame.event.poll();
 except Exception as e:

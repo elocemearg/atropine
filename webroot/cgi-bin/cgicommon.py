@@ -240,8 +240,18 @@ def show_standings_table(tourney, show_draws_column, show_points_column, show_sp
                     bgcolour_index = (bgcolour_index + 1) % 2;
                 last_wins_inc_draws = wins + 0.5 * draws;
 
-                print "<tr class=\"standingsrow\" style=\"background-color: %s\">" % tr_bgcolours[bgcolour_index];
-            
+                if player.is_withdrawn():
+                    bgcolour = "#cccccc"
+                else:
+                    bgcolour = tr_bgcolours[bgcolour_index]
+            else:
+                if player.is_withdrawn():
+                    bgcolour = "#cccccc"
+                else:
+                    bgcolour = "#ffdd66"
+
+            print "<tr class=\"standingsrow\" style=\"background-color: %s\">" % (bgcolour);
+
             bold_style = "style=\"font-weight: bold;\""
             if ranking_by_wins:
                 wins_style = bold_style

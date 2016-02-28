@@ -218,16 +218,16 @@ else:
 
     print "<h3>Draws</h3>"
     print "<p>"
-    print "Tick this box if draws are possible in your tournament."
+    print "Tick this box if draws are possible in your tournament. It affects whether the draws column is shown in Teleost and in exported HTML or text results. The <a href=\"/cgi-bin/standings.py?tourney=%s\">standings page</a> will always show a draws column regardless." % (urllib.quote_plus(tourney.get_name()))
     print "</p><p>"
     print "<input type=\"checkbox\" name=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")
-    print "Show draws column in standings table"
+    print "Show draws column in exported results standings table"
     print "</p>"
 
     print "<h3>Tournament Ratings</h3>"
     print "<p>"
     print "<input type=\"checkbox\" name=\"showtournamentratingcolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_tournament_rating_column() else "")
-    print "Show tournament ratings in standings table"
+    print "Show tournament ratings in exported results standings table"
     print "</p>"
     print "<p>"
     print "For each game you play, your tournament rating is calculated as follows."

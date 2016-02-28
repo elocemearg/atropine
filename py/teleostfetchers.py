@@ -212,14 +212,15 @@ class StandingsFetcher(object):
         return row;
     
     def fetch_data_rows(self, start_row, num_rows):
-        pos_colour = (255, 255, 0);
-        name_colour = (255,255,255);
-        played_colour = (0, 128, 128);
+        active_pos_colour = (255, 255, 0);
+        active_name_colour = (255,255,255);
+        withdrawn_colour = (128, 128, 128)
+        active_played_colour = (0, 128, 128);
         if self.tourney.get_rank_method() in (countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_WINS_SPREAD):
-            wins_colour = (0, 255, 255)
+            active_wins_colour = (0, 255, 255)
         else:
-            wins_colour = (0, 128, 128)
-        points_colour = (0, 255, 255);
+            active_wins_colour = (0, 128, 128)
+        active_points_colour = (0, 255, 255);
 
         div_standings = []
         num_divisions = self.tourney.get_num_divisions()
@@ -247,6 +248,22 @@ class StandingsFetcher(object):
             row = teleostscreen.TableRow();
             player_object = self.tourney.get_player_from_name(str(player[1]))
             team_colour = player_object.get_team_colour_tuple()
+
+            # Withdrawn players have the row in a different colour
+            if player_object.is_withdrawn():
+                name_colour = withdrawn_colour
+                pos_colour = withdrawn_colour
+                wins_colour = withdrawn_colour
+                played_colour = withdrawn_colour
+                points_colour = withdrawn_colour
+            else:
+                name_colour = active_name_colour
+                pos_colour = active_pos_colour
+                wins_colour = active_wins_colour
+                played_colour = active_played_colour
+                points_colour = active_points_colour
+
+            # Work out what we're calling this player
             if self.use_short_names:
                 display_name = player_object.get_short_name()
                 (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, draws_width_pc, points_width_pc) = self.short_name_widths_inc_draws if draws_exist else self.short_name_widths;
@@ -254,6 +271,7 @@ class StandingsFetcher(object):
                 display_name = player_object.get_name()
                 (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, draws_width_pc, points_width_pc) = self.ordinary_name_widths_inc_draws if draws_exist else self.ordinary_name_widths
 
+            # Build up this row in the standings table
             row.append_value(teleostscreen.RowValue(str(player[0]), teleostscreen.PercentLength(pos_width_pc), text_colour=pos_colour, alignment=teleostscreen.ALIGN_RIGHT));
             if team_colour:
                 row.append_value(teleostscreen.RowValueTeamDot(teleostscreen.PercentLength(3), team_colour))

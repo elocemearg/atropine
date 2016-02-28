@@ -4,8 +4,9 @@ import sqlite3;
 import re;
 import os;
 
-SW_VERSION = "0.7.0"
-SW_VERSION_SPLIT = (0, 7, 0)
+SW_VERSION = "0.7.1"
+SW_VERSION_SPLIT = (0, 7, 1)
+EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
 RANK_WINS_POINTS = 0;
 RANK_POINTS = 1;
@@ -1891,7 +1892,7 @@ def tourney_open(dbname, directory="."):
                     version_split = map(int, version_split)
                 except ValueError:
                     raise DBVersionMismatchException("This tourney database has an invalid version number %s." % (version))
-                if version_split[0] > SW_VERSION_SPLIT[0] or version_split[1] > SW_VERSION_SPLIT[1]:
+                if tuple(version_split) < EARLIEST_COMPATIBLE_DB_VERSION:
                     raise DBVersionMismatchException("This tourney database was created with atropine version %s, which is not compatible with this version of atropine (%s)" % (version, SW_VERSION))
         db.close()
         tourney = Tourney(dbpath, dbname);

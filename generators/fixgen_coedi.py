@@ -161,100 +161,107 @@ def check_ready(tourney):
     return (True, None);
 
 def generate(tourney, settings):
-    players = tourney.get_active_players();
-    table_size = tourney.get_table_size();
-
     (ready, excuse) = check_ready(tourney);    
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
 
-    groups = [];
-    games = tourney.get_games(game_type='P');
-    if games:
-        # This is not the first round.
-        standings = tourney.get_standings();
-        ordered_players = map(lambda x : lookup_player(players, x[1]), standings);
-        for i in range(0, len(standings), table_size):
-            groups.append(ordered_players[i:(i + table_size)]);
-        round_no = max(map(lambda x : x.round_no, games)) + 1;
-    else:
-        # This is the first round. Player names should have been specified
-        # by a series of drop-down boxes.
-        player_names = [];
-        for i in range(0, len(players)):
-            name = settings.get("player%d" % i);
-            if name:
-                player_names.append(name);
-            else:
-                raise countdowntourney.FixtureGeneratorException("Player %d not specified. This is probably a bug, as the form should have made you fill in all the boxes." % i);
-
-        selected_players = map(lambda x : lookup_player(players, x), player_names);
-
-        for i in range(0, len(selected_players), table_size):
-            groups.append(selected_players[i:(i + table_size)]);
-        round_no = 1;
-
-    if table_size == 3:
-        # If we've got one more than a multiple of three, then the bottom
-        # four players ABCD are split across two tables. A plays B and C 
-        # plays D, then B plays C and D plays A.
-        # If we've got two more than a multiple of three, then the bottom
-        # four players AB are put on one table. A plays B then B plays A.
-        if len(players) % 3 == 1:
-            offcuts = groups[-2] + groups[-1];
-            groups = groups[:-2];
-            groups.append([offcuts[0], offcuts[1]]);
-            groups.append([offcuts[2], offcuts[3]]);
-        elif len(players) % 3 == 2:
-            offcuts = groups[-1];
-            groups = groups[:-1];
-            groups.append([offcuts[0], offcuts[1]]);
-    
-    # "groups" now contains a number of arrays, each of which contains the same
-    # number of players, or any number of arrays of three players each,
-    # followed by zero, one or two arrays of two players each.
-
-    fixtures = [];
     table_no = 1;
     round_seq = 1;
-    group_index = 0;
-    division = 0
-    for g in groups:
-        for i in range(0, len(g)):
-            for j in range(i + 1, len(g)):
-                p1 = g[i];
-                p2 = g[j];
-                if (i + j) % 2 == 0:
-                    (p1, p2) = (p2, p1);
-                fixture = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', p1, p2);
-                fixtures.append(fixture);
-                round_seq += 1;
-        if table_size == 3 and len(g) == 2:
+    fixtures = [];
+    num_divisions = tourney.get_num_divisions()
+    for div_index in range(num_divisions):
+        players = filter(lambda x : x.get_division() == div_index, tourney.get_active_players());
+        table_size = tourney.get_table_size();
+
+        groups = [];
+        games = tourney.get_games(game_type='P');
+        if games:
+            # This is not the first round.
+            standings = tourney.get_standings(div_index);
+            ordered_players = []
+            for s in standings:
+                try:
+                    p = lookup_player(players, s.name)
+                    ordered_players.append(p)
+                except countdowntourney.PlayerDoesNotExistException:
+                    pass
+            for i in range(0, len(ordered_players), table_size):
+                groups.append(ordered_players[i:(i + table_size)]);
+            round_no = max(map(lambda x : x.round_no, games)) + 1;
+        else:
+            # This is the first round. Player names should have been specified
+            # by a series of drop-down boxes.
+            player_names = [];
+            for i in range(0, len(players)):
+                name = settings.get("player%d" % i);
+                if name:
+                    player_names.append(name);
+                else:
+                    raise countdowntourney.FixtureGeneratorException("Player %d not specified. This is probably a bug, as the form should have made you fill in all the boxes." % i);
+
+            selected_players = map(lambda x : lookup_player(players, x), player_names);
+
+            for i in range(0, len(selected_players), table_size):
+                groups.append(selected_players[i:(i + table_size)]);
+            round_no = 1;
+
+        if table_size == 3:
+            # If we've got one more than a multiple of three, then the bottom
+            # four players ABCD are split across two tables. A plays B and C 
+            # plays D, then B plays C and D plays A.
+            # If we've got two more than a multiple of three, then the bottom
+            # two players AB are put on one table. A plays B then B plays A.
             if len(players) % 3 == 1:
-                fixture = None;
-                if group_index == len(groups) - 2:
-                    # If this is the first of the two groups of two, add a
-                    # fixture pairing the first player of this group with the
-                    # second of the next group.
-                    nextg = groups[group_index + 1];
-                    fixture = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', nextg[1], g[0]);
-                elif group_index == len(groups) - 1:
-                    # If this is the second of the two groups of two, add a
-                    # fixture pairing the first player of this group with the
-                    # second of the previous two-person group.
-                    prevg = groups[group_index - 1];
-                    fixture = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', prevg[1], g[0]);
-                if fixture:
+                offcuts = groups[-2] + groups[-1];
+                groups = groups[:-2];
+                groups.append([offcuts[0], offcuts[1]]);
+                groups.append([offcuts[2], offcuts[3]]);
+            elif len(players) % 3 == 2:
+                offcuts = groups[-1];
+                groups = groups[:-1];
+                groups.append([offcuts[0], offcuts[1]]);
+        
+        # "groups" now contains a number of arrays, each of which contains the
+        # same number of players, or any number of arrays of three players each,
+        # followed by zero, one or two arrays of two players each.
+
+        group_index = 0;
+        for g in groups:
+            for i in range(0, len(g)):
+                for j in range(i + 1, len(g)):
+                    p1 = g[i];
+                    p2 = g[j];
+                    if (i + j) % 2 == 0:
+                        (p1, p2) = (p2, p1);
+                    fixture = countdowntourney.Game(round_no, round_seq, table_no, div_index, 'P', p1, p2);
                     fixtures.append(fixture);
                     round_seq += 1;
-            elif len(players) % 3 == 2:
-                # One table of two... get these two players to play each other
-                # a second time.
-                fixture = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', g[1], g[0]);
-                fixtures.append(fixture);
-                round_seq += 1;
-        table_no += 1;
-        group_index += 1;
+            if table_size == 3 and len(g) == 2:
+                if len(players) % 3 == 1:
+                    fixture = None;
+                    if group_index == len(groups) - 2:
+                        # If this is the first of the two groups of two, add a
+                        # fixture pairing the first player of this group with
+                        # the second of the next group.
+                        nextg = groups[group_index + 1];
+                        fixture = countdowntourney.Game(round_no, round_seq, table_no, div_index, 'P', nextg[1], g[0]);
+                    elif group_index == len(groups) - 1:
+                        # If this is the second of the two groups of two, add a
+                        # fixture pairing the first player of this group with the
+                        # second of the previous two-person group.
+                        prevg = groups[group_index - 1];
+                        fixture = countdowntourney.Game(round_no, round_seq, table_no, div_index, 'P', prevg[1], g[0]);
+                    if fixture:
+                        fixtures.append(fixture);
+                        round_seq += 1;
+                elif len(players) % 3 == 2:
+                    # One table of two... get these two players to play each other
+                    # a second time.
+                    fixture = countdowntourney.Game(round_no, round_seq, table_no, div_index, 'P', g[1], g[0]);
+                    fixtures.append(fixture);
+                    round_seq += 1;
+            table_no += 1;
+            group_index += 1;
 
     d = dict();
     d["fixtures"] = fixtures;

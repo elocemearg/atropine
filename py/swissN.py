@@ -28,7 +28,9 @@ class StandingsPlayer(object):
 
     def get_played_first_pc(self):
         if self.games_played == 0:
-            return None
+            # If this player hasn't played any games, give them a notional
+            # played-first ratio of 50%.
+            return 50.0
         else:
             return float(100 * self.games_played_first) / self.games_played
 
@@ -425,14 +427,11 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
             # first more than the second player in the group, swap them over.
             # If they've played first the same number of times, swap them over
             # with 50% probability.
-            # If either player hasn't played any games so far (played_first_pc
-            # is None) then it's undefined, and we swap them over with 50%
-            # probability.
             swap = False
             played_first_pc = [ players[g[x]].get_played_first_pc() for x in (0,1) ]
-            if played_first_pc[0] is not None and played_first_pc[1] is not None and played_first_pc[0] > played_first_pc[1]:
+            if played_first_pc[0] > played_first_pc[1]:
                 swap = True
-            elif played_first_pc[0] is None or played_first_pc[1] is None or played_first_pc[0] == played_first_pc[1]:
+            elif played_first_pc[0] == played_first_pc[1]:
                 if random.random() >= 0.5:
                     swap = True
             if swap:
