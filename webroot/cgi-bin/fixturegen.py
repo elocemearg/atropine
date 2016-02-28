@@ -113,8 +113,8 @@ try:
         print "<h1>%s</h1>" % (cgi.escape(fixturegen.name));
         (ready, excuse) = fixturegen.check_ready(tourney);
         fixgen_settings = FixtureGeneratorSettings(tourney.get_fixgen_settings(generator_name));
-        for key in fixgen_settings:
-            print "(%s, %s)" % (key, value)
+        #for key in fixgen_settings:
+        #    print "(%s, %s)" % (key, value)
         for key in form:
             fixgen_settings[key] = form.getfirst(key);
         if ready:
@@ -269,8 +269,10 @@ try:
                 settings_form.add_element(htmlform.HTMLFormHiddenInput("tourney", tourney_name));
                 settings_form.add_element(htmlform.HTMLFormHiddenInput("generator", generator_name));
                 for name in fixgen_settings:
-                    if name != "submit" and settings_form.get_value(name) is None:
+                    if name[0:6] != "submit" and settings_form.get_value(name) is None:
                         settings_form.add_element(htmlform.HTMLFormHiddenInput(name, fixgen_settings.get(name, "")));
+                if fixgen_settings.get("submit", None) and fixturegen.save_form_on_submit():
+                    tourney.store_fixgen_settings(generator_name, fixgen_settings)
                 print settings_form.html();
         else:
             # Can't use this fixture generator at the moment, and it's not

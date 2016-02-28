@@ -324,6 +324,21 @@ div.tourneyexceptionmessage {
 	font-size: 14pt;
 }
 
+div.infobox {
+	max-width: 480px;
+	vertical-align: middle;
+	padding: 10px;
+	display: table-cell;
+}
+
+div.infoboxcontainer {
+	background-color: #ccccff;
+	border: 5px solid blue;
+	height: 130px;
+	max-width: 600px;
+	display: table;
+}
+
 a.playerlink {
 	text-decoration: none;
 	color: #000044;

@@ -5,21 +5,60 @@ import countdowntourney;
 import htmlform;
 import cgi;
 import urllib;
+import re
 
 name = "Manual Fixture Generator"
 description = "Player groupings are specified manually by the tournament director."
+
+def int_or_none(s):
+    try:
+        value = int(s)
+        return value
+    except:
+        return None
 
 def lookup_player(players, name):
     for p in players:
         if p.get_name() == name:
             return p;
-    raise countdowntourney.PlayerDoesNotExistException("Player %s does not exist! I haven't a clue who they are." % name);
+    return None
 
 def get_user_form(tourney, settings):
     num_divisions = tourney.get_num_divisions()
     div_table_sizes = [ None for i in range(num_divisions) ]
     players = sorted(tourney.get_active_players(), key=lambda x : x.get_name());
+
+    latest_round_no = tourney.get_latest_round_no('P')
+    if latest_round_no is None:
+        latest_round_no = 0
+
+    prev_settings = settings.get_previous_settings()
+    for key in prev_settings:
+        if key not in settings and re.match("^d[0-9]*_tablesize$", key):
+            settings[key] = prev_settings[key]
+    if settings.get("submitrestore", None):
+        for key in prev_settings:
+            if key not in ["submit", "submitrestore", "submitplayers"]:
+                settings[key] = prev_settings[key]
+
     elements = []
+    elements.append(htmlform.HTMLFormHiddenInput("tablesizesubmit", "1"))
+    elements.append(htmlform.HTMLFormHiddenInput("roundno", str(latest_round_no + 1)))
+
+    # If there's a previously-saved form for this round, offer to load it
+    prev_settings = settings.get_previous_settings()
+    round_no = int_or_none(prev_settings.get("roundno", None))
+    if round_no is not None and round_no == latest_round_no + 1:
+        elements.append(htmlform.HTMLFragment("<div class=\"infoboxcontainer\">"))
+        elements.append(htmlform.HTMLFragment("<div class=\"infobox\">"))
+        elements.append(htmlform.HTMLFragment("<p>"))
+        elements.append(htmlform.HTMLFragment("There is an incomplete fixtures form saved for this round. Do you want to carry on from where you left off?"))
+        elements.append(htmlform.HTMLFragment("</p>"))
+        elements.append(htmlform.HTMLFragment("<p>"))
+        elements.append(htmlform.HTMLFormSubmitButton("submitrestore", "Restore previously-saved form for Round %d" % (round_no)))
+        elements.append(htmlform.HTMLFragment("</p>"))
+        elements.append(htmlform.HTMLFragment("</div></div>"))
+
     for div_index in range(num_divisions):
         div_players = filter(lambda x : x.get_division() == div_index, players)
         table_size = None
@@ -37,13 +76,15 @@ def get_user_form(tourney, settings):
             choices.append(htmlform.HTMLFormChoice("-5", "5&3", div_table_sizes[div_index] == -5))
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))))
-        elements.append(htmlform.HTMLFormRadioButton(table_size_name, "Players per table", choices))
-
-    if None in div_table_sizes:
         elements.append(htmlform.HTMLFragment("<p>"))
-        elements.append(htmlform.HTMLFormSubmitButton("submit", "Next"))
+        elements.append(htmlform.HTMLFormRadioButton(table_size_name, "Players per table", choices))
         elements.append(htmlform.HTMLFragment("</p>"))
-        return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py", elements)
+
+    if None in div_table_sizes or not(settings.get("tablesizesubmit", "")):
+        elements.append(htmlform.HTMLFragment("<p>"))
+        elements.append(htmlform.HTMLFormSubmitButton("submit", "Submit table sizes and select players"))
+        elements.append(htmlform.HTMLFragment("</p>"))
+        return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.quote_plus(tourney.name)), elements)
     
     for div_index in range(num_divisions):
         div_players = filter(lambda x : x.get_division() == div_index, players);
@@ -71,6 +112,8 @@ def get_user_form(tourney, settings):
             name = settings.get("d%d_player%d" % (div_index, player_index));
             if name:
                 set_players[player_index] = lookup_player(div_players, name);
+            else:
+                set_players[player_index] = None
     
         # Slot numbers which contain a player already contained in another slot
         duplicate_slots = [];
@@ -96,10 +139,11 @@ def get_user_form(tourney, settings):
         div_duplicate_slots.append(duplicate_slots)
         div_empty_slots.append(empty_slots)
 
-    if all_filled:
+    if all_filled and settings.get("submitplayers"):
         return None
 
     elements = [];
+    elements.append(htmlform.HTMLFormHiddenInput("roundno", str(latest_round_no + 1)))
     elements.append(htmlform.HTMLFragment("""<style type=\"text/css\">
 .seltable td {
     padding: 5px;
@@ -111,6 +155,20 @@ def get_user_form(tourney, settings):
     background-color: #ffaa00;
 }
 </style>
+"""));
+    elements.append(htmlform.HTMLFragment("""<script>
+function set_unsaved_data_warning() {
+    if (window.onbeforeunload == null) {
+        window.onbeforeunload = function() {
+            return "You have modified entries on this page and not submitted them. If you navigate away from the page, these changes will be lost.";
+        };
+    }
+}
+
+function unset_unsaved_data_warning() {
+    window.onbeforeunload = null;
+}
+</script>
 """));
     elements.append(htmlform.HTMLFragment("<p>Use the drop-down boxes to select which players are on each table.</p>\n"));
 
@@ -158,7 +216,7 @@ def get_user_form(tourney, settings):
                     player_option_list.append(opt);
 
                 # Select the appropriate player
-                sel = htmlform.HTMLFormDropDownBox("d%d_player%d" % (div_index, player_index), player_option_list);
+                sel = htmlform.HTMLFormDropDownBox("d%d_player%d" % (div_index, player_index), player_option_list, other_attrs={"onchange": "set_unsaved_data_warning();"});
                 sel.set_value(selected_name);
 
                 if selected_name in unselected_names:
@@ -172,7 +230,8 @@ def get_user_form(tourney, settings):
 
         elements.append(htmlform.HTMLFragment("</table>\n"));
         elements.append(htmlform.HTMLFragment("<p>\n"))
-        elements.append(htmlform.HTMLFormSubmitButton("submit", "Submit"));
+        elements.append(htmlform.HTMLFormHiddenInput("submitplayers", "1"))
+        elements.append(htmlform.HTMLFormSubmitButton("submit", "Submit", other_attrs={ "onclick": "unset_unsaved_data_warning();" }));
         elements.append(htmlform.HTMLFragment("</p>\n"))
 
         if duplicate_slots:
@@ -281,3 +340,6 @@ def generate(tourney, settings):
     ];
 
     return d;
+
+def save_form_on_submit():
+    return True

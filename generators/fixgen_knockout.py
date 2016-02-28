@@ -442,3 +442,6 @@ def generate(tourney, settings):
     d["rounds"] = rounds;
 
     return d;
+
+def save_form_on_submit():
+    return False

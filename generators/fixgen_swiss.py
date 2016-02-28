@@ -403,3 +403,6 @@ def generate(tourney, settings):
     } ];
     
     return d;
+
+def save_form_on_submit():
+    return False

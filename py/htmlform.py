@@ -38,10 +38,20 @@ class HTMLForm(object):
         s += "\n</form>";
         return s;
 
-
 class HTMLFormElement(object):
-    def __init__(self, name):
+    def __init__(self, name, other_attrs=None):
         self.name = name;
+        if other_attrs:
+            self.other_attrs = other_attrs
+        else:
+            self.other_attrs = None
+
+    def other_attrs_to_html(self):
+        s = ""
+        if self.other_attrs:
+            for name in self.other_attrs:
+                s += "%s=\"%s\" " % (cgi.escape(name), cgi.escape(self.other_attrs[name], True));
+        return s
 
 class HTMLFragment(HTMLFormElement):
     def __init__(self, html):
@@ -68,8 +78,8 @@ class HTMLFormChoice(object):
         self.selected = selected;
 
 class HTMLFormCheckBox(HTMLFormElement):
-    def __init__(self, name, label, checked):
-        super(HTMLFormCheckBox, self).__init__(name);
+    def __init__(self, name, label, checked, other_attrs=None):
+        super(HTMLFormCheckBox, self).__init__(name, other_attrs);
         self.label = label;
         self.checked = checked;
     
@@ -80,7 +90,7 @@ class HTMLFormCheckBox(HTMLFormElement):
         self.checked = checked;
     
     def html(self):
-        s = "<input type=\"checkbox\" name=\"%s\" value=\"1\"" % cgi.escape(self.name, True);
+        s = "<input type=\"checkbox\" name=\"%s\" value=\"1\" %s" % (cgi.escape(self.name, True), self.other_attrs_to_html());
         if self.checked:
             s += " checked";
         s += " /> ";
@@ -89,44 +99,31 @@ class HTMLFormCheckBox(HTMLFormElement):
 
 class HTMLFormHiddenInput(HTMLFormElement):
     def __init__(self, name, value, other_attrs=None):
-        super(HTMLFormHiddenInput, self).__init__(name);
+        super(HTMLFormHiddenInput, self).__init__(name, other_attrs);
         self.value = value;
-        self.other_attrs = other_attrs
     
     def get_value(self):
         return self.value;
     
     def html(self):
-        s = "<input type=\"hidden\" name=\"%s\" value=\"%s\" " % (cgi.escape(self.name, True), cgi.escape(self.value, True));
-        if self.other_attrs:
-            for name in self.other_attrs:
-                s += " %s=\"%s\"" % (cgi.escape(name), cgi.escape(self.other_attrs[name], True));
-        s += "/>\n"
-        return s
+        return "<input type=\"hidden\" name=\"%s\" value=\"%s\" %s />" % (cgi.escape(self.name, True), cgi.escape(self.value, True), self.other_attrs_to_html());
 
 class HTMLFormTextInput(HTMLFormElement):
     def __init__(self, label, name, value, other_attrs=None):
-        super(HTMLFormTextInput, self).__init__(name);
+        super(HTMLFormTextInput, self).__init__(name, other_attrs);
         self.label = label;
         self.value = value;
-        self.other_attrs = other_attrs;
     
     def get_value(self):
         return self.value;
 
     def html(self):
-        s = "%s <input type=\"text\" name=\"%s\" value=\"%s\"" % (self.label, cgi.escape(self.name, True), cgi.escape(self.value, True));
-        if self.other_attrs:
-            for name in self.other_attrs:
-                s += " %s=\"%s\"" % (cgi.escape(name), cgi.escape(self.other_attrs[name], True));
-            
-        s += " />";
-        return s;
+        return "%s <input type=\"text\" name=\"%s\" value=\"%s\" %s />" % (self.label, cgi.escape(self.name, True), cgi.escape(self.value, True), self.other_attrs_to_html());
 
 
 class HTMLFormRadioButton(HTMLFormElement):
-    def __init__(self, name, label, choices):
-        super(HTMLFormRadioButton, self).__init__(name);
+    def __init__(self, name, label, choices, other_attrs=None):
+        super(HTMLFormRadioButton, self).__init__(name, other_attrs);
         self.label = label;
         self.choices = choices;
     
@@ -157,9 +154,8 @@ class HTMLFormRadioButton(HTMLFormElement):
 
 class HTMLFormSubmitButton(HTMLFormElement):
     def __init__(self, name, value, other_attrs=None):
-        super(HTMLFormSubmitButton, self).__init__(name);
+        super(HTMLFormSubmitButton, self).__init__(name, other_attrs);
         self.value = value;
-        self.other_attrs = other_attrs;
     
     def get_value(self):
         return self.value;
@@ -168,12 +164,7 @@ class HTMLFormSubmitButton(HTMLFormElement):
         self.value = value;
     
     def html(self):
-        s = "<input type=\"submit\" name=\"%s\" value=\"%s\" " % (cgi.escape(self.name, True), cgi.escape(self.value, True));
-        if self.other_attrs:
-            for name in self.other_attrs:
-                s += "%s=\"%s\" " % (cgi.escape(name), cgi.escape(self.other_attrs[name], True));
-        s += "/>\n";
-        return s;
+        return "<input type=\"submit\" name=\"%s\" value=\"%s\" %s />" % (cgi.escape(self.name, True), cgi.escape(self.value, True), self.other_attrs_to_html());
 
 class HTMLFormDropDownOption(HTMLFormElement):
     def __init__(self, value, label=None, selected=False):
@@ -201,8 +192,8 @@ class HTMLFormDropDownOption(HTMLFormElement):
         return s;
 
 class HTMLFormDropDownBox(HTMLFormElement):
-    def __init__(self, name, options):
-        super(HTMLFormDropDownBox, self).__init__(name);
+    def __init__(self, name, options, other_attrs=None):
+        super(HTMLFormDropDownBox, self).__init__(name, other_attrs);
         self.options = options[:];
     
     def get_value(self):
@@ -219,7 +210,7 @@ class HTMLFormDropDownBox(HTMLFormElement):
                 o.set_selected(False);
     
     def html(self):
-        s = "<select name=\"%s\">\n" % (cgi.escape(self.name, True));
+        s = "<select name=\"%s\" %s >\n" % (cgi.escape(self.name, True), self.other_attrs_to_html());
         for o in self.options:
             s += o.html();
         s += "</select>\n";

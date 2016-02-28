@@ -162,3 +162,6 @@ def generate(tourney, settings):
         "type": "P"
     }];
     return d;
+
+def save_form_on_submit():
+    return False
