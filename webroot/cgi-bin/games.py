@@ -140,7 +140,7 @@ function unset_unsaved_data_warning() {
 
 function score_modified(control_name) {
     document.getElementById('lastmodified').value = control_name;
-    document.getElementById(control_name).style = 'background-color: #ffffcc;';
+    document.getElementById(control_name).style.backgroundColor = '#ffffcc';
     set_unsaved_data_warning();
 }
 """;
