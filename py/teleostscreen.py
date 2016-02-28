@@ -203,6 +203,11 @@ class TimedViewCycler(View):
 
         view.refresh(surface);
 
+    def bump(self, surface):
+        self.last_change = 0
+        if surface:
+            self.refresh(surface)
+
 class PixelLength(object):
     def __init__(self, value):
         self.value = value;
