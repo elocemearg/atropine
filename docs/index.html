@@ -27,7 +27,7 @@
 	To use Atropine, you need
 	<a href="http://www.python.org/download/">Python 2.x</a> installed.
 	At the time of writing, the latest version of this is
-	<a href="http://www.python.org/download/releases/2.7.6/">2.7.6</a>.
+	<a href="https://www.python.org/downloads/release/python-2711/">2.7.11</a>.
 	If you are using Windows, you want the "Windows x86 MSI Installer".
 	</p>
 	<p>
@@ -88,7 +88,7 @@
 	The Tourney Setup page allows you to load the list of players and
 	specify the rules of the tournament.
 	To get back to this page at any time, you can click the
-	<em>Setup</em> link in the sidebar.
+	<em>General Setup</em> link in the sidebar.
 	</p>
 	<p>
 	A tourney isn't much of a tourney without players. The text area under
@@ -112,7 +112,10 @@
 	<p>
 	<em>N.B.</em> If you need to add a patzer player (an Apterous
 	Prune) to take the number of players up to a multiple of two or three,
-	give them a rating of zero.
+	give them a rating of zero. This is important because some of the
+	fixture generators treat patzers specially to avoid drawing patzers
+	against each other, and to avoid players playing two different patzers
+	twice.
 	</p>
 	<p>
 	Copy and paste the following example players into the player list box.
@@ -139,9 +142,18 @@
 	next to their name in results and standings.
 	</p>
 	<p>
-	The Tourney Setup stage is also where you can specify how many players
-	are on a table, and how to rank players, but leave those as the
-	defaults for now.
+	If you have a large tournament which is split up into divisions, you
+	can use the "Divisions" link in the sidebar. This will split the
+	players up into however many divisions you specify, giving each division
+	a multiple of a certain number of players, provided the numbers you
+	give are possible. If you have many divisions in your tournament, the
+	divisions are effectively parallel tournaments. When generating
+	fixtures for a round, all divisions' fixtures must be generated at the
+	same time.
+	</p>
+	<p>
+	The General Setup stage is also where you can specify other
+	attributes like how to rank players and whether draws are possible.
 	</p>
 	<h2>Generating Fixtures</h2>
 	<p>
@@ -154,7 +166,7 @@
 	<p>
 	Click the <em>Generate new round...</em> link in the sidebar.
 	You'll be presented with a list of fixture generators. Click
-	<em>COLIN Fixture Generator</em>. For the first round, this
+	<em>Swiss Army Blunderbuss</em>. For the first round, this
 	will come back to you with a list of fixtures immediately.
 	</p>
 	<p>
@@ -181,16 +193,15 @@
 	<p>
 	Normally a score is two numbers separated by a hyphen, e.g. 56-52, but
 	the score editor is pretty permissive with what it will accept as a
-	score. As long as it looks like a number, followed by something that
-	isn't a number, followed by another number, it'll accept it. If you
-	enter something it doesn't understand, a suitable admonishment will
-	appear in the "Remarks" column for that game.
+	score. As long as it looks like a number, followed by a hyphen,
+	followed by another number, it'll accept it. If you enter something it
+	doesn't understand, a suitable admonishment will appear in the
+	"Remarks" column for that game.
 	</p>
 	<p>
 	If a game was won on a tiebreak, include an asterisk (*) in the score.
-	This can go anywhere in the score text apart from in the middle of a
-	number. Points scored on tiebreaks do not count towards a player's
-	total.
+	This can immediately follow either number. Points scored on tiebreaks
+	do not count towards a player's total.
 	</p>
 	<p>
 	Remember to click <em>Save</em> (or press ENTER) after entering
@@ -210,13 +221,13 @@
 	When you've entered all results for one round and you're ready to
 	generate fixtures for the next round, click
 	<em>Generate new round...</em> as before. This time, if you
-	click <em>COLIN Fixture Generator</em> you'll be asked a
-	question before proceeding. The COLIN fixture generator needs to
+	click <em>Swiss Army Blunderbuss</em> you'll be asked a
+	question before proceeding. This fixture generator needs to
 	group together players with similar performance, ensuring players don't
 	play anyone they've already played in the tourney. This is rather
 	complicated, so you can specify a time limit after which it will give
 	you the best grouping it has found up to that point. The default is
-	15 seconds.
+	30 seconds.
 	</p>
 	<p>
 	Therefore, when you click the <em>Generate Fixtures</em> button
@@ -251,7 +262,7 @@
 		<em>Standings / Table Results</em> screen.</li>
 	</ul>
 	<p>
-	In <em>Auto</em> mode, Teleost never shows the
+	In <em>Auto</em> mode, Teleost never shows other screen such as the
 	<em>Records</em> or <em>Overachievers</em> screens,
 	so if you want to show those you need to switch to them manually using
 	the Display Control menu.
