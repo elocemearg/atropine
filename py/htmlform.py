@@ -106,7 +106,7 @@ class HTMLFormHiddenInput(HTMLFormElement):
         return self.value;
     
     def html(self):
-        return "<input type=\"hidden\" name=\"%s\" value=\"%s\" %s />" % (cgi.escape(self.name, True), cgi.escape(self.value, True), self.other_attrs_to_html());
+        return "<input type=\"hidden\" name=\"%s\" value=\"%s\" %s />\n" % (cgi.escape(self.name, True), cgi.escape(self.value, True), self.other_attrs_to_html());
 
 class HTMLFormTextInput(HTMLFormElement):
     def __init__(self, label, name, value, other_attrs=None):
@@ -118,7 +118,7 @@ class HTMLFormTextInput(HTMLFormElement):
         return self.value;
 
     def html(self):
-        return "%s <input type=\"text\" name=\"%s\" value=\"%s\" %s />" % (self.label, cgi.escape(self.name, True), cgi.escape(self.value, True), self.other_attrs_to_html());
+        return "%s <input type=\"text\" name=\"%s\" value=\"%s\" %s />\n" % (self.label, cgi.escape(self.name, True), cgi.escape(self.value, True), self.other_attrs_to_html());
 
 
 class HTMLFormRadioButton(HTMLFormElement):

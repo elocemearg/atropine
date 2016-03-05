@@ -245,13 +245,14 @@ function score_modified(control_name) {
                                 focus = (g.round_no, g.seq)
                                 break
                         break
-        if focus is None:
-            focus = (games[0].round_no, games[0].seq);
+        if games:
+            if focus is None:
+                focus = (games[0].round_no, games[0].seq);
 
-        control_with_focus = "gamescore_%d_%d" % (focus[0], focus[1]);
-        print "<script>"
-        print "document.getElementById('" + control_with_focus + "').focus();"
-        print "</script>"
+            control_with_focus = "gamescore_%d_%d" % (focus[0], focus[1]);
+            print "<script>"
+            print "document.getElementById('" + control_with_focus + "').focus();"
+            print "</script>"
 
         print "</div>"; #scorestable
 

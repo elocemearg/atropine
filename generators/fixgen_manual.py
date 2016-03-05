@@ -23,9 +23,9 @@ def lookup_player(players, name):
             return p;
     return None
 
-def get_user_form(tourney, settings):
+def get_user_form(tourney, settings, div_rounds):
     num_divisions = tourney.get_num_divisions()
-    div_table_sizes = [ None for i in range(num_divisions) ]
+    div_table_sizes = dict()
     players = sorted(tourney.get_active_players(), key=lambda x : x.get_name());
 
     latest_round_no = tourney.get_latest_round_no('P')
@@ -59,7 +59,7 @@ def get_user_form(tourney, settings):
         elements.append(htmlform.HTMLFragment("</p>"))
         elements.append(htmlform.HTMLFragment("</div></div>"))
 
-    for div_index in range(num_divisions):
+    for div_index in div_rounds:
         div_players = filter(lambda x : x.get_division() == div_index, players)
         table_size = None
         table_size_name = "d%d_tablesize" % (div_index)
@@ -68,6 +68,8 @@ def get_user_form(tourney, settings):
                 div_table_sizes[div_index] = int(settings.get(table_size_name))
             except ValueError:
                 div_table_sizes[div_index] = None
+        else:
+            div_table_sizes[div_index] = None
         choices = []
         for size in (2,3,4,5):
             if len(div_players) % size == 0:
@@ -80,13 +82,18 @@ def get_user_form(tourney, settings):
         elements.append(htmlform.HTMLFormRadioButton(table_size_name, "Players per table", choices))
         elements.append(htmlform.HTMLFragment("</p>"))
 
-    if None in div_table_sizes or not(settings.get("tablesizesubmit", "")):
+    all_table_sizes_given = True
+    for div in div_table_sizes:
+        if div_table_sizes.get(div) is None:
+            all_table_sizes_given = False
+
+    if not all_table_sizes_given or not(settings.get("tablesizesubmit", "")):
         elements.append(htmlform.HTMLFragment("<p>"))
         elements.append(htmlform.HTMLFormSubmitButton("submit", "Submit table sizes and select players"))
         elements.append(htmlform.HTMLFragment("</p>"))
         return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.quote_plus(tourney.name)), elements)
     
-    for div_index in range(num_divisions):
+    for div_index in div_rounds:
         div_players = filter(lambda x : x.get_division() == div_index, players);
         table_size = div_table_sizes[div_index]
         if table_size > 0 and len(div_players) % table_size != 0:
@@ -98,11 +105,11 @@ def get_user_form(tourney, settings):
         if table_size not in (2,3,4,5,-5):
             raise countdowntourney.FixtureGeneratorException("%s: invalid table size: %d" % (tourney.get_division_name(div_index), table_size))
 
-    div_set_players = []
-    div_duplicate_slots = []
-    div_empty_slots = []
+    div_set_players = dict()
+    div_duplicate_slots = dict()
+    div_empty_slots = dict()
     all_filled = True
-    for div_index in range(num_divisions):
+    for div_index in div_rounds:
         div_players = filter(lambda x : x.get_division() == div_index, players);
         set_players = [ None for i in range(0, len(div_players)) ];
 
@@ -135,9 +142,9 @@ def get_user_form(tourney, settings):
                     all_filled = False;
             player_index += 1;
 
-        div_set_players.append(set_players)
-        div_duplicate_slots.append(duplicate_slots)
-        div_empty_slots.append(empty_slots)
+        div_set_players[div_index] = set_players
+        div_duplicate_slots[div_index] = duplicate_slots
+        div_empty_slots[div_index] = empty_slots
 
     if all_filled and settings.get("submitplayers"):
         return None
@@ -173,7 +180,7 @@ function unset_unsaved_data_warning() {
     elements.append(htmlform.HTMLFragment("<p>Use the drop-down boxes to select which players are on each table.</p>\n"));
 
     table_no = 1;
-    for div_index in range(num_divisions):
+    for div_index in div_rounds:
         div_players = filter(lambda x : x.get_division() == div_index, players);
         player_index = 0;
         table_size = div_table_sizes[div_index]
@@ -251,15 +258,20 @@ function unset_unsaved_data_warning() {
     form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.quote_plus(tourney.name)), elements);
     return form;
 
-def check_ready(tourney):
+def check_ready(tourney, div_rounds):
+    for div in div_rounds:
+        round_no = div_rounds[div]
+        existing_games = tourney.get_games(round_no=round_no, game_type="P", division=div)
+        if existing_games:
+            return (False, "%s: round %d already has %d games in it." % (tourney.get_division_name(div), round_no, len(existing_games)))
     return (True, None)
 
-def generate(tourney, settings):
+def generate(tourney, settings, div_rounds):
     num_divisions = tourney.get_num_divisions()
-    div_table_sizes = []
+    div_table_sizes = dict()
 
     players = tourney.get_active_players();
-    for div_index in range(num_divisions):
+    for div_index in div_rounds:
         table_size = settings.get("d%d_tablesize" % (div_index), None)
         div_players = filter(lambda x : x.get_division() == div_index, players)
 
@@ -282,19 +294,21 @@ def generate(tourney, settings):
             if len(div_players) < 8:
                 raise countdowntourney.FixtureGeneratorException("%s: Can't use a 5&3 configuration if there are fewer than 8 players, and there are %d" % (tourney.get_division_name(div_index), len(div_players)))
             table_sizes = countdowntourney.get_5_3_table_sizes(len(div_players))
-        div_table_sizes.append(table_sizes)
+        div_table_sizes[div_index] = table_sizes
 
-    (ready, excuse) = check_ready(tourney);
+    (ready, excuse) = check_ready(tourney, div_rounds);
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
 
-    latest_round_no = tourney.get_latest_round_no('P')
-    if latest_round_no is None:
-        round_no = 1
-    else:
-        round_no = latest_round_no + 1
+    #latest_round_no = tourney.get_latest_round_no('P')
+    #if latest_round_no is None:
+    #    round_no = 1
+    #else:
+    #    round_no = latest_round_no + 1
     fixtures = []
-    for div_index in range(num_divisions):
+    round_numbers_generated = []
+    for div_index in div_rounds:
+        round_no = div_rounds[div_index]
         groups = [];
         table_sizes = div_table_sizes[div_index]
         div_players = filter(lambda x : x.get_division() == div_index, players)
@@ -320,6 +334,9 @@ def generate(tourney, settings):
                 player_index += 1
             groups.append(group)
 
+        if round_no not in round_numbers_generated:
+            round_numbers_generated.append(round_no)
+
         if len(fixtures) == 0:
             start_table_no = 1
             start_round_seq = 1
@@ -336,7 +353,7 @@ def generate(tourney, settings):
                 "round" : round_no,
                 "name" : "Round %d" % round_no,
                 "type" : "P"
-            }
+            } for round_no in round_numbers_generated
     ];
 
     return d;

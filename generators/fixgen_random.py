@@ -16,10 +16,9 @@ Other than that, the fixtures are random."""
 # Note that subsequent calls might return further forms, and the settings
 # obtained from them should be added to the "settings" dictionary and the
 # call made again.
-def get_user_form(tourney, settings):
-    num_divisions = tourney.get_num_divisions()
+def get_user_form(tourney, settings, div_rounds):
     elements = []
-    for div_index in range(num_divisions):
+    for div_index in div_rounds:
         players = filter(lambda x : x.get_division() == div_index, tourney.get_active_players());
         table_size = None
         if settings.get("d%d_tablesize" % (div_index), None) is not None:
@@ -61,10 +60,15 @@ def get_user_form(tourney, settings):
     form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py", elements)
     return form;
 
-def check_ready(tourney):
+def check_ready(tourney, div_rounds):
     num_divisions = tourney.get_num_divisions()
-    for div_index in range(num_divisions):
+    for div_index in div_rounds:
+        round_no = div_rounds[div_index]
         players = filter(lambda x : x.get_division() == div_index, tourney.get_active_players());
+
+        existing_games = tourney.get_games(round_no=round_no, division=div_index)
+        if existing_games:
+            return (False, "%s: there are already %d games generated for round %d in this division." % (tourney.get_division_name(div_index), len(existing_games), round_no))
 
         for size in (2,3,4,5):
             if len(players) % size == 0:
@@ -79,21 +83,15 @@ def check_ready(tourney):
 # to the tourney database. It's the caller's responsibility to do that, and
 # it might choose not to, if, for example, the user decides they don't want
 # to accept the fixtures.
-def generate(tourney, settings):
-    (ready, excuse) = check_ready(tourney);
+def generate(tourney, settings, div_rounds):
+    (ready, excuse) = check_ready(tourney, div_rounds);
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
 
     fixtures = [];
-    current_games = tourney.get_games(game_type='P');
-    if len(current_games) == 0:
-        max_round_no = 0;
-    else:
-        max_round_no = max(map(lambda x : x.round_no, current_games));
-    round_no = max_round_no + 1;
-
-    num_divisions = tourney.get_num_divisions()
-    for div_index in range(num_divisions):
+    round_numbers_generated = []
+    for div_index in div_rounds:
+        round_no = div_rounds[div_index]
         players = filter(lambda x : x.get_division() == div_index, tourney.get_active_players());
 
         tables = [];
@@ -153,6 +151,8 @@ def generate(tourney, settings):
             start_table_no = max(x.table_no for x in fixtures) + 1
             start_seq = max(x.seq for x in fixtures) + 1
         fixtures += countdowntourney.make_fixtures_from_groups(tables, round_no, table_size == -5, division=div_index, start_table_no=start_table_no, start_round_seq=start_seq)
+        if round_no not in round_numbers_generated:
+            round_numbers_generated.append(round_no)
     
     d = dict();
     d["fixtures"] = fixtures;
@@ -160,7 +160,7 @@ def generate(tourney, settings):
         "round": round_no,
         "name": "Round %d" % round_no,
         "type": "P"
-    }];
+    } for round_no in round_numbers_generated ];
     return d;
 
 def save_form_on_submit():

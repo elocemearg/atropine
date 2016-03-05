@@ -15,6 +15,8 @@ def print_html_head(title):
     print "<title>%s</title>" % (cgi.escape(title));
     print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />";
     print "<link rel=\"stylesheet\" type=\"text/css\" href=\"/style.css\" />";
+    print "<link rel=\"shortcut icon\" href=\"/favicon.ico\" type=\"image/x-icon\" />"
+    print "<link rel=\"shortcut icon\" href=\"/favicon.png\" type=\"image/png\" />"
     print "</head>";
 
 def show_tourney_exception(exc):

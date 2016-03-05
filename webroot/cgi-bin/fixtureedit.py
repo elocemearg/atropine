@@ -80,7 +80,10 @@ try:
 
     remarks = dict();
 
+    num_divisions = tourney.get_num_divisions()
+
     num_games_updated = None;
+    num_games_deleted = 0
     if "save" in form:
         games = tourney.get_games(round_no=round_no);
         alterations = [];
@@ -102,14 +105,18 @@ try:
         for (round_no, seq, new_p1, new_p2) in alterations:
             remarks[seq] = "Updated";
 
+        for div in range(num_divisions):
+            if form.getfirst("deldiv%d" % (div)) == "1":
+                num_games_deleted += tourney.delete_round_div(round_no, div)
+
     print "<p>"
     print "<a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%d\">Back to the score editor</a>" % (urllib.quote_plus(tourney_name), round_no);
     print "</p>"
 
     if num_games_updated:
-        print "<p>%d games updated.</p>" % num_games_updated;
-
-    num_divisions = tourney.get_num_divisions()
+        print "<p>%d games updated.</p>" % (num_games_updated);
+    if num_games_deleted:
+        print "<p>%d games deleted.</p>" % (num_games_deleted)
 
     print "<div class=\"scorestable\">";
     print "<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.quote_plus(tourney_name), round_no);
@@ -120,7 +127,7 @@ try:
 
         if num_divisions > 1:
             print "<h2>%s</h2>" % (tourney.get_division_name(div_index))
-
+        print "<p><input type=\"checkbox\" name=\"deldiv%d\" value=\"1\" /> Delete all games in %s, %s</p>" % (div_index, cgi.escape(tourney.get_division_name(div_index)), tourney.get_round_name(round_no))
         print "<table class=\"scorestable\">";
         print "<tr>";
         print "<th>Table</th><th></th><th></th>";

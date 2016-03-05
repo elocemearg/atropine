@@ -160,7 +160,7 @@ def check_ready(tourney):
     
     return (True, None);
 
-def generate(tourney, settings):
+def generate(tourney, settings, div_rounds):
     (ready, excuse) = check_ready(tourney);    
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
@@ -168,13 +168,13 @@ def generate(tourney, settings):
     table_no = 1;
     round_seq = 1;
     fixtures = [];
-    num_divisions = tourney.get_num_divisions()
-    for div_index in range(num_divisions):
+    for div_index in sorted(div_rounds):
         players = filter(lambda x : x.get_division() == div_index, tourney.get_active_players());
         table_size = tourney.get_table_size();
 
         groups = [];
         games = tourney.get_games(game_type='P');
+        round_no = div_rounds[div_index]
         if games:
             # This is not the first round.
             standings = tourney.get_standings(div_index);
@@ -187,7 +187,6 @@ def generate(tourney, settings):
                     pass
             for i in range(0, len(ordered_players), table_size):
                 groups.append(ordered_players[i:(i + table_size)]);
-            round_no = max(map(lambda x : x.round_no, games)) + 1;
         else:
             # This is the first round. Player names should have been specified
             # by a series of drop-down boxes.
@@ -203,7 +202,6 @@ def generate(tourney, settings):
 
             for i in range(0, len(selected_players), table_size):
                 groups.append(selected_players[i:(i + table_size)]);
-            round_no = 1;
 
         if table_size == 3:
             # If we've got one more than a multiple of three, then the bottom

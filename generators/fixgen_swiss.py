@@ -29,10 +29,10 @@ def get_default_group_size(num_players, num_rounds):
             return size
     return None
 
-def get_user_form(tourney, settings):
-    div_group_size = []
-    div_init_max_rematches = []
-    div_init_max_win_diff = []
+def get_user_form(tourney, settings, div_rounds):
+    div_group_size = dict()
+    div_init_max_rematches = dict()
+    div_init_max_win_diff = dict()
 
     prev_settings = settings.get_previous_settings()
     for key in prev_settings:
@@ -47,11 +47,16 @@ def get_user_form(tourney, settings):
     max_time = int_or_none(settings.get("maxtime", None))
     ignore_rematches_before_round = int_or_none(settings.get("ignorerematchesbefore", None))
 
-    div_ready = [ False for i in range(num_divisions) ]
+    div_ready = []
+    for div in range(num_divisions):
+        if div in div_rounds:
+            div_ready.append(False)
+        else:
+            div_ready.append(True)
 
     default_group_size = int_or_none(settings.get("groupsize", None))
 
-    for div_index in range(num_divisions):
+    for div_index in sorted(div_rounds):
         group_size = int_or_none(settings.get("d%d_groupsize" % (div_index), None))
         if group_size is None or group_size == 0:
             group_size = default_group_size
@@ -82,9 +87,9 @@ def get_user_form(tourney, settings):
 #                else:
 #                    group_size = None
 
-        div_group_size.append(group_size)
-        div_init_max_rematches.append(init_max_rematches)
-        div_init_max_win_diff.append(init_max_win_diff)
+        div_group_size[div_index] = group_size
+        div_init_max_rematches[div_index] = init_max_rematches
+        div_init_max_win_diff[div_index] = init_max_win_diff
 
     if False not in div_ready and settings.get("submit") is not None:
         return None
@@ -181,7 +186,7 @@ function generate_fixtures_clicked() {
     elements.append(htmlform.HTMLFragment("<h3>Overall settings</h3>"))
 
     div_valid_table_sizes = []
-    for div_index in range(num_divisions):
+    for div_index in sorted(div_rounds):
         div_players = filter(lambda x : x.get_division() == div_index, tourney.get_active_players())
         sizes = get_valid_group_sizes(len(div_players), len(rounds))
         div_valid_table_sizes.append(sizes)
@@ -219,7 +224,7 @@ function generate_fixtures_clicked() {
     elements.append(htmlform.HTMLFragment("</p>\n"))
     elements.append(htmlform.HTMLFragment("<hr />\n"))
 
-    for div_index in range(num_divisions):
+    for div_index in sorted(div_rounds):
         group_size = div_group_size[div_index]
         init_max_rematches = div_init_max_rematches[div_index]
         init_max_win_diff = div_init_max_win_diff[div_index]
@@ -263,12 +268,18 @@ function generate_fixtures_clicked() {
     form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py", elements);
     return form;
 
-def check_ready(tourney):
+def check_ready(tourney, div_rounds):
     num_divisions = tourney.get_num_divisions()
 
-    for div_index in range(num_divisions):
+    for div_index in sorted(div_rounds):
         players = tourney.get_active_players();
         players = filter(lambda x : x.division == div_index, players)
+
+        round_no = div_rounds[div_index]
+
+        existing_games = tourney.get_games(round_no=round_no, division=div_index)
+        if existing_games:
+            return (False, "%s: there are already %d games for this division in round %d." % (tourney.get_division_name(div_index), len(existing_games), round_no))
 
         for size in valid_group_sizes:
             if len(players) % size == 0:
@@ -276,30 +287,31 @@ def check_ready(tourney):
         else:
             if len(players) < 8:
                 return (False, "%s: Number of players (%d) is not a multiple of any of %s" % (tourney.get_division_name(div_index), len(players), ", ".join(map(str, valid_group_sizes))))
-        
-    games = tourney.get_games(game_type='P');
-    num_incomplete = 0;
-    first_incomplete = None;
-    for g in games:
-        if not g.is_complete():
-            if not first_incomplete:
-                first_incomplete = g;
-            num_incomplete += 1;
-    if num_incomplete > 0:
-        if num_incomplete == 1:
-            return (False, "Cannot generate the next round because there is still a heat game unplayed: %s" % str(g));
-        else:
-            return (False, "Cannot generate the next round because there are still %d heat games unplayed. The first one is: %s" % (num_incomplete, str(first_incomplete)));
+
+    for div in div_rounds:
+        games = tourney.get_games(game_type='P', division=div);
+        num_incomplete = 0;
+        first_incomplete = None;
+        for g in games:
+            if not g.is_complete():
+                if not first_incomplete:
+                    first_incomplete = g;
+                num_incomplete += 1;
+        if num_incomplete > 0:
+            if num_incomplete == 1:
+                return (False, "%s: Cannot generate the next round because there is still a heat game unplayed: %s" % (tourney.get_division_name(div), str(g)));
+            else:
+                return (False, "%s: Cannot generate the next round because there are still %d heat games unplayed. The first one is: %s" % (tourney.get_division_name(div), num_incomplete, str(first_incomplete)));
     
     return (True, None);
 
-def generate(tourney, settings):
+def generate(tourney, settings, div_rounds):
     rank_method = tourney.get_rank_method();
 
-    rounds = tourney.get_rounds();
-    rounds = filter(lambda x : x.get("type", None) == "P", rounds);
+    #rounds = tourney.get_rounds();
+    #rounds = filter(lambda x : x.get("type", None) == "P", rounds);
 
-    (ready, excuse) = check_ready(tourney);
+    (ready, excuse) = check_ready(tourney, div_rounds);
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
     
@@ -327,7 +339,7 @@ def generate(tourney, settings):
 
     num_divisions = tourney.get_num_divisions()
     fixtures = []
-    for div_index in range(num_divisions):
+    for div_index in sorted(div_rounds):
         players = tourney.get_active_players()
         players = filter(lambda x : x.division == div_index, players)
 
@@ -369,9 +381,10 @@ def generate(tourney, settings):
 
         rank_by_wins = (rank_method == countdowntourney.RANK_WINS_POINTS or rank_method == countdowntourney.RANK_WINS_SPREAD);
 
-        if len(rounds) == 0:
+        round_no = div_rounds[div_index]
+        games = tourney.get_games(game_type="P", division=div_index);
+        if len(games) == 0:
             (weight, groups) = swissN.swissN_first_round(players, group_size);
-            round_no = 1;
         else:
             games = tourney.get_games(game_type="P", division=div_index);
             (weight, groups) = swissN.swissN(games, players,
@@ -380,7 +393,6 @@ def generate(tourney, settings):
                     init_max_rematches=init_max_rematches,
                     init_max_win_diff=init_max_win_diff,
                     ignore_rematches_before=ignore_rematches_before);
-            round_no = len(rounds) + 1;
 
         if groups is None:
             raise countdowntourney.FixtureGeneratorException("%s: Unable to generate any permissible groupings in the given time limit." % (tourney.get_division_name(div_index)))

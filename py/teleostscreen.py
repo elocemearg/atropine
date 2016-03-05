@@ -621,7 +621,7 @@ class PagedFixturesWidget(Widget):
         # table across multiple pages if we can avoid it. Also, a new
         # division always starts on a new page.
         page = [];
-        games = sorted(games, key=lambda x : (x.round_no, x.table_no));
+        games = sorted(games, key=lambda x : (x.round_no, x.division, x.table_no));
         prev_round_no = None;
         prev_division = None
 

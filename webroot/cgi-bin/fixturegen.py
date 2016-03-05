@@ -27,14 +27,25 @@ import generators;
 import countdowntourney;
 import htmlform;
 
+def int_or_none(s):
+    try:
+        value = int(s)
+        return value
+    except:
+        return None
+
 # Class representing the settings passed to a fixture generator. It emulates
 # a dictionary. The settings that were passed to the generator the last time
 # it generated something for this tourney are also stored in the object and
 # individual name-value pairs can be loaded from that into the object's main
 # dictionary by the fixture generator.
 class FixtureGeneratorSettings(object):
-    def __init__(self, default_settings):
-        self.default_settings = default_settings
+    def __init__(self, default_settings=None):
+        self.default_settings = dict()
+        if default_settings:
+            for k in default_settings:
+                if k[0] != '_':
+                    self.default_settings[k] = default_settings[k]
         self.settings = dict()
 
     def __len__(self):
@@ -86,6 +97,7 @@ try:
     print "<div class=\"mainpane\">";
     generator_name = form.getfirst("generator");
     module_list = generators.get_fixture_generator_list();
+    num_divisions = tourney.get_num_divisions()
     if len(tourney.get_active_players()) == 0:
         print "<h1>Fixture Generator</h1>";
         print "<p>You can't generate fixtures because the tournament doesn't have any active players.</p>"
@@ -99,7 +111,7 @@ try:
             fixgen_module = importlib.import_module(module_name);
             print "<tr>";
             print "<td>";
-            print "<a href=\"/cgi-bin/fixturegen.py?generator=%s&tourney=%s\">%s</a>" % (urllib.quote_plus(module_name), urllib.quote_plus(tourney_name), cgi.escape(fixgen_module.name));
+            print "<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">%s</a>" % (urllib.quote_plus(module_name), urllib.quote_plus(tourney_name), cgi.escape(fixgen_module.name));
             print "</td>";
             print "<td>%s</td>" % (cgi.escape(module_name));
             print "<td>%s</td>" % (cgi.escape(fixgen_module.description));
@@ -108,21 +120,57 @@ try:
     elif generator_name not in module_list:
         print "<h1>Fixture Generator</h1>";
         print "<p>No such generator %s.</p>" % cgi.escape(generator_name);
+    elif num_divisions > 1 and not form.getfirst("_divsubmit") and "accept" not in form:
+        fixturegen = importlib.import_module(generator_name);
+        print "<h1>%s</h1>" % (cgi.escape(fixturegen.name));
+        fixgen_settings = FixtureGeneratorSettings(tourney.get_fixgen_settings(generator_name));
+        elements = []
+        elements.append(htmlform.HTMLFragment("<p>Which divisions do you want to generate fixtures for, starting from which rounds? By default, a division's fixtures will go in the round after the latest round which has games for that division.</p>"))
+        for div in range(num_divisions):
+            elements.append(htmlform.HTMLFragment("<p>"))
+            elements.append(htmlform.HTMLFormCheckBox("_div%d" % (div), tourney.get_division_name(div), True))
+            next_free_round_number = tourney.get_next_free_round_number_for_division(div)
+            elements.append(htmlform.HTMLFormTextInput(" round ", "_div%dround" % (div), str(next_free_round_number)))
+            elements.append(htmlform.HTMLFragment("</p>"))
+        elements.append(htmlform.HTMLFormSubmitButton("_divsubmit", "Next"))
+        settings_form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s&amp;generator=%s" % (urllib.quote_plus(tourney.get_name()), urllib.quote_plus(generator_name)), elements)
+        print settings_form.html();
     else:
         fixturegen = importlib.import_module(generator_name);
         print "<h1>%s</h1>" % (cgi.escape(fixturegen.name));
-        (ready, excuse) = fixturegen.check_ready(tourney);
-        fixgen_settings = FixtureGeneratorSettings(tourney.get_fixgen_settings(generator_name));
-        #for key in fixgen_settings:
-        #    print "(%s, %s)" % (key, value)
+        if "submit" not in form:
+            fixgen_settings = FixtureGeneratorSettings(tourney.get_fixgen_settings(generator_name));
+        else:
+            fixgen_settings = FixtureGeneratorSettings()
+
         for key in form:
             fixgen_settings[key] = form.getfirst(key);
+
+        if fixgen_settings.get("_divsubmit", None) is None:
+            fixgen_settings["_divsubmit"] = "Next"
+            for div in range(num_divisions):
+                next_free_round_number = tourney.get_next_free_round_number_for_division(div)
+                fixgen_settings["_div%d" % (div)] = "1"
+                fixgen_settings["_div%dround" % (div)] = str(next_free_round_number)
+
+        div_rounds = dict()
+        for div in range(num_divisions):
+            if int_or_none(fixgen_settings.get("_div%d" % (div), "0")):
+                start_round = int_or_none(fixgen_settings.get("_div%dround" % (div), None))
+                if start_round is not None and start_round > 0:
+                    div_rounds[div] = start_round
+        
+        if len(div_rounds) == 0:
+            raise countdowntourney.FixtureGeneratorException("No divisions selected, so can't generate fixtures.")
+
+        (ready, excuse) = fixturegen.check_ready(tourney, div_rounds);
+
         if ready:
-            settings_form = fixturegen.get_user_form(tourney, fixgen_settings);
+            settings_form = fixturegen.get_user_form(tourney, fixgen_settings, div_rounds);
             if settings_form is None and "accept" not in form:
                 # We don't require any more information from the user, so
                 # generate the fixtures.
-                fixture_plan = fixturegen.generate(tourney, fixgen_settings);
+                fixture_plan = fixturegen.generate(tourney, fixgen_settings, div_rounds);
                 fixtures = fixture_plan["fixtures"];
                 rounds = fixture_plan["rounds"];
                 
@@ -135,9 +183,22 @@ try:
                 num_divisions = tourney.get_num_divisions()
                 for r in rounds:
                     round_no = int(r["round"]);
+                    next_free_table_no = tourney.get_next_free_table_number_in_round(round_no)
+                    next_free_seq_no = tourney.get_next_free_seq_number_in_round(round_no)
+                    # The fixture generator will have numbered the tables and
+                    # games from 1, but we now need to offset them if there
+                    # are any other games already in this round.
+                    for f in fixtures:
+                        f.table_no += next_free_table_no - 1
+                        f.seq += next_free_seq_no - 1
+
                     print "<h2>%s</h2>" % r.get("name", "Round %d" % round_no);
 
                     for div_index in range(num_divisions):
+                        round_fixtures = filter(lambda x : x.round_no == round_no and x.division == div_index, fixtures);
+                        if len(round_fixtures) == 0:
+                            continue
+
                         standings = tourney.get_standings(division=div_index)
                         standings_dict = dict()
                         for s in standings:
@@ -147,7 +208,6 @@ try:
                         print "<table class=\"fixturetable\">";
                         print "<tr><th>Table</th><th>Type</th><th></th><th></th><th></th></tr>";
 
-                        round_fixtures = filter(lambda x : x.round_no == round_no and x.division == div_index, fixtures);
                         fixnum = 0;
                         last_table_no = None;
                         for f in round_fixtures:
@@ -185,6 +245,12 @@ try:
                 print "<form method=\"POST\" action=\"/cgi-bin/fixturegen.py\">";
                 print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourney_name, True);
                 print "<input type=\"hidden\" name=\"generator\" value=\"%s\" />" % cgi.escape(generator_name, True);
+
+                # Remember all the _div* settings, or check_ready might
+                # object when we do try to submit the fixtures
+                for name in fixgen_settings:
+                    if name[0:4] == "_div":
+                        print "<input type=\"hidden\" name=\"%s\" value=\"%s\" />" % (cgi.escape(name, True), cgi.escape(fixgen_settings[name], True))
 
                 dict_fixtures = [];
                 for f in fixtures:
@@ -288,7 +354,7 @@ except countdowntourney.TourneyException as e:
     generator_name = form.getfirst("generator");
     print "<p>"
     if generator_name:
-        print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s&generator=%s\">Sigh...</a>" % (urllib.quote_plus(tourney_name), urllib.quote_plus(generator_name))
+        print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s&amp;generator=%s\">Sigh...</a>" % (urllib.quote_plus(tourney_name), urllib.quote_plus(generator_name))
     else:
         print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Sigh...</a>" % (urllib.quote_plus(tourney_name))
     print "</p>"

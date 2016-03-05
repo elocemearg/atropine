@@ -687,6 +687,39 @@ class Tourney(object):
         cur.close();
         return count;
     
+    def get_next_free_table_number_in_round(self, round_no):
+        cur = self.db.cursor()
+        cur.execute("select max(table_no) from game g where g.round_no = ?", (round_no,))
+        row = cur.fetchone()
+        if row is None or row[0] is None:
+            next_table_no = 1
+        else:
+            next_table_no = row[0] + 1
+        cur.close()
+        return next_table_no
+    
+    def get_next_free_seq_number_in_round(self, round_no):
+        cur = self.db.cursor()
+        cur.execute("select max(seq) from game g where g.round_no = ?", (round_no,))
+        row = cur.fetchone()
+        if row is None or row[0] is None:
+            next_seq_no = 1
+        else:
+            next_seq_no = row[0] + 1
+        cur.close()
+        return next_seq_no
+    
+    def get_next_free_round_number_for_division(self, div):
+        cur = self.db.cursor()
+        cur.execute("select max(round_no) from game g where g.division = ?", (div,))
+        row = cur.fetchone()
+        if row is None or row[0] is None:
+            round_no = 1
+        else:
+            round_no = row[0] + 1
+        cur.close()
+        return round_no
+    
     def get_round_type(self, round_no):
         cur = self.db.cursor();
         cur.execute("select type from rounds where id = ?", (round_no,));
@@ -735,6 +768,19 @@ class Tourney(object):
             rounds.append(rdict);
         cur.close();
         return rounds;
+
+    def get_round(self, round_no):
+        cur = self.db.cursor();
+        cur.execute("select r.id, r.type, r.name from rounds r where id = ?", (round_no,));
+        row = cur.fetchone()
+        d = None
+        if row is not None:
+            d = dict()
+            d["num"] = row[0]
+            d["type"] = row[1]
+            d["name"] = row[2]
+        cur.close()
+        return d
     
     def name_round(self, round_no, round_name, round_type):
         # Does round_no already exist?
@@ -1295,6 +1341,25 @@ class Tourney(object):
             self.db.rollback();
             raise;
 
+    def delete_round_div(self, round_no, division):
+        try:
+            cur = self.db.cursor()
+            cur.execute("delete from game where round_no = ? and division = ?", (round_no, division))
+            num_deleted = cur.rowcount
+            cur.execute("select count(*) from game where round_no = ?", (round_no,))
+            row = cur.fetchone()
+            games_left_in_round = -1
+            if row is not None and row[0] is not None:
+                games_left_in_round = row[0]
+            if games_left_in_round == 0:
+                cur.execute("delete from rounds where id = ?", (round_no,))
+            cur.close()
+            self.db.commit()
+            return num_deleted
+        except:
+            self.db.rollback()
+            raise
+
     def delete_round(self, round_no):
         latest_round_no = self.get_latest_round_no();
         if latest_round_no is None:
@@ -1356,6 +1421,56 @@ where round_no = ? and seq = ?""", alterations_reordered);
             else:
                 team = Team(row[2], row[3], row[4])
             return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], player_id);
+
+    def get_latest_started_round(self, round_type=None):
+        cur = self.db.cursor()
+        sql = "select max(r.id) from rounds r where (exists(select * from completed_game cg where cg.round_no = r.id) or r.id = (select min(id) from rounds where id >= 0))"
+        if round_type is None:
+            cur.execute(sql)
+        else:
+            sql += " and type = ?"
+            cur.execute(sql, (round_type,))
+        row = cur.fetchone()
+        round_no = None
+        if row is not None and row[0] is not None:
+            round_no = row[0]
+        cur.close()
+        if round_no is None:
+            return None
+        return self.get_round(round_no)
+    
+    def is_round_finished(self, round_no):
+        cur = self.db.cursor()
+        cur.execute("select count(*) from game g where round_no = ?", (round_no,))
+        row = cur.fetchone()
+        if row is None or row[0] is None:
+            num_games = 0
+        else:
+            num_games = row[0]
+        cur.execute("select count(*) from completed_game cg where round_no = ?", (round_no,))
+        row = cur.fetchone()
+        if row is None or row[0] is None:
+            num_completed_games = 0
+        else:
+            num_completed_games = row[0]
+        cur.close()
+        return (num_games > 0 and num_games == num_completed_games)
+
+    def get_current_round(self):
+        # Return the latest started round, or if that round is finished and
+        # there's a next round, the next round.
+        r = self.get_latest_started_round()
+        if r is None:
+            return None
+        if self.is_round_finished(r["num"]):
+            cur = self.db.cursor()
+            cur.execute("select min(id) from rounds where id > ?", (r["num"],))
+            row = cur.fetchone()
+            if row is not None and row[0] is not None:
+                # There is a next round
+                r = self.get_round(row[0])
+            cur.close()
+        return r
     
     def get_latest_round_no(self, round_type=None):
         cur = self.db.cursor();

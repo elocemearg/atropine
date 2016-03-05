@@ -301,15 +301,12 @@ class TableResultsFetcher(object):
     def fetch_data_rows(self, start_row, num_rows_to_fetch):
         # Find the latest prelim round
         rounds = self.tourney.get_rounds();
-        latest_round_no = None;
-        for r in rounds:
-            if r["type"] == 'P' and (latest_round_no is None or latest_round_no < r["num"]):
-                latest_round_no = r["num"];
-                latest_round_name = r["name"];
-
-        if latest_round_no is None:
+        latest_round = self.tourney.get_latest_started_round("P")
+        if latest_round is None:
             # That was easy.
             return [];
+        latest_round_name = latest_round["name"]
+        latest_round_no = latest_round["num"]
         
         pages = []
         current_page = []
@@ -557,9 +554,8 @@ class CurrentRoundFixturesFetcher(object):
         rounds = self.tourney.get_rounds();
         if not rounds:
             return [];
-        #rounds = filter(lambda x : x["type"] == "P", rounds);
 
-        latest_round = max(rounds, key=lambda x : x["num"]);
+        latest_round = self.tourney.get_current_round()
         latest_round_no = latest_round["num"];
 
         if latest_round["type"] == "P":
@@ -759,10 +755,11 @@ class QuickestFinishersFetcher(object):
         self.tourney = tourney;
     
     def fetch_header_row(self):
-        round_no = self.tourney.get_latest_round_no();
-        if round_no is None:
-            return None;
-        round_name = self.tourney.get_round_name(round_no);
+        latest_round = self.tourney.get_latest_started_round()
+        if latest_round is None:
+            return None
+        round_no = latest_round["num"]
+        round_name = latest_round["name"]
 
         row = teleostscreen.TableRow();
         row.append_value(teleostscreen.RowValue(round_name, teleostscreen.PercentLength(50), (192, 192, 192), alignment=teleostscreen.ALIGN_LEFT));
@@ -772,9 +769,11 @@ class QuickestFinishersFetcher(object):
         return row;
 
     def fetch_data_rows(self, start_row, num_rows):
-        round_no = self.tourney.get_latest_round_no();
-        if round_no is None:
-            return None;
+        latest_round = self.tourney.get_latest_started_round()
+        if latest_round is None:
+            return None
+        round_no = latest_round["num"]
+        round_name = latest_round["name"]
         games_to_play = self.tourney.get_num_games_to_play_by_table(round_no=round_no);
         finished_tables = [];
         unfinished_tables = [];

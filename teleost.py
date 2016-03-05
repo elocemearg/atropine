@@ -192,16 +192,17 @@ try:
             if teleost_mode == 0:
                 auto_use_vertical = tourney.get_auto_use_vertical();
                 knockout_phase = False;
-                latest_round_no = tourney.get_latest_round_no();
-                if not latest_round_no:
+                r = tourney.get_current_round()
+                if not r:
                     if current_view_index != 0:
                         new_view_index = 0;
                 else:
-                    largest_table_size = tourney.get_largest_table_game_count(latest_round_no)
-                    latest_round_type = tourney.get_round_type(latest_round_no);
-                    if latest_round_type != 'P':
+                    round_no = r["num"]
+                    largest_table_size = tourney.get_largest_table_game_count(round_no)
+                    round_type = tourney.get_round_type(round_no);
+                    if round_type != 'P':
                         knockout_phase = True;
-                    (played, unplayed) = tourney.get_played_unplayed_counts(round_no=latest_round_no);
+                    (played, unplayed) = tourney.get_played_unplayed_counts(round_no=round_no);
                     if knockout_phase:
                         if current_view_index != 3:
                             new_view_index = 3;
