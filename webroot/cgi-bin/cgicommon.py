@@ -41,7 +41,7 @@ def set_module_path():
 def show_sidebar(tourney):
     print "<div class=\"sidebar\">";
 
-    print "<a href=\"/cgi-bin/home.py\"><img src=\"/robin128.jpg\" alt=\"Robin\" /></a><br />";
+    print "<a href=\"/cgi-bin/home.py\"><img src=\"/images/robin128.jpg\" alt=\"Robin\" /></a><br />";
     if tourney:
         print "<p><strong>%s</strong></p>" % cgi.escape(tourney.name);
         print "<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>" % urllib.quote_plus(tourney.name);
