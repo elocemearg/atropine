@@ -138,7 +138,7 @@ def get_user_form(tourney, settings):
     form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % urllib.quote_plus(tourney.name), elements);
     return form;
 
-def check_ready(tourney):
+def check_ready(tourney, div_rounds):
     players = tourney.get_active_players();
     table_size = tourney.get_table_size();
 
