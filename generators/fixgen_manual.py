@@ -52,10 +52,10 @@ def get_user_form(tourney, settings, div_rounds):
         elements.append(htmlform.HTMLFragment("<div class=\"infoboxcontainer\">"))
         elements.append(htmlform.HTMLFragment("<div class=\"infobox\">"))
         elements.append(htmlform.HTMLFragment("<p>"))
-        elements.append(htmlform.HTMLFragment("There is an incomplete fixtures form saved for this round. Do you want to carry on from where you left off?"))
+        elements.append(htmlform.HTMLFragment("There is an incomplete fixtures form saved. Do you want to carry on from where you left off?"))
         elements.append(htmlform.HTMLFragment("</p>"))
         elements.append(htmlform.HTMLFragment("<p>"))
-        elements.append(htmlform.HTMLFormSubmitButton("submitrestore", "Restore previously-saved form for Round %d" % (round_no)))
+        elements.append(htmlform.HTMLFormSubmitButton("submitrestore", "Restore previously-saved form"))
         elements.append(htmlform.HTMLFragment("</p>"))
         elements.append(htmlform.HTMLFragment("</div></div>"))
 
