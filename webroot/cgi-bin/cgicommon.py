@@ -44,17 +44,14 @@ def show_sidebar(tourney):
     print "<a href=\"/cgi-bin/home.py\">Home</a><br />";
     if tourney:
         print "<p><strong>%s</strong></p>" % cgi.escape(tourney.name);
-        print "<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a><br />" % urllib.quote_plus(tourney.name);
-        #print "<br />";
-
+        print "<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>" % urllib.quote_plus(tourney.name);
         print "<li><a href=\"/cgi-bin/player.py?tourney=%s\">Players</a></li>" % (urllib.quote_plus(tourney.name))
         print "<li><a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions</a></li>" % (urllib.quote_plus(tourney.name))
         print "<li><a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Teams</a></li>" % (urllib.quote_plus(tourney.name))
 
-        print "<br />"
-
+        print "<p>"
         print "<a href=\"/cgi-bin/teleost.py?tourney=%s\">Display Control</a><br />" % urllib.quote_plus(tourney.name);
-        print "<br />";
+        print "</p>"
 
         rounds = tourney.get_rounds();
         for r in rounds:
@@ -69,7 +66,7 @@ def show_sidebar(tourney):
             print "</div>";
         print "<br />";
         print "<div class=\"genroundlink\">";
-        print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Generate new round...</a>" % (urllib.quote_plus(tourney.name));
+        print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Generate fixtures...</a>" % (urllib.quote_plus(tourney.name));
         print "</div>";
 
         print "<br />"
