@@ -308,9 +308,6 @@ def check_ready(tourney, div_rounds):
 def generate(tourney, settings, div_rounds):
     rank_method = tourney.get_rank_method();
 
-    #rounds = tourney.get_rounds();
-    #rounds = filter(lambda x : x.get("type", None) == "P", rounds);
-
     (ready, excuse) = check_ready(tourney, div_rounds);
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);

@@ -15,7 +15,7 @@ def lookup_player(players, name):
             return p;
     raise countdowntourney.PlayerDoesNotExistException("Player %s does not exist! I haven't a clue who they are." % name);
 
-def get_user_form(tourney, settings):
+def get_user_form(tourney, settings, div_rounds):
     table_size = tourney.get_table_size();
     games = tourney.get_games(game_type='P');
     if len(games):
@@ -161,7 +161,7 @@ def check_ready(tourney, div_rounds):
     return (True, None);
 
 def generate(tourney, settings, div_rounds):
-    (ready, excuse) = check_ready(tourney);    
+    (ready, excuse) = check_ready(tourney, div_rounds)
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
 
