@@ -63,13 +63,14 @@ cgicommon.print_html_head("Tourney Setup: " + str(tourneyname));
 
 print "<body>";
 
-
-
 if tourneyname is not None:
     try:
         tourney = countdowntourney.tourney_open(tourneyname, cgicommon.dbdir);
     except countdowntourney.TourneyException as e:
         cgicommon.show_tourney_exception(e);
+        print "<p><a href=\"/cgi-bin/home.py\">Home</a></p>"
+        print "</body></html>"
+        sys.exit(1)
 
 cgicommon.show_sidebar(tourney);
 

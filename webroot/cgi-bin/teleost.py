@@ -22,6 +22,7 @@ request_method = os.environ.get("REQUEST_METHOD", "");
 cgicommon.set_module_path();
 
 import countdowntourney;
+import teleostcolours;
 
 cgicommon.print_html_head("Display control: " + str(tourney_name));
 
@@ -41,6 +42,7 @@ else:
         if request_method == "POST":
             mode = form.getfirst("mode");
             auto_use_vertical = form.getfirst("autousevertical")
+            palette_name = form.getfirst("palette")
             if mode is not None:
                 try:
                     mode = int(mode);
@@ -55,11 +57,18 @@ else:
                     pass
             else:
                 tourney.set_auto_use_vertical(False)
+            if palette_name is not None:
+                tourney.set_teleost_colour_palette(palette_name)
 
         views = tourney.get_teleost_modes();
+        current_palette_name = tourney.get_teleost_colour_palette()
+        if not current_palette_name:
+            current_palette_name = "Standard"
+
         print "<h1>Display control</h1>";
 
         print "<form action=\"/cgi-bin/teleost.py?tourney=%s\" method=\"POST\">" % urllib.quote_plus(tourney_name);
+        print "<h2>Select view</h2>"
         print "<p>";
         for v in views:
             view_num = v.get("num", -1);
@@ -76,6 +85,12 @@ else:
                 print "</span>"
                 print "<br />"
         print "</p>";
+    
+        print "<h2>Select colour scheme</h2>"
+        print "<p>"
+        for palette_name in teleostcolours.list_palettes():
+            print "<input type=\"radio\" name=\"palette\" value=\"%s\" %s /> %s<br />" % (cgi.escape(palette_name, True), "checked" if current_palette_name == palette_name else "", cgi.escape(palette_name))
+        print "</p>"
 
         print "<input type=\"submit\" name=\"submit\" value=\"Apply Settings\" />";
         print "</form>";

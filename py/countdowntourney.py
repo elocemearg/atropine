@@ -4,8 +4,8 @@ import sqlite3;
 import re;
 import os;
 
-SW_VERSION = "0.7.1"
-SW_VERSION_SPLIT = (0, 7, 1)
+SW_VERSION = "0.7.2"
+SW_VERSION_SPLIT = (0, 7, 2)
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
 RANK_WINS_POINTS = 0;
@@ -1653,6 +1653,12 @@ where round_no = ? and seq = ?""", alterations_reordered);
         cur.execute("insert or replace into options values (?, ?)", (name, value));
         cur.close();
         self.db.commit();
+
+    def set_teleost_colour_palette(self, value):
+        return self.set_attribute("teleostcolourpalette", value) != 0
+
+    def get_teleost_colour_palette(self):
+        return self.get_attribute("teleostcolourpalette", "Standard")
 
     def get_auto_use_vertical(self):
         return self.get_int_attribute("autousevertical", 0) != 0

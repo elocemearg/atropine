@@ -41,13 +41,15 @@ def set_module_path():
 def show_sidebar(tourney):
     print "<div class=\"sidebar\">";
 
-    print "<a href=\"/cgi-bin/home.py\"><img src=\"/images/robin128.jpg\" alt=\"Robin\" /></a><br />";
+    print "<a href=\"/cgi-bin/home.py\"><img src=\"/images/robin128.png\" alt=\"Robin\" /></a><br />";
     if tourney:
         print "<p><strong>%s</strong></p>" % cgi.escape(tourney.name);
         print "<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>" % urllib.quote_plus(tourney.name);
+        print "<div class=\"sidebarlinklist\">"
         print "<li><a href=\"/cgi-bin/player.py?tourney=%s\">Players</a></li>" % (urllib.quote_plus(tourney.name))
         print "<li><a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions</a></li>" % (urllib.quote_plus(tourney.name))
         print "<li><a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Teams</a></li>" % (urllib.quote_plus(tourney.name))
+        print "</div>"
 
         print "<p>"
         print "<a href=\"/cgi-bin/teleost.py?tourney=%s\">Display Control</a><br />" % urllib.quote_plus(tourney.name);
@@ -77,11 +79,17 @@ def show_sidebar(tourney):
 
         print "<br />"
 
+        print "Tournament report"
+        print "<div class=\"sidebarlinklist\">"
         print "<div class=\"exportlink\">"
-        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=html\" target=\"_blank\">Results (HTML)</a>" % (urllib.quote_plus(tourney.name))
+        print "<li><a href=\"/cgi-bin/export.py?tourney=%s&format=html\" target=\"_blank\">HTML</a></li>" % (urllib.quote_plus(tourney.name))
         print "</div>"
         print "<div class=\"exportlink\">"
-        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=text\" target=\"_blank\">Results (text)</a>" % (urllib.quote_plus(tourney.name))
+        print "<li><a href=\"/cgi-bin/export.py?tourney=%s&format=text\" target=\"_blank\">Text</a></li>" % (urllib.quote_plus(tourney.name))
+        print "</div>"
+        print "<div class=\"exportlink\">"
+        print "<li><a href=\"/cgi-bin/export.py?tourney=%s&format=wikitext\" target=\"_blank\">Wikitext</a></li>" % (urllib.quote_plus(tourney.name))
+        print "</div>"
         print "</div>"
     print "</div>";
 

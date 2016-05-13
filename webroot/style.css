@@ -2,10 +2,25 @@ body {
 	font-family: sans-serif;
 }
 
+a {
+	text-decoration: none;
+}
+
 .sidebar {
 	position: fixed;
-	left: 10px;
-	width: 190px;
+	top: 0;
+	bottom: 0;
+	left: 0px;
+	padding-left: 10px;
+	padding-top: 10px;
+	padding-bottom: 10px;
+	width: 180px;
+	background-color: #dddddd;
+	overflow-y: auto;
+}
+
+.sidebarlinklist {
+	padding-left: 18px;
 }
 
 .mainpane {

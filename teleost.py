@@ -6,7 +6,6 @@ import sys;
 import time;
 import traceback;
 
-teleost_version = "0.2";
 local_view_switching = False;
 
 view_key_map = {
@@ -27,14 +26,15 @@ sys.path.append(os.path.join(os.getcwd(), "py"));
 
 import teleostscreen;
 import teleostfetchers;
+import teleostcolours;
 import countdowntourney;
 
 def make_full_screen_fetcher_view(view_title, view_description, title_text, fetcher, num_lines):
     v = teleostscreen.View(name=view_title, desc=view_description);
 
     # Add title area and title text
-    v.add_view(teleostscreen.ShadedArea(24, colour=(0, 128, 255)), top_pc=0, height_pc=13, left_pc=0, width_pc=100);
-    v.add_view(teleostscreen.LabelWidget(title_text, left_pc=6, top_pc=4, height_pc=7, width_pc=100));
+    v.add_view(teleostscreen.ShadedArea(None, "title_bg"), top_pc=0, height_pc=13, left_pc=0, width_pc=100);
+    v.add_view(teleostscreen.LabelWidget(title_text, left_pc=6, top_pc=4, height_pc=7, width_pc=100, text_colour_name="title_fg"));
     v.add_view(teleostscreen.TableWidget(fetcher, num_lines), top_pc=15, height_pc=85, left_pc=5, width_pc=90);
     return v;
 
@@ -101,13 +101,13 @@ try:
     standings_videprinter = teleostscreen.View(name="Standings / Videprinter", desc="Standings table taking up most of the screen, with latest results displayed on a scrolling window below.");
 
     standings_videprinter.add_view(standings_widget, top_pc=5, height_pc=65, left_pc=0, width_pc=95);
-    standings_videprinter.add_view(teleostscreen.ShadedArea(128), top_pc=72, height_pc=30, left_pc=0, width_pc=100);
+    standings_videprinter.add_view(teleostscreen.ShadedArea(None, "videprinter_bg"), top_pc=72, height_pc=30, left_pc=0, width_pc=100);
     standings_videprinter.add_view(team_score_widget, top_pc=5, height_pc=7, left_pc=5, width_pc=20);
     standings_videprinter.add_view(teleostscreen.VideprinterWidget(videprinter_fetcher, 4), top_pc=73, height_pc=25, left_pc=2, width_pc=100);
 
     standings_results = teleostscreen.View(name="Standings / Table Results", desc="Standings table taking up most of the screen, with this round's fixtures and results displayed at the bottom.");
     standings_results.add_view(standings_widget, top_pc=5, height_pc=65, left_pc=0, width_pc=95);
-    standings_results.add_view(teleostscreen.ShadedArea(128), top_pc=72, height_pc=30, left_pc=0, width_pc=100);
+    standings_results.add_view(teleostscreen.ShadedArea(None, "standings_results_bg"), top_pc=72, height_pc=30, left_pc=0, width_pc=100);
     standings_results.add_view(teleostscreen.TableWidget(table_results_fetcher, 4, scroll_interval=5), top_pc=73, height_pc=26, left_pc=0, width_pc=100);
     standings_results.add_view(team_score_widget, top_pc=5, height_pc=7, left_pc=5, width_pc=20);
     
@@ -124,8 +124,8 @@ try:
             ("Highest joint scores", highest_joint_scores_fetcher)
         ]:
         v = teleostscreen.View();
-        v.add_view(teleostscreen.ShadedArea(24, colour=(0,128,255)), top_pc=0, height_pc=13, left_pc=0, width_pc=100);
-        v.add_view(teleostscreen.LabelWidget(text, left_pc=6, top_pc=4, height_pc=7, width_pc=100));
+        v.add_view(teleostscreen.ShadedArea(None, "title_bg"), top_pc=0, height_pc=13, left_pc=0, width_pc=100);
+        v.add_view(teleostscreen.LabelWidget(text, left_pc=6, top_pc=4, height_pc=7, width_pc=100, text_colour_name="title_fg"));
         v.add_view(teleostscreen.TableWidget(fetcher, 12), top_pc=15, height_pc=85, left_pc=5, width_pc=90);
         notables.add_view(v, 10);
     
@@ -188,6 +188,8 @@ try:
 
         if db_mode_checks and (last_mode_check + mode_check_interval <= time.time()):
             teleost_mode = tourney.get_current_teleost_mode();
+            teleost_palette = tourney.get_teleost_colour_palette()
+            teleostcolours.set_palette(teleost_palette)
             last_mode_check = time.time();
             if teleost_mode == 0:
                 auto_use_vertical = tourney.get_auto_use_vertical();
@@ -331,7 +333,6 @@ except Exception as e:
 
     try:
         f = open(stacktrace_filename, "w");
-        f.write("Teleost version " + teleost_version + "\n");
         f.write(str(e) + "\n");
         traceback.print_exc(file=f);
         f.close();

@@ -7,6 +7,7 @@ import time;
 import sqlite3;
 import countdowntourney;
 import traceback;
+import teleostcolours;
 
 draw_table_lines = False;
 
@@ -21,6 +22,34 @@ def limit_label_width(label, max_width):
         return pygame.transform.smoothscale(label, (max_width, label.get_height()));
     except:
         return pygame.transform.scale(label, (max_width, label.get_height()));
+
+def make_text_label(font, text, text_colour, width_limit=None, outline_colour=(0,0,0)):
+    outline_size = font.get_height() / 20
+    outline_size = min(max(outline_size, 1), 3)
+
+    text_label = font.render(text, 1, text_colour)
+    shadow_label = font.render(text, 1, outline_colour)
+
+    if width_limit:
+        text_label = limit_label_width(text_label, width_limit)
+        shadow_label = limit_label_width(shadow_label, width_limit)
+
+    label = pygame.Surface((text_label.get_width() + 2 * outline_size, text_label.get_height() + 2 * outline_size), pygame.SRCALPHA)
+
+    # Draw a smudged-about shadow of the text, which is a black image of the
+    # text copied to all surrounding positions within an outline_size-pixel
+    # radius.
+    if text and outline_size > 0:
+        for dy in range(0, outline_size * 2 + 1):
+            smudge_width = outline_size - abs(outline_size - dy)
+            for dx in range(0, outline_size * 2 + 1):
+                if abs(outline_size - dx) ** 2 + abs(outline_size - dy) ** 2 <= outline_size ** 2:
+                    label.blit(shadow_label, (dx, dy))
+
+    # Then drop the text inside it
+    label.blit(text_label, (outline_size, outline_size))
+
+    return label
 
 def shade_area(surface, rect, colour):
     tmp_surface = pygame.Surface((rect[2], rect[3]), pygame.SRCALPHA);
@@ -291,7 +320,6 @@ class RowValue(object):
 
     def draw_aux(self, surface, text, default_font, y, x, row_height_px, wipe_right=False):
         font = self.get_font(default_font);
-        label = font.render(text, 1, self.get_text_colour());
         width_px = self.get_width_px(surface);
         row_pad_px = int(self.get_row_padding_px(surface));
         shade_spacing = int(row_height_px * 0.1);
@@ -302,12 +330,10 @@ class RowValue(object):
         if width_px is not None and row_pad_px >= width_px:
             row_pad_px = 0;
 
-        if width_px is not None and label.get_width() > width_px - row_pad_px:
-            try:
-                label = pygame.transform.smoothscale(label, (width_px - row_pad_px, label.get_height()));
-            except:
-                label = pygame.transform.scale(label, (width_px - row_pad_px, label.get_height()));
-
+        if width_px is None:
+            label = make_text_label(font, text, self.get_text_colour())
+        else:
+            label = make_text_label(font, text, self.get_text_colour(), width_px - row_pad_px)
 
         if width_px is not None and self.is_right_aligned():
             drawn_width = width_px;
@@ -712,12 +738,10 @@ class PagedFixturesWidget(Widget):
         name2_width_px = name1_width_px;
         name2_x = fixtures_x + int(0.61 * fixtures_width);
 
-        round_name_colour = (255, 255, 255);
-        name1_colour = (255, 255, 255);
-        name2_colour = (255, 255, 255);
-        unknown_name1_colour = (128, 128, 128);
-        unknown_name2_colour = (128, 128, 128);
-        score_colour = (255, 255, 255);
+        round_name_colour = teleostcolours.get("fixtures_round_name")
+        name1_colour = name2_colour = teleostcolours.get("fixtures_player_name")
+        unknown_name1_colour = unknown_name2_colour = teleostcolours.get("fixtures_unknown_player_name")
+        score_colour = teleostcolours.get("fixtures_score");
 
         # Make the red and green gradient shaded rectangles for the
         # left and right side of the fixture list
@@ -728,12 +752,12 @@ class PagedFixturesWidget(Widget):
         green_right_shade = pygame.Surface((name2_width_px, line_height), pygame.SRCALPHA);
         yellow_left_shade = pygame.Surface((name1_width_px, line_height), pygame.SRCALPHA);
         yellow_right_shade = pygame.Surface((name2_width_px, line_height), pygame.SRCALPHA);
-        green = (0, 255, 0, 64);
-        green_transparent = (0, 255, 0, 0);
-        red = (255, 0, 0, 64);
-        red_transparent = (255, 0, 0, 0);
-        yellow = (255, 255, 0, 64);
-        yellow_transparent = (255, 255, 0, 0)
+        green = teleostcolours.get("fixtures_winner_bg")
+        green_transparent = teleostcolours.get("fixtures_winner_bg_transparent")
+        red = teleostcolours.get("fixtures_loser_bg")
+        red_transparent = teleostcolours.get("fixtures_loser_bg_transparent")
+        yellow = teleostcolours.get("fixtures_draw_bg")
+        yellow_transparent = teleostcolours.get("fixtures_draw_bg_transparent")
 
         shade_area_horiz_gradient(red_left_shade, red_left_shade.get_rect(), red, red_transparent);
         shade_area_horiz_gradient(red_right_shade, red_right_shade.get_rect(), red_transparent, red);
@@ -774,16 +798,13 @@ class PagedFixturesWidget(Widget):
                 round_name = self.fetcher.get_round_name(t[0].round_no);
                 if num_divisions > 1:
                     round_name += "   " + countdowntourney.get_general_division_name(t[0].division)
-                round_name_label = font.render(round_name, 1, round_name_colour);
+                round_name_label = make_text_label(font, round_name, round_name_colour)
                 surface.blit(round_name_label, (round_name_left, int(table_y_pos + 0.2 * line_height)));
                 table_y_pos += line_height;
 
             table_index += 1;
 
-            if table_index % 2 == 0:
-                shade_colour = (0, 0, 0, 48);
-            else:
-                shade_colour = (0, 0, 0, 48);
+            shade_colour = teleostcolours.get("fixtures_table_bg")
 
             inter_table_padding = int(0.1 * line_height * len(t));
             table_number_padding = inter_table_padding;
@@ -796,10 +817,10 @@ class PagedFixturesWidget(Widget):
             modified_line_height = (len(t) * line_height - inter_table_padding) / len(t);
             
             table_number_label = pygame.Surface((table_number_width, table_number_height), pygame.SRCALPHA);
-            table_number_label.fill((0, 64, 255, 32));
+            table_number_label.fill(teleostcolours.get("fixtures_table_number_bg"))
             
             font = get_sensible_font(self.font_name, min(table_number_height, table_number_width));
-            caption = font.render(str(t[0].table_no), 1, (255, 255, 255));
+            caption = make_text_label(font, str(t[0].table_no), teleostcolours.get("fixtures_table_number_fg"))
 
             top = (table_number_label.get_height() - caption.get_height()) / 2;
             if top < 0:
@@ -832,35 +853,32 @@ class PagedFixturesWidget(Widget):
                 if team2:
                     team2 = team2.get_colour_tuple()
 
-                name1_label = font.render(names[0], 1, name1_colour if g.p1.is_player_known() else unknown_name1_colour);
+                name1_label = make_text_label(font, names[0], name1_colour if g.p1.is_player_known() else unknown_name1_colour)
 
                 if team1:
                     this_name1_width_px = int(0.9 * name1_width_px)
                     team1_label = make_team_dot(int(0.1 * name1_width_px), modified_line_height, team1)
-                    name1_label = limit_label_width(name1_label, this_name1_width_px);
                 else:
                     team1_label = None
                     this_name1_width_px = name1_width_px
-                    name1_label = limit_label_width(name1_label, name1_width_px);
-                name2_label = font.render(names[1], 1, name2_colour if g.p2.is_player_known() else unknown_name2_colour);
+
+                name1_label = make_text_label(font, names[0], name1_colour if g.p1.is_player_known() else unknown_name1_colour, this_name1_width_px)
                 if team2:
                     this_name2_width_px = int(0.9 * name2_width_px)
                     this_name2_x = name2_x + int(0.1 * name2_width_px)
                     team2_label = make_team_dot(int(0.1 * name2_width_px), modified_line_height, team2)
-                    name2_label = limit_label_width(name2_label, int(0.9 * name2_width_px));
                 else:
                     this_name2_width_px = name2_width_px
                     this_name2_x = name2_x
                     team2_label = None
-                    name2_label = limit_label_width(name2_label, name2_width_px);
+                name2_label = make_text_label(font, names[1], name2_colour if g.p2.is_player_known() else unknown_name2_colour, this_name2_width_px)
 
                 if g.is_complete():
                     score_str = g.format_score();
                 else:
                     score_str = "v";
 
-                score_label = font.render(score_str, 1, score_colour);
-                score_label = limit_label_width(score_label, score_width_px);
+                score_label = make_text_label(font, score_str, score_colour, score_width_px)
 
                 if g.is_complete():
                     gap = int(0.1 * modified_line_height);
@@ -895,10 +913,10 @@ class PagedFixturesWidget(Widget):
             prev_division = t[0].division
 
 class LabelWidget(Widget):
-    def __init__(self, text, left_pc, top_pc, width_pc, height_pc, text_colour=(255,255,255), bg_colour=None, font_name="sans-serif"):
+    def __init__(self, text, left_pc, top_pc, width_pc, height_pc, text_colour_name=None, bg_colour_name=None, font_name="sans-serif"):
         self.text = text;
-        self.text_colour = text_colour;
-        self.bg_colour = bg_colour;
+        self.text_colour_name = text_colour_name;
+        self.bg_colour_name = bg_colour_name;
         self.font_name = font_name;
         self.left_pc = left_pc;
         self.top_pc = top_pc;
@@ -919,13 +937,15 @@ class LabelWidget(Widget):
         top_px = surface.get_height() * self.top_pc / 100;
         left_px = surface.get_width() * self.left_pc / 100;
 
+        self.text_colour = teleostcolours.get(self.text_colour_name)
+
+        if self.bg_colour_name:
+            self.bg_colour = teleostcolours.get(self.bg_colour_name)
+        else:
+            self.bg_colour = None
+
         label = pygame.Surface((width, height), flags=pygame.SRCALPHA);
-        caption = font.render(self.text, 1, self.text_colour);
-        if caption.get_width() > width:
-            try:
-                caption = pygame.transform.smoothscale(caption, (width, caption.get_height()));
-            except:
-                caption = pygame.transform.scale(caption, (width, caption.get_height()));
+        caption = make_text_label(font, self.text, self.text_colour, width)
 
         if self.bg_colour:
             label.fill(self.bg_colour);
@@ -935,13 +955,21 @@ class LabelWidget(Widget):
 
 
 class ShadedArea(Widget):
-    def __init__(self, alpha=128, colour=(0,0,0)):
-        self.alpha = alpha;
-        self.colour = colour;
+    def __init__(self, colour=(0,0,0,128), colour_name=None):
+        if colour:
+            if len(colour) < 4:
+                self.colour = (colour[0], colour[1], colour[2], 128)
+            else:
+                self.colour = colour
+            self.colour_name = None
+        else:
+            self.colour_name = colour_name
     
     def refresh(self, surface):
         shaded = pygame.Surface((surface.get_width(), surface.get_height()), pygame.SRCALPHA);
-        shaded.fill((self.colour[0], self.colour[1], self.colour[2], self.alpha));
+        if self.colour_name:
+            self.colour = teleostcolours.get(self.colour_name)
+        shaded.fill(self.colour);
         surface.blit(shaded, (0, 0));
 
 ###############################################################################

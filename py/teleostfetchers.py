@@ -3,6 +3,7 @@
 
 import sys;
 import teleostscreen;
+import teleostcolours;
 import countdowntourney;
 import time;
 
@@ -69,18 +70,17 @@ class VideprinterFetcher(object):
             if s2 is not None:
                 s2 = int(s2);
 
-            round_desc_colour = (255, 128, 64);
-            timestamp_colour = (192, 192, 192);
-            score_colour = (255, 255, 255);
-            name1_colour = (192, 192, 48);
-            name2_colour = (192, 192, 48);
+            round_desc_colour = teleostcolours.get("videprinter_round")
+            timestamp_colour = teleostcolours.get("videprinter_timestamp")
+            score_colour = teleostcolours.get("videprinter_score")
+            name1_colour = name2_colour = teleostcolours.get("videprinter_name_neutral")
             if s1 is not None and s2 is not None:
                 if s1 > s2:
-                    name1_colour = (0, 192, 0);
-                    name2_colour = (255, 48, 48);
+                    name1_colour = teleostcolours.get("videprinter_name_winner")
+                    name2_colour = teleostcolours.get("videprinter_name_loser")
                 elif s2 > s1:
-                    name1_colour = (255, 48, 48);
-                    name2_colour = (0, 192, 0);
+                    name1_colour = teleostcolours.get("videprinter_name_loser")
+                    name2_colour = teleostcolours.get("videprinter_name_winner")
                 if l["tiebreak"]:
                     if s1 > s2:
                         score_str = "%d* - %d" % (s1, s2);
@@ -135,10 +135,7 @@ class TeamScoreFetcher(object):
             bggreen = (hex_colour >> 8) & 0xff
             bgblue = (hex_colour) & 0xff
 
-            if (bgred + bggreen / 2 + bgblue) / 3 < 128:
-                text_colour = (255, 255, 255)
-            else:
-                text_colour = (0, 0, 0)
+            text_colour = (255, 255, 255)
 
             row.append_value(teleostscreen.RowValue(str(score), teleostscreen.PercentLength(pc_width_per_team), text_colour, teleostscreen.ALIGN_CENTRE, bg_colour=(bgred, bggreen, bgblue)));
         return [row]
@@ -195,32 +192,31 @@ class StandingsFetcher(object):
             (pos_width_pc, name_width_pc, played_width_pc, wins_width_pc, draws_width_pc, points_width_pc) = self.ordinary_name_widths_inc_draws if draws_exist else self.ordinary_name_widths
 
         row = teleostscreen.TableRow();
-        grey = (128, 128, 128);
-        white = (255, 255, 255);
-        green = (32, 255, 32)
-        row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(pos_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
-        row.append_value(teleostscreen.RowValue(division_name, teleostscreen.PercentLength(name_width_pc), text_colour=green));
-        row.append_value(teleostscreen.RowValue("P", teleostscreen.PercentLength(played_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
-        row.append_value(teleostscreen.RowValue("W", teleostscreen.PercentLength(wins_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
+        column_heading_colour = teleostcolours.get("standings_column_heading")
+        division_name_colour = teleostcolours.get("standings_division_name")
+        row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(pos_width_pc), text_colour=column_heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue(division_name, teleostscreen.PercentLength(name_width_pc), text_colour=division_name_colour));
+        row.append_value(teleostscreen.RowValue("P", teleostscreen.PercentLength(played_width_pc), text_colour=column_heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue("W", teleostscreen.PercentLength(wins_width_pc), text_colour=column_heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
         if draws_exist:
-            row.append_value(teleostscreen.RowValue("D", teleostscreen.PercentLength(draws_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
+            row.append_value(teleostscreen.RowValue("D", teleostscreen.PercentLength(draws_width_pc), text_colour=column_heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
         if self.tourney.get_rank_method() == countdowntourney.RANK_WINS_SPREAD:
-            row.append_value(teleostscreen.RowValue("Spr", teleostscreen.PercentLength(points_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
+            row.append_value(teleostscreen.RowValue("Spr", teleostscreen.PercentLength(points_width_pc), text_colour=column_heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
         else:
-            row.append_value(teleostscreen.RowValue("Pts", teleostscreen.PercentLength(points_width_pc), text_colour=grey, alignment=teleostscreen.ALIGN_RIGHT));
-        row.set_border(bottom_border=teleostscreen.LineStyle((96, 96, 96), 1));
+            row.append_value(teleostscreen.RowValue("Pts", teleostscreen.PercentLength(points_width_pc), text_colour=column_heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
+        row.set_border(bottom_border=teleostscreen.LineStyle(teleostcolours.get("standings_header_line"), 1));
         return row;
     
     def fetch_data_rows(self, start_row, num_rows):
-        active_pos_colour = (255, 255, 0);
-        active_name_colour = (255,255,255);
-        withdrawn_colour = (128, 128, 128)
-        active_played_colour = (0, 128, 128);
+        active_pos_colour = teleostcolours.get("standings_pos")
+        active_name_colour = teleostcolours.get("standings_name")
+        withdrawn_colour = teleostcolours.get("standings_withdrawn")
+        active_played_colour = teleostcolours.get("standings_played")
         if self.tourney.get_rank_method() in (countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_WINS_SPREAD):
-            active_wins_colour = (0, 255, 255)
+            active_wins_colour = teleostcolours.get("standings_wins_significant")
         else:
-            active_wins_colour = (0, 128, 128)
-        active_points_colour = (0, 255, 255);
+            active_wins_colour = teleostcolours.get("standings_wins_insignificant")
+        active_points_colour = teleostcolours.get("standings_points")
 
         div_standings = []
         num_divisions = self.tourney.get_num_divisions()
@@ -363,18 +359,18 @@ class TableResultsFetcher(object):
 
             if add_header:
                 top_row = teleostscreen.TableRow();
-                top_row_colour = (0, 192, 192);
-                name_colour = (255, 255, 255);
-                score_colour = (255, 255, 255);
+                top_row_colour = teleostcolours.get("table_results_top_row")
+                name_colour = teleostcolours.get("table_results_name")
+                score_colour = teleostcolours.get("table_results_score")
                 top_row.append_value(teleostscreen.RowValue("%s   %s" % (latest_round_name, get_group_name(group_no)), teleostscreen.PercentLength(100), text_colour=top_row_colour, alignment=teleostscreen.ALIGN_CENTRE));
                 current_page.append(top_row);
 
-            green = (0, 255, 0, 64);
-            green_transparent = (0, 255, 0, 0);
-            red = (255, 0, 0, 64);
-            red_transparent = (255, 0, 0, 0);
-            yellow = (255, 255, 0, 64)
-            yellow_transparent = (255, 255, 0, 0)
+            green = teleostcolours.get("table_results_winner_bg")
+            green_transparent = teleostcolours.get("table_results_winner_bg_transparent")
+            red = teleostcolours.get("table_results_loser_bg")
+            red_transparent = teleostcolours.get("table_results_loser_bg_transparent")
+            yellow = teleostcolours.get("table_results_draw_bg")
+            yellow_transparent = teleostcolours.get("table_results_draw_bg_transparent")
 
             row = teleostscreen.TableRow();
             hgradientpair_left = None;
@@ -477,9 +473,9 @@ class HighestWinningScoresFetcher(object):
             loser_score = r[7];
             tiebreak = r[8];
 
-            round_desc_colour = (255, 128, 64);
-            name_colour = (255, 255, 255);
-            score_colour = (255, 255, 255);
+            round_desc_colour = teleostcolours.get("records_round")
+            name_colour = teleostcolours.get("records_name")
+            score_colour = teleostcolours.get("records_score")
 
             if tiebreak:
                 score_str = "%d* - %d" % (winner_score, loser_score);
@@ -523,9 +519,9 @@ class HighestJointScoresFetcher(object):
             joint_score = r[8];
             tiebreak = r[9];
 
-            round_desc_colour = (255, 128, 64);
-            name_colour = (255, 255, 255);
-            score_colour = (255, 255, 255);
+            round_desc_colour = teleostcolours.get("records_round")
+            name_colour = teleostcolours.get("records_name")
+            score_colour = teleostcolours.get("records_score")
 
             if tiebreak and score1 != score2:
                 if score1 > score2:
@@ -621,9 +617,9 @@ class HighestLosingScoresFetcher(object):
             winner_score = r[7];
             tiebreak = r[8];
 
-            round_desc_colour = (255, 128, 64);
-            name_colour = (255, 255, 255);
-            score_colour = (255, 255, 255);
+            round_desc_colour = teleostcolours.get("records_round")
+            name_colour = teleostcolours.get("records_name")
+            score_colour = teleostcolours.get("records_score")
 
             if tiebreak:
                 score_str = "%d - %d*" % (loser_score, winner_score);
@@ -651,7 +647,7 @@ class OverachieversFetcher(object):
             col_widths = [10, 60, 0, 10, 10, 10]
         col_widths = map(teleostscreen.PercentLength, col_widths)
 
-        heading_colour = (255, 255, 255);
+        heading_colour = teleostcolours.get("overachievers_heading")
         row.append_value(teleostscreen.RowValue("", col_widths[0], text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
         row.append_value(teleostscreen.RowValue("", col_widths[1], text_colour=heading_colour, alignment=teleostscreen.ALIGN_LEFT));
         if num_divisions > 1:
@@ -720,12 +716,12 @@ class OverachieversFetcher(object):
             overac_records.append((rank, p.name, p.get_division(), seed, positions[p.name], -overac));
             prev_overac = overac;
 
-        rank_colour = (255, 255, 0);
-        name_colour = (255, 255, 255);
-        div_colour = (0, 128, 128);
-        seed_colour = (0, 128, 128);
-        pos_colour = (0, 128, 128);
-        overac_colour = (0, 255, 255);
+        rank_colour = teleostcolours.get("overachievers_rank")
+        name_colour = teleostcolours.get("overachievers_name")
+        div_colour = teleostcolours.get("overachievers_div")
+        seed_colour = teleostcolours.get("overachievers_seed")
+        pos_colour = teleostcolours.get("overachievers_pos")
+        overac_colour = teleostcolours.get("overachievers_diff")
 
         num_divisions = self.tourney.get_num_divisions()
         if num_divisions > 1:
@@ -762,10 +758,10 @@ class QuickestFinishersFetcher(object):
         round_name = latest_round["name"]
 
         row = teleostscreen.TableRow();
-        row.append_value(teleostscreen.RowValue(round_name, teleostscreen.PercentLength(50), (192, 192, 192), alignment=teleostscreen.ALIGN_LEFT));
+        row.append_value(teleostscreen.RowValue(round_name, teleostscreen.PercentLength(50), teleostcolours.get("finishers_round_name"), alignment=teleostscreen.ALIGN_LEFT));
         time_str = time.strftime("%I.%M%p").lower().lstrip("0");
-        row.append_value(teleostscreen.RowValue(time_str, teleostscreen.PercentLength(50), (192, 192, 192), alignment=teleostscreen.ALIGN_RIGHT));
-        row.set_border(bottom_border=teleostscreen.LineStyle((128, 128, 128), 1));
+        row.append_value(teleostscreen.RowValue(time_str, teleostscreen.PercentLength(50), teleostcolours.get("finishers_wall_time"), alignment=teleostscreen.ALIGN_RIGHT));
+        row.set_border(bottom_border=teleostscreen.LineStyle(teleostcolours.get("finishers_header_line"), 1));
         return row;
 
     def fetch_data_rows(self, start_row, num_rows):
@@ -791,10 +787,10 @@ class QuickestFinishersFetcher(object):
                 finishing_times.append((table, latest_game_times[table]));
         finishing_times = sorted(finishing_times, key=lambda x : x[1]);
 
-        table_colour = (255, 255, 255);
-        table_bg_colour = (0, 0, 255, 64);
-        time_colour = (0, 255, 0);
-        diff_time_colour = (0, 255, 255);
+        table_colour = teleostcolours.get("finishers_table_number_fg")
+        table_bg_colour = teleostcolours.get("finishers_table_number_bg")
+        time_colour = teleostcolours.get("finishers_table_finish_time")
+        diff_time_colour = teleostcolours.get("finishers_table_finish_time_diff")
 
         rows = [];
         first_secs = None;
@@ -843,7 +839,7 @@ class QuickestFinishersFetcher(object):
         for table in unfinished_tables:
             row = teleostscreen.TableRow();
             row.append_value(teleostscreen.RowValue(str(table), teleostscreen.PercentLength(10), text_colour=table_colour, alignment=teleostscreen.ALIGN_CENTRE, bg_colour=table_bg_colour));
-            row.append_value(teleostscreen.RowValue("%d to play" % (games_to_play[table]), teleostscreen.PercentLength(40), text_colour=(255, 64, 64), alignment=teleostscreen.ALIGN_LEFT));
+            row.append_value(teleostscreen.RowValue("%d to play" % (games_to_play[table]), teleostscreen.PercentLength(40), text_colour=teleostcolours.get("finishers_games_remaining"), alignment=teleostscreen.ALIGN_LEFT));
             rows.append(row);
 
         # Fold rows together into two columns
@@ -872,9 +868,10 @@ class TuffLuckFetcher(object):
     
     def fetch_header_row(self):
         row = teleostscreen.TableRow();
-        row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(80), text_colour=(192,192,192), alignment=teleostscreen.ALIGN_RIGHT));
-        row.append_value(teleostscreen.RowValue("Tuffness", teleostscreen.PercentLength(20), text_colour=(224,224,224), alignment=teleostscreen.ALIGN_RIGHT));
-        return row;
+        heading_colour = teleostcolours.get("tuff_luck_heading")
+        row.append_value(teleostscreen.RowValue("", teleostscreen.PercentLength(80), text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
+        row.append_value(teleostscreen.RowValue("Tuffness", teleostscreen.PercentLength(20), text_colour=heading_colour, alignment=teleostscreen.ALIGN_RIGHT));
+        return row
     
     def fetch_data_rows(self, start_row, num_rows):
         games = self.tourney.get_games(game_type='P');
@@ -915,9 +912,13 @@ class TuffLuckFetcher(object):
                 rank += joint + 1;
                 joint = 0;
             row = teleostscreen.TableRow();
-            row.append_value(teleostscreen.RowValue(str(rank), teleostscreen.PercentLength(10), text_colour=(255, 255, 0), alignment=teleostscreen.ALIGN_RIGHT));
-            row.append_value(teleostscreen.RowValue(pname, teleostscreen.PercentLength(70), text_colour=(255, 255, 255), alignment=teleostscreen.ALIGN_LEFT));
-            row.append_value(teleostscreen.RowValue(str(tuffness), teleostscreen.PercentLength(20), text_colour=(0,255,255), alignment=teleostscreen.ALIGN_RIGHT));
+            rank_colour = teleostcolours.get("tuff_luck_rank")
+            name_colour = teleostcolours.get("tuff_luck_name")
+            tuffness_colour = teleostcolours.get("tuff_luck_tuffness")
+
+            row.append_value(teleostscreen.RowValue(str(rank), teleostscreen.PercentLength(10), text_colour=rank_colour, alignment=teleostscreen.ALIGN_RIGHT));
+            row.append_value(teleostscreen.RowValue(pname, teleostscreen.PercentLength(70), text_colour=name_colour, alignment=teleostscreen.ALIGN_LEFT));
+            row.append_value(teleostscreen.RowValue(str(tuffness), teleostscreen.PercentLength(20), text_colour=tuffness_colour, alignment=teleostscreen.ALIGN_RIGHT));
             rows.append(row);
             prev_tuffness = tuffness;
 
