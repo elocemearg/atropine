@@ -159,10 +159,11 @@ try:
         print "";
         started_html = True;
 
-        cgicommon.print_html_head("Tourney: %s" % tourney_name);
+        cgicommon.print_html_head_local("Tourney: %s" % tourney_name);
 
         print "<body>";
 
+        print "<div class=\"exportedstandings\">"
         print "<h1>%s - Standings</h1>" % tourney_name
 
         num_divisions = tourney.get_num_divisions()
@@ -183,7 +184,9 @@ try:
 
         rank_method = tourney.get_rank_method()
         cgicommon.show_standings_table(tourney, tourney.get_show_draws_column(), rank_method in (countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_POINTS), rank_method == countdowntourney.RANK_WINS_SPREAD, False, False, show_tournament_rating_column)
+        print "</div>"
 
+        print "<div class=\"exportedresults\">"
         print "<h1>Results</h1>"
         prev_round_no = None
         prev_table_no = None
@@ -194,11 +197,9 @@ try:
             if prev_round_no is None or prev_round_no != g.round_no:
                 if prev_round_no is not None:
                     print "</table>"
-                    print "<h2>%s</h2>" % tourney.get_round_name(g.round_no)
-                    print "<table class=\"resultstable\">"
-                else:
-                    print "<h2>%s</h2>" % tourney.get_round_name(g.round_no)
-                    print "<table class=\"resultstable\">"
+                    print "<br />"
+                print "<table class=\"resultstable\">"
+                print "<tr><th colspan=\"3\" class=\"exportroundnumber\">%s</th></tr>" % (cgi.escape(tourney.get_round_name(g.round_no)))
                 prev_table_no = None
                 prev_division = None
             if prev_division is None or prev_division != g.division:
@@ -235,6 +236,8 @@ try:
             game_seq += 1
         if prev_round_no is not None:
             print "</table>"
+
+        print "</div>"
 
         print "</body></html>";
     elif export_format == "text":

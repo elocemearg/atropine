@@ -92,10 +92,9 @@ else:
 
             print "</p>"
         else:
+            print "<p><strong>N.B.</strong> To change the division assignment of an individual player, use the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page. The form below will overwrite, and lose, any previous assignments of players to divisions, whether made from this page or in Player Setup.</p>" % (urllib.quote_plus(tourneyname))
             if num_games > 0:
-                print "<p>"
-                print "<strong>N.B.</strong> The tourney has already started. Reassigning player divisions will only take effect for rounds whose fixtures have yet to be generated. To change the division assignment of individual players, use the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page." % (urllib.quote_plus(tourneyname))
-                print "</p>"
+                cgicommon.show_warning_box("The tourney has already started. Reassigning player divisions will only take effect for rounds whose fixtures have yet to be generated. Existing games will not be changed.")
             print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
             print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourneyname))
             print "<p>"
@@ -111,12 +110,14 @@ else:
             for div_index in range(0, num_divisions):
                 div_players[div_index] = sorted(div_players[div_index], key=lambda x : (x.get_rating()), reverse=True)
 
+            print "<p>Players will be distributed, by rating, into divisions. The divisions will be sized as equally as possible subject to the constraints above. If the divisions cannot be equally-sized, higher divisions will be given more players.</p>"
             print "<p>"
             print "<input type=\"submit\" name=\"setdivs\" value=\"Distribute players into divisions\" />"
             print "</p>"
 
             print "<hr />"
 
+            print "<p>Players may be manually assigned to the top division by ticking the boxes below before distributing. Any players manually promoted in this way will <em>replace</em> that many non-ticked players in the top division. If you want the top-rated players to remain in the top division along with the manually-promoted players, and have a larger top division, tick the promote box on all the players in the top division before distributing.</p>"
             player_seq = 0
             for div_index in range(0, num_divisions):
                 print "<h2>%s</h2>" % (cgi.escape(tourney.get_division_name(div_index)))

@@ -89,9 +89,8 @@ else:
                 games = tourney.get_games(round_no=latest_round_no, division=div_index)
                 cgicommon.show_games_as_html_table(games, False, None, False, None, lambda x : cgicommon.player_to_link(x, tourneyname))
 
-            print """<p><strong>WARNING:</strong> You are about to delete this
-round and all the fixtures in it. <strong>This cannot be undone</strong>. Are
-you sure you want to delete this round?</p>"""
+            print "<br />"
+            cgicommon.show_warning_box("You are about to delete this round and all the fixtures in it. <strong>This cannot be undone.</strong> Are you sure you want to delete it?")
             print '<form action="%s" method="post">' % (baseurl)
             print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname)
             print '<input type="hidden" name="round" value="%d" />' % latest_round_no

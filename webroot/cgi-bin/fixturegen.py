@@ -105,16 +105,16 @@ try:
         print "<h1>Fixture Generator</h1>";
         print "<p>The following fixture generators are available.</p>";
 
-        print "<table border=\"1\">";
-        print "<tr><th>Fixture Generator</th><th>Module Name</th><th>Description</th></tr>";
+        print "<table class=\"fixgentable\">";
+        print "<tr><th class=\"fixgentable fixgenth\">Fixture Generator</th><th class=\"fixgentable fixgenth\">Module Name</th><th class=\"fixgentable fixgenth\">Description</th></tr>";
         for module_name in module_list:
             fixgen_module = importlib.import_module(module_name);
             print "<tr>";
-            print "<td>";
+            print "<td class=\"fixgentable fixgen\">";
             print "<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">%s</a>" % (urllib.quote_plus(module_name), urllib.quote_plus(tourney_name), cgi.escape(fixgen_module.name));
             print "</td>";
-            print "<td>%s</td>" % (cgi.escape(module_name));
-            print "<td>%s</td>" % (cgi.escape(fixgen_module.description));
+            print "<td class=\"fixgentable fixgenmodule\">%s</td>" % (cgi.escape(module_name));
+            print "<td class=\"fixgentable fixgendescription\">%s</td>" % (cgi.escape(fixgen_module.description));
             print "</tr>";
         print "</table>";
     elif generator_name not in module_list:

@@ -294,9 +294,18 @@ th.exporttablenumber {
 	/* border-top: 1ex solid white;*/
 }
 
+th.exportroundnumber {
+	background-color: #22aaff;
+	text-align: center;
+	font-weight: bold;
+	font-size: 16pt;
+}
+
 th.exportdivisionnumber {
 	background-color: #66ccff;
 	text-align: center;
+	font-weight: bold;
+	font-size: 14pt;
 }
 
 table.teamscorestable {
@@ -313,6 +322,31 @@ td.teamscorestablescore {
 	border: 1px solid gray;
 	text-align: right;
 	font-weight: bold;
+}
+
+div.warningbox {
+	background-color: #ffff88;
+	border: 5px solid orange;
+	height: 130px;
+	max-width: 600px;
+	display: table;
+}
+
+div.warningboximage {
+	float: left;
+	height: 130px;
+	width: 150px;
+}
+
+div.warningboxmessagecontainer {
+	max-width: 450px;
+	vertical-align: middle;
+	display: table-cell;
+	padding: 5px;
+}
+
+div.warningboxmessage {
+	font-size: 14pt;
 }
 
 div.tourneyexception {
@@ -361,4 +395,47 @@ a.playerlink {
 
 a.thisplayerlink {
 	font-weight: bold;
+}
+
+div.exportedstandings {
+	margin-left: 20px;
+}
+
+div.exportedresults {
+	margin-left: 20px;
+}
+
+.fixgentable {
+	border-collapse: collapse;
+}
+
+table.fixgentable {
+	border: 1px solid black;
+	max-width: 800px;
+}
+
+th.fixgenth {
+	border-bottom: 1px solid gray;
+	background-color: #cccccc;
+}
+
+td.fixgen {
+	width: 200px;
+	background-color: #ffee66;
+	padding: 5px;
+	border-bottom: 1px solid gray;
+}
+
+td.fixgenmodule {
+	padding: 5px;
+	border-bottom: 1px solid gray;
+	background-color: #ffffaa;
+	font-size: 10pt;
+}
+
+td.fixgendescription {
+	font-size: 10pt;
+	padding: 5px;
+	border-bottom: 1px solid gray;
+	background-color: #ffffaa;
 }

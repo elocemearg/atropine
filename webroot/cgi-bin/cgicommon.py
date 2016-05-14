@@ -19,6 +19,28 @@ def print_html_head(title):
     print "<link rel=\"shortcut icon\" href=\"/favicon.png\" type=\"image/png\" />"
     print "</head>";
 
+def print_html_head_local(title):
+    print """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB" xml:lang="en-GB">
+"""
+    print "<head>"
+    print "<title>%s</title>" % (cgi.escape(title))
+    print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />"
+    print "<style>"
+
+    # Current directory should already be webroot
+    try:
+        f = open("style.css")
+        for line in f:
+            sys.stdout.write(line)
+        f.close()
+    except IOError:
+        print "<!-- Failed to load style.css -->"
+        pass
+
+    print "</style>"
+    print "</head>"
+
 def show_tourney_exception(exc):
     print "<div class=\"tourneyexception\">"
     print "<div class=\"tourneyexceptionimage\">"
@@ -26,7 +48,19 @@ def show_tourney_exception(exc):
     print "</div>"
     print "<div class=\"tourneyexceptionmessagecontainer\">"
     print "<div class=\"tourneyexceptionmessage\">"
-    print "%s" % cgi.escape(exc.description)
+    print cgi.escape(exc.description)
+    print "</div>"
+    print "</div>"
+    print "</div>"
+
+def show_warning_box(html):
+    print "<div class=\"warningbox\">"
+    print "<div class=\"warningboximage\">"
+    print "<img src=\"/images/warning.png\" alt=\"Warning\" />"
+    print "</div>"
+    print "<div class=\"warningboxmessagecontainer\">"
+    print "<div class=\"warningboxmessage\">"
+    print html
     print "</div>"
     print "</div>"
     print "</div>"

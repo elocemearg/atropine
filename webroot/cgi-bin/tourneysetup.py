@@ -195,9 +195,7 @@ else:
         print "</p>"
 
         if len(players) and num_divisions > 1:
-            print "<p>"
-            print "<strong>Warning:</strong> There is already a player list defined. If you submit a new list using this form, these new players will replace any existing players, and <strong>any division setup will be lost</strong>."
-            print "</p>"
+            cgicommon.show_warning_box("There is already a player list defined, and divisions have been created. If you submit a new player list using this form, these new players will replace the existing players, and <strong>your division setup will be lost</strong>.")
 
         print "<p>"
         print '<input type="submit" name="playerlistsubmit" value="Save Player List" />'
