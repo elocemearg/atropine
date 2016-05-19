@@ -394,14 +394,7 @@ def generate(tourney, settings, div_rounds):
         if groups is None:
             raise countdowntourney.FixtureGeneratorException("%s: Unable to generate any permissible groupings in the given time limit." % (tourney.get_division_name(div_index)))
 
-        if len(fixtures) == 0:
-            start_table_no = 1
-            start_round_seq = 1
-        else:
-            start_table_no = max(x.table_no for x in fixtures) + 1
-            start_round_seq = max(x.seq for x in fixtures) + 1
-
-        fixtures += countdowntourney.make_fixtures_from_groups(groups, round_no, group_size == -5, division=div_index, start_table_no=start_table_no, start_round_seq=start_round_seq)
+        fixtures += tourney.make_fixtures_from_groups(groups, round_no, group_size == -5, division=div_index)
     
     d = dict();
     d["fixtures"] = fixtures;

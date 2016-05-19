@@ -6,7 +6,7 @@ import urllib
 import cgi
 
 name = "Round Robin"
-description = "Two-player tables only. We generate N-1 rounds, where N is the number of players in the largest division. Smaller divisions will sit out later rounds. Every player plays every other player in their division once."
+description = "Pairs only. We generate N-1 rounds, where N is the number of players in the largest division. Smaller divisions will sit out later rounds. Every player plays every other player in their division once."
 
 def int_or_none(s):
     try:
@@ -95,21 +95,11 @@ def generate(tourney, settings, div_rounds):
             for (i1, i2) in tables:
                 groups.append((div_players[i1], div_players[i2]))
 
-            fixtures_this_round = filter(lambda x : x.round_no == start_round_no + round_offset, fixtures)
-            if len(fixtures_this_round) == 0:
-                start_table_no = 1
-                start_round_seq = 1
-            else:
-                start_table_no = max([ x.table_no for x in fixtures_this_round ]) + 1
-                start_round_seq = max([ x.seq for x in fixtures_this_round ]) + 1
-
             if start_round_no + round_offset not in round_numbers_generated:
                 round_numbers_generated.append(start_round_no + round_offset)
 
-            fixtures += countdowntourney.make_fixtures_from_groups(groups,
-                    start_round_no + round_offset, False, division=div,
-                    start_table_no=start_table_no,
-                    start_round_seq=start_round_seq)
+            fixtures += tourney.make_fixtures_from_groups(groups,
+                    start_round_no + round_offset, False, division=div)
             
             # Take the last element from top_line and put it on the end of
             # bottom_line, and take the first element of bottom_line and put

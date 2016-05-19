@@ -1934,44 +1934,70 @@ and g.p2 = p2.id
         self.db.commit();
         self.db.close();
 
-def make_fixtures_from_groups(groups, round_no, repeat_threes=False, division=0, start_table_no=1, start_round_seq=1):
-    fixtures = [];
-    table_no = start_table_no;
-    round_seq = start_round_seq;
-    for group in groups:
-        if len(group) % 2 == 1:
-            # If there are an odd number of players on this table, then each
-            # player takes a turn at hosting, and the player X places clockwise
-            # from the host plays the player X places anticlockwise from the
-            # host, for X in 1 .. (len(group) - 1) / 2.
-            for host in range(len(group)):
-                for x in range(1, (len(group) - 1) / 2 + 1):
-                    left = (host + len(group) + x) % len(group)
-                    right = (host + len(group) - x) % len(group)
-                    p1 = group[left]
-                    p2 = group[right]
-                    fixture = Game(round_no, round_seq, table_no, division, 'P', p1, p2)
-                    fixtures.append(fixture)
-                    round_seq += 1
-                    if repeat_threes and len(group) == 3:
-                        fixture = Game(round_no, round_seq, table_no, division, 'P', p2, p1)
+    def get_max_table_number_in_round(self, round_no):
+        cur = self.db.cursor()
+        cur.execute("select max(table_no) from game where round_no = ?", (round_no,))
+        retval = cur.fetchone()[0]
+        cur.close()
+        return retval
+
+    def get_max_game_seq_in_round(self, round_no):
+        cur = self.db.cursor()
+        cur.execute("select max(seq) from game where round_no = ?", (round_no,))
+        retval = cur.fetchone()[0]
+        cur.close()
+        return retval
+
+    def make_fixtures_from_groups(self, groups, round_no, repeat_threes=False, division=0):
+        start_table_no = self.get_max_table_number_in_round(round_no)
+        if start_table_no is None:
+            start_table_no = 1
+        else:
+            start_table_no += 1
+        start_round_seq = self.get_max_game_seq_in_round(round_no)
+        if start_round_seq is None:
+            start_round_seq = 1
+        else:
+            start_round_seq += 1
+
+        fixtures = [];
+        table_no = start_table_no;
+        round_seq = start_round_seq;
+        for group in groups:
+            if len(group) % 2 == 1:
+                # If there are an odd number of players on this table, then
+                # each player takes a turn at hosting, and the player X places
+                # clockwise from the host plays the player X places
+                # anticlockwise from the host,
+                # for X in 1 .. (len(group) - 1) / 2.
+                for host in range(len(group)):
+                    for x in range(1, (len(group) - 1) / 2 + 1):
+                        left = (host + len(group) + x) % len(group)
+                        right = (host + len(group) - x) % len(group)
+                        p1 = group[left]
+                        p2 = group[right]
+                        fixture = Game(round_no, round_seq, table_no, division, 'P', p1, p2)
                         fixtures.append(fixture)
                         round_seq += 1
-        else:
-            # There are an even number of players. Each player X from
-            # X = 0 .. len(group) - 1 plays each player Y for
-            # Y in X + 1 .. len(group) - 1
-            for x in range(len(group)):
-                for y in range(x + 1, len(group)):
-                    p1 = group[x]
-                    p2 = group[y]
-                    if round_seq % 2 == 0 and len(group) > 2:
-                        (p1, p2) = (p2, p1)
-                    fixture = Game(round_no, round_seq, table_no, division, 'P', p1, p2)
-                    fixtures.append(fixture)
-                    round_seq += 1
-        table_no += 1
-    return fixtures
+                        if repeat_threes and len(group) == 3:
+                            fixture = Game(round_no, round_seq, table_no, division, 'P', p2, p1)
+                            fixtures.append(fixture)
+                            round_seq += 1
+            else:
+                # There are an even number of players. Each player X from
+                # X = 0 .. len(group) - 1 plays each player Y for
+                # Y in X + 1 .. len(group) - 1
+                for x in range(len(group)):
+                    for y in range(x + 1, len(group)):
+                        p1 = group[x]
+                        p2 = group[y]
+                        if round_seq % 2 == 0 and len(group) > 2:
+                            (p1, p2) = (p2, p1)
+                        fixture = Game(round_no, round_seq, table_no, division, 'P', p1, p2)
+                        fixtures.append(fixture)
+                        round_seq += 1
+            table_no += 1
+        return fixtures
 
 def get_5_3_table_sizes(num_players):
     if num_players < 8:

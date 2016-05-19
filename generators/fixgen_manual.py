@@ -7,8 +7,8 @@ import cgi;
 import urllib;
 import re
 
-name = "Manual Fixture Generator"
-description = "Player groupings are specified manually by the tournament director."
+name = "Manual Pairings/Groups"
+description = "Player groups are specified manually. A fixture is generated between each pair in a group."
 
 def int_or_none(s):
     try:
@@ -34,7 +34,7 @@ def get_user_form(tourney, settings, div_rounds):
 
     prev_settings = settings.get_previous_settings()
     for key in prev_settings:
-        if key not in settings and re.match("^d[0-9]*_tablesize$", key):
+        if key not in settings and re.match("^d[0-9]*_groupsize$", key):
             settings[key] = prev_settings[key]
     if settings.get("submitrestore", None):
         for key in prev_settings:
@@ -62,7 +62,7 @@ def get_user_form(tourney, settings, div_rounds):
     for div_index in div_rounds:
         div_players = filter(lambda x : x.get_division() == div_index, players)
         table_size = None
-        table_size_name = "d%d_tablesize" % (div_index)
+        table_size_name = "d%d_groupsize" % (div_index)
         if settings.get(table_size_name, None) is not None:
             try:
                 div_table_sizes[div_index] = int(settings.get(table_size_name))
@@ -253,7 +253,7 @@ function unset_unsaved_data_warning() {
                 elements.append(htmlform.HTMLFragment("<li>%s</li>\n" % cgi.escape(name)));
             elements.append(htmlform.HTMLFragment("</blockquote>\n"));
 
-        elements.append(htmlform.HTMLFormHiddenInput("d%d_tablesize" % (div_index), str(div_table_sizes[div_index])))
+        elements.append(htmlform.HTMLFormHiddenInput("d%d_groupsize" % (div_index), str(div_table_sizes[div_index])))
 
     form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.quote_plus(tourney.name)), elements);
     return form;
@@ -272,7 +272,7 @@ def generate(tourney, settings, div_rounds):
 
     players = tourney.get_active_players();
     for div_index in div_rounds:
-        table_size = settings.get("d%d_tablesize" % (div_index), None)
+        table_size = settings.get("d%d_groupsize" % (div_index), None)
         div_players = filter(lambda x : x.get_division() == div_index, players)
 
         if table_size is None:
@@ -337,14 +337,7 @@ def generate(tourney, settings, div_rounds):
         if round_no not in round_numbers_generated:
             round_numbers_generated.append(round_no)
 
-        if len(fixtures) == 0:
-            start_table_no = 1
-            start_round_seq = 1
-        else:
-            start_table_no = max(x.table_no for x in fixtures) + 1
-            start_round_seq = max(x.seq for x in fixtures) + 1
-
-        fixtures += countdowntourney.make_fixtures_from_groups(groups, round_no, table_size == -5, division=div_index, start_table_no=start_table_no, start_round_seq=start_round_seq)
+        fixtures += tourney.make_fixtures_from_groups(groups, round_no, table_size == -5, division=div_index)
 
     d = dict();
     d["fixtures"] = fixtures;
