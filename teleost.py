@@ -201,14 +201,8 @@ try:
                 else:
                     round_no = r["num"]
                     largest_table_size = tourney.get_largest_table_game_count(round_no)
-                    round_type = tourney.get_round_type(round_no);
-                    if round_type != 'P':
-                        knockout_phase = True;
                     (played, unplayed) = tourney.get_played_unplayed_counts(round_no=round_no);
-                    if knockout_phase:
-                        if current_view_index != 3:
-                            new_view_index = 3;
-                    elif played == 0 and unplayed == 0:
+                    if played == 0 and unplayed == 0:
                         if current_view_index != 0:
                             new_view_index = 0;
                     elif played == 0 and unplayed > 0:

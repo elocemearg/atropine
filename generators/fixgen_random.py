@@ -88,7 +88,7 @@ def generate(tourney, settings, div_rounds):
             # Reverse the table list so the 5-tables are first
             tables.reverse()
 
-        fixtures += tourney.make_fixtures_from_groups(tables, round_no, table_size == -5, division=div_index)
+        fixtures += tourney.make_fixtures_from_groups(tables, fixtures, round_no, table_size == -5, division=div_index)
         if round_no not in round_numbers_generated:
             round_numbers_generated.append(round_no)
     
@@ -96,8 +96,7 @@ def generate(tourney, settings, div_rounds):
     d["fixtures"] = fixtures;
     d["rounds"] = [{
         "round": round_no,
-        "name": "Round %d" % round_no,
-        "type": "P"
+        "name": "Round %d" % round_no
     } for round_no in round_numbers_generated ];
     return d;
 

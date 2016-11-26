@@ -78,9 +78,9 @@ def generate(tourney, settings, div_rounds):
                 break
             groups[current_group].append(p)
 
-        fixtures += tourney.make_fixtures_from_groups(groups, round_no, group_size == -5, division=div_index)
+        fixtures += tourney.make_fixtures_from_groups(groups, fixtures, round_no, group_size == -5, division=div_index)
         if round_no not in round_numbers_added:
-            rounds.append({"round": round_no, "name" : "Round %d" % (round_no), "type" : "P"})
+            rounds.append({"round": round_no, "name" : "Round %d" % (round_no)})
             round_numbers_added.append(round_no)
 
     d = dict();

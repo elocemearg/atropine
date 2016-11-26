@@ -297,7 +297,7 @@ class TableResultsFetcher(object):
     def fetch_data_rows(self, start_row, num_rows_to_fetch):
         # Find the latest prelim round
         rounds = self.tourney.get_rounds();
-        latest_round = self.tourney.get_latest_started_round("P")
+        latest_round = self.tourney.get_latest_started_round()
         if latest_round is None:
             # That was easy.
             return [];
@@ -554,24 +554,23 @@ class CurrentRoundFixturesFetcher(object):
         latest_round = self.tourney.get_current_round()
         latest_round_no = latest_round["num"];
 
-        if latest_round["type"] == "P":
+        #if latest_round["type"] == "P":
             # If this is a prelim round, just return this round
-            return self.tourney.get_games(round_no=latest_round_no);
-        else:
-            # Otherwise, return this and all previous rounds back to but
-            # not including the last prelim round
-            rounds = sorted(rounds, key=lambda x : x["num"], reverse=True);
-            rounds_to_include = [];
-            for r in rounds:
-                if r["type"] == "P":
-                    break;
-                else:
-                    rounds_to_include = [r] + rounds_to_include;
-
-            games = [];
-            for r in rounds_to_include:
-                games = games + self.tourney.get_games(round_no=r["num"], only_players_known=False);
-            return games;
+        return self.tourney.get_games(round_no=latest_round_no);
+        #else:
+        #    # Otherwise, return this and all previous rounds back to but
+        #    # not including the last prelim round
+        #    rounds = sorted(rounds, key=lambda x : x["num"], reverse=True);
+        #    rounds_to_include = [];
+        #    for r in rounds:
+        #        if r["type"] == "P":
+        #            break;
+        #        else:
+        #            rounds_to_include = [r] + rounds_to_include;
+        #    games = [];
+        #    for r in rounds_to_include:
+        #        games = games + self.tourney.get_games(round_no=r["num"], only_players_known=False);
+        #    return games;
     
     def get_round_name(self, round_no):
         rounds = self.tourney.get_rounds();
@@ -582,6 +581,9 @@ class CurrentRoundFixturesFetcher(object):
                     name = "Round %d" % round_no;
                 return name;
         return "";
+    
+    def get_division_name(self, division):
+        return self.tourney.get_division_name(division)
 
 class HighestLosingScoresFetcher(object):
     def __init__(self, tourney):

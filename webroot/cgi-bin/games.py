@@ -20,6 +20,11 @@ def set_random_score(game, rounds, scrabble):
     r1 = game.p1.rating;
     r2 = game.p2.rating;
 
+    if r1 + r2 == 0:
+        game.set_score(0, 0, False);
+        return;
+
+
     p1_threshold = float(r1) / float(r1 + r2);
     p2_threshold = p1_threshold;
     p1_threshold *= 0.8

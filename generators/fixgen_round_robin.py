@@ -98,7 +98,7 @@ def generate(tourney, settings, div_rounds):
             if start_round_no + round_offset not in round_numbers_generated:
                 round_numbers_generated.append(start_round_no + round_offset)
 
-            fixtures += tourney.make_fixtures_from_groups(groups,
+            fixtures += tourney.make_fixtures_from_groups(groups, fixtures,
                     start_round_no + round_offset, False, division=div)
             
             # Take the last element from top_line and put it on the end of
@@ -112,7 +112,7 @@ def generate(tourney, settings, div_rounds):
 
     rounds = []
     for round_no in round_numbers_generated:
-        rounds.append({"round" : round_no, "name" : "Round %d" % (round_no), "type" : "P"})
+        rounds.append({"round" : round_no, "name" : "Round %d" % (round_no)})
 
     d = dict()
     d["rounds"] = rounds

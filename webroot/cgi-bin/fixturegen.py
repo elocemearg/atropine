@@ -311,21 +311,18 @@ try:
                 if fixtures:
                     try:
                         tourney.merge_games(fixtures);
-                        print "<h2>Fixtures added successfully</h2>";
+                        print "<h2>%d fixtures added successfully</h2>" % (len(fixtures));
                         print "<p><a href=\"/cgi-bin/games.py?tourney=%s&round=%d\">View games</a></p>" % (urllib.quote_plus(tourney_name), earliest_round_no);
                     except countdowntourney.TourneyException as e:
                         print "<p>Failed to add new fixtures to database!</p>";
                         cgicommon.show_tourney_exception(e);
-
-                        tourney.name_round(round_no, round_name, round_type);
 
                 if dict_rounds:
                     for r in dict_rounds:
                         try:
                             round_no = int(r["round"]);
                             round_name = r.get("name", "Round %d" % round_no);
-                            round_type = r.get("type", "");
-                            tourney.name_round(round_no, round_name, round_type);
+                            tourney.name_round(round_no, round_name);
                         except countdowntourney.TourneyException as e:
                             print "<p>Failed to name a round</p>";
                             cgicommon.show_tourney_exception(e);

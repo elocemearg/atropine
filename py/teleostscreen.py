@@ -797,7 +797,7 @@ class PagedFixturesWidget(Widget):
                 font = get_sensible_font(self.font_name, int(0.8 * line_height));
                 round_name = self.fetcher.get_round_name(t[0].round_no);
                 if num_divisions > 1:
-                    round_name += "   " + countdowntourney.get_general_division_name(t[0].division)
+                    round_name += "   " + self.fetcher.get_division_name(t[0].division)
                 round_name_label = make_text_label(font, round_name, round_name_colour)
                 surface.blit(round_name_label, (round_name_left, int(table_y_pos + 0.2 * line_height)));
                 table_y_pos += line_height;

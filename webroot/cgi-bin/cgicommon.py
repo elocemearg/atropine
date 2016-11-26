@@ -92,7 +92,6 @@ def show_sidebar(tourney):
         rounds = tourney.get_rounds();
         for r in rounds:
             round_no = r["num"];
-            round_type = r["type"];
             round_name = r.get("name", None);
             if not round_name:
                 round_name = "Round " + str(round_no);

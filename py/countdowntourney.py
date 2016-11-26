@@ -4,8 +4,8 @@ import sqlite3;
 import re;
 import os;
 
-SW_VERSION = "0.7.2"
-SW_VERSION_SPLIT = (0, 7, 2)
+SW_VERSION = "0.7.3"
+SW_VERSION_SPLIT = (0, 7, 3)
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
 RANK_WINS_POINTS = 0;
@@ -103,9 +103,8 @@ create table if not exists fixgen_settings (
 
 -- Round names. When a fixture generator generates some fixtures, it will
 -- probably create a new round. This is always given a number, but it can
--- also be given a name, e.g. "Quarter-finals". The "round type" column should
--- be something like 'P' for preliminary, 'QF', 'SF', 'F' for the finals
--- stages, etc.
+-- also be given a name, e.g. "Quarter-finals". The "round type" column is
+-- no longer used.
 create table if not exists rounds (
     id integer primary key,
     type text,
@@ -277,6 +276,10 @@ class IncompleteRatingsException(TourneyException):
     description = "Incomplete ratings - specify ratings for nobody or everybody."
     pass;
 
+class InvalidDivisionNumberException(TourneyException):
+    description = "Invalid division number"
+    pass
+
 class InvalidPlayerNameException(TourneyException):
     description = "A player's name is not allowed to be blank or consist entirely of whitespace."
 
@@ -337,12 +340,12 @@ class Player(object):
     def __ne__(self, other):
         return not(self.__eq__(other));
     
-    # Emulate a 2-tuple
+    # Emulate a 3-tuple
     def __len__(self):
-        return 2;
+        return 3;
 
     def __getitem__(self, key):
-        return [self.name, self.rating][key];
+        return [self.name, self.rating, self.division][key];
     
     def __str__(self):
         return self.name;
@@ -434,10 +437,10 @@ class PlayerPending(object):
             return False;
     
     def __len__(self):
-        return 2;
+        return 3;
 
     def __getitem__(self, key):
-        return [None, 0][key];
+        return [None, 0, 0][key];
 
     def is_player_known(self):
         return False;
@@ -720,17 +723,6 @@ class Tourney(object):
         cur.close()
         return round_no
     
-    def get_round_type(self, round_no):
-        cur = self.db.cursor();
-        cur.execute("select type from rounds where id = ?", (round_no,));
-        row = cur.fetchone();
-        if not row:
-            cur.close();
-            return None;
-        else:
-            cur.close();
-            return row[0];
-    
     def get_round_name(self, round_no):
         cur = self.db.cursor();
         cur.execute("select name from rounds where id = ?", (round_no,));
@@ -744,7 +736,7 @@ class Tourney(object):
     
     def get_short_round_name(self, round_no):
         cur = self.db.cursor();
-        cur.execute("select case when type = 'P' then cast(id as text) else type end short_name from rounds where id = ?", (round_no,));
+        cur.execute("select cast(id as text) short_name from rounds where id = ?", (round_no,));
         row = cur.fetchone();
         if not row:
             cur.close();
@@ -755,15 +747,14 @@ class Tourney(object):
     
     def get_rounds(self):
         cur = self.db.cursor();
-        cur.execute("select g.round_no, r.type, r.name from game g left outer join rounds r on g.round_no = r.id group by g.round_no");
+        cur.execute("select g.round_no, r.name from game g left outer join rounds r on g.round_no = r.id group by g.round_no");
         rounds = [];
         for row in cur:
             rdict = dict();
-            if row[2] is None:
+            if row[1] is None:
                 rdict["name"] = "Round " + str(row[0]);
             else:
-                rdict["name"] = row[2];
-            rdict["type"] = row[1];
+                rdict["name"] = row[1];
             rdict["num"] = row[0];
             rounds.append(rdict);
         cur.close();
@@ -771,18 +762,17 @@ class Tourney(object):
 
     def get_round(self, round_no):
         cur = self.db.cursor();
-        cur.execute("select r.id, r.type, r.name from rounds r where id = ?", (round_no,));
+        cur.execute("select r.id, r.name from rounds r where id = ?", (round_no,));
         row = cur.fetchone()
         d = None
         if row is not None:
             d = dict()
             d["num"] = row[0]
-            d["type"] = row[1]
-            d["name"] = row[2]
+            d["name"] = row[1]
         cur.close()
         return d
     
-    def name_round(self, round_no, round_name, round_type):
+    def name_round(self, round_no, round_name):
         # Does round_no already exist?
         cur = self.db.cursor();
         cur.execute("select id from rounds where id = ?", (round_no,));
@@ -790,11 +780,11 @@ class Tourney(object):
         if len(rows) > 0:
             cur.close();
             cur = self.db.cursor();
-            cur.execute("update rounds set name = ?, type = ? where id = ?", (round_name, round_type, round_no));
+            cur.execute("update rounds set name = ?, type = null where id = ?", (round_name, round_no));
         else:
             cur.close();
             cur = self.db.cursor();
-            cur.execute("insert into rounds(id, name, type) values (?, ?, ?)", (round_no, round_name, round_type));
+            cur.execute("insert into rounds(id, name, type) values (?, ?, null)", (round_no, round_name));
         self.db.commit();
         cur.close()
 
@@ -838,7 +828,8 @@ class Tourney(object):
             cur.execute("update player set short_name = ? where name = ?", (short_name, p.get_name()))
         self.db.commit()
 
-    # players must be a list of two-tuples. Each tuple is (name, rating).
+    # players must be a list of 2-tuples or 3-tuples. Each tuple is (name,
+    # rating) or (name, rating, division).
     # Alternatively they can be Player objects, which pretend to be 2-tuples.
     # Rating should be a number. The rating may be None for all players,
     # in which case the first player is given a rating of 2000 and subsequent
@@ -852,7 +843,7 @@ class Tourney(object):
             raise TourneyInProgressException("Adding or removing players is not permitted once the tournament has started.");
 
         # Strip leading and trailing whitespace from player names
-        new_player_list = [ (x[0].strip(), x[1]) for x in players ]
+        new_player_list = [ (x[0].strip(), x[1], x[2]) for x in players ]
         players = new_player_list
 
         # Make sure no player names are blank
@@ -872,7 +863,7 @@ class Tourney(object):
         new_players = []
         for p in players:
             short_name = get_short_name(p[0], players)
-            new_players.append((p[0], p[1], short_name))
+            new_players.append((p[0], p[1], short_name, p[2]))
 
         players = new_players
 
@@ -880,6 +871,8 @@ class Tourney(object):
         new_players = [];
         for p in players:
             try:
+                if p[3] < 0:
+                    raise InvalidDivisionNumberException("Player \"%s\" has been given a division number of %d. It's not allowed to be negative." % (p[0], p[3]))
                 if p[1] is not None:
                     rating = float(p[1]);
                     if rating != 0 and auto_rating_behaviour != RATINGS_MANUAL:
@@ -892,7 +885,7 @@ class Tourney(object):
                         # has been disabled.
                         raise InvalidRatingException("Player \"%s\" does not have a rating. If manual rating is selected, all players must be given a rating." % (p[0]))
                     rating = None;
-                new_players.append((p[0], rating, p[2]));
+                new_players.append((p[0], rating, p[2], p[3]));
             except ValueError:
                 raise InvalidRatingException("Player \"%s\" has an invalid rating \"%s\". A player's rating must be a number." % (p[0], p[1]));
         players = new_players;
@@ -923,17 +916,17 @@ class Tourney(object):
                 else:
                     rating = float(max_rating - num_players_given_auto_rating * (max_rating - min_rating) / (num_unrated_players - 1))
                 if p[1] is None:
-                    new_players.append((p[0], rating, p[2]));
+                    new_players.append((p[0], rating, p[2], p[3]));
                     num_players_given_auto_rating += 1
                 else:
-                    new_players.append((p[0], p[1], p[2]));
+                    new_players.append((p[0], p[1], p[2], p[3]));
             players = new_players;
 
         self.set_attribute("autoratingbehaviour", auto_rating_behaviour);
 
         self.db.execute("delete from player");
 
-        self.db.executemany("insert into player(name, rating, team_id, short_name) values (?, ?, null, ?)", players);
+        self.db.executemany("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed) values (?, ?, null, ?, 0, ?, 0)", players);
         self.db.commit();
 
     def get_auto_rating_behaviour(self):
@@ -1016,8 +1009,20 @@ class Tourney(object):
     # players are distributed among the divisions so as to make their sizes
     # as equal as possible, while still preserving that the size of every
     # division must be a multiple of division_size_multiple.
-    def set_player_divisions(self, num_divisions, division_size_multiple, automatic_top_div_players=[]):
+    def set_player_divisions(self, num_divisions, division_size_multiple, by_rating=True, automatic_top_div_players=[]):
         players = self.get_players(exclude_withdrawn=True)
+
+        # Make a player_ranks map. Players with lower numbers go in higher
+        # divisions. This may be derived from the player's rating (in which
+        # case we need to negate it so highly-rated players go in higher
+        # divisions) or from the player's position in the standings.
+        player_ranks = dict()
+        if by_rating:
+            for p in self.get_players(exclude_withdrawn=False):
+                player_ranks[p.get_name()] = -p.get_rating()
+        else:
+            for s in self.get_standings():
+                player_ranks[s.name] = s.position
 
         if len(players) % division_size_multiple != 0:
             raise IllegalDivisionException()
@@ -1031,7 +1036,7 @@ class Tourney(object):
             else:
                 remaining_players.append(p)
 
-        remaining_players = sorted(remaining_players, key=lambda x : x.get_rating(), reverse=True);
+        remaining_players = sorted(remaining_players, key=lambda x : player_ranks[x.get_name()]);
 
         # Number of players in the top division is at least
         # num_players / num_divisions rounded up to the nearest multiple of
@@ -1091,17 +1096,19 @@ class Tourney(object):
                     remaining_players = remaining_players[division_size_multiple:]
 
         # Finally, take the withdrawn players, which we haven't put into any
-        # division, and put them into the division appropriate for their
-        # rating.
+        # division, and put them into the division appropriate for their rank.
 
-        div_rating_ranges = []
+        div_rank_ranges = []
         for div_index in range(num_divisions):
-            div_rating_ranges.append((max(x.get_rating() for x in div_players[div_index]), min(x.get_rating() for x in div_players[div_index])))
+            div_rank_ranges.append(
+                    (min(player_ranks[x.get_name()] for x in div_players[div_index]), 
+                     max(player_ranks[x.get_name()] for x in div_players[div_index])
+            ))
 
         withdrawn_players = filter(lambda x : x.is_withdrawn(), self.get_players(exclude_withdrawn=False))
         for p in withdrawn_players:
             for div in range(num_divisions):
-                if div == num_divisions - 1 or p.get_rating() >= div_rating_ranges[div][1]:
+                if div == num_divisions - 1 or player_ranks[p.get_name()] <= div_rank_ranges[div][1]:
                     div_players[div].append(p)
                     break
 
@@ -1200,7 +1207,7 @@ class Tourney(object):
             # Records to insert into game_staging, where we use NULL if the
             # player isn't known yet
             game_records = map(lambda x : (x.round_no, x.seq, x.table_no,
-                x.game_type,
+                x.division, x.game_type,
                 x.p1.name if x.p1.is_player_known() else None, x.s1,
                 x.p2.name if x.p2.is_player_known() else None, x.s2,
                 x.tb), games);
@@ -1221,7 +1228,7 @@ class Tourney(object):
             cur.execute("delete from temp.game_staging_ids");
             cur.execute("delete from temp.game_pending_staging");
 
-            cur.executemany("insert into temp.game_staging values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", games);
+            cur.executemany("insert into temp.game_staging values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", game_records);
             cur.execute("""insert into temp.game_staging_ids
                 select g.round_no, g.seq, g.table_no, g.division, g.game_type,
                 p1.id, g.score1, p2.id, g.score2, g.tiebreak
@@ -1229,6 +1236,9 @@ class Tourney(object):
                     on g.name1 = p1.name left outer join player p2
                     on g.name2 = p2.name""");
                 #where g.name1 = p1.name and g.name2 = p2.name""");
+
+            cur.execute("select count(*) from temp.game_staging_ids")
+            results = cur.fetchone()
 
             # Remove any rows that are already in GAME
             cur.execute("""delete from temp.game_staging_ids
@@ -1376,16 +1386,17 @@ class Tourney(object):
             self.db.rollback()
             raise
 
-    def set_game_players(self, alterations):
-        # alterations is (round_no, seq, p1, p2)
-        # but we want (p1name, p2name, round_no, seq) for feeding into the
-        # executemany() call.
-        alterations_reordered = map(lambda x : (x[2].get_name(), x[3].get_name(), x[0], x[1]), alterations);
+    def alter_games(self, alterations):
+        # alterations is (round_no, seq, p1, p2, game_type)
+        # but we want (p1name, p2name, game_type, round_no, seq) for feeding
+        # into the executemany() call.
+        alterations_reordered = map(lambda x : (x[2].get_name(), x[3].get_name(), x[4], x[0], x[1]), alterations);
         cur = self.db.cursor();
         cur.executemany("""
 update game
 set p1 = (select id from player where name = ?),
-p2 = (select id from player where name = ?)
+p2 = (select id from player where name = ?),
+game_type = ?
 where round_no = ? and seq = ?""", alterations_reordered);
         rows_updated = cur.rowcount;
         cur.close();
@@ -1422,14 +1433,10 @@ where round_no = ? and seq = ?""", alterations_reordered);
                 team = Team(row[2], row[3], row[4])
             return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], player_id);
 
-    def get_latest_started_round(self, round_type=None):
+    def get_latest_started_round(self):
         cur = self.db.cursor()
         sql = "select max(r.id) from rounds r where (exists(select * from completed_game cg where cg.round_no = r.id) or r.id = (select min(id) from rounds where id >= 0))"
-        if round_type is None:
-            cur.execute(sql)
-        else:
-            sql += " and type = ?"
-            cur.execute(sql, (round_type,))
+        cur.execute(sql)
         row = cur.fetchone()
         round_no = None
         if row is not None and row[0] is not None:
@@ -1472,13 +1479,9 @@ where round_no = ? and seq = ?""", alterations_reordered);
             cur.close()
         return r
     
-    def get_latest_round_no(self, round_type=None):
+    def get_latest_round_no(self):
         cur = self.db.cursor();
-
-        if round_type is None:
-            cur.execute("select max(id) from rounds");
-        else:
-            cur.execute("select max(id) from rounds where type = ?", (round_type,));
+        cur.execute("select max(id) from rounds");
         row = cur.fetchone();
         if row is None:
             cur.close();
@@ -1577,11 +1580,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
                         of_round_no = int(seat2_round_no);
                         of_seq = int(seat2_seq);
 
-                    short_name = None;
-                    for r in rounds:
-                        if r["num"] == of_round_no:
-                            short_name = r["type"];
-                            break;
+                    short_name = "R" + str(of_round_no)
                     p = PlayerPending(of_round_no, of_seq, winner, short_name);
                 else:
                     p = self.get_player_from_id(p_id);
@@ -1719,7 +1718,14 @@ where round_no = ? and seq = ?""", alterations_reordered);
         return value
  
     def get_division_name(self, num):
-        return get_general_division_name(num)
+        name = self.get_attribute("div%d_name" % (num))
+        if name:
+            return name
+        else:
+            return get_general_division_name(num)
+
+    def set_division_name(self, num, name):
+        self.set_attribute("div%d_name" % (num), name)
     
     def get_short_division_name(self, num):
         return get_general_short_division_name(num)
@@ -1948,17 +1954,28 @@ and g.p2 = p2.id
         cur.close()
         return retval
 
-    def make_fixtures_from_groups(self, groups, round_no, repeat_threes=False, division=0):
+    def make_fixtures_from_groups(self, groups, existing_fixtures, round_no, repeat_threes=False, division=0, game_type='P'):
         start_table_no = self.get_max_table_number_in_round(round_no)
         if start_table_no is None:
             start_table_no = 1
         else:
             start_table_no += 1
+
+        if existing_fixtures:
+            max_existing_table_no = max([f.table_no for f in existing_fixtures if f.round_no == round_no] + [0])
+            if start_table_no <= max_existing_table_no:
+                start_table_no = max_existing_table_no + 1
+
         start_round_seq = self.get_max_game_seq_in_round(round_no)
         if start_round_seq is None:
             start_round_seq = 1
         else:
             start_round_seq += 1
+
+        if existing_fixtures:
+            max_existing_round_seq = max([f.seq for f in existing_fixtures])
+            if start_round_seq <= max_existing_round_seq:
+                start_round_seq = max_existing_round_seq + 1
 
         fixtures = [];
         table_no = start_table_no;
@@ -1976,11 +1993,11 @@ and g.p2 = p2.id
                         right = (host + len(group) - x) % len(group)
                         p1 = group[left]
                         p2 = group[right]
-                        fixture = Game(round_no, round_seq, table_no, division, 'P', p1, p2)
+                        fixture = Game(round_no, round_seq, table_no, division, game_type, p1, p2)
                         fixtures.append(fixture)
                         round_seq += 1
                         if repeat_threes and len(group) == 3:
-                            fixture = Game(round_no, round_seq, table_no, division, 'P', p2, p1)
+                            fixture = Game(round_no, round_seq, table_no, division, game_type, p2, p1)
                             fixtures.append(fixture)
                             round_seq += 1
             else:
@@ -1993,7 +2010,7 @@ and g.p2 = p2.id
                         p2 = group[y]
                         if round_seq % 2 == 0 and len(group) > 2:
                             (p1, p2) = (p2, p1)
-                        fixture = Game(round_no, round_seq, table_no, division, 'P', p1, p2)
+                        fixture = Game(round_no, round_seq, table_no, division, game_type, p1, p2)
                         fixtures.append(fixture)
                         round_seq += 1
             table_no += 1

@@ -40,7 +40,6 @@ def get_user_form(tourney, settings, div_rounds):
             settings[key] = prev_settings[key]
 
     rounds = tourney.get_rounds();
-    rounds = filter(lambda x : x.get("type", None) == "P", rounds);
 
     num_divisions = tourney.get_num_divisions()
 
@@ -394,14 +393,13 @@ def generate(tourney, settings, div_rounds):
         if groups is None:
             raise countdowntourney.FixtureGeneratorException("%s: Unable to generate any permissible groupings in the given time limit." % (tourney.get_division_name(div_index)))
 
-        fixtures += tourney.make_fixtures_from_groups(groups, round_no, group_size == -5, division=div_index)
+        fixtures += tourney.make_fixtures_from_groups(groups, fixtures, round_no, group_size == -5, division=div_index)
     
     d = dict();
     d["fixtures"] = fixtures;
     d["rounds"] = [ {
             "round": round_no,
-            "name": "Round %d" % round_no,
-            "type": "P"
+            "name": "Round %d" % round_no
     } ];
     
     return d;

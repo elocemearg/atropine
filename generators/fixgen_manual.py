@@ -28,7 +28,7 @@ def get_user_form(tourney, settings, div_rounds):
     div_table_sizes = dict()
     players = sorted(tourney.get_active_players(), key=lambda x : x.get_name());
 
-    latest_round_no = tourney.get_latest_round_no('P')
+    latest_round_no = tourney.get_latest_round_no()
     if latest_round_no is None:
         latest_round_no = 0
 
@@ -108,10 +108,20 @@ def get_user_form(tourney, settings, div_rounds):
     div_set_players = dict()
     div_duplicate_slots = dict()
     div_empty_slots = dict()
+    div_count_in_standings = dict()
     all_filled = True
     for div_index in div_rounds:
         div_players = filter(lambda x : x.get_division() == div_index, players);
         set_players = [ None for i in range(0, len(div_players)) ];
+
+        if not settings.get("submitplayers"):
+            count_in_standings = True
+        else:
+            count_in_standings = settings.get("d%d_heats" % (div_index))
+            if count_in_standings is None:
+                count_in_standings = False
+            else:
+                count_in_standings = True
 
         # Ask the user to fill in N little drop-down boxes, where N is the
         # number of players, to decide who's going on what table.
@@ -145,6 +155,7 @@ def get_user_form(tourney, settings, div_rounds):
         div_set_players[div_index] = set_players
         div_duplicate_slots[div_index] = duplicate_slots
         div_empty_slots[div_index] = empty_slots
+        div_count_in_standings[div_index] = count_in_standings
 
     if all_filled and settings.get("submitplayers"):
         return None
@@ -187,9 +198,14 @@ function unset_unsaved_data_warning() {
         duplicate_slots = div_duplicate_slots[div_index]
         empty_slots = div_empty_slots[div_index]
         set_players = div_set_players[div_index]
+        count_in_standings = div_count_in_standings[div_index]
 
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))))
+
+        elements.append(htmlform.HTMLFragment("<p>"))
+        elements.append(htmlform.HTMLFormCheckBox("d%d_heats" % (div_index), "Count the results of these matches in the standings table", div_count_in_standings[div_index]))
+        elements.append(htmlform.HTMLFragment("</p>"))
 
         elements.append(htmlform.HTMLFragment("<table class=\"seltable\">\n"));
         prev_table_no = None;
@@ -312,6 +328,10 @@ def generate(tourney, settings, div_rounds):
         groups = [];
         table_sizes = div_table_sizes[div_index]
         div_players = filter(lambda x : x.get_division() == div_index, players)
+        if settings.get("d%d_heats" % (div_index)):
+            game_type = "P"
+        else:
+            game_type = "N"
 
         # Player names should have been specified by a series of drop-down
         # boxes.
@@ -337,15 +357,14 @@ def generate(tourney, settings, div_rounds):
         if round_no not in round_numbers_generated:
             round_numbers_generated.append(round_no)
 
-        fixtures += tourney.make_fixtures_from_groups(groups, round_no, table_size == -5, division=div_index)
+        fixtures += tourney.make_fixtures_from_groups(groups, fixtures, round_no, table_size == -5, division=div_index, game_type=game_type)
 
     d = dict();
     d["fixtures"] = fixtures;
     d["rounds"] = [
             {
                 "round" : round_no,
-                "name" : "Round %d" % round_no,
-                "type" : "P"
+                "name" : "Round %d" % round_no
             } for round_no in round_numbers_generated
     ];
 

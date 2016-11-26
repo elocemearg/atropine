@@ -85,17 +85,26 @@ elif not tourney:
 else:
     print '<p><a href="%s?tourney=%s">%s</a></p>' % (baseurl, urllib.quote_plus(tourneyname), cgi.escape(tourneyname));
     if request_method == "POST" and player_list_submit:
+        div_index = 0
         if not playerlist:
             playerlist = ""
         lines = playerlist.split("\n");
         lines = filter(lambda x : len(x) > 0, map(lambda x : x.rstrip(), lines));
         reader = csv.reader(lines);
         player_rating_list = [];
+        prev_player_name = "-"
         for row in reader:
             if len(row) == 1:
-                player_rating_list.append((row[0].lstrip().rstrip(), None));
+                if row[0].strip() == "-":
+                    if prev_player_name != "-":
+                        # This is a division separator - it tells us that the
+                        # players after this point go in the next division down.
+                        div_index += 1
+                else:
+                    player_rating_list.append((row[0].lstrip().rstrip(), None, div_index));
             else:
-                player_rating_list.append((row[0].lstrip().rstrip(), row[1]));
+                player_rating_list.append((row[0].lstrip().rstrip(), row[1], div_index));
+            prev_player_name = row[0].strip()
         try:
             tourney.set_players(player_rating_list, auto_rating_behaviour);
             print "<p><strong>Player list updated successfully.</strong></p>";
@@ -138,15 +147,19 @@ else:
         print "</blockquote>"
 
     if tourney.get_num_games() == 0:
-        players = tourney.get_players();
+        players = sorted(tourney.get_players(), key=lambda x : (x.get_division(), x.get_id()))
         print "<hr />"
         print "<h2>Player list</h2>";
         print "<p>"
         print "Enter player names in this box, one player per line. Blank lines are ignored."
-        print "</p><p>"
+        print "</p>"
+        print "<p>"
         print "To give a player a rating, put a comma after the player's name and put the rating number after that, e.g. <tt>Harry Peters,1860</tt>"
         print "</p><p>"
-        print "To indicate that a player is a patzer or bye (this affects how the fixture generators assign fixtures), give them a rating of zero: <tt>Apterous Prune,0</tt>"
+        print "To indicate that a player is a patzer or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <tt>Apterous Prune,0</tt>"
+        print "</p>"
+        print "<p>"
+        print "To divide the players into divisions, put a line containing only a dash (<tt>-</tt>) between the desired divisions."
         print "</p>"
         print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
         print "<p>"
@@ -161,14 +174,18 @@ else:
         else:
             auto_rating = tourney.get_auto_rating_behaviour()
             writer = csv.writer(sys.stdout);
+            prev_div_index = 0
             # Write player names, or player names and ratings if the user
             # specified the players' ratings.
             for p in players:
-                (name, rating) = p;
+                (name, rating, div_index) = p;
+                if div_index != prev_div_index:
+                    writer.writerow(("-",))
                 if auto_rating != countdowntourney.RATINGS_MANUAL and rating != 0:
                     writer.writerow((cgi.escape(name),));
                 else:
                     writer.writerow((cgi.escape(name), "%g" % (rating)));
+                prev_div_index = div_index
         print "</textarea>";
         print "</p>"
 

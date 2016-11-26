@@ -76,6 +76,20 @@ try:
     round_name = tourney.get_round_name(round_no);
     print "<h1>Fixture editor: %s</h1>" % round_name;
 
+    # Javascript function to tick/untick all heat game boxes for a division
+    print """
+<script type="text/javascript">
+//<![CDATA[
+function div_heat_switch_all(class_name, tick) {
+    var elements = document.getElementsByClassName(class_name);
+    var i;
+    for (i = 0; i < elements.length; ++i) {
+        elements[i].checked = tick;
+    }
+}
+//]]>
+</script>
+"""
     players = sorted(tourney.get_players(), key=lambda x : x.get_name());
 
     remarks = dict();
@@ -91,18 +105,24 @@ try:
             seq = g.seq;
             set1 = form.getfirst("gamep1_%d_%d" % (g.round_no, g.seq));
             set2 = form.getfirst("gamep2_%d_%d" % (g.round_no, g.seq));
+            set_heat = form.getfirst("gameheat_%d_%d" % (g.round_no, g.seq))
+
             new_p1 = lookup_player(players, set1);
             new_p2 = lookup_player(players, set2);
+            if not set_heat or set_heat != "1":
+                new_game_type = "N"
+            else:
+                new_game_type = "P"
 
             if new_p1 == new_p2:
                 remarks[(g.round_no, g.seq)] = "Not updated (%s v %s): players can't play themselves" % (new_p1.get_name(), new_p2.get_name());
-            elif g.p1 != new_p1 or g.p2 != new_p2:
-                alterations.append((round_no, seq, new_p1, new_p2));
+            elif g.p1 != new_p1 or g.p2 != new_p2 or g.game_type != new_game_type:
+                alterations.append((round_no, seq, new_p1, new_p2, new_game_type));
 
         if alterations:
-            num_games_updated = tourney.set_game_players(alterations);
+            num_games_updated = tourney.alter_games(alterations);
 
-        for (round_no, seq, new_p1, new_p2) in alterations:
+        for (round_no, seq, new_p1, new_p2, new_game_type) in alterations:
             remarks[seq] = "Updated";
 
         for div in range(num_divisions):
@@ -130,8 +150,16 @@ try:
         print "<p><input type=\"checkbox\" name=\"deldiv%d\" value=\"1\" /> Delete all games in %s, %s</p>" % (div_index, cgi.escape(tourney.get_division_name(div_index)), tourney.get_round_name(round_no))
         print "<table class=\"scorestable\">";
         print "<tr>";
-        print "<th>Table</th><th></th><th></th>";
-        print "<th>Player 1</th><th>Score</th><th>Player 2</th><th></th></tr>";
+        print "<th colspan=\"5\"></th>"
+        print "<th>Count in standings</th>"
+        print "</tr>"
+        print "<th>Table</th><th></th>";
+        print "<th>Player 1</th><th>Score</th><th>Player 2</th>"
+        print "<th>"
+        print "<input type=\"button\" name=\"div%d_tick_all\" value=\"Tick all\" onclick=\"div_heat_switch_all('heatcheckbox_div%d', true);\" />" % (div_index, div_index)
+        print "<input type=\"button\" name=\"div%d_untick_all\" value=\"Untick all\" onclick=\"div_heat_switch_all('heatcheckbox_div%d', false);\" />" % (div_index, div_index)
+        print "</th>"
+        print "<th></th></tr>";
 
         gamenum = 0;
         last_table_no = None;
@@ -154,7 +182,7 @@ try:
             if first_game_in_table:
                 print "<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, g.table_no);
             print "<td class=\"gameseq\">%d</td>" % g.seq;
-            print "<td class=\"gametype\">%s</td>" % cgi.escape(g.game_type);
+            #print "<td class=\"gametype\">%s</td>" % cgi.escape(g.game_type);
 
             print "<td class=\"gameplayer1\" align=\"right\">"
             show_player_selection(players, "gamep1_%d_%d" % (g.round_no, g.seq), game_player_names[0]);
@@ -169,6 +197,10 @@ try:
             print "<td class=\"gameplayer2\" align=\"right\">"
             show_player_selection(players, "gamep2_%d_%d" % (g.round_no, g.seq), game_player_names[1]);
             print "</td>";
+
+            print "<td class=\"gameheat\">"
+            print "<input type=\"checkbox\" class=\"heatcheckbox_div%d\" name=\"gameheat_%d_%d\" value=\"1\" %s />" % (div_index, g.round_no, g.seq, "checked" if g.game_type == "P" else "")
+            print "</td>"
             
             print "<td class=\"remarks\">";
             print cgi.escape(remarks.get((g.round_no, g.seq), ""));
@@ -186,6 +218,7 @@ try:
     print "</div>"; # scorestable
 
     print "</div>"; # mainpane
+
 except countdowntourney.TourneyException as e:
     cgicommon.show_tourney_exception(e);
 

@@ -90,6 +90,11 @@ table.scorestable th {
 	padding-right: 0.5em;
 }
 
+table.fixturetable td {
+	padding-top: 3px;
+	padding-bottom: 3px;
+}
+
 tr.gamerow td {
 }
 
@@ -438,4 +443,70 @@ td.fixgendescription {
 	padding: 5px;
 	border-bottom: 1px solid gray;
 	background-color: #ffffaa;
+}
+
+table.divtable {
+	border: 1px solid black;
+	border-collapse: collapse;
+}
+
+table.divtable th {
+	padding-left: 5px;
+	padding-right: 5px;
+	border: 1px solid black;
+}
+
+td.divtable {
+	padding: 3px 5px 3px 5px;
+	border: 1px solid grey;
+}
+
+td.divtablerating {
+	text-align: right;
+}
+
+td.divtablename {
+}
+
+td.divtabledivpos {
+	text-align: right;
+}
+
+td.divtablepos {
+	text-align: right;
+}
+
+td.divtablepromote {
+	text-align: center;
+}
+
+td.gameheat {
+	text-align: center;
+}
+
+table.divsummarytable {
+	border: 1px solid black;
+	border-collapse: collapse;
+}
+
+table.divsummarytable th {
+	padding-left: 5px;
+	padding-right: 5px;
+	border: 1px solid black;
+}
+
+table.divsummarytable td {
+	padding: 3px 5px 3px 5px;
+	border: 1px solid gray;
+}
+
+td.divsummaryname {
+}
+
+td.divsummaryactiveplayers {
+	text-align: right;
+}
+
+td.divsummarywithdrawnplayers {
+	text-align: right;
 }
