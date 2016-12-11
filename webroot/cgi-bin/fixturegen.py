@@ -183,15 +183,6 @@ try:
                 num_divisions = tourney.get_num_divisions()
                 for r in rounds:
                     round_no = int(r["round"]);
-                    next_free_table_no = tourney.get_next_free_table_number_in_round(round_no)
-                    next_free_seq_no = tourney.get_next_free_seq_number_in_round(round_no)
-                    # The fixture generator will have numbered the tables and
-                    # games from 1, but we now need to offset them if there
-                    # are any other games already in this round.
-                    for f in fixtures:
-                        f.table_no += next_free_table_no - 1
-                        f.seq += next_free_seq_no - 1
-
                     print "<h2>%s</h2>" % r.get("name", "Round %d" % round_no);
 
                     for div_index in range(num_divisions):
