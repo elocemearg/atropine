@@ -36,6 +36,18 @@ a {
 	border-collapse: collapse;
 }
 
+table.fixturetable td {
+	padding-top: 3px;
+	padding-bottom: 3px;
+}
+
+tr.gamerow td {
+}
+
+tr.firstgameintable td {
+	border-top: 2px solid black;
+}
+
 table.fixturetable th {
 	padding-left: 0.5em;
 	padding-right: 0.5em;
@@ -51,6 +63,19 @@ table.fixturetable td.gamescore {
 
 table.fixturetable td.gameplayer2 {
 	background-color: #ffffcc;
+}
+
+table.fixturetable td.gameremarks {
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+	border-top: none;
+}
+
+table.fixturetable td.gamerepeats {
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+	border: 2px solid orange;
+	background-color: #ffff88;
 }
 
 table.fixturetable td.roundno {
@@ -88,18 +113,6 @@ table.scorestable td.tableno {
 table.scorestable th {
 	padding-left: 0.5em;
 	padding-right: 0.5em;
-}
-
-table.fixturetable td {
-	padding-top: 3px;
-	padding-bottom: 3px;
-}
-
-tr.gamerow td {
-}
-
-tr.firstgameintable td {
-	border-top: 2px solid black;
 }
 
 tr.unplayedgame td.gameplayer1 {

@@ -133,7 +133,7 @@ try:
             elements.append(htmlform.HTMLFormTextInput(" round ", "_div%dround" % (div), str(next_free_round_number)))
             elements.append(htmlform.HTMLFragment("</p>"))
         elements.append(htmlform.HTMLFormSubmitButton("_divsubmit", "Next"))
-        settings_form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s&amp;generator=%s" % (urllib.quote_plus(tourney.get_name()), urllib.quote_plus(generator_name)), elements)
+        settings_form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s&generator=%s" % (urllib.quote_plus(tourney.get_name()), urllib.quote_plus(generator_name)), elements)
         print settings_form.html();
     else:
         fixturegen = importlib.import_module(generator_name);
@@ -197,7 +197,7 @@ try:
                         if num_divisions > 1:
                             print "<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))
                         print "<table class=\"fixturetable\">";
-                        print "<tr><th>Table</th><th>Type</th><th></th><th></th><th></th></tr>";
+                        print "<tr><th>Table</th><th>Type</th><th></th><th></th><th></th><th></th></tr>";
 
                         fixnum = 0;
                         last_table_no = None;
@@ -215,12 +215,13 @@ try:
 
                             print "<td class=\"gametype\">%s</td>" % cgi.escape(f.game_type);
                             player_td_html = []
-                            for name in [f.p1.name, f.p2.name]:
+                            for player in [f.p1, f.p2]:
+                                name = player.name
                                 standings_row = standings_dict.get(name, None)
                                 if standings_row is None:
-                                    player_td_html.append("<strong>%s</strong>" % (cgi.escape(name)) + " ?")
+                                    player_td_html.append(cgicommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True) + " ?")
                                 else:
-                                    player_td_html.append("<strong>%s</strong>" % (cgi.escape(name)) +
+                                    player_td_html.append(cgicommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True) +
                                             " (%s, %d win%s%s)" % (
                                                 cgicommon.ordinal_number(standings_row.position),
                                                 standings_row.wins,
@@ -228,6 +229,11 @@ try:
                                                 "" if standings_row.draws == 0 else ", %d draw%s" % (standings_row.draws, "" if standings_row.draws == 1 else "s")))
 
                             print "<td class=\"gameplayer1\">%s</td><td class=\"gamescore\">v</td><td class=\"gameplayer2\">%s</td>" % tuple(player_td_html);
+                            num_repeats = tourney.count_games_between(f.p1, f.p2)
+                            if num_repeats:
+                                print "<td class=\"gamerepeats\">%s repeat</td>" % (cgicommon.ordinal_number(num_repeats))
+                            else:
+                                print "<td class=\"gameremarks\"></td>"
                             print "</tr>";
                             fixnum += 1;
                             last_table_no = f.table_no;

@@ -1516,6 +1516,19 @@ where round_no = ? and seq = ?""", alterations_reordered);
         cur.close();
         return (num_played, num_unplayed);
 
+    def count_games_between(self, p1, p2):
+        sql = """select count(*) from game g
+where g.p1 is not null and g.p2 is not null
+and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
+        cur = self.db.cursor()
+        cur.execute(sql, (p1.get_id(), p2.get_id(), p2.get_id(), p1.get_id()))
+        row = cur.fetchone()
+        cur.close()
+        if row and row[0]:
+            return row[0]
+        else:
+            return 0
+
     def get_games(self, round_no=None, table_no=None, game_type=None, only_players_known=True, division=None):
         conditions = [];
         params = [];
