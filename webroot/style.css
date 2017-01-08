@@ -523,3 +523,35 @@ td.divsummaryactiveplayers {
 td.divsummarywithdrawnplayers {
 	text-align: right;
 }
+
+table.tourneylist {
+	border: 1px solid black;
+	border-collapse: collapse;
+}
+
+table.tourneylist th {
+	border: 1px solid black;
+	padding-left: 10px;
+	padding-right: 10px;
+	background-color: #ffee66;
+}
+
+table.tourneylist tr {
+	border-left: 1px solid black;
+	border-right: 1px solid black;
+}
+
+table.tourneylist td {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+table.tourneylist td.tourneylistname {
+	border: 1px dashed grey;
+	background-color: #ffffaa;
+}
+
+table.tourneylist td.tourneylistmtime {
+	border: 1px dashed grey;
+	background-color: #ffffaa;
+}
