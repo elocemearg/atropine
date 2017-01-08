@@ -93,6 +93,7 @@ def get_user_form(tourney, settings, div_rounds):
         elements.append(htmlform.HTMLFragment("</p>"))
         return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.quote_plus(tourney.name)), elements)
     
+    show_already_assigned_players = bool(settings.get("showallplayers"))
     for div_index in div_rounds:
         div_players = filter(lambda x : x.get_division() == div_index, players);
         table_size = div_table_sizes[div_index]
@@ -189,6 +190,9 @@ function unset_unsaved_data_warning() {
 </script>
 """));
     elements.append(htmlform.HTMLFragment("<p>Use the drop-down boxes to select which players are on each table.</p>\n"));
+    elements.append(htmlform.HTMLFragment("<p>"))
+    elements.append(htmlform.HTMLFormCheckBox("showallplayers", "Show all players in drop-down boxes, even those already assigned a table", show_already_assigned_players))
+    elements.append(htmlform.HTMLFragment("</p>"))
 
     table_no = 1;
     for div_index in div_rounds:
@@ -216,6 +220,10 @@ function unset_unsaved_data_warning() {
         else:
             table_sizes = countdowntourney.get_5_3_table_sizes(len(div_players))
 
+        for p in set_players:
+            if p and p.get_name() in unselected_names:
+                unselected_names.remove(p.get_name())
+
         for table_size in table_sizes:
             elements.append(htmlform.HTMLFragment("<tr>\n"))
             elements.append(htmlform.HTMLFragment("<td>Table %d</td>\n" % table_no));
@@ -228,22 +236,28 @@ function unset_unsaved_data_warning() {
                     td_style = "class=\"emptyslot\"";
                 elements.append(htmlform.HTMLFragment("<td %s>" % td_style));
 
-                # Make a drop down list with every player in it
+                # Make a drop down list with every unassigned player in it
                 player_option_list = [];
                 player_option_list.append(htmlform.HTMLFormDropDownOption("", " -- select --"));
                 selected_name = "";
-                for q in div_players:
-                    opt = htmlform.HTMLFormDropDownOption(q.get_name(), q.get_name());
-                    if p is not None and q.get_name() == p.get_name():
-                        selected_name = p.get_name();
-                    player_option_list.append(opt);
+                
+                if show_already_assigned_players:
+                    name_list = [ x.get_name() for x in div_players ]
+                else:
+                    if p:
+                        name_list = sorted(unselected_names + [p.get_name()])
+                    else:
+                        name_list = unselected_names
+
+                for q in name_list:
+                    opt = htmlform.HTMLFormDropDownOption(q, q)
+                    if p is not None and q == p.get_name():
+                        selected_name = p.get_name()
+                    player_option_list.append(opt)
 
                 # Select the appropriate player
                 sel = htmlform.HTMLFormDropDownBox("d%d_player%d" % (div_index, player_index), player_option_list, other_attrs={"onchange": "set_unsaved_data_warning();"});
                 sel.set_value(selected_name);
-
-                if selected_name in unselected_names:
-                    unselected_names.remove(selected_name);
 
                 elements.append(sel);
                 elements.append(htmlform.HTMLFragment("</td>"));
