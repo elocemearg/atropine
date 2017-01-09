@@ -121,6 +121,8 @@ def show_sidebar(tourney):
 
         print "<div class=\"misclinks\">"
         print "<a href=\"/cgi-bin/tuffluck.py?tourney=%s\">Tuff Luck</a>" % (urllib.quote_plus(tourney.name))
+        print "<br />"
+        print "<a href=\"/cgi-bin/overachievers.py?tourney=%s\">Overachievers</a>" % (urllib.quote_plus(tourney.name))
         print "</div>"
 
         print "<br />"

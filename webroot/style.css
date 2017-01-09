@@ -348,6 +348,7 @@ div.warningbox {
 	height: 130px;
 	max-width: 600px;
 	display: table;
+	margin-bottom: 1ex;
 }
 
 div.warningboximage {
@@ -556,45 +557,54 @@ table.tourneylist td.tourneylistmtime {
 	background-color: #ffffaa;
 }
 
-table.tufflucktable {
+table.miscranktable {
 	border-collapse: collapse;
 }
 
-table.tufflucktable th {
+table.miscranktable th {
 	border-bottom: 1px solid black;
 	background-color: #dddddd;
 	padding-left: 0.3em;
 	padding-right: 0.3em;
 }
 
-table.tufflucktable td {
+table.miscranktable td {
 	border-bottom: 1px dashed gray;
 	background-color: #ffdd66;
 	padding-left: 0.3em;
 	padding-right: 0.3em;
 }
 
-table.tufflucktable tr {
+table.miscranktable tr {
 	background-color: #ffdd66;
 }
 
-table.tufflucktable td.tuffluckpos {
+table.miscranktable td.tuffluckpos,td.overachieverspos {
 	text-align: right;
 	vertical-align: middle;
 }
 
-table.tufflucktable td.tuffluckname {
+table.miscranktable td.tuffluckname,td.overachieversname {
 	text-align: left;
 	border-right: 1px solid gray;
 }
 
-table.tufflucktable td.tuffluckmargins {
+table.miscranktable td.tuffluckmargins {
 	text-align: center;
 	border-right: 1px solid gray;
 }
 
-table.tufflucktable td.tufflucktuffness {
+table.miscranktable td.tufflucktuffness,td.overachieversoverachievement {
 	text-align: right;
 	font-weight: bold;
 }
 
+table.miscranktable td.overachieversseed {
+	text-align: right;
+	border-right: 1px solid gray;
+}
+
+table.miscranktable td.overachieversstandingspos {
+	text-align: right;
+	border-right: 1px solid gray;
+}

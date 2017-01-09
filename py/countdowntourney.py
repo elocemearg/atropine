@@ -2066,6 +2066,66 @@ and g.p2 = p2.id
                 tuffness_list.append((p, sum(margin_list), margin_list))
 
         return sorted(tuffness_list, key=lambda x : x[1])
+    
+    def get_players_overachievements(self, div_index):
+        # Get every player's standing position in this division
+        standings = self.get_standings(div_index)
+        p_id_to_standings_pos = dict()
+        p_id_to_rating = dict()
+        for s in standings:
+            player = self.get_player_from_name(s.name)
+            if player:
+                p_id_to_standings_pos[player.get_id()] = s.position
+                p_id_to_rating[player.get_id()] = s.rating
+
+        p_ids_by_rating = sorted(p_id_to_rating, key=lambda x : p_id_to_rating[x], reverse=True)
+
+        # Work out each player's seed, remembering that two players might have
+        # the same rating
+        p_id_to_seed = dict()
+        seed = 0
+        joint = 1
+        prev_rating = None
+        for p_id in p_ids_by_rating:
+            rating = p_id_to_rating[p_id]
+            if prev_rating is None or prev_rating != rating:
+                seed += joint
+                joint = 1
+            else:
+                joint += 1
+            p_id_to_seed[p_id] = seed
+            prev_rating = rating
+
+        overachievements = []
+
+        for p_id in p_id_to_standings_pos:
+            position = p_id_to_standings_pos[p_id]
+            seed = p_id_to_seed[p_id]
+
+            # We want positive numbers to indicate overachievement
+            overachievement = seed - position;
+            player = self.get_player_from_id(p_id)
+            if player:
+                overachievements.append((player, seed, position, overachievement))
+        return sorted(overachievements, key=lambda x : (x[3], x[1]), reverse=True)
+    
+    # Return true if all player ratings in a division are the same, with the
+    # exception of players with a zero rating.
+    def are_player_ratings_uniform(self, div_index):
+        cur = self.db.cursor()
+        cur.execute("select p.id, p.rating from player p where p.rating > 0 and p.division = ?", (div_index,))
+        rating = None
+        found_difference = False
+        for row in cur:
+            if rating is None:
+                rating = row[1]
+            else:
+                if row[1] != rating:
+                    found_difference = True
+                    break
+        cur.close()
+        return not found_difference
+
 
 def get_5_3_table_sizes(num_players):
     if num_players < 8:

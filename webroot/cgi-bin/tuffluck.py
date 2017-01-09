@@ -61,7 +61,7 @@ try:
     if not players_tuff_luck:
         print "<p>No players have lost %d or more games.</p>" % (num_losing_games)
     else:
-        print "<table class=\"tufflucktable\">"
+        print "<table class=\"miscranktable\">"
         print "<tr>"
         print "<th></th><th>Player</th><th>Margins</th><th>Tuff Luck</th>"
         print "</tr>"
