@@ -44,6 +44,9 @@ try:
         overachievements = tourney.get_players_overachievements(div_index)
         if num_divisions > 1:
             print "<h2>%s</h2>" % (cgi.escape(div_name))
+        if not overachievements:
+            print "<p>There are no players to show.</p>"
+            continue
         if tourney.are_player_ratings_uniform(div_index):
             cgicommon.show_warning_box("<p>Here all the players have the same rating, so this table isn't likely to be of much use to you.</p>")
         print "<table class=\"miscranktable\">"
