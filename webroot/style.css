@@ -555,3 +555,46 @@ table.tourneylist td.tourneylistmtime {
 	border: 1px dashed grey;
 	background-color: #ffffaa;
 }
+
+table.tufflucktable {
+	border-collapse: collapse;
+}
+
+table.tufflucktable th {
+	border-bottom: 1px solid black;
+	background-color: #dddddd;
+	padding-left: 0.3em;
+	padding-right: 0.3em;
+}
+
+table.tufflucktable td {
+	border-bottom: 1px dashed gray;
+	background-color: #ffdd66;
+	padding-left: 0.3em;
+	padding-right: 0.3em;
+}
+
+table.tufflucktable tr {
+	background-color: #ffdd66;
+}
+
+table.tufflucktable td.tuffluckpos {
+	text-align: right;
+	vertical-align: middle;
+}
+
+table.tufflucktable td.tuffluckname {
+	text-align: left;
+	border-right: 1px solid gray;
+}
+
+table.tufflucktable td.tuffluckmargins {
+	text-align: center;
+	border-right: 1px solid gray;
+}
+
+table.tufflucktable td.tufflucktuffness {
+	text-align: right;
+	font-weight: bold;
+}
+

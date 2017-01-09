@@ -7,6 +7,13 @@ import urllib;
 
 dbdir = os.path.join("..", "tourneys");
 
+def int_or_none(s):
+    try:
+        i = int(s)
+        return i
+    except:
+        return None
+
 def print_html_head(title):
     print """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB" xml:lang="en-GB">
@@ -109,6 +116,12 @@ def show_sidebar(tourney):
         print "<div class=\"standingslink\">";
         print "<a href=\"/cgi-bin/standings.py?tourney=%s\">Standings</a>" % (urllib.quote_plus(tourney.name));
         print "</div>";
+
+        print "<br />"
+
+        print "<div class=\"misclinks\">"
+        print "<a href=\"/cgi-bin/tuffluck.py?tourney=%s\">Tuff Luck</a>" % (urllib.quote_plus(tourney.name))
+        print "</div>"
 
         print "<br />"
 

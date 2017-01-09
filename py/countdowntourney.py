@@ -2028,6 +2028,44 @@ and g.p2 = p2.id
                         round_seq += 1
             table_no += 1
         return fixtures
+    
+    def get_players_tuff_luck(self, num_losing_games):
+        p_id_to_losing_margins = dict()
+        cur = self.db.cursor()
+        rows = cur.execute("select case when p1_score > p2_score " +
+                "then p2 else p1 end p_id, " +
+                "case when tiebreak then 0 else abs(p1_score - p2_score) end margin " +
+                "from game " +
+                "where p1_score is not null and p2_score is not null " +
+                "and p1 is not null and p2 is not null and " +
+                "p1_score <> p2_score and " +
+                "game_type = 'P' " +
+                "order by 1")
+        for row in rows:
+            p_id = row[0]
+            margin = row[1]
+            p_id_to_losing_margins[p_id] = p_id_to_losing_margins.get(p_id, []) + [margin]
+        cur.close()
+
+        new_margin_map = dict()
+        for p_id in p_id_to_losing_margins:
+            # Limit each player to a maximum of num_losing_games, and remove
+            # from the list any player who has fewer losses than that
+            margin_list = p_id_to_losing_margins[p_id]
+            if len(margin_list) >= num_losing_games:
+                new_margin_map[p_id] = sorted(margin_list)[0:num_losing_games]
+
+        p_id_to_losing_margins = new_margin_map
+
+        # Return a list of tuples of the form (player, tuffness, margin_list)
+        tuffness_list = []
+        for p_id in p_id_to_losing_margins:
+            margin_list = p_id_to_losing_margins[p_id]
+            p = self.get_player_from_id(p_id)
+            if p:
+                tuffness_list.append((p, sum(margin_list), margin_list))
+
+        return sorted(tuffness_list, key=lambda x : x[1])
 
 def get_5_3_table_sizes(num_players):
     if num_players < 8:
