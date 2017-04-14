@@ -930,7 +930,7 @@ class Tourney(object):
         self.db.commit();
 
     def get_auto_rating_behaviour(self):
-        return bool(self.get_int_attribute("autoratingbehaviour", 2))
+        return self.get_int_attribute("autoratingbehaviour", RATINGS_UNIFORM)
     
     def get_active_players(self):
         # Return the list of players in the tournament who are not marked
@@ -1766,17 +1766,31 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         return [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9]) for x in results ]
     
-    def get_logs_since(self, seq, include_new_games=False):
+    def get_logs_since(self, seq=None, include_new_games=False):
         cur = self.db.cursor();
         sql = """select seq, datetime(ts, 'localtime') ts, round_no,
                 round_seq, table_no, game_type, p1.name p1, p1_score,
-                p2.name p2, p2_score, tiebreak, log_type, game_log.division
-                from game_log, player p1, player p2
-                where p1 = p1.id and p2 = p2.id and seq > ?""";
+                p2.name p2, p2_score, tiebreak, log_type, gl.division,
+                case when exists(
+                    select * from game_log gl2
+                    where gl.round_no = gl2.round_no
+                    and gl.round_seq = gl2.round_seq
+                    and gl.log_type > 0 and gl2.log_type > 0
+                    and gl2.seq > gl.seq
+                ) then 1 else 0 end superseded
+                from game_log gl, player p1, player p2
+                where p1 = p1.id and p2 = p2.id""";
+        if seq is not None:
+            sql += " and seq > ?"
         if not(include_new_games):
             sql += " and log_type > 0";
         sql += " order by seq";
-        cur.execute(sql, (seq,));
+
+        if seq is not None:
+            cur.execute(sql, (seq,));
+        else:
+            cur.execute(sql)
+
         results = cur.fetchall();
         cur.close();
         return results;

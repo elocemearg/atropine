@@ -27,6 +27,8 @@ standard_palette = {
         "videprinter_name_neutral" : (192, 192, 48),
         "videprinter_name_winner" : (0, 192, 0),
         "videprinter_name_loser" : (255, 48, 48),
+        "videprinter_superseded" : (128, 128, 128),
+        "strikethrough" : (192, 192, 192),
 
         "standings_column_heading" : (192, 192, 192),
         "standings_division_name" : (32, 255, 32),
@@ -109,6 +111,8 @@ psychedelic_palette = {
         "videprinter_name_winner" : (0, 192, 64),
         "videprinter_name_loser" : (255, 128, 255),
         "videprinter_bg" : (255, 0, 255, 48),
+        "videprinter_superseded" : (128, 128, 128),
+        "strikethrough" : (192, 192, 192),
 
         "standings_column_heading" : (128, 128, 255),
         "standings_division_name" : (32, 255, 32),

@@ -425,6 +425,8 @@ class TableRow(object):
         self.left_border = None;
         self.right_border = None;
         self.bottom_border = None;
+        self.videprinter_seq = 0
+        self.strikethrough = False
     
     def append_value(self, value):
         self.values.append(value);
@@ -434,6 +436,15 @@ class TableRow(object):
     
     def __len__(self):
         return len(self.values);
+    
+    def set_videprinter_seq(self, seq):
+        self.videprinter_seq = seq
+    
+    def get_videprinter_seq(self):
+        return self.videprinter_seq
+    
+    def set_strikethrough(self, value):
+        self.strikethrough = value
 
     def draw(self, surface, default_font, y, row_height_px, videprinter=False):
         x = 0;
@@ -449,6 +460,10 @@ class TableRow(object):
             if border:
                 #print "drawing (%d,%d) to (%d,%d)" % (x0, y0, x1, y1);
                 pygame.draw.line(surface, border.get_colour(), (x0, y0), (x1, y1), border.get_width_px());
+
+        if self.strikethrough:
+            pygame.draw.line(surface, teleostcolours.get("strikethrough"), (0, y + row_height_px / 2), (min(surface.get_width() - 1, x + row_height_px / 2), y + row_height_px / 2), max(2, row_height_px / 8))
+
     
     def set_border(self, top_border=None, right_border=None, bottom_border=None, left_border=None):
         self.top_border = top_border;
@@ -482,10 +497,12 @@ class VideprinterWidget(Widget):
         self.default_font_name = default_font_name;
         self.num_rows = num_rows;
         self.current_rows = [];
+        self.latest_seq_drawn = -1;
         self.num_refreshes = 0;
     
     def restart(self):
-        self.num_refreshes = 0;
+        self.num_refreshes = 0
+        self.latest_seq_drawn = -1
 
     def refresh(self, surface):
         try:
@@ -501,14 +518,9 @@ class VideprinterWidget(Widget):
 
             font = get_sensible_font(self.default_font_name, row_height_px);
 
-            new_rows = self.table_fetcher.fetch_data_rows(data_rows_to_fetch);
-            total_rows = len(self.current_rows) + len(new_rows);
-            if total_rows > data_rows_to_fetch:
-                if len(self.current_rows) < total_rows - data_rows_to_fetch:
-                    self.new_rows = self.new_rows[-(total_rows - len(self.current_rows) - data_rows_to_fetch):];
-                    self.current_rows = [];
-                else:
-                    self.current_rows = self.current_rows[(total_rows - data_rows_to_fetch):];
+            self.current_rows = self.table_fetcher.fetch_data_rows(data_rows_to_fetch);
+            if len(self.current_rows) > data_rows_to_fetch:
+                self.current_rows = self.current_rows[-data_rows_to_fetch:]
 
             # Draw the header row if necessary
             pos_y = 0;
@@ -516,23 +528,19 @@ class VideprinterWidget(Widget):
                 header_row.draw(surface, font, pos_y, row_height_px);
                 pos_y += row_height_px;
 
-            # Draw the rows we already have that are still on the screen
-            for row in self.current_rows:
-                row.draw(surface, font, pos_y, row_height_px);
-                pos_y += row_height_px;
-
             # Any new rows, draw them one character at a time, unless this is
             # the first refresh, in which case we want to show it all at once -
             # if there are already results to display when we start, no point in
             # taking ages displaying the backlog.
-            for row in new_rows:
-                if self.num_refreshes == 0:
+            for row in self.current_rows:
+                if self.num_refreshes == 0 or self.latest_seq_drawn >= row.get_videprinter_seq():
                     row.draw(surface, font, pos_y, row_height_px);
                 else:
                     row.draw(surface, font, pos_y, row_height_px, videprinter=True);
+                if row.get_videprinter_seq() > self.latest_seq_drawn:
+                    self.latest_seq_drawn = row.get_videprinter_seq()
                 pos_y += row_height_px;
 
-            self.current_rows += new_rows;
             self.num_refreshes += 1;
         except countdowntourney.TourneyException as e:
             traceback.print_exc();

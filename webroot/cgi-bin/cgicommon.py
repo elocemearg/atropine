@@ -113,6 +113,12 @@ def show_sidebar(tourney):
 
         print "<br />"
 
+        print "<div class=\"tableindexlink\">"
+        print "<a href=\"/cgi-bin/tableindex.py?tourney=%s\">Name-to-table index</a>" % (urllib.quote_plus(tourney.name))
+        print "</div>"
+
+        print "<br />"
+
         print "<div class=\"standingslink\">";
         print "<a href=\"/cgi-bin/standings.py?tourney=%s\">Standings</a>" % (urllib.quote_plus(tourney.name));
         print "</div>";

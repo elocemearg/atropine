@@ -608,3 +608,28 @@ table.miscranktable td.overachieversstandingspos {
 	text-align: right;
 	border-right: 1px solid gray;
 }
+
+table.tableindex {
+}
+
+td.tableindexname {
+	padding-left: 0.3em;
+	padding-right: 0.3em;
+	background-color: #ffdd66;
+	border: 1px solid gray;
+}
+
+td.tableindextable {
+	padding-left: 0.3em;
+	padding-right: 0.3em;
+	background-color: #3333ff;
+	font-weight: bold;
+	color: #ffffff;
+	text-align: center;
+	border: 1px solid gray;
+}
+
+td.tableindexspacer {
+	border: none;
+	width: 2em;
+}

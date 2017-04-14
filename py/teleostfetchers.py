@@ -18,13 +18,12 @@ def make_round_desc(num_divisions, round_no, table_no, division):
 class VideprinterFetcher(object):
     def __init__(self, tourney):
         self.tourney = tourney;
-        self.last_log_seq = 0;
     
     def fetch_header_row(self):
         return None;
     
     def fetch_data_rows(self, num_rows):
-        logs = self.tourney.get_logs_since(self.last_log_seq);
+        logs = self.tourney.get_logs_since();
         logs = logs[-num_rows:];
 
         rows = [];
@@ -44,10 +43,11 @@ class VideprinterFetcher(object):
                     "s2" : log_row[9],
                     "tiebreak" : log_row[10],
                     "log_type" : log_row[11],
-                    "division" : log_row[12]
+                    "division" : log_row[12],
+                    "superseded" : log_row[13]
             };
-            if l["seq"] > self.last_log_seq:
-                self.last_log_seq = l["seq"];
+            #if l["seq"] > self.last_log_seq:
+            #    self.last_log_seq = l["seq"];
             if show_timestamps:
                 timestamp = l["ts"][11:16];
             else:
@@ -69,18 +69,26 @@ class VideprinterFetcher(object):
                 s1 = int(s1);
             if s2 is not None:
                 s2 = int(s2);
+            superseded = bool(l["superseded"])
 
-            round_desc_colour = teleostcolours.get("videprinter_round")
-            timestamp_colour = teleostcolours.get("videprinter_timestamp")
-            score_colour = teleostcolours.get("videprinter_score")
-            name1_colour = name2_colour = teleostcolours.get("videprinter_name_neutral")
+            if superseded:
+                round_desc_colour = teleostcolours.get("videprinter_superseded")
+                timestamp_colour = teleostcolours.get("videprinter_superseded")
+                score_colour = teleostcolours.get("videprinter_superseded")
+                name1_colour = name2_colour = teleostcolours.get("videprinter_superseded")
+            else:
+                round_desc_colour = teleostcolours.get("videprinter_round")
+                timestamp_colour = teleostcolours.get("videprinter_timestamp")
+                score_colour = teleostcolours.get("videprinter_score")
+                name1_colour = name2_colour = teleostcolours.get("videprinter_name_neutral")
             if s1 is not None and s2 is not None:
-                if s1 > s2:
-                    name1_colour = teleostcolours.get("videprinter_name_winner")
-                    name2_colour = teleostcolours.get("videprinter_name_loser")
-                elif s2 > s1:
-                    name1_colour = teleostcolours.get("videprinter_name_loser")
-                    name2_colour = teleostcolours.get("videprinter_name_winner")
+                if not superseded:
+                    if s1 > s2:
+                        name1_colour = teleostcolours.get("videprinter_name_winner")
+                        name2_colour = teleostcolours.get("videprinter_name_loser")
+                    elif s2 > s1:
+                        name1_colour = teleostcolours.get("videprinter_name_loser")
+                        name2_colour = teleostcolours.get("videprinter_name_winner")
                 if l["tiebreak"]:
                     if s1 > s2:
                         score_str = "%d* - %d" % (s1, s2);
@@ -99,6 +107,9 @@ class VideprinterFetcher(object):
             team2_colour = p2.get_team_colour_tuple()
 
             row = teleostscreen.TableRow();
+            if superseded:
+                row.set_strikethrough(True)
+            row.set_videprinter_seq(l["seq"])
             if timestamp:
                 row.append_value(teleostscreen.RowValue(timestamp, None, timestamp_colour, row_padding=row_padding));
             row.append_value(teleostscreen.RowValue(round_desc, None, round_desc_colour, row_padding=row_padding));
