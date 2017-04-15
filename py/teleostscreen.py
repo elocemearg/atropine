@@ -8,6 +8,7 @@ import sqlite3;
 import countdowntourney;
 import traceback;
 import teleostcolours;
+import math
 
 draw_table_lines = False;
 
@@ -151,6 +152,88 @@ def make_team_dot(width, height, colour):
         dot_cache[(width, height, colour)] = surface
     return surface
 
+def sigmoid(t):
+    return 1.0 / (1.0 + math.exp(-t))
+    
+class ScrollInstruction(object):
+    SCROLL_UP = 0
+    SCROLL_LEFT = 1
+
+    def __init__(self, rect, direction=SCROLL_UP):
+        self.rect = rect
+        self.direction = direction
+
+    def get_rect(self):
+        return self.rect
+
+    def draw_scroll_frame(self, surface, original_surface, new_surface, scroll_progress):
+        if self.direction == ScrollInstruction.SCROLL_UP:
+            scroll_length_max = self.rect.height
+        else:
+            scroll_length_max = self.rect.width
+
+        # We want the scroll to start slow, speed up in the middle and slow
+        # down as it comes to an end, so we'll use a sigmoid function,
+        # S(t) = 1 / (1 + e^-t)
+
+        # Increase sigmoid_max if you want more of the activity to be in the
+        # middle of the transition time, decrease it if you want it to be
+        # more linear.
+        sigmoid_max = 5
+
+        # Increase sigmoid_centre if you want most of the scroll to happen
+        # towards the end of the transition time (i.e. a slow start, a fast
+        # finish), and decrease it if you want most of it to happen at the
+        # start.
+        sigmoid_centre = 0.5
+
+        scroll_length = int(scroll_length_max * sigmoid((scroll_progress - sigmoid_centre) * sigmoid_max * 2))
+        if self.direction == ScrollInstruction.SCROLL_UP:
+            surface.blit(original_surface, self.rect, (self.rect.left, self.rect.top + scroll_length, self.rect.width, self.rect.height - scroll_length))
+            surface.blit(new_surface, (self.rect.left, self.rect.top + self.rect.height - scroll_length), (self.rect.left, self.rect.top, self.rect.width, scroll_length))
+        else:
+            surface.blit(original_surface, self.rect, (self.rect.left + scroll_length, self.rect.top, self.rect.width - scroll_length, self.rect.height))
+            surface.blit(new_surface, (self.rect.left + self.rect.width - scroll_length, self.rect.top), (self.rect.left, self.rect.top, scroll_length, self.rect.height))
+
+    def transform(self, x, y):
+        self.rect.x += x
+        self.rect.y += y
+
+class VideprinterScrollInstruction(ScrollInstruction):
+    def __init__(self, rect, animate_from_y):
+        self.rect = rect
+        self.animate_from_y = animate_from_y
+
+    def transform(self, x, y):
+        self.rect.x += x
+        self.rect.y += y
+
+    def get_rect(self):
+        return self.rect
+
+    def draw_scroll_frame(self, surface, original_surface, new_surface, scroll_progress):
+        # For the first half of the progress, we'll scroll the videprinter up.
+        # For the second half, we'll reveal the new entries.
+        
+        shift_up_progress = scroll_progress * 2
+        if shift_up_progress > 1.0:
+            shift_up_progress = 1.0
+
+        sigmoid_max = 5
+        sigmoid_centre = 0.5
+
+        if shift_up_progress < 1.0:
+            scroll_length_max = self.rect.height - self.animate_from_y
+            scroll_length = int(scroll_length_max * sigmoid((shift_up_progress - sigmoid_centre) * sigmoid_max * 2))
+            surface.blit(original_surface, self.rect, (self.rect.left, self.rect.top + scroll_length, self.rect.width, self.rect.height - scroll_length))
+        else:
+            surface.blit(new_surface, self.rect, (self.rect.left, self.rect.top, self.rect.width, self.animate_from_y))
+
+        if scroll_progress >= 0.5:
+            wipe_right_progress = (scroll_progress - 0.5) * 2
+            wipe_right_px = int(self.rect.width * wipe_right_progress)
+            surface.blit(new_surface, (self.rect.left, self.rect.top + self.animate_from_y), (self.rect.left, self.rect.top + self.animate_from_y, wipe_right_px, self.rect.height - self.animate_from_y))
+
 class View(object):
     def __init__(self, name="", desc=""):
         self.sub_views = [];
@@ -171,6 +254,7 @@ class View(object):
             v[0].restart();
     
     def refresh(self, surface):
+        transition_instructions = []
         for (sub_view, top_pc, left_pc, height_pc, width_pc) in self.sub_views:
             top_px = surface.get_height() * top_pc / 100;
             left_px = surface.get_width() * left_pc / 100;
@@ -183,8 +267,12 @@ class View(object):
             sub_surface = surface.subsurface((left_px, top_px, width_px, height_px));
             #sub_surface = pygame.Surface((width_px, height_px), flags=pygame.SRCALPHA);
             #sub_surface.fill((0, 0, 0, 0));
-            sub_view.refresh(sub_surface);
+            ti = sub_view.refresh(sub_surface);
+            if ti:
+                ti.transform(left_px, top_px)
+                transition_instructions.append(ti)
             #surface.blit(sub_surface, (left_px, top_px));
+        return transition_instructions
 
     def bump(self, surface):
         for (sub_view, a, b, c, d) in self.sub_views:
@@ -222,8 +310,9 @@ class TimedViewCycler(View):
         if self.current_view_index < 0:
             self.current_view_index = 0;
         if len(self.sub_views) == 0:
-            return;
+            return [];
 
+        previous_view_index = self.current_view_index
         (view, interval) = self.sub_views[self.current_view_index];
         if self.last_change + interval <= time.time():
             self.current_view_index = (self.current_view_index + 1) % len(self.sub_views);
@@ -231,6 +320,10 @@ class TimedViewCycler(View):
             (view, interval) = self.sub_views[self.current_view_index];
 
         view.refresh(surface);
+        if self.current_view_index != previous_view_index:
+            return [ScrollInstruction(surface.get_rect(), ScrollInstruction.SCROLL_LEFT)]
+        else:
+            return []
 
     def bump(self, surface):
         self.last_change = 0
@@ -315,10 +408,10 @@ class RowValue(object):
         else:
             return self.font;
     
-    def draw(self, surface, default_font, y, x, row_height_px, wipe_right=False):
-        return self.draw_aux(surface, self.get_text(), default_font, y, x, row_height_px, wipe_right=wipe_right);
+    def draw(self, surface, default_font, y, x, row_height_px):
+        return self.draw_aux(surface, self.get_text(), default_font, y, x, row_height_px);
 
-    def draw_aux(self, surface, text, default_font, y, x, row_height_px, wipe_right=False):
+    def draw_aux(self, surface, text, default_font, y, x, row_height_px):
         font = self.get_font(default_font);
         width_px = self.get_width_px(surface);
         row_pad_px = int(self.get_row_padding_px(surface));
@@ -371,21 +464,7 @@ class RowValue(object):
         else:
             text_y = y;
 
-        if wipe_right:
-            if src_area is None:
-                src_area = (0, 0, label.get_width(), label.get_height());
-            x_offset = 0;
-            animation_step = max(40, surface.get_width() / 20);
-            for surface_piece_x in range(src_area[0], src_area[0] + src_area[2], animation_step):
-                width = min(animation_step, src_area[2] - surface_piece_x);
-                surface.blit(label, (label_start_x + x_offset, text_y), area=(surface_piece_x, src_area[1], width, src_area[3]));
-                x_offset += animation_step;
-                pygame.display.flip();
-                time.sleep(0.05);
-            #surface.blit(label, (label_start_x, y), area=src_area);
-            #pygame.display.flip();
-        else:
-            surface.blit(label, (label_start_x, text_y), area=src_area);
+        surface.blit(label, (label_start_x, text_y), area=src_area);
 
         if draw_table_lines:
             pygame.draw.rect(surface, pygame.Color(64, 64, 64), pygame.Rect(x, y, drawn_width, row_height_px), 1);
@@ -410,7 +489,7 @@ class RowValueTeamDot(object):
     def get_text_colour(self):
         return self.fgcolour
 
-    def draw(self, surface, default_font, y, x, row_height_px, wipe_right=False):
+    def draw(self, surface, default_font, y, x, row_height_px):
         label = make_team_dot(self.width.get_width_px(surface), row_height_px, self.fgcolour)
         if self.bgcolour is not None:
             surface.fill(self.bgcolour, pygame.Rect(x, y, self.width.get_width_px(surface), row_height_px))
@@ -446,10 +525,10 @@ class TableRow(object):
     def set_strikethrough(self, value):
         self.strikethrough = value
 
-    def draw(self, surface, default_font, y, row_height_px, videprinter=False):
+    def draw(self, surface, default_font, y, row_height_px):
         x = 0;
         for value in self.values:
-            x += value.draw(surface, default_font, y, x, row_height_px, wipe_right=videprinter);
+            x += value.draw(surface, default_font, y, x, row_height_px);
 
         border_list = [];
         border_list.append((self.top_border, 0, y, surface.get_width() - 1, y));
@@ -486,10 +565,10 @@ class Widget(object):
         pass;
     
     def refresh(self):
-        pass;
+        return None
 
     def bump(self, surface):
-        pass
+        return
 
 class VideprinterWidget(Widget):
     def __init__(self, table_fetcher, num_rows, default_font_name="sans-serif"):
@@ -528,36 +607,44 @@ class VideprinterWidget(Widget):
                 header_row.draw(surface, font, pos_y, row_height_px);
                 pos_y += row_height_px;
 
-            # Any new rows, draw them one character at a time, unless this is
-            # the first refresh, in which case we want to show it all at once -
-            # if there are already results to display when we start, no point in
-            # taking ages displaying the backlog.
+            animate_from_y = None
+
             for row in self.current_rows:
-                if self.num_refreshes == 0 or self.latest_seq_drawn >= row.get_videprinter_seq():
-                    row.draw(surface, font, pos_y, row_height_px);
-                else:
-                    row.draw(surface, font, pos_y, row_height_px, videprinter=True);
+                row.draw(surface, font, pos_y, row_height_px);
+                if self.num_refreshes > 0 and self.latest_seq_drawn < row.get_videprinter_seq():
+                    if animate_from_y is None:
+                        animate_from_y = pos_y
                 if row.get_videprinter_seq() > self.latest_seq_drawn:
                     self.latest_seq_drawn = row.get_videprinter_seq()
                 pos_y += row_height_px;
 
             self.num_refreshes += 1;
+
+            if animate_from_y is not None:
+                return VideprinterScrollInstruction(surface.get_rect(), animate_from_y)
+            else:
+                return None
         except countdowntourney.TourneyException as e:
             traceback.print_exc();
             surface.fill((255, 0, 0, 255));
         except sqlite3.Error as e:
             traceback.print_exc();
             surface.fill((255, 128, 0, 255));
+        return None
 
 
 class TableWidget(Widget):
-    def __init__(self, table_fetcher, num_rows, default_font_name="sans-serif", scroll_interval=10):
+    def __init__(self, table_fetcher, num_rows, default_font_name="sans-serif", scroll_interval=10, scroll_sideways=False):
         self.table_fetcher = table_fetcher;
         self.scroll_interval = scroll_interval;
         self.last_scroll_time = time.time();
         self.current_row = 0;
         self.num_rows_on_screen = num_rows;
         self.default_font_name = default_font_name;
+        if scroll_sideways:
+            self.scroll_direction = ScrollInstruction.SCROLL_LEFT
+        else:
+            self.scroll_direction = ScrollInstruction.SCROLL_UP
     
     def restart(self):
         self.current_row = 0;
@@ -570,7 +657,10 @@ class TableWidget(Widget):
 
     def refresh(self, surface):
         try:
+            scroll = False
             header_row = self.table_fetcher.fetch_header_row();
+
+            previous_row = self.current_row
 
             # Work out how many data rows we want
             if header_row is None:
@@ -589,6 +679,9 @@ class TableWidget(Widget):
             if not table_rows:
                 self.current_row = 0;
                 table_rows = self.table_fetcher.fetch_data_rows(self.current_row, data_rows_to_fetch);
+
+            if self.current_row != previous_row:
+                scroll = True
 
             try:
                 header_row = self.table_fetcher.fetch_header_row_for_page(start_row=self.current_row, page_length=data_rows_to_fetch);
@@ -610,12 +703,150 @@ class TableWidget(Widget):
                 for row in table_rows:
                     row.draw(surface, font, pos_y, row_height_px);
                     pos_y += row_height_px;
+
+            if scroll:
+                if header_row:
+                    return ScrollInstruction(pygame.Rect(0, row_height_px, surface.get_width(), surface.get_height() - row_height_px), self.scroll_direction)
+                else:
+                    return ScrollInstruction(surface.get_rect(), self.scroll_direction)
+            else:
+                return None
         except countdowntourney.TourneyException as e:
             traceback.print_exc();
             surface.fill((255, 0, 0, 255));
         except sqlite3.Error as e:
             traceback.print_exc();
             surface.fill((255, 128, 0, 255));
+        return None
+
+class TableIndexWidget(Widget):
+    def __init__(self, fetcher, num_lines=12, num_columns=3, scroll_interval=10, font_name="sans-serif"):
+        self.scroll_interval = scroll_interval
+        self.preferred_lines_per_page = num_lines
+        self.preferred_num_columns = num_columns
+        self.current_page = 0
+        self.last_scroll_time = time.time()
+        self.font_name = font_name
+        self.fetcher = fetcher
+
+    def restart(self):
+        self.last_scroll_time = time.time()
+        self.current_page = 0
+
+    def bump(self, surface):
+        self.last_scroll_time = 0
+        if surface:
+            self.refresh(surface)
+
+    def refresh(self, surface):
+        scrolled = False
+        assignments = self.fetcher.fetch_index()
+
+        # If the preferred number of lines and columns would mean the last
+        # page has less than half a column on it, extend the column size so
+        # we can do it in one fewer page.
+        names_per_page = self.preferred_num_columns * self.preferred_lines_per_page
+        num_pages = (len(assignments) + names_per_page - 1) / names_per_page
+
+        names_on_last_page = len(assignments) % names_per_page
+        if names_on_last_page > 0 and names_on_last_page < self.preferred_lines_per_page / 2:
+            num_pages -= 1
+            num_columns = self.preferred_num_columns
+            names_per_page = (len(assignments) + num_pages - 1) / num_pages
+            lines_per_page = (names_per_page + num_columns - 1) / num_columns
+            names_per_page = num_columns * lines_per_page
+        else:
+            lines_per_page = self.preferred_lines_per_page
+            num_columns = self.preferred_num_columns
+
+        names_per_page = num_columns * lines_per_page
+
+        # Work out the line heights
+        line_height = int(surface.get_height() / (lines_per_page + 1.5))
+        title_height = int(line_height * 1.5)
+        table_start_y = title_height
+
+        previous_page = self.current_page
+
+        # Is it time to scroll?
+        if self.last_scroll_time + self.scroll_interval <= time.time():
+            self.current_page += 1;
+            self.last_scroll_time = time.time();
+
+        if self.current_page * names_per_page >= len(assignments):
+            self.current_page = 0;
+
+        if previous_page != self.current_page:
+            scrolled = True
+
+        if len(assignments) == 0:
+            return None
+
+        line_padding = line_height / 5
+        if line_padding < 2:
+            line_padding = 2
+        col_padding = (surface.get_width() / num_columns) / 5
+        if col_padding < 10:
+            col_padding = 10
+
+        col_width = (surface.get_width() - (num_columns - 1) * col_padding) / num_columns
+
+        table_width = col_width / 5
+        if table_width < line_height:
+            table_width = line_height
+        name_width = col_width - table_width
+        if name_width < 10:
+            name_width = 10
+
+        name_padding = line_height / 4
+
+        if line_height <= line_padding or name_width >= col_width:
+            # Screw this
+            return None
+
+        # Draw the title
+        text = "Table Numbers - " + self.fetcher.get_round_name()
+        font = get_sensible_font(self.font_name, int(line_height * 1.25) - line_padding)
+        caption = make_text_label(font, text, teleostcolours.get("table_index_title_fg"), int(surface.get_width() * 4 / 5))
+        surface.blit(caption, (0, 0))
+        
+        # Draw the page number
+        if num_pages > 1:
+            text = "page %d of %d" % (self.current_page + 1, num_pages)
+            font = get_sensible_font(self.font_name, line_height - line_padding)
+            caption = make_text_label(font, text, teleostcolours.get("table_index_page_number"), int(surface.get_width() / 5))
+            surface.blit(caption, (surface.get_width() - caption.get_width(), int(line_height / 8)))
+
+        x = 0
+        font = get_sensible_font(self.font_name, line_height - line_padding)
+        for col in range(num_columns):
+            for line_no in range(lines_per_page):
+                assignment_index = self.current_page * names_per_page + col * lines_per_page + line_no
+                if assignment_index >= len(assignments):
+                    break
+
+                (name, table_list) = assignments[assignment_index]
+                y = table_start_y + line_no * line_height + line_padding / 2
+
+                name_label = pygame.Surface((name_width, line_height - line_padding), pygame.SRCALPHA)
+                name_label.fill(teleostcolours.get("table_index_name_bg"))
+                caption = make_text_label(font, name, teleostcolours.get("table_index_name_fg"), name_width - name_padding)
+                name_label.blit(caption, (name_padding / 2, 0))
+
+                table_label = pygame.Surface((table_width, line_height - line_padding), pygame.SRCALPHA)
+                table_label.fill(teleostcolours.get("table_index_table_bg"))
+                caption = make_text_label(font, table_list, teleostcolours.get("table_index_table_fg"), table_width)
+                table_label.blit(caption, ((table_label.get_width() - caption.get_width()) / 2, 0))
+
+                surface.blit(name_label, (x, y))
+                surface.blit(table_label, (x + name_width, y))
+            x += col_width + col_padding
+
+        if scrolled:
+            return ScrollInstruction(pygame.Rect(0, table_start_y, surface.get_width(), surface.get_height() - table_start_y))
+        else:
+            return None
+
 
 class PagedFixturesWidget(Widget):
     def __init__(self, fetcher, num_lines=9, scroll_interval=10, font_name="sans-serif"):
@@ -649,6 +880,8 @@ class PagedFixturesWidget(Widget):
         # The fetcher should fetch the games for the current round
         games = self.fetcher.fetch_games()
         pages = [];
+
+        scrolled = False
 
         # Divide these games up into pages, putting no more than num_lines
         # games onto the screen. Don't split a clump of games on the same
@@ -715,8 +948,9 @@ class PagedFixturesWidget(Widget):
             pages.append(page[:]);
 
         if len(pages) == 0:
-            return;
+            return None;
 
+        previous_page = self.current_page
         # Is it time to scroll?
         if self.last_scroll_time + self.scroll_interval <= time.time():
             self.current_page += 1;
@@ -725,8 +959,10 @@ class PagedFixturesWidget(Widget):
         if self.current_page >= len(pages):
             self.current_page = 0;
 
-        page = pages[self.current_page];
+        if self.current_page != previous_page:
+            scrolled = True
 
+        page = pages[self.current_page];
 
         # Work out some arcane constants
         top_padding_height = int(0.02 * surface.get_height());
@@ -920,6 +1156,11 @@ class PagedFixturesWidget(Widget):
             prev_round_no = t[0].round_no;
             prev_division = t[0].division
 
+        if scrolled:
+            return ScrollInstruction(pygame.Rect(0, 0, surface.get_width(), surface.get_height()))
+        else:
+            return None
+
 class LabelWidget(Widget):
     def __init__(self, text, left_pc, top_pc, width_pc, height_pc, text_colour_name=None, bg_colour_name=None, font_name="sans-serif"):
         self.text = text;
@@ -960,6 +1201,7 @@ class LabelWidget(Widget):
 
         label.blit(caption, (0,0));
         surface.blit(label, (left_px, top_px));
+        return None
 
 
 class ShadedArea(Widget):

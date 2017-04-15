@@ -91,6 +91,7 @@ try:
     quickest_finishers_fetcher = teleostfetchers.QuickestFinishersFetcher(tourney);
     current_round_fixtures_fetcher = teleostfetchers.CurrentRoundFixturesFetcher(tourney);
     tuff_luck_fetcher = teleostfetchers.TuffLuckFetcher(tourney);
+    table_index_fetcher = teleostfetchers.TableIndexFetcher(tourney)
 
     #fontfilename = "/usr/share/fonts/truetype/futura/Futura Condensed Bold.ttf";
 
@@ -108,7 +109,7 @@ try:
     standings_results = teleostscreen.View(name="Standings / Table Results", desc="Standings table taking up most of the screen, with this round's fixtures and results displayed at the bottom.");
     standings_results.add_view(standings_widget, top_pc=5, height_pc=65, left_pc=0, width_pc=95);
     standings_results.add_view(teleostscreen.ShadedArea(None, "standings_results_bg"), top_pc=72, height_pc=30, left_pc=0, width_pc=100);
-    standings_results.add_view(teleostscreen.TableWidget(table_results_fetcher, 4, scroll_interval=5), top_pc=73, height_pc=26, left_pc=0, width_pc=100);
+    standings_results.add_view(teleostscreen.TableWidget(table_results_fetcher, 4, scroll_interval=5, scroll_sideways=True), top_pc=73, height_pc=26, left_pc=0, width_pc=100);
     standings_results.add_view(team_score_widget, top_pc=5, height_pc=7, left_pc=5, width_pc=20);
     
     standings_results_vert = teleostscreen.View(name="Standings / Table Results (vertical)", desc="Standings table on the left half of the screen, this round's fixtures and results on the right.")
@@ -139,7 +140,10 @@ try:
     fixtures.add_view(teleostscreen.PagedFixturesWidget(current_round_fixtures_fetcher, num_lines=13, scroll_interval=10), top_pc=0, left_pc=0, width_pc=100, height_pc=100);
     fixtures.add_view(team_score_widget, top_pc=1, height_pc=8, left_pc=69, width_pc=30);
 
-    view_list = [standings_videprinter, standings_results, standings_results_vert, fixtures, overachievers, tuff_luck, notables, quickest_finishers];
+    table_index = teleostscreen.View(name="Table Index", desc="Display player names and which table they should be on, sorted by player name.")
+    table_index.add_view(teleostscreen.TableIndexWidget(table_index_fetcher), top_pc=3, left_pc=5, width_pc=90, height_pc=94)
+
+    view_list = [standings_videprinter, standings_results, standings_results_vert, fixtures, overachievers, tuff_luck, notables, quickest_finishers, table_index];
 
     modes = [];
     modes.append((0, "Auto", "Automatic control."));
@@ -175,6 +179,7 @@ try:
     title_bar = True;
     db_mode_checks = not local_view_switching;
     bumps = 0
+    previous_foreground = None
 
     while True:
         if resized:
@@ -189,10 +194,12 @@ try:
         if db_mode_checks and (last_mode_check + mode_check_interval <= time.time()):
             teleost_mode = tourney.get_current_teleost_mode();
             teleost_palette = tourney.get_teleost_colour_palette()
+            teleost_animate_scroll = tourney.get_teleost_animate_scroll()
             teleostcolours.set_palette(teleost_palette)
             last_mode_check = time.time();
             if teleost_mode == 0:
                 auto_use_vertical = tourney.get_auto_use_vertical();
+                auto_use_table_index = tourney.get_auto_use_table_index()
                 knockout_phase = False;
                 r = tourney.get_current_round()
                 if not r:
@@ -207,8 +214,14 @@ try:
                             new_view_index = 0;
                     elif played == 0 and unplayed > 0:
                         # Fixtures announced, but no games played yet
-                        if current_view_index != 3:
-                            new_view_index = 3;
+                        if auto_use_table_index:
+                            # Display table index if user has requested that
+                            if current_view_index != 8:
+                                new_view_index = 8
+                        else:
+                            # Otherwise display fixtures
+                            if current_view_index != 3:
+                                new_view_index = 3;
                     elif played > 0 and unplayed == 0:
                         # All games in this round have been played - we
                         # want the standings and results screen, but if
@@ -238,32 +251,62 @@ try:
             new_view_index = None;
 
         if time.time() > last_redraw + redraw_interval or bumps > 0:
-            screen.fill((0, 0, 32, 0));
+            background_screen = pygame.Surface(screen.get_size())
+            background_screen.fill((0, 0, 32, 0));
             if background:
                 if not background_scaled:
                     # Scale background so that either the width or height is the
                     # same size as the screen, and the other dimension is no
                     # smaller than the corresponding dimension of the screen
-                    x_scale_factor = float(screen.get_width()) / float(background.get_width());
-                    y_scale_factor = float(screen.get_height()) / float(background.get_height());
+                    x_scale_factor = float(background_screen.get_width()) / float(background.get_width());
+                    y_scale_factor = float(background_screen.get_height()) / float(background.get_height());
                     scale_factor = max((x_scale_factor, y_scale_factor));
                     bg_scaled_width = int(scale_factor * background.get_width());
                     bg_scaled_height = int(scale_factor * background.get_height());
 
 
-                    bg_scaled_top = (bg_scaled_height - screen.get_height()) / 2;
-                    bg_scaled_left = (bg_scaled_width - screen.get_width()) / 2;
+                    bg_scaled_top = (bg_scaled_height - background_screen.get_height()) / 2;
+                    bg_scaled_left = (bg_scaled_width - background_screen.get_width()) / 2;
                     background_scaled = pygame.transform.scale(background, (bg_scaled_width, bg_scaled_height));
                     #print "%d,%d" % (bg_scaled_left, bg_scaled_top);
-                screen.blit(background_scaled, dest=(0,0), area=(bg_scaled_left, bg_scaled_top, bg_scaled_left + screen.get_width(), bg_scaled_top + screen.get_height()));
+                background_screen.blit(background_scaled, dest=(0,0), area=(bg_scaled_left, bg_scaled_top, bg_scaled_left + screen.get_width(), bg_scaled_top + screen.get_height()));
             #standings_videprinter.refresh(screen);
             
+            new_foreground = pygame.Surface(screen.get_size(), flags=pygame.SRCALPHA)
+            new_foreground.fill((0, 0, 0, 0))
+
             while bumps > 0:
                 view_list[current_view_index].bump(None)
                 bumps -= 1
 
             # Use the currently selected view to refresh the screen
-            view_list[current_view_index].refresh(screen);
+            transition_instructions = view_list[current_view_index].refresh(new_foreground);
+            if teleost_animate_scroll and transition_instructions and previous_foreground is not None and previous_foreground.get_rect() == new_foreground.get_rect():
+                scroll_time = 0.4
+                num_scroll_frames = 20
+                for scroll_frame in range(num_scroll_frames):
+                    # Paint the previous screen
+                    screen.blit(background_screen, (0, 0))
+                    screen.blit(previous_foreground, (0, 0))
+
+                    # Paint the background back over everything that's going
+                    # to be shown scrolling
+                    for ti in transition_instructions:
+                        screen.blit(background_screen, ti.get_rect(), ti.get_rect())
+
+                    # Tell the scroll instruction to draw the scroll at the
+                    # given progress point
+                    for ti in transition_instructions:
+                        ti.draw_scroll_frame(screen, previous_foreground, new_foreground, float(scroll_frame + 1) / num_scroll_frames)
+
+                    # Update the display
+                    pygame.display.flip()
+                    time.sleep(scroll_time / num_scroll_frames)
+
+            screen.blit(background_screen, (0, 0))
+            screen.blit(new_foreground, (0, 0))
+            previous_foreground = new_foreground
+
             pygame.display.flip();
             last_redraw = time.time();
         time.sleep(0.1);

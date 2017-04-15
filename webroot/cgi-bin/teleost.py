@@ -42,6 +42,8 @@ else:
         if request_method == "POST":
             mode = form.getfirst("mode");
             auto_use_vertical = form.getfirst("autousevertical")
+            auto_use_table_index = form.getfirst("autousetableindex")
+            animate_scroll = form.getfirst("animatescroll")
             palette_name = form.getfirst("palette")
             if mode is not None:
                 try:
@@ -57,6 +59,25 @@ else:
                     pass
             else:
                 tourney.set_auto_use_vertical(False)
+
+            if auto_use_table_index is not None:
+                try:
+                    auto_use_table_index = int(auto_use_table_index)
+                    tourney.set_auto_use_table_index(auto_use_table_index != 0)
+                except ValueError:
+                    pass
+            else:
+                tourney.set_auto_use_table_index(False)
+
+            if animate_scroll is not None:
+                try:
+                    animate_scroll = int(animate_scroll)
+                    tourney.set_teleost_animate_scroll(animate_scroll != 0)
+                except ValueError:
+                    pass
+            else:
+                tourney.set_teleost_animate_scroll(False)
+
             if palette_name is not None:
                 tourney.set_teleost_colour_palette(palette_name)
 
@@ -80,8 +101,13 @@ else:
             print "<br />";
             if view_num == 0:
                 use_vertical = tourney.get_auto_use_vertical()
+                use_table_index = tourney.get_auto_use_table_index()
                 print "<span style=\"padding-left: 2em\">"
                 print "<input type=\"checkbox\" name=\"autousevertical\" value=\"1\" %s /> Use vertical standings/results format between rounds regardless of table size" % ("checked" if use_vertical else "")
+                print "</span>"
+                print "<br />"
+                print "<span style=\"padding-left: 2em\">"
+                print "<input type=\"checkbox\" name=\"autousetableindex\" value=\"1\" %s /> Use name-to-table index at start of round rather than fixtures view" % ("checked" if use_table_index else "")
                 print "</span>"
                 print "<br />"
         print "</p>";
@@ -90,6 +116,11 @@ else:
         print "<p>"
         for palette_name in teleostcolours.list_palettes():
             print "<input type=\"radio\" name=\"palette\" value=\"%s\" %s /> %s<br />" % (cgi.escape(palette_name, True), "checked" if current_palette_name == palette_name else "", cgi.escape(palette_name))
+        print "</p>"
+
+        print "<h2>Other</h2>"
+        print "<p>"
+        print "<input type=\"checkbox\" name=\"animatescroll\" value=\"1\" %s /> Animate page scrolling<br />" % ("checked" if tourney.get_teleost_animate_scroll() else "")
         print "</p>"
 
         print "<input type=\"submit\" name=\"submit\" value=\"Apply Settings\" />";

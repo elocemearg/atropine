@@ -1667,7 +1667,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         self.db.commit();
 
     def set_teleost_colour_palette(self, value):
-        return self.set_attribute("teleostcolourpalette", value) != 0
+        self.set_attribute("teleostcolourpalette", value)
 
     def get_teleost_colour_palette(self):
         return self.get_attribute("teleostcolourpalette", "Standard")
@@ -1677,6 +1677,18 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
     def set_auto_use_vertical(self, value):
         self.set_attribute("autousevertical", str(int(value)))
+
+    def set_teleost_animate_scroll(self, value):
+        self.set_attribute("teleostanimatescroll", str(int(value)))
+    
+    def get_teleost_animate_scroll(self):
+        return self.get_int_attribute("teleostanimatescroll", 1) != 0
+
+    def set_auto_use_table_index(self, value):
+        self.set_attribute("autousetableindex", str(int(value)))
+
+    def get_auto_use_table_index(self):
+        return self.get_int_attribute("autousetableindex", 0) != 0
     
     def get_rank_method(self):
         return self.get_int_attribute("rankmethod", RANK_WINS_POINTS);

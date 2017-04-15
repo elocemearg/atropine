@@ -18,7 +18,7 @@ standard_palette = {
         "fixtures_draw_bg_transparent" : (255, 255, 0, 0),
 
         "fixtures_table_bg" : (0, 0, 0, 48),
-        "fixtures_table_number_bg" : (0, 0, 255, 64),
+        "fixtures_table_number_bg" : (0, 0, 255, 128),
         "fixtures_table_number_fg" : (255, 255, 255),
 
         "videprinter_round" : (255, 128, 64),
@@ -68,7 +68,7 @@ standard_palette = {
         "finishers_round_name" : (192, 192, 192),
         "finishers_wall_time" : (192, 192, 192),
         "finishers_header_line" : (128, 128, 128),
-        "finishers_table_number_bg" : (0, 0, 255, 64),
+        "finishers_table_number_bg" : (0, 0, 255, 128),
         "finishers_table_number_fg" : (255, 255, 255),
         "finishers_table_finish_time" : (0, 255, 0),
         "finishers_table_finish_time_diff" : (0, 255, 255),
@@ -83,6 +83,13 @@ standard_palette = {
         "title_fg" : (255, 255, 255),
         "videprinter_bg" : (0, 0, 0, 128),
         "standings_results_bg" : (0, 0, 0, 128),
+
+        "table_index_name_bg" : (0, 0, 128, 96),
+        "table_index_name_fg" : (255, 255, 255),
+        "table_index_table_bg" : (0, 0, 255),
+        "table_index_table_fg" : (255, 255, 255),
+
+        "table_index_page_number" : (128, 128, 128)
 }
 
 psychedelic_palette = {
@@ -168,6 +175,13 @@ psychedelic_palette = {
         "title_bg" : (255, 64, 255, 64),
         "title_fg" : (255, 255, 64, 0),
         "standings_results_bg" : (255, 64, 255, 64),
+
+        "table_index_name_bg" : (255, 0, 255, 64),
+        "table_index_name_fg" : (255, 255, 255),
+        "table_index_table_bg" : (255, 0, 255),
+        "table_index_table_fg" : (255, 255, 255),
+
+        "table_index_page_number" : (128, 0, 128)
 }
 
 high_contrast_palette = dict(standard_palette)

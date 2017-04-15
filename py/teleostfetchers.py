@@ -134,6 +134,8 @@ class TeamScoreFetcher(object):
     
     def fetch_data_rows(self, start_row, num_rows):
         row = teleostscreen.TableRow()
+        if start_row > 0:
+            return []
         if not self.tourney.are_players_assigned_teams():
             return None
         team_scores = self.tourney.get_team_scores()
@@ -459,6 +461,9 @@ class HighestWinningScoresFetcher(object):
         return None;
     
     def fetch_data_rows(self, start_row, num_rows):
+        if start_row > 0:
+            return []
+
         num_divisions = self.tourney.get_num_divisions()
         results = self.tourney.ranked_query("""
                 select round_no, seq, table_no,
@@ -508,6 +513,8 @@ class HighestJointScoresFetcher(object):
         return None;
     
     def fetch_data_rows(self, start_row, num_rows):
+        if start_row > 0:
+            return []
         num_divisions = self.tourney.get_num_divisions()
         results = self.tourney.ranked_query("""
                 select round_no, seq, table_no, p1.name, p1_score, p2.name,
@@ -548,6 +555,36 @@ class HighestJointScoresFetcher(object):
             row.append_value(teleostscreen.RowValue(name2, teleostscreen.PercentLength(35), text_colour=name_colour, alignment=teleostscreen.ALIGN_LEFT));
             rows.append(row);
         return rows;
+
+class TableIndexFetcher(object):
+    def __init__(self, tourney):
+        self.tourney = tourney
+
+    def fetch_header_row(self):
+        return None
+
+    def fetch_index(self):
+        rd = self.tourney.get_current_round()
+        if rd is None:
+            return []
+        round_no = rd["num"]
+        games = self.tourney.get_games(round_no)
+        names_to_table_list = dict()
+        for g in games:
+            names = g.get_player_names()
+            for name in names:
+                current_table_list = names_to_table_list.get(name, [])
+                if g.table_no not in current_table_list:
+                    names_to_table_list[name] = current_table_list + [g.table_no]
+        return [ (name, ", ".join(map(str, names_to_table_list[name]))) for name in sorted(names_to_table_list) ]
+
+    def get_round_name(self):
+        rd = self.tourney.get_current_round()
+        if rd is None:
+            return ""
+        else:
+            return rd["name"]
+
 
 class CurrentRoundFixturesFetcher(object):
     def __init__(self, tourney):
@@ -604,6 +641,9 @@ class HighestLosingScoresFetcher(object):
         return None;
     
     def fetch_data_rows(self, start_row, num_rows):
+        if start_row > 0:
+            return []
+
         num_divisions = self.tourney.get_num_divisions()
         results = self.tourney.ranked_query("""
                 select round_no, seq, table_no,
@@ -671,8 +711,10 @@ class OverachieversFetcher(object):
         
         return row;
 
-    
     def fetch_data_rows(self, start_row, num_rows):
+        if start_row > 0:
+            return []
+
         seeds = dict();
         positions = dict();
 
@@ -778,6 +820,9 @@ class QuickestFinishersFetcher(object):
         return row;
 
     def fetch_data_rows(self, start_row, num_rows):
+        if start_row > 0:
+            return []
+
         latest_round = self.tourney.get_latest_started_round()
         if latest_round is None:
             return None
@@ -887,6 +932,9 @@ class TuffLuckFetcher(object):
         return row
     
     def fetch_data_rows(self, start_row, num_rows):
+        if start_row > 0:
+            return []
+
         games = self.tourney.get_games(game_type='P');
         
         # Player names -> list of losing margins
