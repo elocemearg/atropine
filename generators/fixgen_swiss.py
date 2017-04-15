@@ -378,11 +378,10 @@ def generate(tourney, settings, div_rounds):
         rank_by_wins = (rank_method == countdowntourney.RANK_WINS_POINTS or rank_method == countdowntourney.RANK_WINS_SPREAD);
 
         round_no = div_rounds[div_index]
-        games = tourney.get_games(game_type="P", division=div_index);
+        games = tourney.get_games(game_type="P");
         if len(games) == 0:
             (weight, groups) = swissN.swissN_first_round(players, group_size);
         else:
-            games = tourney.get_games(game_type="P", division=div_index);
             (weight, groups) = swissN.swissN(games, players,
                     tourney.get_standings(div_index), group_size,
                     rank_by_wins=rank_by_wins, limit_ms=limit_ms,
