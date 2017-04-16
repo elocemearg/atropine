@@ -14,7 +14,8 @@ def lookup_player(players, name):
     for p in players:
         if p.get_name() == name:
             return p;
-    raise countdowntourney.PlayerDoesNotExistException("Player %s does not exist! I haven't a clue who they are." % name);
+    return None
+    #raise countdowntourney.PlayerDoesNotExistException("Player %s does not exist! I haven't a clue who they are." % name);
 
 def get_user_form(tourney, settings, div_rounds):
     return gencommon.get_user_form_div_table_size(tourney, settings, div_rounds)
@@ -45,10 +46,11 @@ def generate(tourney, settings, div_rounds):
             patzers = []
             for s in standings:
                 p = lookup_player(players, s.name)
-                if p.rating == 0:
-                    patzers.append(p)
-                else:
-                    ordered_players.append(p)
+                if p:
+                    if p.rating == 0:
+                        patzers.append(p)
+                    else:
+                        ordered_players.append(p)
         else:
             # This is the first round. Put the top rated players on the top
             # table, and so on.
