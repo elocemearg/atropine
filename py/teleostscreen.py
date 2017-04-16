@@ -607,6 +607,11 @@ class VideprinterWidget(Widget):
                 header_row.draw(surface, font, pos_y, row_height_px);
                 pos_y += row_height_px;
 
+            # If there are fewer than num_rows rows, we should leave space
+            # at the top, not at the bottom.
+            if len(self.current_rows) < self.num_rows:
+                pos_y += row_height_px * (self.num_rows - len(self.current_rows))
+
             animate_from_y = None
 
             for row in self.current_rows:
