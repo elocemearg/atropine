@@ -50,14 +50,18 @@ def get_user_form(tourney, settings, div_rounds):
     round_no = int_or_none(prev_settings.get("roundno", None))
     if round_no is not None and round_no == latest_round_no + 1:
         elements.append(htmlform.HTMLFragment("<div class=\"infoboxcontainer\">"))
-        elements.append(htmlform.HTMLFragment("<div class=\"infobox\">"))
+        elements.append(htmlform.HTMLFragment("<div class=\"infoboximage\">"))
+        elements.append(htmlform.HTMLFragment("<img src=\"/images/info.png\" alt=\"Info\" />"))
+        elements.append(htmlform.HTMLFragment("</div>"))
+        elements.append(htmlform.HTMLFragment("<div class=\"infoboxmessagecontainer\">"))
+        elements.append(htmlform.HTMLFragment("<div class=\"infoboxmessage\">"))
         elements.append(htmlform.HTMLFragment("<p>"))
         elements.append(htmlform.HTMLFragment("There is an incomplete fixtures form saved. Do you want to carry on from where you left off?"))
         elements.append(htmlform.HTMLFragment("</p>"))
         elements.append(htmlform.HTMLFragment("<p>"))
         elements.append(htmlform.HTMLFormSubmitButton("submitrestore", "Restore previously-saved form"))
         elements.append(htmlform.HTMLFragment("</p>"))
-        elements.append(htmlform.HTMLFragment("</div></div>"))
+        elements.append(htmlform.HTMLFragment("</div></div></div>"))
 
     for div_index in div_rounds:
         div_players = filter(lambda x : x.get_division() == div_index, players)

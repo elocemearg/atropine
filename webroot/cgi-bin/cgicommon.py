@@ -72,6 +72,18 @@ def show_warning_box(html):
     print "</div>"
     print "</div>"
 
+def show_info_box(html):
+    print("<div class=\"infoboxcontainer\">")
+    print("<div class=\"infoboximage\">")
+    print("<img src=\"/images/info.png\" alt=\"Info\" />")
+    print("</div>")
+    print("<div class=\"infoboxmessagecontainer\">")
+    print("<div class=\"infoboxmessage\">")
+    print(html)
+    print("</div>")
+    print("</div>")
+    print("</div>")
+
 def set_module_path():
     generator_dir = os.environ.get("GENERATORPATH", ".");
     code_dir = os.environ.get("CODEPATH", os.path.join("..", "..", "py"));
@@ -85,18 +97,29 @@ def show_sidebar(tourney):
     print "<a href=\"/cgi-bin/home.py\"><img src=\"/images/robin128.png\" alt=\"Robin\" /></a><br />";
     if tourney:
         print "<p><strong>%s</strong></p>" % cgi.escape(tourney.name);
-        print "<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>" % urllib.quote_plus(tourney.name);
+        print("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\"><strong>General Setup</strong></a>" % urllib.quote_plus(tourney.name));
         print "<div class=\"sidebarlinklist\">"
-        print "<li><a href=\"/cgi-bin/player.py?tourney=%s\">Players</a></li>" % (urllib.quote_plus(tourney.name))
-        print "<li><a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions</a></li>" % (urllib.quote_plus(tourney.name))
-        print "<li><a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Teams</a></li>" % (urllib.quote_plus(tourney.name))
+        print("<div>")
+        print("<a href=\"/cgi-bin/player.py?tourney=%s\">Players...</a>" % (urllib.quote_plus(tourney.name)))
+        print("</div>")
+        print("<div>")
+        print("<a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions...</a>" % (urllib.quote_plus(tourney.name)))
+        print("</div>")
+        print("<div>")
+        print("<a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Teams...</a>" % (urllib.quote_plus(tourney.name)))
+        print("</div>")
         print "</div>"
 
-        print "<p>"
-        print "<a href=\"/cgi-bin/teleost.py?tourney=%s\">Display Control</a><br />" % urllib.quote_plus(tourney.name);
-        print "</p>"
+        print("<br />")
 
         rounds = tourney.get_rounds();
+        current_round = tourney.get_current_round()
+        if rounds:
+            if current_round:
+                print("<div><a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\"><strong>Games</strong></a></div>" % (urllib.quote_plus(tourney.name), urllib.quote_plus(str(current_round["num"]))))
+            else:
+                print("<div><strong>Games</strong></div>")
+        print("<div class=\"roundlinks\">")
         for r in rounds:
             round_no = r["num"];
             round_name = r.get("name", None);
@@ -106,6 +129,7 @@ def show_sidebar(tourney):
             print "<div class=\"roundlink\">";
             print "<a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\">%s</a>" % (urllib.quote_plus(tourney.name), urllib.quote_plus(str(round_no)), cgi.escape(round_name));
             print "</div>";
+        print("</div>")
         print "<br />";
         print "<div class=\"genroundlink\">";
         print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Generate fixtures...</a>" % (urllib.quote_plus(tourney.name));
@@ -113,19 +137,17 @@ def show_sidebar(tourney):
 
         print "<br />"
 
-        print "<div class=\"tableindexlink\">"
-        print "<a href=\"/cgi-bin/tableindex.py?tourney=%s\">Name-to-table index</a>" % (urllib.quote_plus(tourney.name))
+        print("<div>")
+        print("<a href=\"/cgi-bin/teleost.py?tourney=%s\">Display Control...</a><br />" % urllib.quote_plus(tourney.name));
         print "</div>"
 
         print "<br />"
+        print("<div class=\"misclinks\">")
+        print("<a href=\"/cgi-bin/tableindex.py?tourney=%s\">Name-to-table index</a>" % (urllib.quote_plus(tourney.name)))
+        print("<br />")
 
-        print "<div class=\"standingslink\">";
         print "<a href=\"/cgi-bin/standings.py?tourney=%s\">Standings</a>" % (urllib.quote_plus(tourney.name));
-        print "</div>";
-
         print "<br />"
-
-        print "<div class=\"misclinks\">"
         print "<a href=\"/cgi-bin/tuffluck.py?tourney=%s\">Tuff Luck</a>" % (urllib.quote_plus(tourney.name))
         print "<br />"
         print "<a href=\"/cgi-bin/overachievers.py?tourney=%s\">Overachievers</a>" % (urllib.quote_plus(tourney.name))
@@ -136,13 +158,13 @@ def show_sidebar(tourney):
         print "Tournament report"
         print "<div class=\"sidebarlinklist\">"
         print "<div class=\"exportlink\">"
-        print "<li><a href=\"/cgi-bin/export.py?tourney=%s&format=html\" target=\"_blank\">HTML</a></li>" % (urllib.quote_plus(tourney.name))
+        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=html\" target=\"_blank\">HTML</a>" % (urllib.quote_plus(tourney.name))
         print "</div>"
         print "<div class=\"exportlink\">"
-        print "<li><a href=\"/cgi-bin/export.py?tourney=%s&format=text\" target=\"_blank\">Text</a></li>" % (urllib.quote_plus(tourney.name))
+        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=text\" target=\"_blank\">Text</a>" % (urllib.quote_plus(tourney.name))
         print "</div>"
         print "<div class=\"exportlink\">"
-        print "<li><a href=\"/cgi-bin/export.py?tourney=%s&format=wikitext\" target=\"_blank\">Wikitext</a></li>" % (urllib.quote_plus(tourney.name))
+        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=wikitext\" target=\"_blank\">Wikitext</a>" % (urllib.quote_plus(tourney.name))
         print "</div>"
         print "</div>"
     print "</div>";

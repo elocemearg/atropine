@@ -878,7 +878,7 @@ class Tourney(object):
                     if rating != 0 and auto_rating_behaviour != RATINGS_MANUAL:
                         # Can't specify any non-zero ratings if automatic
                         # rating is enabled.
-                        raise InvalidRatingException("Player \"%s\" has been given a rating (%g) but you have selected automatic rating. If automatic rating is used, players may not be given manual ratings in the initial player list except a rating of 0 to indicate a patzer." % (p[0], rating))
+                        raise InvalidRatingException("Player \"%s\" has been given a rating (%g) but you have not selected manual rating. If manual rating is not used, players may not be given manual ratings in the initial player list except a rating of 0 to indicate a patzer." % (p[0], rating))
                 else:
                     if auto_rating_behaviour == RATINGS_MANUAL:
                         # Can't have unrated players if automatic rating

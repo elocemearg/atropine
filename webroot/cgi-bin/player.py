@@ -369,7 +369,7 @@ if player is None:
     print "<h2>Add player</h2>"
     if tourney.get_num_games() > 0:
         print "<p>The tournament has already started. You may add new players, but these new players will not be added to any rounds whose fixtures have already been generated.</p>"
-        print "<p>Note that <strong>you cannot delete a player</strong> once the tournament has started, although you can <em>withdraw</em> them, which prevents them from being included in the fixture list for future rounds.</p>"
+        print "<p>Note that <strong>you cannot delete a player</strong> once the tournament has started, although you can <em>withdraw</em> them, which prevents them from being included in the fixture list for future rounds. You can withdraw a player or edit their details by clicking their name.</p>"
 
     print "<form method=\"POST\" action=\"%s?tourney=%s\">" % (cgi.escape(baseurl), urllib.quote_plus(tourney.get_name()))
     print "<table>"

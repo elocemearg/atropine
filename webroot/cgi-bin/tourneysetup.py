@@ -31,6 +31,45 @@ def show_player_drop_down_box(players, control_name):
         print "<option value=\"%s\">%s (%g)</option>" % (cgi.escape(p.name, True), cgi.escape(p.name), p.rating);
     print "</select>"
 
+def make_double_quoted_string(s):
+    new_string = ['\"']
+    for l in s:
+        if l == '\n':
+            new_string += ['\\', 'n']
+        elif l == '\r':
+            new_string += ['\\', 'r']
+        elif l == '\t':
+            new_string += ['\\', 't']
+        else:
+            if l == '\\' or l == '\"':
+                new_string.append('\\')
+            new_string.append(l)
+    new_string.append('\"')
+    return "".join(new_string)
+
+player_list_example_uniform = """Lavinia Splatterbury
+Egbert Flanger
+Compton Spongeworthy
+Plungemaster Thompson
+Flopsbourne McJumble
+Apterous Prune,0"""
+
+player_list_example_graduated = """Lavinia Splatterbury
+Egbert Flanger
+Compton Spongeworthy
+Plungemaster Thompson
+Flopsbourne McJumble
+Apterous Prune,0"""
+
+player_list_example_manual = """Lavinia Splatterbury,1953
+Egbert Flanger,1901
+Compton Spongeworthy,1874
+Plungemaster Thompson,1640
+Flopsbourne McJumble,1559
+Apterous Prune,0"""
+
+player_list_rating_help = "To give a player a rating, put a comma after the player's name and put the rating number after that, e.g. <tt>Harry Peters,1860</tt>"
+
 cgitb.enable();
 
 cgicommon.set_module_path();
@@ -83,7 +122,7 @@ if tourneyname is None:
 elif not tourney:
     print "<p>No valid tourney name specified</p>";
 else:
-    print '<p><a href="%s?tourney=%s">%s</a></p>' % (baseurl, urllib.quote_plus(tourneyname), cgi.escape(tourneyname));
+    #print '<p><a href="%s?tourney=%s">%s</a></p>' % (baseurl, urllib.quote_plus(tourneyname), cgi.escape(tourneyname));
     if request_method == "POST" and player_list_submit:
         div_index = 0
         if not playerlist:
@@ -138,6 +177,19 @@ else:
             print "none withdrawn."
     print "</p>"
 
+    if tourney.get_num_games() == 0:
+        if players:
+            cgicommon.show_info_box("""<p>
+When you're happy with the player list and the
+<a href="#tourneyrules">tourney rules</a> below, head to
+<a href="/cgi-bin/fixturegen.py?tourney=%s">Generate fixtures</a> to generate
+the first games. Once you've generated the first games, you won't be able to
+delete players, but you can always withdraw them, edit names and ratings, or
+add new players.</p>""" % (urllib.quote_plus(tourney.get_name())))
+        else:
+            cgicommon.show_info_box("<p>This tourney has no players defined yet. Before doing anything else, enter the list of player names below. You can always add more players, or withdraw them, later on if necessary.</p>");
+
+
     num_divisions = tourney.get_num_divisions()
     if num_divisions > 1:
         print "<p>The players are distributed into <a href=\"divsetup.py?tourney=%s\">%d divisions</a>.</p>" % (urllib.quote_plus(tourney.get_name()), num_divisions)
@@ -149,22 +201,42 @@ else:
     if tourney.get_num_games() == 0:
         players = sorted(tourney.get_players(), key=lambda x : (x.get_division(), x.get_id()))
         print "<hr />"
-        print "<h2>Player list</h2>";
+        print "<h2>Player list setup</h2>";
+
+        if len(players) and num_divisions > 1:
+            cgicommon.show_warning_box("There is already a player list defined, and divisions have been created. If you submit a new player list using this form, these new players will replace the existing players, and <strong>your division setup will be lost</strong>.")
+
+        print("<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname)))
+
         print "<p>"
-        print "Enter player names in this box, one player per line. Blank lines are ignored."
+        print("How do you want to assign ratings to players? Ratings are used by the Overachievers table and some fixture generators. If you don't know what ratings are, or you don't care, select \"This tournament is not seeded\".")
         print "</p>"
+        print("<blockquote>")
+        auto_rating_behaviour = tourney.get_auto_rating_behaviour()
+        print("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_MANUAL, countdowntourney.RATINGS_MANUAL, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_MANUAL else ""))
+        print("<strong>Ratings are specified manually in the player list below.</strong> If you select this option, it is an error if you try to submit a player without a rating.")
+        print("<br />")
+        print("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_GRADUATED, countdowntourney.RATINGS_GRADUATED, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_GRADUATED else ""))
+        print("<strong>The player list above is in rating order with the highest-rated player at the top</strong>. Ratings will be assigned automatically, with the player at the top of the list receiving a rating of 2000, and the player at the bottom 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a patzer.")
+        print("<br />")
+        print("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_UNIFORM, countdowntourney.RATINGS_UNIFORM, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_UNIFORM else ""))
+        print("<strong>This tournament is not seeded.</strong> Assign every non-patzer player a rating of 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a patzer. If unsure, select this option.")
+        print("</blockquote>")
+
         print "<p>"
-        print "To give a player a rating, put a comma after the player's name and put the rating number after that, e.g. <tt>Harry Peters,1860</tt>"
-        print "</p><p>"
-        print "To indicate that a player is a patzer or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <tt>Apterous Prune,0</tt>"
+        print("A player's rating may still be changed after the tournament has started.")
         print "</p>"
+
+        print("<h2>Player list</h2>");
         print "<p>"
-        print "To divide the players into divisions, put a line containing only a dash (<tt>-</tt>) between the desired divisions."
+        print("Enter player names in this box, one player per line, then click <em>Save Player List</em>.")
         print "</p>"
-        print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
+
+        print("<div class=\"playerlist\">")
+        print("<div class=\"playerlistpane\">")
         print "<p>"
         print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname);
-        print '<textarea rows="30" cols="40" name="playerlist">';
+        print '<textarea rows="28" cols="40" name="playerlist">';
         if request_method == "POST" and playerlist:
             # If the user has submitted something, display what the user
             # submitted rather than what's in the database - this gives them
@@ -190,92 +262,101 @@ else:
         print "</p>"
 
         print "<p>"
-        print "<h3>Rating assignment</h3>"
-        print "<p>"
-        print "How do you want to assign ratings? If your answer is \"what are ratings?\" select \"This tournament is not seeded\"."
-        print "</p>"
-        print "<blockquote>"
-        auto_rating_behaviour = tourney.get_auto_rating_behaviour()
-        print "<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" %s />" % (countdowntourney.RATINGS_MANUAL, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_MANUAL else "")
-        print "<strong>Ratings are specified manually in the player list above.</strong> If you select this option, it is an error if you try to submit a player without a rating."
-        print "<br />"
-        print "<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" %s />" % (countdowntourney.RATINGS_GRADUATED, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_GRADUATED else "")
-        print "<strong>The player list above is in rating order with the highest-rated player at the top</strong>. Ratings will be assigned automatically, with the player at the top of the list receiving a rating of 2000, and the player at the bottom 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a patzer."
-        print "<br />"
-        print "<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" %s />" % (countdowntourney.RATINGS_UNIFORM, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_UNIFORM else "")
-        print "<strong>This tournament is not seeded.</strong> Assign every non-patzer player a rating of 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a patzer. If you don't know what ratings are or you don't care, select this option."
-        print "</blockquote>"
+        print('<input type="submit" name="playerlistsubmit" value="Save Player List" />')
         print "</p>"
 
-        print "<p>"
-        print "A player's rating may still be changed after the tournament has started."
-        print "</p>"
+	print("</div>")
 
-        if len(players) and num_divisions > 1:
-            cgicommon.show_warning_box("There is already a player list defined, and divisions have been created. If you submit a new player list using this form, these new players will replace the existing players, and <strong>your division setup will be lost</strong>.")
+        print("<div class=\"playerlisthelp\">")
+        print("<h3>Example</h3>")
+        print("<p id=\"playerlistexample\">")
+        print("<pre id=\"playerlistexamplepre\">")
+        if auto_rating_behaviour == countdowntourney.RATINGS_UNIFORM:
+            print(player_list_example_uniform)
+        elif auto_rating_behaviour == countdowntourney.RATINGS_GRADUATED:
+            print(player_list_example_graduated)
+        else:
+            print(player_list_example_manual)
+        print("</pre>")
+	print("</p>")
+        print("<p id=\"playerlistratinghelp\">")
+        if auto_rating_behaviour == countdowntourney.RATINGS_MANUAL:
+            print(player_list_rating_help);
+        print("</p>")
 
         print "<p>"
-        print '<input type="submit" name="playerlistsubmit" value="Save Player List" />'
+        print("To indicate that a player is a patzer or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <tt>Apterous Prune,0</tt>")
         print "</p>"
-        print '</form>'
 
-    print "<hr />"
+        print("<p>")
+        print("To divide the players into divisions, put a line containing only a dash (<tt>-</tt>) between the desired divisions.")
+        print("</p>")
+        print("</div>")
+	print("</div>")
+	print("</form>")
+	print("<div class=\"playerlistclear\"></div>")
 
-    print "<h2>Tourney rules</h2>";
-    rank = tourney.get_rank_method();
-    print '<form action="%s?tourney=%s" method="post" />' % (baseurl, urllib.quote_plus(tourneyname));
-    print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True);
-    print "<h3>Ranking order</h3>";
-    print "<p>How do you want to rank players in the standings table?</p>";
-    print '<input type="radio" name="rank" value="%d" %s /> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "");
-    print '<input type="radio" name="rank" value="%d" %s /> Wins, then cumulative winning margin (spread). Draws are worth half a win.<br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")
-    print '<input type="radio" name="rank" value="%d" %s /> Points only.' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "");
-    print '</p>';
-
-    print "<h3>Draws</h3>"
-    print "<p>"
-    print "Tick this box if draws are possible in your tournament. It affects whether the draws column is shown in Teleost and in exported HTML or text results. The <a href=\"/cgi-bin/standings.py?tourney=%s\">standings page</a> will always show a draws column regardless." % (urllib.quote_plus(tourney.get_name()))
-    print "</p><p>"
-    print "<input type=\"checkbox\" name=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")
-    print "Show draws column in exported results standings table"
-    print "</p>"
-
-    print "<h3>Tournament Ratings</h3>"
-    print "<p>"
-    print "<input type=\"checkbox\" name=\"showtournamentratingcolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_tournament_rating_column() else "")
-    print "Show tournament ratings in exported results standings table"
-    print "</p>"
-    print "<p>"
-    print "For each game you play, your tournament rating is calculated as follows."
-    print "</p>"
-    print "<ul>"
-    print "<li>If you win, your opponent's <em>effective rating</em> plus the <em>win value</em>.</li>"
-    print "<li>If you draw, your opponent's <em>effective rating</em>.</li>"
-    print "<li>If you lose, your opponent's <em>effective rating</em> minus the <em>win value</em>.</li>"
-    print "</ul>"
-    print "<p>"
-    print "The <em>win value</em> is <input type=\"number\" name=\"tournamentratingbonus\" value=\"%g\" maxlength=\"5\" />" % (tourney.get_tournament_rating_bonus_value())
-    print "</p><p>"
-    print "Your opponent's <em>effective rating</em> for a game is their rating at the start of the tournament, capped to within"
-    print "<input type=\"number\" name=\"tournamentratingdiffcap\" value=\"%g\" maxlength=\"5\" />" % (tourney.get_tournament_rating_diff_cap())
-    print "of your own."
-    print "</p>"
-    print "<p>"
-    print "Your overall tournament rating is the mean average from all your games."
-    print "</p>"
-    print '<p><input type="submit" name="rulessubmit" value="Save Rules" /></p>'
-    print "</form>";
-
-    if tourney.get_num_games() > 0:
+    if tourney.get_players():
+        # We'll only show these controls when the user has entered some player
+        # names.
         print "<hr />"
-        print '<h2>Delete rounds</h2>'
-        print '<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>'
+        print("<a name=\"tourneyrules\">")
+        print("<h2>Tourney rules</h2>");
+        rank = tourney.get_rank_method();
+        print('<form action="%s?tourney=%s" method="post" />' % (baseurl, urllib.quote_plus(tourneyname)));
+        print('<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True));
+        print("<h3>Ranking order</h3>");
+        print("<p>How do you want to rank players in the standings table?</p>");
+        print('<input type="radio" name="rank" value="%d" %s /> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else ""));
+        print('<input type="radio" name="rank" value="%d" %s /> Wins, then cumulative winning margin (spread). Draws are worth half a win.<br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else ""))
+        print('<input type="radio" name="rank" value="%d" %s /> Points only.' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else ""));
+        print('</p>');
+
+        print("<h3>Draws</h3>")
         print "<p>"
-        print '<form action="/cgi-bin/delround.py" method="get" />'
-        print '<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname)
-        print '<input type="submit" name="delroundsetupsubmit" value="Delete most recent round" />'
-        print '</form>'
+        print("Tick this box if draws are possible in your tournament. It affects whether the draws column is shown in Teleost and in exported HTML or text results. The <a href=\"/cgi-bin/standings.py?tourney=%s\">standings page</a> will always show a draws column regardless." % (urllib.quote_plus(tourney.get_name())))
+        print("</p><p>")
+        print("<input type=\"checkbox\" name=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else ""))
+        print("Show draws column in exported results standings table")
         print "</p>"
+
+        print("<h3>Tournament Ratings</h3>")
+        print("<p>If you don't know what tournament ratings are, you can safely leave these as the defaults and they won't affect anything.</p>")
+        print("<p>")
+        print("<input type=\"checkbox\" name=\"showtournamentratingcolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_tournament_rating_column() else ""))
+        print("Show tournament ratings in exported results standings table")
+        print("</p>")
+        print("<p>")
+        print("For each game you play, your tournament rating is calculated as follows.")
+        print("</p>")
+        print("<ul>")
+        print("<li>If you win, your opponent's <em>effective rating</em> plus the <em>win value</em>.</li>")
+        print("<li>If you draw, your opponent's <em>effective rating</em>.</li>")
+        print("<li>If you lose, your opponent's <em>effective rating</em> minus the <em>win value</em>.</li>")
+        print("</ul>")
+        print("<p>")
+        print("The <em>win value</em> is <input type=\"number\" name=\"tournamentratingbonus\" value=\"%g\" maxlength=\"5\" />" % (tourney.get_tournament_rating_bonus_value()))
+        print("</p><p>")
+        print("Your opponent's <em>effective rating</em> for a game is their rating at the start of the tournament, capped to within")
+        print("<input type=\"number\" name=\"tournamentratingdiffcap\" value=\"%g\" maxlength=\"5\" />" % (tourney.get_tournament_rating_diff_cap()))
+        print("of your own.")
+        print("</p>")
+        print("<p>")
+        print("Your overall tournament rating is the mean average from all your games.")
+        print("</p>")
+        print('<p><input type="submit" name="rulessubmit" value="Save Rules" /></p>')
+        print("</form>");
+
+        if tourney.get_num_games() > 0:
+            print("<hr />")
+            print('<h2>Delete rounds</h2>')
+            print('<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>')
+            print("<p>")
+            print('<form action="/cgi-bin/delround.py" method="get" />')
+            print('<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname))
+            print('<input type="submit" name="delroundsetupsubmit" value="Delete most recent round" />')
+            print('</form>')
+            print("</p>")
 
 print "</div>";
 

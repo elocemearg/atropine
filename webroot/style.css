@@ -23,6 +23,15 @@ a {
 	padding-left: 18px;
 }
 
+div.roundlinks {
+       margin-right: 10px;
+}
+
+div.roundlink {
+       padding-left: 20px;
+}
+
+
 .mainpane {
 	margin-left: 200px;
 }
@@ -392,19 +401,31 @@ div.tourneyexceptionmessage {
 	font-size: 14pt;
 }
 
-div.infobox {
-	max-width: 480px;
+div.infoboxcontainer {
+        background-color: #ccccff;
+        border: 5px solid blue;
+        max-width: 750px;
+        display: table;
 	vertical-align: middle;
-	padding: 10px;
-	display: table-cell;
 }
 
-div.infoboxcontainer {
-	background-color: #ccccff;
-	border: 5px solid blue;
-	height: 130px;
+div.infoboximage {
+	float: left;
+	padding: 10px;
+	width: 90px;
+	vertical-align: middle;
+}
+
+div.infoboxmessage {
+	font-size: 14pt;
+}
+
+div.infoboxmessagecontainer {
 	max-width: 600px;
-	display: table;
+        display: table-cell;
+        vertical-align: middle;
+        padding-left: 10px;
+        padding-right: 10px;
 }
 
 a.playerlink {
@@ -633,3 +654,24 @@ td.tableindexspacer {
 	border: none;
 	width: 2em;
 }
+
+div.playerlist {
+       margin: auto;
+}
+
+div.playerlistpane {
+       float: left;
+}
+
+div.playerlisthelp {
+       float: left;
+       width: 350px;
+       margin: 20px;
+       padding: 10px;
+       background-color: #cccccc;
+}
+
+div.playerlistclear {
+       clear: both;
+}
+
