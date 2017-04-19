@@ -2152,6 +2152,15 @@ and g.p2 = p2.id
         cur.close()
         return not found_difference
 
+    def get_banner_text(self):
+        return self.get_attribute("teleost_banner_text", "")
+
+    def set_banner_text(self, text):
+        self.set_attribute("teleost_banner_text", text)
+
+    def clear_banner_text(self):
+        self.set_attribute("teleost_banner_text", "")
+
 
 def get_5_3_table_sizes(num_players):
     if num_players < 8:

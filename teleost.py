@@ -38,6 +38,29 @@ def make_full_screen_fetcher_view(view_title, view_description, title_text, fetc
     v.add_view(teleostscreen.TableWidget(fetcher, num_lines), top_pc=15, height_pc=85, left_pc=5, width_pc=90);
     return v;
 
+def draw_banner(surface, position, width, height, text, fg_colour, bg_colour):
+    # Draw the banner background...
+    banner_background = pygame.Surface((width, height), pygame.SRCALPHA)
+    banner_background.fill(bg_colour)
+    surface.blit(banner_background, position)
+
+    banner_horiz_padding = width // 50;
+    if banner_horiz_padding < 5:
+        banner_horiz_padding = 5
+
+    if banner_horiz_padding >= width:
+        return
+
+    # Now draw the lettering
+    font = teleostscreen.get_sensible_font("sans-serif", height);
+    label = teleostscreen.make_text_label(font, text, fg_colour, width - banner_horiz_padding * 2)
+    if label.get_width() < width:
+        surface.blit(label, (position[0] + (width - label.get_width()) // 2, position[1]))
+    else:
+        surface.blit(label, position)
+
+
+
 try:
     argpos = 1;
     if argpos < len(sys.argv) and sys.argv[argpos] == "-l":
@@ -159,6 +182,8 @@ try:
 
     screen_width = 640;
     screen_height = 480;
+    banner_height_ratio = 0.1
+    banner_height = int(screen_height * banner_height_ratio)
     fullscreen = False;
     screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE);
 
@@ -175,6 +200,7 @@ try:
     current_view_index = 0;
     new_view_index = None;
     last_mode_check = 0;
+
     mode_check_interval = 2;
     title_bar = True;
     db_mode_checks = not local_view_switching;
@@ -197,6 +223,7 @@ try:
             teleost_animate_scroll = tourney.get_teleost_animate_scroll()
             teleostcolours.set_palette(teleost_palette)
             last_mode_check = time.time();
+	    banner_text = tourney.get_banner_text()
             if teleost_mode == 0:
                 auto_use_vertical = tourney.get_auto_use_vertical();
                 auto_use_table_index = tourney.get_auto_use_table_index()
@@ -273,6 +300,16 @@ try:
             #standings_videprinter.refresh(screen);
             
             new_foreground = pygame.Surface(screen.get_size(), flags=pygame.SRCALPHA)
+            if banner_text:
+                new_foreground = pygame.Surface((screen.get_width(), screen.get_height() - banner_height), flags=pygame.SRCALPHA)
+                foreground_position = (0, banner_height)
+                banner_surface = pygame.Surface((screen.get_width(), banner_height), flags=pygame.SRCALPHA)
+                draw_banner(banner_surface, (0, 0), banner_surface.get_width(), banner_surface.get_height(), banner_text, teleostcolours.get("banner_fg"), teleostcolours.get("banner_bg"))
+            else:
+                new_foreground = pygame.Surface(screen.get_size(), flags=pygame.SRCALPHA)
+                foreground_position = (0, 0)
+                banner_surface = None
+
             new_foreground.fill((0, 0, 0, 0))
 
             while bumps > 0:
@@ -281,30 +318,43 @@ try:
 
             # Use the currently selected view to refresh the screen
             transition_instructions = view_list[current_view_index].refresh(new_foreground);
+
             if teleost_animate_scroll and transition_instructions and previous_foreground is not None and previous_foreground.get_rect() == new_foreground.get_rect():
                 scroll_time = 0.4
                 num_scroll_frames = 20
                 for scroll_frame in range(num_scroll_frames):
                     # Paint the previous screen
                     screen.blit(background_screen, (0, 0))
-                    screen.blit(previous_foreground, (0, 0))
+                    if banner_surface:
+                        screen.blit(banner_surface, (0, 0))
+                    screen.blit(previous_foreground, foreground_position)
+
+                    # foreground_window: that area of the screen that isn't
+                    # the banner, i.e. the bit that all the views have been
+                    # scribbling on
+                    foreground_window = screen.subsurface((foreground_position[0], foreground_position[1], new_foreground.get_width(), new_foreground.get_height()))
+                    background_window = background_screen.subsurface((foreground_position[0], foreground_position[1], new_foreground.get_width(), new_foreground.get_height()))
+
 
                     # Paint the background back over everything that's going
                     # to be shown scrolling
                     for ti in transition_instructions:
-                        screen.blit(background_screen, ti.get_rect(), ti.get_rect())
+                        foreground_window.blit(background_window, ti.get_rect(), ti.get_rect())
 
                     # Tell the scroll instruction to draw the scroll at the
                     # given progress point
                     for ti in transition_instructions:
-                        ti.draw_scroll_frame(screen, previous_foreground, new_foreground, float(scroll_frame + 1) / num_scroll_frames)
+                        ti.draw_scroll_frame(foreground_window, previous_foreground, new_foreground, float(scroll_frame + 1) / num_scroll_frames)
 
                     # Update the display
                     pygame.display.flip()
                     time.sleep(scroll_time / num_scroll_frames)
 
             screen.blit(background_screen, (0, 0))
-            screen.blit(new_foreground, (0, 0))
+            if banner_surface:
+                screen.blit(banner_surface, (0, 0))
+            screen.blit(new_foreground, foreground_position)
+
             previous_foreground = new_foreground
 
             pygame.display.flip();
@@ -317,6 +367,7 @@ try:
             if event.type == pygame.VIDEORESIZE:
                 screen_width = event.w;
                 screen_height = event.h;
+                banner_height = int(screen_height * banner_height_ratio)
                 resized = True;
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
@@ -333,6 +384,7 @@ try:
                     if not title_bar:
                         flags |= pygame.NOFRAME;
                     screen = pygame.display.set_mode((screen_width, screen_height), flags);
+                    banner_height = int(screen.get_height() * banner_height_ratio)
                     background_scaled = None;
                     last_redraw = 0;
                 elif event.key == pygame.K_f:
@@ -348,6 +400,7 @@ try:
                         else:
                             mode = max(modes, key=lambda x : x[0] * x[1]);
                             screen = pygame.display.set_mode(mode, pygame.NOFRAME | pygame.FULLSCREEN);
+                            banner_height = int(screen.get_height() * banner_height_ratio)
                             fullscreen = True;
                             background_scaled = None;
                             last_redraw = 0; # force refresh

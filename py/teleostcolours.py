@@ -89,7 +89,10 @@ standard_palette = {
         "table_index_table_bg" : (0, 0, 255),
         "table_index_table_fg" : (255, 255, 255),
 
-        "table_index_page_number" : (128, 128, 128)
+        "table_index_page_number" : (128, 128, 128),
+
+        "banner_bg" : (255, 0, 0, 80),
+        "banner_fg" : (255, 255, 255, 255)
 }
 
 psychedelic_palette = {
@@ -181,7 +184,10 @@ psychedelic_palette = {
         "table_index_table_bg" : (255, 0, 255),
         "table_index_table_fg" : (255, 255, 255),
 
-        "table_index_page_number" : (128, 0, 128)
+        "table_index_page_number" : (128, 0, 128),
+
+        "banner_bg" : (255, 20, 147, 255),
+        "banner_fg" : (238, 118, 0, 255)
 }
 
 high_contrast_palette = dict(standard_palette)

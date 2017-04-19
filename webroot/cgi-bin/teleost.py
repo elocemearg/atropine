@@ -35,16 +35,14 @@ else:
     try:
         tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
 
-        cgicommon.show_sidebar(tourney);
-
-        print "<div class=\"mainpane\">"
-
         if request_method == "POST":
             mode = form.getfirst("mode");
             auto_use_vertical = form.getfirst("autousevertical")
             auto_use_table_index = form.getfirst("autousetableindex")
             animate_scroll = form.getfirst("animatescroll")
             palette_name = form.getfirst("palette")
+            banner_text = form.getfirst("bannertext")
+
             if mode is not None:
                 try:
                     mode = int(mode);
@@ -81,6 +79,21 @@ else:
             if palette_name is not None:
                 tourney.set_teleost_colour_palette(palette_name)
 
+            if banner_text is not None:
+                banner_text = banner_text.strip()
+            if not banner_text:
+                tourney.clear_banner_text()
+            else:
+                tourney.set_banner_text(banner_text)
+
+        banner_text = tourney.get_banner_text()
+        if banner_text is None:
+            banner_text = ""
+
+        cgicommon.show_sidebar(tourney);
+
+        print("<div class=\"mainpane\">")
+
         views = tourney.get_teleost_modes();
         current_palette_name = tourney.get_teleost_colour_palette()
         if not current_palette_name:
@@ -89,6 +102,12 @@ else:
         print "<h1>Display control</h1>";
 
         print "<form action=\"/cgi-bin/teleost.py?tourney=%s\" method=\"POST\">" % urllib.quote_plus(tourney_name);
+        print("<h2>Banner</h2>")
+        print("<p>If you want to display a message at the top of the screen, enter it here. To remove the banner, make it blank. The current banner text is also shown in the sidebar to remind you it's active.</p>")
+        print("<p>")
+        print("<input type=\"text\" name=\"bannertext\" value=\"%s\" size=\"40\" />" % (cgi.escape(banner_text, True)))
+        print("</p>")
+
         print "<h2>Select view</h2>"
         print "<p>";
         for v in views:

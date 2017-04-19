@@ -675,3 +675,24 @@ div.playerlistclear {
        clear: both;
 }
 
+div.sidebarbannerheading {
+       background-color: black;
+       color: white;
+       font-size: 10pt;
+       text-align: center;
+       font-weight: bold;
+       margin-right: 10px;
+       padding: 5px;
+       border: 1px solid green;
+}
+
+div.sidebarbanner {
+       background-color: #880000;
+       color: white;
+       font-size: 10pt;
+       text-align: center;
+       margin-right: 10px;
+       padding: 5px;
+       border: 2px solid blue;
+       width: 156px;
+}
