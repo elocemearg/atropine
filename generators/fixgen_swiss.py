@@ -231,9 +231,10 @@ function generate_fixtures_clicked() {
         div_prefix = "d%d_" % (div_index)
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h3>%s (%d active players)</h3>" % (cgi.escape(tourney.get_division_name(div_index)), len(players))))
         else:
-            elements.append(htmlform.HTMLFragment("<h3>Division settings</h3>"))
+            elements.append(htmlform.HTMLFragment("<h3>Fixture generation (%d active players)</h3>" % (len(players))))
+
         elements.append(htmlform.HTMLFragment("<p>"))
 
         div_valid_sizes = get_valid_group_sizes(len(players), len(rounds))
