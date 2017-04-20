@@ -314,15 +314,15 @@ try:
                         print "<p>Failed to add new fixtures to database!</p>";
                         cgicommon.show_tourney_exception(e);
 
-                if dict_rounds:
-                    for r in dict_rounds:
-                        try:
-                            round_no = int(r["round"]);
-                            round_name = r.get("name", "Round %d" % round_no);
-                            tourney.name_round(round_no, round_name);
-                        except countdowntourney.TourneyException as e:
-                            print "<p>Failed to name a round</p>";
-                            cgicommon.show_tourney_exception(e);
+                    if dict_rounds:
+                        for r in dict_rounds:
+                            try:
+                                round_no = int(r["round"]);
+                                round_name = r.get("name", "Round %d" % round_no);
+                                tourney.name_round(round_no, round_name);
+                            except countdowntourney.TourneyException as e:
+                                print "<p>Failed to name a round</p>";
+                                cgicommon.show_tourney_exception(e);
 
             else:
                 print "<h2>Information this fixture generator needs from you...</h2>";
