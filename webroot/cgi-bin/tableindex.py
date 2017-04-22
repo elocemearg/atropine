@@ -83,9 +83,25 @@ else:
 
     print "<h1>Table assignment: %s</h1>" % (cgi.escape(round_name))
     games = tourney.get_games(round_no)
+
+    # Map of player name -> list of table numbers they're on in this round
     player_name_to_table_list = dict()
+
+    # Map of player name -> player object
+    player_name_to_player = dict()
+
+    # Map of table number -> list of players
+    table_to_player_list = dict()
+
     for g in games:
-        names = g.get_player_names()
+        names = []
+        current_player_list = table_to_player_list.get(g.table_no, [])
+        for p in [g.p1, g.p2]:
+            names.append(p.get_name())
+            player_name_to_player[p.get_name()] = p
+            if p not in current_player_list:
+                current_player_list.append(p)
+        table_to_player_list[g.table_no] = current_player_list
         for name in names:
             current_table_list = player_name_to_table_list.get(name, [])
             if g.table_no not in current_table_list:
@@ -122,10 +138,33 @@ else:
                 position_in_list = column * names_per_column + position_in_column
                 if position_in_list < len(sorted_names):
                     name = sorted_names[position_in_list]
-                    print "<td class=\"tableindexname\">%s</td>" % (cgi.escape(name))
-                    print "<td class=\"tableindextable\">%s</td>" % (cgi.escape(", ".join(map(str, player_name_to_table_list[name]))))
+                    player = player_name_to_player.get(name, None)
+                    if player:
+                        print("<td class=\"tableindexname\">%s</td>" % (cgicommon.player_to_link(player, tourney.get_name())))
+                    else:
+                        print("<td class=\"tableindexname\">%s</td>" % (cgi.escape(name)))
+
+                    # Show the list of tables this player is on in this round.
+                    # This will almost always be one table, but it is possible
+                    # to construct a round in which a player has to be in
+                    # two places.
+                    print("<td class=\"tableindextable\">")
+                    table_list = player_name_to_table_list[name]
+                    for index in range(len(table_list)):
+                        # Print the table number, with a mouseover-text listing
+                        # all the players on that table.
+                        player_list = table_to_player_list.get(table_list[index], [])
+                        title = "Table %d: %s" % (table_list[index], ", ".join(sorted(map(lambda x : x.get_name(), player_list))))
+                        print("<span title=\"%s\">" % cgi.escape(title, True));
+                        print("%d" % (table_list[index]))
+                        print("</span>")
+                        if index < len(table_list) - 1:
+                            print(", ");
+                    print("</td>")
+
                     if column < num_columns - 1:
                         print "<td class=\"tableindexspacer\"> </td>"
+
             print "</tr>"
         print "</table>"
 
