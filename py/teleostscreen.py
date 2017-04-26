@@ -99,7 +99,7 @@ def get_sensible_font(font_name, desired_line_size):
 
     # On Windows, fonts tend to appear slightly larger for some reason
     if os.name == "nt":
-        desired_line_size *= 0.8;
+        desired_line_size *= 0.9;
 
     while True:
         size = (low + high) / 2;
