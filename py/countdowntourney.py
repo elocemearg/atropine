@@ -855,7 +855,7 @@ class Tourney(object):
         for pi in range(len(players)):
             for opi in range(pi + 1, len(players)):
                 if players[pi][0] == players[opi][0]:
-                    raise DuplicatePlayerException("No two players are allowed to have the same name, and you've got two %ss." % (players[pi][0]))
+                    raise DuplicatePlayerException("No two players are allowed to have the same name, and you've got more than one %s." % (players[pi][0]))
 
         # For each player, work out a "short name", which will be the first
         # of their first name, first name and last initial, and full name,
