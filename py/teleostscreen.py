@@ -280,6 +280,14 @@ class View(object):
         if surface:
             self.refresh(self, surface)
 
+    def pause(self):
+        for (sub_view, a, b, c, d) in self.sub_views:
+            sub_view.pause()
+
+    def unpause(self):
+        for (sub_view, a, b, c, d) in self.sub_views:
+            sub_view.unpause()
+
 class TimedViewCycler(View):
     def __init__(self, name="", desc="", default_interval=10):
         self.sub_views = [];
@@ -288,6 +296,8 @@ class TimedViewCycler(View):
         self.last_change = time.time();
         self.name = name;
         self.desc = desc;
+        self.paused = False
+        self.bumped = 0
     
     def get_name(self):
         return self.name;
@@ -295,6 +305,12 @@ class TimedViewCycler(View):
     def restart(self):
         self.last_change = time.time();
         self.current_view_index = 0;
+
+    def pause(self):
+        self.paused = True
+    
+    def unpause(self):
+        self.paused = False
     
     def get_description(self):
         return self.desc;
@@ -314,10 +330,11 @@ class TimedViewCycler(View):
 
         previous_view_index = self.current_view_index
         (view, interval) = self.sub_views[self.current_view_index];
-        if self.last_change + interval <= time.time():
+        if self.bumped or (not self.paused and self.last_change + interval <= time.time()):
             self.current_view_index = (self.current_view_index + 1) % len(self.sub_views);
             self.last_change = time.time();
             (view, interval) = self.sub_views[self.current_view_index];
+            self.bumped = 0
 
         view.refresh(surface);
         if self.current_view_index != previous_view_index:
@@ -326,7 +343,7 @@ class TimedViewCycler(View):
             return []
 
     def bump(self, surface):
-        self.last_change = 0
+        self.bumped = 1
         if surface:
             self.refresh(surface)
 
@@ -570,6 +587,12 @@ class Widget(object):
     def bump(self, surface):
         return
 
+    def pause(self):
+        return
+
+    def unpause(self):
+        return
+
 class VideprinterWidget(Widget):
     def __init__(self, table_fetcher, num_rows, default_font_name="sans-serif"):
         self.table_fetcher = table_fetcher;
@@ -646,6 +669,8 @@ class TableWidget(Widget):
         self.current_row = 0;
         self.num_rows_on_screen = num_rows;
         self.default_font_name = default_font_name;
+        self.paused = False
+        self.bumped = 0
         if scroll_sideways:
             self.scroll_direction = ScrollInstruction.SCROLL_LEFT
         else:
@@ -655,8 +680,14 @@ class TableWidget(Widget):
         self.current_row = 0;
         self.last_scroll_time = time.time();
 
+    def pause(self):
+        self.paused = True
+    
+    def unpause(self):
+        self.paused = False
+
     def bump(self, surface):
-        self.last_scroll_time = 0
+        self.bumped = 1
         if surface:
             self.refresh(surface)
 
@@ -674,9 +705,10 @@ class TableWidget(Widget):
                 data_rows_to_fetch = self.num_rows_on_screen - 1;
 
             # Scroll to the next page of results if necessary
-            if self.scroll_interval > 0 and self.last_scroll_time + self.scroll_interval <= time.time():
+            if self.bumped or (not (self.paused) and self.scroll_interval > 0 and self.last_scroll_time + self.scroll_interval <= time.time()):
                 self.last_scroll_time = time.time();
                 self.current_row += data_rows_to_fetch;
+                self.bumped = 0
 
             # Fetch the rows, going back to the beginning if we've fallen
             # off the end
@@ -733,13 +765,21 @@ class TableIndexWidget(Widget):
         self.last_scroll_time = time.time()
         self.font_name = font_name
         self.fetcher = fetcher
+        self.bumped = 0
+        self.paused = False
+
+    def pause(self):
+        self.paused = True
+
+    def unpause(self):
+        self.paused = False
 
     def restart(self):
         self.last_scroll_time = time.time()
         self.current_page = 0
 
     def bump(self, surface):
-        self.last_scroll_time = 0
+        self.bumped = 1
         if surface:
             self.refresh(surface)
 
@@ -774,9 +814,10 @@ class TableIndexWidget(Widget):
         previous_page = self.current_page
 
         # Is it time to scroll?
-        if self.last_scroll_time + self.scroll_interval <= time.time():
+        if self.bumped or (not self.paused and self.last_scroll_time + self.scroll_interval <= time.time()):
             self.current_page += 1;
             self.last_scroll_time = time.time();
+            self.bumped = 0
 
         if self.current_page * names_per_page >= len(assignments):
             self.current_page = 0;
@@ -861,15 +902,23 @@ class PagedFixturesWidget(Widget):
         self.last_scroll_time = time.time();
         self.font_name = font_name;
         self.fetcher = fetcher;
+        self.bumped = 0
+        self.paused = False
     
     def restart(self):
         self.last_scroll_time = time.time();
         self.current_page = 0;
  
     def bump(self, surface):
-        self.last_scroll_time = 0
+        self.bumped = 1
         if surface:
             self.refresh(surface)
+
+    def pause(self):
+        self.paused = True
+    
+    def unpause(self):
+        self.paused = False
 
     def refresh(self, surface):
         try:
@@ -957,9 +1006,10 @@ class PagedFixturesWidget(Widget):
 
         previous_page = self.current_page
         # Is it time to scroll?
-        if self.last_scroll_time + self.scroll_interval <= time.time():
+        if self.bumped or (not self.paused and self.last_scroll_time + self.scroll_interval <= time.time()):
             self.current_page += 1;
             self.last_scroll_time = time.time();
+            self.bumped = 0
 
         if self.current_page >= len(pages):
             self.current_page = 0;

@@ -9,16 +9,17 @@ import traceback;
 local_view_switching = False;
 
 view_key_map = {
-        pygame.K_1: 0,
-        pygame.K_2: 1,
-        pygame.K_3: 2,
-        pygame.K_4: 3,
-        pygame.K_5: 4,
-        pygame.K_6: 5,
-        pygame.K_7: 6,
-        pygame.K_8: 7,
-        pygame.K_9: 8,
-        pygame.K_0: 9
+        pygame.K_F1: 1,
+        pygame.K_F2: 2,
+        pygame.K_F3: 3,
+        pygame.K_F4: 4,
+        pygame.K_F5: 5,
+        pygame.K_F6: 6,
+        pygame.K_F7: 7,
+        pygame.K_F8: 8,
+        pygame.K_F9: 9,
+        pygame.K_F10: 10,
+        pygame.K_F12: 0
 };
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)));
@@ -59,6 +60,29 @@ def draw_banner(surface, position, width, height, text, fg_colour, bg_colour):
     else:
         surface.blit(label, position)
 
+
+def print_help():
+    print ""
+    print "Teleost key commands"
+    print "Note: these only work when the Teleost window has focus."
+    print ""
+    print "Screen selection"
+    print "   F1  Standings only                    F6  Name-to-table Index"
+    print "   F2  Standings and Videprinter         F7  Overachievers"
+    print "   F3  Standings and Table Results       F8  Tuff Luck"
+    print "   F4  Vertical Standings and Results    F9  Notable scores"
+    print "   F5  Fixtures                         F10  Fastest finishers"
+    print "  F12  Automatic (default)"
+    print ""
+    print "Screen pages"
+    print "    P  Pause/unpause page scrolling   SPACE  Next page"
+    print ""
+    print "Miscellaneousnesses"
+    print "    F  Toggle fullscreen"
+    print "    H  Show this help"
+    print "    T  Show/hide title bar"
+    print "    Q  Quit"
+    print ""
 
 
 try:
@@ -120,7 +144,11 @@ try:
 
     standings_widget = teleostscreen.TableWidget(standings_fetcher, 9, scroll_interval=10);
     vertical_standings_widget = teleostscreen.TableWidget(short_standings_fetcher, 13, scroll_interval=12)
+    tall_standings_widget = teleostscreen.TableWidget(standings_fetcher, 13, scroll_interval=12);
     team_score_widget = teleostscreen.TableWidget(team_score_fetcher, 1, scroll_interval=5)
+
+    standings_only = teleostscreen.View(name="Standings", desc="Just the current standings table.")
+    standings_only.add_view(tall_standings_widget, top_pc=5, height_pc=90, left_pc=0, width_pc=95)
 
     standings_videprinter = teleostscreen.View(name="Standings / Videprinter", desc="Standings table taking up most of the screen, with latest results displayed on a scrolling window below.");
 
@@ -166,7 +194,28 @@ try:
     table_index = teleostscreen.View(name="Table Index", desc="Display player names and which table they should be on, sorted by player name.")
     table_index.add_view(teleostscreen.TableIndexWidget(table_index_fetcher), top_pc=3, left_pc=5, width_pc=90, height_pc=94)
 
-    view_list = [standings_videprinter, standings_results, standings_results_vert, fixtures, overachievers, tuff_luck, notables, quickest_finishers, table_index];
+    view_list = [
+            standings_only,
+            standings_videprinter,
+            standings_results,
+            standings_results_vert,
+            fixtures,
+            table_index,
+            overachievers,
+            tuff_luck,
+            notables,
+            quickest_finishers,
+    ];
+    standings_only_view_index = 0
+    standings_videprinter_view_index = 1
+    standings_results_view_index = 2
+    standings_results_vert_view_index = 3
+    fixtures_view_index = 4
+    table_index_view_index = 5
+    overachievers_view_index = 6
+    tuff_luck_view_index = 7
+    notables_view_index = 8
+    quickest_finishers_view_index = 9
 
     modes = [];
     modes.append((0, "Auto", "Automatic control."));
@@ -206,6 +255,10 @@ try:
     db_mode_checks = not local_view_switching;
     bumps = 0
     previous_foreground = None
+    paused = False
+    redraw_overlay = False
+
+    print_help()
 
     while True:
         if resized:
@@ -227,44 +280,43 @@ try:
             if teleost_mode == 0:
                 auto_use_vertical = tourney.get_auto_use_vertical();
                 auto_use_table_index = tourney.get_auto_use_table_index()
-                knockout_phase = False;
                 r = tourney.get_current_round()
                 if not r:
-                    if current_view_index != 0:
-                        new_view_index = 0;
+                    if current_view_index != standings_videprinter_view_index:
+                        new_view_index = standings_videprinter_view_index;
                 else:
                     round_no = r["num"]
                     largest_table_size = tourney.get_largest_table_game_count(round_no)
                     (played, unplayed) = tourney.get_played_unplayed_counts(round_no=round_no);
                     if played == 0 and unplayed == 0:
-                        if current_view_index != 0:
-                            new_view_index = 0;
+                        if current_view_index != standings_videprinter_view_index:
+                            new_view_index = standings_videprinter_view_index;
                     elif played == 0 and unplayed > 0:
                         # Fixtures announced, but no games played yet
                         if auto_use_table_index:
                             # Display table index if user has requested that
-                            if current_view_index != 8:
-                                new_view_index = 8
+                            if current_view_index != table_index_view_index:
+                                new_view_index = table_index_view_index
                         else:
                             # Otherwise display fixtures
-                            if current_view_index != 3:
-                                new_view_index = 3;
+                            if current_view_index != fixtures_view_index:
+                                new_view_index = fixtures_view_index;
                     elif played > 0 and unplayed == 0:
                         # All games in this round have been played - we
                         # want the standings and results screen, but if
                         # we don't have three games to a table or if 
                         # auto_use_vertical is set then we want the vertical
                         # standings and results screen.
-                        if largest_table_size == 3 and not(auto_use_vertical):
-                            if current_view_index != 1:
-                                new_view_index = 1;
+                        if largest_table_size <= 3 and not(auto_use_vertical):
+                            if current_view_index != standings_results_view_index:
+                                new_view_index = standings_results_view_index;
                         else:
-                            if current_view_index != 2:
-                                new_view_index = 2
+                            if current_view_index != standings_results_vert_view_index:
+                                new_view_index = standings_results_vert_view_index
                     else:
                         # Round in progress: we want the videprinter
-                        if current_view_index != 0:
-                            new_view_index = 0;
+                        if current_view_index != standings_videprinter_view_index:
+                            new_view_index = standings_videprinter_view_index;
             elif teleost_mode > 0:
                 if teleost_mode - 1 != current_view_index:
                     new_view_index = teleost_mode - 1;
@@ -312,6 +364,8 @@ try:
 
             new_foreground.fill((0, 0, 0, 0))
 
+            # If we've received a key event to bump the page, bump every view
+            # on this page
             while bumps > 0:
                 view_list[current_view_index].bump(None)
                 bumps -= 1
@@ -323,18 +377,22 @@ try:
                 scroll_time = 0.4
                 num_scroll_frames = 20
                 for scroll_frame in range(num_scroll_frames):
-                    # Paint the previous screen
+                    # For everything not in the scrolling region, paint the
+                    # previous screen if we're less than half way through the
+                    # scroll, and the new screen otherwise
                     screen.blit(background_screen, (0, 0))
                     if banner_surface:
                         screen.blit(banner_surface, (0, 0))
-                    screen.blit(previous_foreground, foreground_position)
+                    if scroll_frame < num_scroll_frames / 2:
+                        screen.blit(previous_foreground, foreground_position)
+                    else:
+                        screen.blit(new_foreground, foreground_position)
 
                     # foreground_window: that area of the screen that isn't
                     # the banner, i.e. the bit that all the views have been
                     # scribbling on
                     foreground_window = screen.subsurface((foreground_position[0], foreground_position[1], new_foreground.get_width(), new_foreground.get_height()))
                     background_window = background_screen.subsurface((foreground_position[0], foreground_position[1], new_foreground.get_width(), new_foreground.get_height()))
-
 
                     # Paint the background back over everything that's going
                     # to be shown scrolling
@@ -354,11 +412,15 @@ try:
             if banner_surface:
                 screen.blit(banner_surface, (0, 0))
             screen.blit(new_foreground, foreground_position)
-
+                
             previous_foreground = new_foreground
 
-            pygame.display.flip();
+            if paused:
+                paused_label = teleostscreen.make_text_label(teleostscreen.get_sensible_font("sans-serif", screen.get_height() / 30), " || ", (255, 255, 255))
+                screen.blit(paused_label, (screen.get_width() - paused_label.get_width(), 2))
+            pygame.display.flip()
             last_redraw = time.time();
+
         time.sleep(0.1);
 
         pygame.event.pump();
@@ -373,9 +435,25 @@ try:
                 if event.key == pygame.K_q:
                     print "That's all folks!";
                     sys.exit(0);
+                elif event.key == pygame.K_h:
+                    print_help()
+                elif event.key == pygame.K_p:
+                    if paused:
+                        for v in view_list:
+                            v.unpause()
+                        paused = False
+                        print "Unpaused"
+                    else:
+                        for v in view_list:
+                            v.pause()
+                        paused = True
+                        print "Paused"
+                    last_redraw = 0
                 elif event.key in view_key_map:
-                    if view_key_map[event.key] < len(view_list):
-                        new_view_index = view_key_map[event.key];
+                    teleost_mode = view_key_map[event.key];
+                    last_redraw = 0
+                    last_mode_check = 0
+                    tourney.set_teleost_mode(teleost_mode)
                 elif event.key == pygame.K_t:
                     title_bar = not(title_bar);
                     pygame.display.get_surface().fill((0, 0, 0));
