@@ -103,14 +103,26 @@ try:
         for t in tourney_list:
             print "\t%s" % t;
         
-        answer = None;
-        while answer is None:
-            answer = raw_input("Which tourney do you want to use? ");
-            if answer not in tourney_list:
-                print "Nope, can't find that one.";
-                answer = None;
-            else:
-                break;
+        if len(tourney_list) == 0:
+            print "..."
+            print "[tumbleweed]"
+            print "[crickets]"
+            print "..."
+            print "You need to create a tournament using atropine before using teleost."
+            sys.exit(1)
+        elif len(tourney_list) == 1:
+            answer = tourney_list[0]
+            print ""
+            print "That's the only one, so automatically loading it."
+        else:
+            answer = None;
+            while answer is None:
+                answer = raw_input("Which tourney do you want to use? ");
+                if answer not in tourney_list:
+                    print "Nope, can't find that one.";
+                    answer = None;
+                else:
+                    break;
 
         tourney_name = answer;
     else:
