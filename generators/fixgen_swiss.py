@@ -211,15 +211,16 @@ function generate_fixtures_clicked() {
             "5&3" if gs == -5 else str(gs),
             int_or_none(settings.get("groupsize", default_default_group_size)) == gs) for gs in table_sizes_valid_for_all_divs ]
         elements.append(htmlform.HTMLFormRadioButton("groupsize", "Default players per table", group_size_choices))
+        elements.append(htmlform.HTMLFragment("</p>"))
 
-    elements.append(htmlform.HTMLFragment("</p>\n<p>\n"))
+    elements.append(htmlform.HTMLFragment("<p>\n"))
     elements.append(htmlform.HTMLFormTextInput("Fixture generator time limit %s(seconds)" % ("per division " if num_divisions > 1 else ""),
         "maxtime", settings.get("maxtime", "30"),
         other_attrs={"size": "3", "id" : "maxtime"}));
     elements.append(htmlform.HTMLFragment("</p>\n<p>\n"))
     elements.append(htmlform.HTMLFormTextInput("For the purpose of avoiding rematches, disregard games before round ", "ignorerematchesbefore", str(ignore_rematches_before_round) if ignore_rematches_before_round is not None else "", other_attrs={"size": "3"}));
     elements.append(htmlform.HTMLFragment(" (leave blank to count all rematches)"))
-    elements.append(htmlform.HTMLFormHiddenInput("numdivisions", str(num_divisions), other_attrs={"id" : "numdivisions"}))
+    elements.append(htmlform.HTMLFormHiddenInput("numdivisions", str(len(div_rounds)), other_attrs={"id" : "numdivisions"}))
     elements.append(htmlform.HTMLFragment("</p>\n"))
     elements.append(htmlform.HTMLFragment("<hr />\n"))
 
