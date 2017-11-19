@@ -691,6 +691,12 @@ class TableWidget(Widget):
         if surface:
             self.refresh(surface)
 
+    def set_num_rows(self, num_rows):
+        self.num_rows_on_screen = num_rows
+
+    def set_scroll_interval(self, interval):
+        self.scroll_interval = interval
+
     def refresh(self, surface):
         try:
             scroll = False
@@ -782,6 +788,15 @@ class TableIndexWidget(Widget):
         self.bumped = 1
         if surface:
             self.refresh(surface)
+
+    def set_scroll_interval(self, interval):
+        self.scroll_interval = interval
+
+    def set_preferred_num_rows(self, n):
+        self.preferred_lines_per_page = n
+
+    def set_preferred_num_columns(self, n):
+        self.preferred_num_columns = n
 
     def refresh(self, surface):
         scrolled = False
@@ -904,6 +919,12 @@ class PagedFixturesWidget(Widget):
         self.fetcher = fetcher;
         self.bumped = 0
         self.paused = False
+
+    def set_num_rows(self, n):
+        self.lines_per_page = n
+
+    def set_scroll_interval(self, n):
+        self.scroll_interval = n
     
     def restart(self):
         self.last_scroll_time = time.time();

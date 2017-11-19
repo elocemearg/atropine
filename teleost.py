@@ -22,6 +22,7 @@ view_key_map = {
         pygame.K_F12: 0
 };
 
+
 os.chdir(os.path.dirname(os.path.abspath(__file__)));
 sys.path.append(os.path.join(os.getcwd(), "py"));
 
@@ -29,6 +30,22 @@ import teleostscreen;
 import teleostfetchers;
 import teleostcolours;
 import countdowntourney;
+
+teleost_per_view_option_list = [
+    (1, "standings_only_lines", countdowntourney.CONTROL_NUMBER, "Players per page", 12),
+    (1, "standings_only_scroll", countdowntourney.CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12),
+    (2, "standings_videprinter_standings_lines", countdowntourney.CONTROL_NUMBER, "Players per page", 8),
+    (2, "standings_videprinter_standings_scroll", countdowntourney.CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
+    (3, "standings_results_standings_lines", countdowntourney.CONTROL_NUMBER, "Players per standings page", 8),
+    (3, "standings_results_standings_scroll", countdowntourney.CONTROL_NUMBER, "Standings page scroll interval $CONTROL seconds", 10),
+    (4, "vertical_standings_lines", countdowntourney.CONTROL_NUMBER, "Players per standings page", 12),
+    (4, "vertical_standings_scroll", countdowntourney.CONTROL_NUMBER, "Standings page scroll interval $CONTROL seconds", 12),
+    (5, "fixtures_lines", countdowntourney.CONTROL_NUMBER, "Lines per page", 12),
+    (5, "fixtures_scroll", countdowntourney.CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
+    (6, "table_index_rows", countdowntourney.CONTROL_NUMBER, "Rows per page $CONTROL (may be overridden to improve layout)", 12),
+    (6, "table_index_columns", countdowntourney.CONTROL_NUMBER, "Columns per page", 3),
+    (6, "table_index_scroll", countdowntourney.CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12)
+]
 
 def make_full_screen_fetcher_view(view_title, view_description, title_text, fetcher, num_lines):
     v = teleostscreen.View(name=view_title, desc=view_description);
@@ -60,6 +77,12 @@ def draw_banner(surface, position, width, height, text, fg_colour, bg_colour):
     else:
         surface.blit(label, position)
 
+def is_int(n):
+    try:
+        n1 = int(n)
+        return True
+    except:
+        return False
 
 def print_help():
     print ""
@@ -155,6 +178,7 @@ try:
     #fontfilename = "/usr/share/fonts/truetype/futura/Futura Condensed Bold.ttf";
 
     standings_widget = teleostscreen.TableWidget(standings_fetcher, 9, scroll_interval=10);
+    standings_results_page_widget = teleostscreen.TableWidget(standings_fetcher, 9, scroll_interval=10);
     vertical_standings_widget = teleostscreen.TableWidget(short_standings_fetcher, 13, scroll_interval=12)
     tall_standings_widget = teleostscreen.TableWidget(standings_fetcher, 13, scroll_interval=12);
     team_score_widget = teleostscreen.TableWidget(team_score_fetcher, 1, scroll_interval=5)
@@ -170,7 +194,7 @@ try:
     standings_videprinter.add_view(teleostscreen.VideprinterWidget(videprinter_fetcher, 4), top_pc=73, height_pc=25, left_pc=2, width_pc=100);
 
     standings_results = teleostscreen.View(name="Standings / Table Results", desc="Standings table taking up most of the screen, with this round's fixtures and results displayed at the bottom.");
-    standings_results.add_view(standings_widget, top_pc=5, height_pc=65, left_pc=0, width_pc=95);
+    standings_results.add_view(standings_results_page_widget, top_pc=5, height_pc=65, left_pc=0, width_pc=95);
     standings_results.add_view(teleostscreen.ShadedArea(None, "standings_results_bg"), top_pc=72, height_pc=30, left_pc=0, width_pc=100);
     standings_results.add_view(teleostscreen.TableWidget(table_results_fetcher, 4, scroll_interval=5, scroll_sideways=True), top_pc=73, height_pc=26, left_pc=0, width_pc=100);
     standings_results.add_view(team_score_widget, top_pc=5, height_pc=7, left_pc=5, width_pc=20);
@@ -200,11 +224,13 @@ try:
     tuff_luck = make_full_screen_fetcher_view("Tuff Luck", "Players who have lost three or more games ordered by the sum of their three lowest losing margins.", "Tuff Luck", tuff_luck_fetcher, 12);
 
     fixtures = teleostscreen.View(name="Fixtures", desc="Display all fixtures in the current round, using the whole screen to do it.");
-    fixtures.add_view(teleostscreen.PagedFixturesWidget(current_round_fixtures_fetcher, num_lines=13, scroll_interval=10), top_pc=0, left_pc=0, width_pc=100, height_pc=100);
+    fixtures_widget = teleostscreen.PagedFixturesWidget(current_round_fixtures_fetcher, num_lines=13, scroll_interval=10)
+    fixtures.add_view(fixtures_widget, top_pc=0, left_pc=0, width_pc=100, height_pc=100);
     fixtures.add_view(team_score_widget, top_pc=1, height_pc=8, left_pc=69, width_pc=30);
 
     table_index = teleostscreen.View(name="Table Index", desc="Display player names and which table they should be on, sorted by player name.")
-    table_index.add_view(teleostscreen.TableIndexWidget(table_index_fetcher), top_pc=3, left_pc=5, width_pc=90, height_pc=94)
+    table_index_widget = teleostscreen.TableIndexWidget(table_index_fetcher)
+    table_index.add_view(table_index_widget, top_pc=3, left_pc=5, width_pc=90, height_pc=94)
 
     view_list = [
             standings_only,
@@ -230,7 +256,7 @@ try:
     quickest_finishers_view_index = 9
 
     modes = [];
-    modes.append((0, "Auto", "Automatic control."));
+    modes.append((0, "Auto", "Automatic control. This will show Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played."));
     view_num = 1;
     for v in view_list:
         name = v.get_name();
@@ -239,7 +265,19 @@ try:
         view_num += 1;
 
     tourney.define_teleost_modes(modes);
-    tourney.set_teleost_mode(0);
+
+    # Define the per-view settings
+    teleost_options = []
+    seq = 0
+    prev_mode = None
+    for to in teleost_per_view_option_list:
+        if prev_mode is None or to[0] != prev_mode:
+            seq = 0
+        teleost_options.append(countdowntourney.TeleostOption(to[0], seq, to[1], to[2], to[3], to[4]))
+        seq += 1
+        prev_mode = to[0]
+        
+    tourney.set_teleost_options(teleost_options)
 
     screen_width = 640;
     screen_height = 480;
@@ -283,6 +321,8 @@ try:
             background_scaled = None;
 
         if db_mode_checks and (last_mode_check + mode_check_interval <= time.time()):
+            # Ask the database if the atropine web interface has requested
+            # any changes to how we're displaying the information
             teleost_mode = tourney.get_current_teleost_mode();
             teleost_palette = tourney.get_teleost_colour_palette()
             teleost_animate_scroll = tourney.get_teleost_animate_scroll()
@@ -332,7 +372,62 @@ try:
             elif teleost_mode > 0:
                 if teleost_mode - 1 != current_view_index:
                     new_view_index = teleost_mode - 1;
-            
+
+            # Set view-specific options, in case the user has changed them
+            # since last time we checked
+            n = tourney.get_teleost_option_value("standings_videprinter_standings_lines")
+            if is_int(n) and int(n) > 0:
+                standings_widget.set_num_rows(int(n) + 1)
+
+            n = tourney.get_teleost_option_value("standings_videprinter_standings_scroll")
+            if is_int(n) and int(n) > 0:
+                standings_widget.set_scroll_interval(int(n))
+
+            n = tourney.get_teleost_option_value("standings_only_lines")
+            if is_int(n) and int(n) > 0:
+                tall_standings_widget.set_num_rows(int(n) + 1)
+
+            n = tourney.get_teleost_option_value("standings_only_scroll")
+            if is_int(n) and int(n) > 0:
+                tall_standings_widget.set_scroll_interval(int(n))
+
+            n = tourney.get_teleost_option_value("standings_results_standings_lines")
+            if is_int(n) and int(n) > 0:
+                standings_results_page_widget.set_num_rows(int(n) + 1)
+
+            n = tourney.get_teleost_option_value("standings_results_standings_scroll")
+            if is_int(n) and int(n) > 0:
+                standings_results_page_widget.set_scroll_interval(int(n))
+
+            n = tourney.get_teleost_option_value("vertical_standings_lines")
+            if is_int(n) and int(n) > 0:
+                vertical_standings_widget.set_num_rows(int(n) + 1)
+
+            n = tourney.get_teleost_option_value("vertical_standings_scroll")
+            if is_int(n) and int(n) > 0:
+                vertical_standings_widget.set_scroll_interval(int(n))
+
+            n = tourney.get_teleost_option_value("fixtures_lines")
+            if is_int(n) and int(n) > 0:
+                fixtures_widget.set_num_rows(int(n) + 1)
+
+            n = tourney.get_teleost_option_value("fixtures_scroll")
+            if is_int(n) and int(n) > 0:
+                fixtures_widget.set_scroll_interval(int(n))
+
+            n = tourney.get_teleost_option_value("table_index_rows")
+            if is_int(n) and int(n) > 0:
+                table_index_widget.set_preferred_num_rows(int(n))
+
+            n = tourney.get_teleost_option_value("table_index_columns")
+            if is_int(n) and int(n) > 0:
+                table_index_widget.set_preferred_num_columns(int(n))
+
+            n = tourney.get_teleost_option_value("table_index_scroll")
+            if is_int(n) and int(n) > 0:
+                table_index_widget.set_scroll_interval(int(n))
+
+
         if new_view_index is not None:
             # Change view and force a redraw
             current_view_index = new_view_index;

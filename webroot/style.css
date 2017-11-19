@@ -696,3 +696,12 @@ div.sidebarbanner {
        border: 2px solid blue;
        width: 156px;
 }
+
+div.teleostoptionblock {
+    padding: 5px;
+}
+
+div.teleostoption {
+       padding-left: 4em;
+       font-size: 10pt;
+}

@@ -4,8 +4,8 @@ import sqlite3;
 import re;
 import os;
 
-SW_VERSION = "0.7.6"
-SW_VERSION_SPLIT = (0, 7, 6)
+SW_VERSION = "0.7.7"
+SW_VERSION_SPLIT = (0, 7, 7)
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
 RANK_WINS_POINTS = 0;
@@ -15,6 +15,9 @@ RANK_WINS_SPREAD = 2;
 RATINGS_MANUAL = 0
 RATINGS_GRADUATED = 1
 RATINGS_UNIFORM = 2
+
+CONTROL_NUMBER = 1
+CONTROL_CHECKBOX = 2
 
 create_tables_sql = """
 begin transaction;
@@ -91,6 +94,17 @@ create table if not exists game_pending (
 create table if not exists options (
     name text primary key,
     value text
+);
+
+-- metadata for per-view options in teleost (values stored in "options" above)
+create table if not exists teleost_options (
+    mode int,
+    seq int,
+    name text primary key,
+    control_type int,
+    desc text,
+    default_value text,
+    unique(mode, seq)
 );
 
 -- Table in which we persist the HTML form settings given to a fixture
@@ -671,11 +685,42 @@ def get_general_short_division_name(num):
     else:
         return chr(ord('A') + num)
 
+class TeleostOption(object):
+    def __init__(self, mode, seq, name, control_type, desc, value):
+        self.mode = mode
+        self.seq = seq
+        self.name = name
+        self.control_type = control_type
+        self.desc = desc
+        self.value = value
+
+
 class Tourney(object):
-    def __init__(self, filename, tourney_name):
+    def __init__(self, filename, tourney_name, versioncheck=True):
         self.filename = filename;
         self.name = tourney_name;
         self.db = sqlite3.connect(filename);
+        if versioncheck:
+            cur = self.db.cursor()
+            cur.execute("select value from options where name = 'atropineversion'")
+            row = cur.fetchone()
+            if row is None:
+                raise DBVersionMismatchException("This tourney database file was created by an atropine version prior to 0.7.0. It's not compatible with this version of atropine.")
+            else:
+                version = row[0]
+                version_split = version.split(".")
+                if len(version_split) != 3:
+                    raise DBVersionMismatchException("This tourney database has an invalid version number %s." % (version))
+                else:
+                    try:
+                        version_split = map(int, version_split)
+                    except ValueError:
+                        raise DBVersionMismatchException("This tourney database has an invalid version number %s." % (version))
+                    if tuple(version_split) < EARLIEST_COMPATIBLE_DB_VERSION:
+                        raise DBVersionMismatchException("This tourney database was created with atropine version %s, which is not compatible with this version of atropine (%s)" % (version, SW_VERSION))
+                self.db_version = tuple(version_split)
+        else:
+            self.db_version = (0, 0, 0)
     
     def get_name(self):
         return self.name
@@ -1850,6 +1895,57 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             return 0;
         return row[0];
 
+    def set_teleost_options(self, options):
+        if self.db_version < (0, 7, 7):
+            print self.db_version
+            return
+        cur = self.db.cursor()
+        options_rows = []
+        for o in options:
+            options_rows.append((o.mode, o.seq, o.name, o.control_type, o.desc, o.value))
+
+        # Insert option metadata
+        cur.execute("delete from teleost_options")
+        cur.executemany("insert into teleost_options(mode, seq, name, control_type, desc, default_value) values (?, ?, ?, ?, ?, ?)", options_rows)
+
+        cur.close()
+        self.db.commit()
+
+    def get_teleost_options(self, mode=None):
+        if self.db_version < (0, 7, 7):
+            return []
+        cur = self.db.cursor()
+        options = []
+        if mode is not None:
+            mode_clause = "where telo.mode = %d" % (mode)
+        else:
+            mode_clause = ""
+        cur.execute("select telo.mode, telo.seq, telo.name, telo.control_type, telo.desc, telo.default_value, att.value from teleost_options telo left outer join options att on telo.name = att.name " + mode_clause + " order by telo.mode, telo.seq")
+        for row in cur:
+            options.append(TeleostOption(int(row[0]), int(row[1]), row[2], row[3], row[4], row[6] if row[6] is not None else row[5]))
+        cur.close()
+        self.db.commit()
+        return options
+    
+    def get_teleost_option_value(self, name):
+        if self.db_version < (0, 7, 7):
+            return None
+        cur = self.db.cursor()
+        cur.execute("select telo.default_value, att.value from teleost_options telo left outer join options att on telo.name = att.name where telo.name = ?", (name,))
+        row = cur.fetchone()
+        value = None
+        if row is not None:
+            if row[1] is not None:
+                value = row[1]
+            else:
+                value = row[0]
+        cur.close()
+        self.db.commit()
+        return value
+    
+    def set_teleost_option_value(self, name, value):
+        self.set_attribute(name, value)
+
     def get_num_games_to_play_by_table(self, round_no=None):
         sql = """select table_no,
             sum(case when p1_score is null and p2_score is null
@@ -2186,26 +2282,7 @@ def tourney_open(dbname, directory="."):
     if not os.path.exists(dbpath):
         raise DBNameDoesNotExistException("The tourney \"%s\" does not exist." % dbname);
     else:
-        db = sqlite3.connect(dbpath);
-        cur = db.cursor()
-        cur.execute("select value from options where name = 'atropineversion'")
-        row = cur.fetchone()
-        if row is None:
-            raise DBVersionMismatchException("This tourney database file was created by an atropine version prior to 0.7.0. It's not compatible with this version of atropine.")
-        else:
-            version = row[0]
-            version_split = version.split(".")
-            if len(version_split) != 3:
-                raise DBVersionMismatchException("This tourney database has an invalid version number %s." % (version))
-            else:
-                try:
-                    version_split = map(int, version_split)
-                except ValueError:
-                    raise DBVersionMismatchException("This tourney database has an invalid version number %s." % (version))
-                if tuple(version_split) < EARLIEST_COMPATIBLE_DB_VERSION:
-                    raise DBVersionMismatchException("This tourney database was created with atropine version %s, which is not compatible with this version of atropine (%s)" % (version, SW_VERSION))
-        db.close()
-        tourney = Tourney(dbpath, dbname);
+        tourney = Tourney(dbpath, dbname, versioncheck=True);
 
     return tourney;
 
@@ -2218,7 +2295,8 @@ def tourney_create(dbname, directory="."):
     dbpath = directory + dbname + ".db";
     if os.path.exists(dbpath):
         raise DBNameExistsException("The tourney \"%s\" already exists. Pick another name." % dbname);
-    tourney = Tourney(dbpath, dbname);
+    tourney = Tourney(dbpath, dbname, versioncheck=False);
+    tourney.db_version = SW_VERSION_SPLIT;
     tourney.db.executescript(create_tables_sql);
     tourney.db.execute("insert into options values ('atropineversion', ?)", (SW_VERSION,)) 
     tourney.db.commit();
