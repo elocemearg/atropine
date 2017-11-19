@@ -141,7 +141,13 @@ if request_method == "POST" and form.getfirst("editplayer"):
     player = tourney.get_player_from_id(player_id)
 elif request_method == "POST" and form.getfirst("newplayersubmit"):
     new_player_name = form.getfirst("newplayername")
-    new_player_rating = float_or_none(form.getfirst("newplayerrating"))
+
+    # If no rating has been entered, default to 1000
+    rating_str = form.getfirst("newplayerrating")
+    if rating_str is None or rating_str.strip() == "":
+        new_player_rating = 1000.0
+    else:
+        new_player_rating = float_or_none(rating_str)
     new_player_division = int_or_none(form.getfirst("newplayerdivision"))
     try_to_add_player = True
 
@@ -149,7 +155,7 @@ elif request_method == "POST" and form.getfirst("newplayersubmit"):
         exceptions_to_show.append(("<p>Can't add new player...</p>", countdowntourney.TourneyException("Player name may not be blank.")))
         try_to_add_player = False
     if new_player_rating is None:
-        exceptions_to_show.append(("<p>Can't add new player...</p>", countdowntourney.TourneyException("To add a new player, you must specify a rating and this must be a number.")))
+        exceptions_to_show.append(("<p>Can't add new player...</p>", countdowntourney.TourneyException("A new player's rating, if specified, must be a number.")))
         try_to_add_player = False
     if new_player_division is None:
         new_player_division = 0
@@ -376,7 +382,7 @@ if player is None:
     print "<tr><td>New player name</td>"
     print "<td><input type=\"text\" name=\"newplayername\" value=\"\" /></td></tr>"
     print "<tr><td>New player rating</td>"
-    print "<td><input type=\"text\" name=\"newplayerrating\" value=\"\" /></td></tr>"
+    print "<td><input type=\"text\" name=\"newplayerrating\" value=\"\" /> <em>(leave blank for the default rating 1000; enter 0 if this is a patzer or bye)</em></td></tr>"
     if tourney.get_num_divisions() > 1:
         print "<tr><td>Division</td><td>"
         show_division_drop_down_box("newplayerdivision", tourney, None)
