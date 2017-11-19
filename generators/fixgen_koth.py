@@ -8,7 +8,7 @@ import urllib;
 import gencommon
 
 name = "King of the Hill"
-description = "Players are grouped based on their current position in the standings. If the group size is N, the top N players go on the first table, the next N players go on the second table, and so on. No attempt is made to avoid rematches, but patzers are kept apart.";
+description = "Players are grouped based on their current position in the standings. If the group size is N, the top N players go on the first table, the next N players go on the second table, and so on. No attempt is made to avoid rematches, but prunes are kept apart.";
 
 def lookup_player(players, name):
     for p in players:
@@ -43,19 +43,19 @@ def generate(tourney, settings, div_rounds):
             # This is not the first round.
             standings = tourney.get_standings(div_index);
             ordered_players = []
-            patzers = []
+            prunes = []
             for s in standings:
                 p = lookup_player(players, s.name)
                 if p:
                     if p.rating == 0:
-                        patzers.append(p)
+                        prunes.append(p)
                     else:
                         ordered_players.append(p)
         else:
             # This is the first round. Put the top rated players on the top
             # table, and so on.
             ordered_players = sorted(players, key=lambda x : x.rating, reverse=True)
-            patzers = filter(lambda x : x.rating == 0, ordered_players)
+            prunes = filter(lambda x : x.rating == 0, ordered_players)
             ordered_players = filter(lambda x : x.rating != 0, ordered_players)
 
         if group_size == -5:
@@ -65,9 +65,9 @@ def generate(tourney, settings, div_rounds):
 
         groups = [ [] for i in group_sizes ]
 
-        # Put patzers on the lowest groups
-        for i in range(len(patzers)):
-            groups[len(groups) - 1 - (i % len(groups))].append(patzers[i])
+        # Put prunes on the lowest groups
+        for i in range(len(prunes)):
+            groups[len(groups) - 1 - (i % len(groups))].append(prunes[i])
 
         # Put the other players in the groups with the top players on
         # higher tables.

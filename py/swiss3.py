@@ -8,9 +8,9 @@ class StandingsPlayer(object):
     def __init__(self, name, rating):
         self.name = name;
         if rating == 0:
-            self.is_patzer = True;
+            self.is_prune = True;
         else:
-            self.is_patzer = False;
+            self.is_prune = False;
         self.wins = 0
         self.points = 0
         self.rating = rating
@@ -78,18 +78,18 @@ def get_penalty(games, p1, p2, rank_by_wins=True):
             pen += 1000000;
 
     # Don't want two prunes drawn against each other
-    if p1.is_patzer and p2.is_patzer:
+    if p1.is_prune and p2.is_prune:
         pen += 1000000;
 
-    # If one of these two players is a patzer, then if the other player has
-    # played a patzer before, make it unlikely they will play a patzer again
+    # If one of these two players is a prune, then if the other player has
+    # played a prune before, make it unlikely they will play a prune again
     if p1.get_rating() == 0 or p2.get_rating() == 0 and (p1.get_rating() != 0 or p2.get_rating() != 0):
         if p1.get_rating() == 0:
             human = p2
-            patzer = p1
+            prune = p1
         else:
             human = p1
-            patzer = p2
+            prune = p2
 
         for g in games:
             if g.p1.get_name() == human.get_name():

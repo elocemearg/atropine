@@ -22,9 +22,9 @@ def int_or_none(s):
         return None;
 
 def random_team_assignment(tourney, group_size):
-    # Get a list of all players, excluding patzers (players with a rating of 0)
+    # Get a list of all players, excluding prunes (players with a rating of 0)
     players = tourney.get_players()
-    patzers = [ p for p in players if p.get_rating() <= 0 ]
+    prunes = [ p for p in players if p.get_rating() <= 0 ]
 
     players = [ p for p in players if p.get_rating() > 0]
 
@@ -74,8 +74,8 @@ def random_team_assignment(tourney, group_size):
 
         pos += group_size
 
-    # Assign each patzer to no team
-    for p in patzers:
+    # Assign each prune to no team
+    for p in prunes:
         player_teams.append((p.get_name(), -1))
     
     # Return the map of players to team IDs

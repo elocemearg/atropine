@@ -6,7 +6,7 @@ import gencommon
 
 name = "Random Pairings/Groups"
 description = """Randomly assign players to tables, without regard for previous
-games. No attempt is made to avoid rematches. Patzers, if any, are placed on
+games. No attempt is made to avoid rematches. Prunes, if any, are placed on
 the highest numbered tables and are kept separate from each other if possible.
 Other than that, the fixtures are random."""
 
@@ -40,13 +40,13 @@ def generate(tourney, settings, div_rounds):
 
         tables = [];
         
-        # Randomly shuffle the player list, but always put any patzers at the
+        # Randomly shuffle the player list, but always put any prunes at the
         # end of the list. This will ensure they all go on separate tables if
         # possible.
-        patzers = [ p for p in players if p.rating == 0 ]
-        non_patzers = [ p for p in players if p.rating != 0 ]
-        random.shuffle(non_patzers);
-        players = non_patzers + patzers
+        prunes = [ p for p in players if p.rating == 0 ]
+        non_prunes = [ p for p in players if p.rating != 0 ]
+        random.shuffle(non_prunes);
+        players = non_prunes + prunes
 
         table_size = int(settings.get("d%d_groupsize" % (div_index)))
 
@@ -71,7 +71,7 @@ def generate(tourney, settings, div_rounds):
                 table_sizes.append(5)
             tables = [ [] for x in table_sizes ]
 
-            # Reverse the list so we use the patzers first, and they can go 
+            # Reverse the list so we use the prunes first, and they can go 
             # on the 3-tables
             players.reverse()
 

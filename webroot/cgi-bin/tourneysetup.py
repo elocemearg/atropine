@@ -217,10 +217,10 @@ add new players.</p>""" % (urllib.quote_plus(tourney.get_name())))
         print("<strong>Ratings are specified manually in the player list below.</strong> If you select this option, it is an error if you try to submit a player without a rating.")
         print("<br />")
         print("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_GRADUATED, countdowntourney.RATINGS_GRADUATED, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_GRADUATED else ""))
-        print("<strong>The player list above is in rating order with the highest-rated player at the top</strong>. Ratings will be assigned automatically, with the player at the top of the list receiving a rating of 2000, and the player at the bottom 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a patzer.")
+        print("<strong>The player list above is in rating order with the highest-rated player at the top</strong>. Ratings will be assigned automatically, with the player at the top of the list receiving a rating of 2000, and the player at the bottom 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a prune.")
         print("<br />")
         print("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_UNIFORM, countdowntourney.RATINGS_UNIFORM, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_UNIFORM else ""))
-        print("<strong>This tournament is not seeded.</strong> Assign every non-patzer player a rating of 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a patzer. If unsure, select this option.")
+        print("<strong>This tournament is not seeded.</strong> Assign every non-prune player a rating of 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a prune. If unsure, select this option.")
         print("</blockquote>")
 
         print "<p>"
@@ -285,7 +285,7 @@ add new players.</p>""" % (urllib.quote_plus(tourney.get_name())))
         print("</p>")
 
         print "<p>"
-        print("To indicate that a player is a patzer or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <tt>Apterous Prune,0</tt>")
+        print("To indicate that a player is a prune or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <tt>Apterous Prune,0</tt>")
         print "</p>"
 
         print("<p>")

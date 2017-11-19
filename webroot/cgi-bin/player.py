@@ -382,7 +382,7 @@ if player is None:
     print "<tr><td>New player name</td>"
     print "<td><input type=\"text\" name=\"newplayername\" value=\"\" /></td></tr>"
     print "<tr><td>New player rating</td>"
-    print "<td><input type=\"text\" name=\"newplayerrating\" value=\"\" /> <em>(leave blank for the default rating 1000; enter 0 if this is a patzer or bye)</em></td></tr>"
+    print "<td><input type=\"text\" name=\"newplayerrating\" value=\"\" /> <em>(leave blank for the default rating 1000; enter 0 if this is a prune or bye)</em></td></tr>"
     if tourney.get_num_divisions() > 1:
         print "<tr><td>Division</td><td>"
         show_division_drop_down_box("newplayerdivision", tourney, None)

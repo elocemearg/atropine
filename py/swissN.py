@@ -12,9 +12,9 @@ class StandingsPlayer(object):
         self.name = name;
         self.rating = rating
         if rating == 0:
-            self.is_patzer = True;
+            self.is_prune = True;
         else:
-            self.is_patzer = False;
+            self.is_prune = False;
         self.wins = wins
         self.position = position
         self.games_played = played
@@ -89,18 +89,18 @@ def get_penalty(games, p1, p2, num_played, win_diff, rank_by_wins=True):
     pen += HUGE_PENALTY * num_played
 
     # Don't want two prunes drawn against each other
-    if p1.is_patzer and p2.is_patzer:
+    if p1.is_prune and p2.is_prune:
         pen += HUGE_PENALTY;
 
-    # If one of these two players is a patzer, then if the other player has
-    # played a patzer before, make it unlikely they will play a patzer again
+    # If one of these two players is a prune, then if the other player has
+    # played a prune before, make it unlikely they will play a prune again
     if p1.get_rating() == 0 or p2.get_rating() == 0 and (p1.get_rating() != 0 or p2.get_rating() != 0):
         if p1.get_rating() == 0:
             human = p2
-            patzer = p1
+            prune = p1
         else:
             human = p1
-            patzer = p2
+            prune = p2
 
         for g in games:
             if g.p1.get_name() == human.get_name():
@@ -238,7 +238,7 @@ def generate_all_groupings_aux(group_size_list, possible_opponents, depth, start
 
         
 
-def generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, patzer_set, start_time, limit_ms):
+def generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, prune_set, start_time, limit_ms):
     num_players = len(played_matrix)
     possible_opponents = dict()
     if sum(group_size_list) != num_players:
@@ -247,7 +247,7 @@ def generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_
         opponents = []
         for opp in range(num_players):
             if p != opp:
-                if played_matrix[p][opp] <= max_rematches and win_diff_matrix[p][opp] <= max_wins_diff and not(p in patzer_set and opp in patzer_set):
+                if played_matrix[p][opp] <= max_rematches and win_diff_matrix[p][opp] <= max_wins_diff and not(p in prune_set and opp in prune_set):
                     #print "played_matrix[%d][%d] %d" % (p, opp, played_matrix[p][opp])
                     opponents.append(opp)
         possible_opponents[p] = opponents
@@ -320,19 +320,19 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
             played_row.append(count)
         played_matrix.append(played_row)
 
-    # Identify the patzers, and put their indices in the patzer_set set
-    patzer_set = set()
+    # Identify the prunes, and put their indices in the prune_set set
+    prune_set = set()
     for pi in range(len(players)):
         if players[pi].rating == 0:
-            patzer_set.add(pi)
+            prune_set.add(pi)
 
-    # Adjust the played_matrix so that if you've played one patzer, you've
+    # Adjust the played_matrix so that if you've played one prune, you've
     # effectively played them all
     for pi in range(len(players)):
-        num_patzer_matches = sum(played_matrix[pi][x] for x in patzer_set)
-        for x in patzer_set:
-            played_matrix[pi][x] = num_patzer_matches
-            played_matrix[x][pi] = num_patzer_matches
+        num_prune_matches = sum(played_matrix[pi][x] for x in prune_set)
+        for x in prune_set:
+            played_matrix[pi][x] = num_prune_matches
+            played_matrix[x][pi] = num_prune_matches
 
     win_diff_matrix = []
     for p in players:
@@ -375,7 +375,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
     while best_grouping is None:
         if log:
             sys.stderr.write("[swissN] Trying with max_wins_diff %d, max_rematches %d\n" % (max_wins_diff, max_rematches))
-        for groups in generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, patzer_set, start_time, limit_ms):
+        for groups in generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, prune_set, start_time, limit_ms):
             weight = total_penalty(matrix, groups, table_penalty_cache)
             if best_weight is None or weight < best_weight:
                 best_weight = weight
