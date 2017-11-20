@@ -32,6 +32,7 @@ create table if not exists player (
     withdrawn int not null default 0,
     division int not null default 0,
     division_fixed int not null default 0,
+    avoid_prune int not null default 0,
     unique(name), unique(short_name)
 );
 
@@ -326,7 +327,7 @@ class DBVersionMismatchException(TourneyException):
     pass
 
 class Player(object):
-    def __init__(self, name, rating=0, team=None, short_name=None, withdrawn=False, division=0, division_fixed=False, player_id=None):
+    def __init__(self, name, rating=0, team=None, short_name=None, withdrawn=False, division=0, division_fixed=False, player_id=None, avoid_prune=False):
         self.name = name;
         self.rating = rating;
         self.team = team;
@@ -342,6 +343,7 @@ class Player(object):
         self.division_fixed = division_fixed
 
         self.player_id = player_id
+        self.avoid_prune = avoid_prune
     
     def __eq__(self, other):
         if other is None:
@@ -405,6 +407,9 @@ class Player(object):
 
     def is_division_fixed(self):
         return self.division_fixed
+
+    def is_avoiding_prune(self):
+        return self.avoid_prune
 
 def get_first_name(name):
     return name.split(" ", 1)[0]
@@ -855,6 +860,28 @@ class Tourney(object):
         else:
             cur.close()
             return False
+
+    def set_player_avoid_prune(self, name, value):
+        if self.db_version < (0, 7, 7):
+            return
+        cur = self.db.cursor()
+        cur.execute("update player set avoid_prune = ? where name = ?", (1 if value else 0, name))
+        cur.close()
+        self.db.commit()
+    
+    def get_player_avoid_prune(self, name):
+        if self.db_version < (0, 7, 7):
+            return False
+        cur = self.db.cursor()
+        cur.execute("select avoid_prune from player where name = ?", (name,))
+        row = cur.fetchone()
+        if row:
+            retval = bool(row[0])
+        else:
+            raise PlayerDoesNotExistException("Can't get whether player \"%s\" is allowed to play prunes because there is no player with that name." % (name))
+        cur.close()
+        self.db.commit()
+        return retval
     
     def add_player(self, name, rating, division=0):
         if self.player_name_exists(name):
@@ -987,17 +1014,23 @@ class Tourney(object):
     
     def get_players(self, exclude_withdrawn=False):
         cur = self.db.cursor();
-        if exclude_withdrawn:
-            cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id from player p left outer join team t on p.team_id = t.id where p.withdrawn = 0 order by p.rating desc, p.name")
+        if self.db_version < (0, 7, 7):
+            avoid_prune_value = "0"
         else:
-            cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id from player p left outer join team t on p.team_id = t.id order by p.rating desc, p.name");
+            avoid_prune_value = "p.avoid_prune"
+        if exclude_withdrawn:
+            condition = "where p.withdrawn = 0"
+        else:
+            condition = ""
+
+        cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s from player p left outer join team t on p.team_id = t.id %s order by p.rating desc, p.name" % (avoid_prune_value, condition))
         players = [];
         for row in cur:
             if row[2] is not None:
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
-            players.append(Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8], row[9]));
+            players.append(Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8], row[9], row[10]));
         cur.close();
         return players;
     
@@ -1449,7 +1482,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
         return rows_updated;
     
     def get_player_from_name(self, name):
-        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id from player p left outer join team t on p.team_id = t.id where p.name = ?";
+        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s from player p left outer join team t on p.team_id = t.id where p.name = ?" % ("0" if self.db_version < (0, 7, 7) else "p.avoid_prune");
         cur = self.db.cursor();
         cur.execute(sql, (name,));
         row = cur.fetchone();
@@ -1461,10 +1494,10 @@ where round_no = ? and seq = ?""", alterations_reordered);
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
-            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], row[9]);
+            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], row[9], row[10]);
     
     def get_player_from_id(self, player_id):
-        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed from player p left outer join team t on p.team_id = t.id where p.id = ?";
+        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, %s from player p left outer join team t on p.team_id = t.id where p.id = ?" % ("0" if self.db_version < (0, 7, 7) else "p.avoid_prune");
         cur = self.db.cursor();
         cur.execute(sql, (player_id,));
         row = cur.fetchone();
@@ -1476,7 +1509,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
                 team = None
             else:
                 team = Team(row[2], row[3], row[4])
-            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], player_id);
+            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], player_id, row[9]);
 
     def get_latest_started_round(self):
         cur = self.db.cursor()

@@ -104,6 +104,7 @@ if request_method == "POST" and form.getfirst("editplayer"):
     new_rating = float_or_none(form.getfirst("setrating"))
     new_name = form.getfirst("setname")
     new_withdrawn = int_or_none(form.getfirst("setwithdrawn"))
+    new_avoid_prune = int_or_none(form.getfirst("setavoidprune"))
     new_division = int_or_none(form.getfirst("setdivision"))
 
     if new_rating is not None and player.get_rating() != new_rating:
@@ -123,6 +124,13 @@ if request_method == "POST" and form.getfirst("editplayer"):
                 edit_notifications.append("%s reinstated" % (player.get_name()))
         except countdowntourney.TourneyException as e:
             exceptions_to_show.append(("<p>Failed to change player withdrawn status...</p>", e))
+
+    if player.is_avoiding_prune() != (new_avoid_prune is not None and new_avoid_prune != 0):
+        try:
+            tourney.set_player_avoid_prune(player.get_name(), new_avoid_prune)
+            edit_notifications.append("%s is now %savoiding Prune" % (player.get_name(), "not " if not new_avoid_prune else ""))
+        except countdowntourney.TourneyException as e:
+            exceptions_to_show.append(("<p>Failed to change player avoiding-prune status...</p>", e))
         
     if new_division is not None and player.get_division() != new_division:
         try:
@@ -321,7 +329,8 @@ if player:
         print "<td>"
         show_division_drop_down_box("setdivision", tourney, player)
         print "</td></tr>"
-    print "<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /></td></tr>" % ("checked" if player.is_withdrawn() else "")
+    print "<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <em>(if ticked, the fixture generator will not include this player)</em></td></tr>" % ("checked" if player.is_withdrawn() else "")
+    print "<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <em>(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</em></td></tr>" % ("checked" if player.is_avoiding_prune() else "")
     print "</table>"
     print "<p>"
     print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourneyname, True))
@@ -365,7 +374,10 @@ else:
 
         print "<ul>"
         for p in div_players:
-            print "<li>%s%s</li>" % (cgicommon.player_to_link(p, tourney.get_name()), " (withdrawn)" if p.is_withdrawn() else "")
+            print "<li>%s%s%s</li>" % (
+                    cgicommon.player_to_link(p, tourney.get_name()),
+                    " (withdrawn)" if p.is_withdrawn() else "",
+                    " (avoiding Prune)" if p.is_avoiding_prune() else "")
         print "</ul>"
 
 show_player_search_form(tourney)

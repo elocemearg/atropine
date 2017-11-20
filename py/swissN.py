@@ -8,7 +8,7 @@ import random
 HUGE_PENALTY = 1000000000
 
 class StandingsPlayer(object):
-    def __init__(self, name, rating, wins, position, played, played_first):
+    def __init__(self, name, rating, wins, position, played, played_first, avoid_prune):
         self.name = name;
         self.rating = rating
         if rating == 0:
@@ -19,6 +19,7 @@ class StandingsPlayer(object):
         self.position = position
         self.games_played = played
         self.games_played_first = played_first
+        self.avoid_prune = avoid_prune
 
     def get_name(self):
         return self.name
@@ -291,7 +292,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
     for p in cdt_players:
         for s in standings:
             if s.name == p.name:
-                players.append(StandingsPlayer(p.name, p.rating, s.wins + float(s.draws) / 2, s.position, s.played, s.played_first));
+                players.append(StandingsPlayer(p.name, p.rating, s.wins + float(s.draws) / 2, s.position, s.played, s.played_first, p.is_avoiding_prune()));
                 break
         else:
             print p.name + " not in standings table for this division"
@@ -322,9 +323,23 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
 
     # Identify the prunes, and put their indices in the prune_set set
     prune_set = set()
+    a_prune_index = None
     for pi in range(len(players)):
         if players[pi].rating == 0:
             prune_set.add(pi)
+            if a_prune_index is None:
+                a_prune_index = pi
+
+    # If there is at least one prune, and any players should be treated as
+    # having played prune even though they haven't, fiddle the matrix
+    # accordingly
+    pi = 0
+    if a_prune_index is not None:
+        for p in players:
+            if p.avoid_prune:
+                played_matrix[pi][a_prune_index] += 1
+                played_matrix[a_prune_index][pi] += 1
+            pi += 1
 
     # Adjust the played_matrix so that if you've played one prune, you've
     # effectively played them all
