@@ -203,9 +203,6 @@ add new players.</p>""" % (urllib.quote_plus(tourney.get_name())))
         print "<hr />"
         print "<h2>Player list setup</h2>";
 
-        if len(players) and num_divisions > 1:
-            cgicommon.show_warning_box("There is already a player list defined, and divisions have been created. If you submit a new player list using this form, these new players will replace the existing players, and <strong>your division setup will be lost</strong>.")
-
         print("<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname)))
 
         print "<p>"
