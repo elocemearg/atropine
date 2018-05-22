@@ -15,9 +15,11 @@ def int_or_none(s):
         return None
 
 def print_html_head(title):
-    print """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB" xml:lang="en-GB">
-""";
+    #print """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+#<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB" xml:lang="en-GB">
+#""";
+    print "<!DOCTYPE html>"
+    print "<html>"
     print "<head>";
     print "<title>%s</title>" % (cgi.escape(title));
     print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />";
@@ -116,7 +118,7 @@ def show_sidebar(tourney):
         current_round = tourney.get_current_round()
         if rounds:
             if current_round:
-                print("<div><a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\"><strong>Games</strong></a></div>" % (urllib.quote_plus(tourney.name), urllib.quote_plus(str(current_round["num"]))))
+                print("<div><a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\"><strong>Results entry</strong></a></div>" % (urllib.quote_plus(tourney.name), urllib.quote_plus(str(current_round["num"]))))
             else:
                 print("<div><strong>Games</strong></div>")
         print("<div class=\"roundlinks\">")

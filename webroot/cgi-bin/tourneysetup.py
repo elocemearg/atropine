@@ -48,7 +48,7 @@ def make_double_quoted_string(s):
     return "".join(new_string)
 
 player_list_example_uniform = """Lavinia Splatterbury
-Egbert Flanger
+Semolina Spatchcock
 Compton Spongeworthy
 Plungemaster Thompson
 Flopsbourne McJumble

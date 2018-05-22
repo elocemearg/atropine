@@ -326,6 +326,10 @@ class DBVersionMismatchException(TourneyException):
     description = "This tourney database file was created with a version of atropine which is not compatible with the one you're using."
     pass
 
+class InvalidEntryException(TourneyException):
+    description = "Result entry is not valid."
+    pass
+
 class Player(object):
     def __init__(self, name, rating=0, team=None, short_name=None, withdrawn=False, division=0, division_fixed=False, player_id=None, avoid_prune=False):
         self.name = name;
@@ -570,6 +574,12 @@ class Game(object):
         else:
             return "Round %d, %s, Table %d, %s v %s" % (self.round_no, get_general_division_name(self.division), self.table_no, str(self.p1), str(self.p2));
     
+    def get_short_string(self):
+        if self.is_complete():
+            return "%s %s %s" % (str(self.p1), self.format_score(), str(self.p2))
+        else:
+            return "%s v %s" % (str(self.p1), str(self.p2))
+    
     def make_dict(self):
         names = self.get_player_names();
         if self.p1.is_pending():
@@ -618,6 +628,14 @@ class Game(object):
         else:
             raise PlayerNotInGameException("player %s is not in the game between %s and %s." % (str(player), str(self.p1), str(self.p2)));
         return score;
+    
+    def get_player_name_score(self, player_name):
+        if self.p1.is_player_known() and self.p1.get_name().lower() == player_name.lower():
+            return self.s1
+        elif self.p2.is_player_known() and self.p2.get_name().lower() == player_name.lower():
+            return self.s2
+        else:
+            raise PlayerNotInGameException("Player %s not in the game between %s and %s." % (str(player_name), str(self.p1), str(self.p2)))
     
     def get_opponent_score(self, player):
         if self.p1 == player:
@@ -852,7 +870,7 @@ class Tourney(object):
     
     def player_name_exists(self, name):
         cur = self.db.cursor()
-        cur.execute("select count(*) from player where name = ?", (name,))
+        cur.execute("select count(*) from player where lower(name) = ?", (name.lower(),))
         row = cur.fetchone()
         if row[0]:
             cur.close()
@@ -865,7 +883,7 @@ class Tourney(object):
         if self.db_version < (0, 7, 7):
             return
         cur = self.db.cursor()
-        cur.execute("update player set avoid_prune = ? where name = ?", (1 if value else 0, name))
+        cur.execute("update player set avoid_prune = ? where lower(name) = ?", (1 if value else 0, name.lower()))
         cur.close()
         self.db.commit()
     
@@ -873,7 +891,7 @@ class Tourney(object):
         if self.db_version < (0, 7, 7):
             return False
         cur = self.db.cursor()
-        cur.execute("select avoid_prune from player where name = ?", (name,))
+        cur.execute("select avoid_prune from player where lower(name) = ?", (name.lower(),))
         row = cur.fetchone()
         if row:
             retval = bool(row[0])
@@ -897,7 +915,7 @@ class Tourney(object):
         players = self.get_players()
         for p in players:
             short_name = get_short_name(p.get_name(), players)
-            cur.execute("update player set short_name = ? where name = ?", (short_name, p.get_name()))
+            cur.execute("update player set short_name = ? where lower(name) = ?", (short_name, p.get_name().lower()))
         self.db.commit()
 
     # players must be a list of 2-tuples or 3-tuples. Each tuple is (name,
@@ -910,9 +928,10 @@ class Tourney(object):
     # This function removes any players currently registered.
     def set_players(self, players, auto_rating_behaviour=RATINGS_UNIFORM):
         # If there are any games, in this tournament, it's too late to
-        # change the player list.
+        # replace the player list. You can, however, withdraw players or
+        # add individual players.
         if self.get_num_games() > 0:
-            raise TourneyInProgressException("Adding or removing players is not permitted once the tournament has started.");
+            raise TourneyInProgressException("Replacing the player list is not permitted once the tournament has started.");
 
         # Strip leading and trailing whitespace from player names
         new_player_list = [ (x[0].strip(), x[1], x[2]) for x in players ]
@@ -923,10 +942,10 @@ class Tourney(object):
             if p[0] == "":
                 raise InvalidPlayerNameException()
 
-        # Make sure all the player names are unique
+        # Make sure all the player names are case-insensitively unique
         for pi in range(len(players)):
             for opi in range(pi + 1, len(players)):
-                if players[pi][0] == players[opi][0]:
+                if players[pi][0].lower() == players[opi][0].lower():
                     raise DuplicatePlayerException("No two players are allowed to have the same name, and you've got more than one %s." % (players[pi][0]))
 
         # For each player, work out a "short name", which will be the first
@@ -1040,7 +1059,7 @@ class Tourney(object):
         except ValueError:
             raise InvalidRatingException("Cannot set %s's rating - invalid rating." % name);
         cur = self.db.cursor();
-        cur.execute("update player set rating = ? where name = ?", (rating, name));
+        cur.execute("update player set rating = ? where lower(name) = ?", (rating, name.lower()));
         if cur.rowcount < 1:
             self.db.rollback();
             raise PlayerDoesNotExistException("Cannot change the rating of player \"" + name + "\" because no player by that name exists.");
@@ -1057,7 +1076,7 @@ class Tourney(object):
             if p.name == newname:
                 raise PlayerExistsException("Cannot rename player \"%s\" to \"%s\" because there's already another player called %s." % (oldname, newname, newname));
         cur = self.db.cursor();
-        cur.execute("update player set name = ? where name = ?", (newname, oldname));
+        cur.execute("update player set name = ? where lower(name) = ?", (newname, oldname.lower()));
         if cur.rowcount < 1:
             self.db.rollback();
             raise PlayerDoesNotExistException("Cannot rename player \"" + oldname + "\" because no player by that name exists.");
@@ -1069,14 +1088,14 @@ class Tourney(object):
         players = self.get_players()
         for p in players:
             short_name = get_short_name(p.get_name(), players)
-            cur.execute("update player set short_name = ? where name = ?", (short_name, p.get_name()))
+            cur.execute("update player set short_name = ? where lower(name) = ?", (short_name, p.get_name().lower()))
 
         cur.close()
         self.db.commit();
 
     def set_player_division(self, player_name, new_division):
         cur = self.db.cursor()
-        cur.execute("update player set division = ? where name = ?", (new_division, player_name))
+        cur.execute("update player set division = ? where lower(name) = ?", (new_division, player_name.lower()))
         cur.close()
         self.db.commit()
 
@@ -1194,11 +1213,11 @@ class Tourney(object):
         division = 0
         for l in div_players:
             for p in l:
-                sql_params.append((division, int(p.get_name() in automatic_top_div_players), p.get_name()))
+                sql_params.append((division, int(p.get_name() in automatic_top_div_players), p.get_name().lower()))
             division += 1
 
         cur = self.db.cursor()
-        cur.executemany("update player set division = ?, division_fixed = ? where name = ?", sql_params)
+        cur.executemany("update player set division = ?, division_fixed = ? where lower(name) = ?", sql_params)
         cur.close()
         self.db.commit()
 
@@ -1233,7 +1252,7 @@ class Tourney(object):
 
     def get_player_tournament_rating(self, name):
         cur = self.db.cursor()
-        cur.execute("select tournament_rating from tournament_rating where name = ?", (name,))
+        cur.execute("select tournament_rating from tournament_rating where lower(name) = ?", (name.lower(),))
         row = cur.fetchone()
         if row is None:
             raise PlayerDoesNotExistException()
@@ -1468,12 +1487,12 @@ class Tourney(object):
         # alterations is (round_no, seq, p1, p2, game_type)
         # but we want (p1name, p2name, game_type, round_no, seq) for feeding
         # into the executemany() call.
-        alterations_reordered = map(lambda x : (x[2].get_name(), x[3].get_name(), x[4], x[0], x[1]), alterations);
+        alterations_reordered = map(lambda x : (x[2].get_name().lower(), x[3].get_name().lower(), x[4], x[0], x[1]), alterations);
         cur = self.db.cursor();
         cur.executemany("""
 update game
-set p1 = (select id from player where name = ?),
-p2 = (select id from player where name = ?),
+set p1 = (select id from player where lower(name) = ?),
+p2 = (select id from player where lower(name) = ?),
 game_type = ?
 where round_no = ? and seq = ?""", alterations_reordered);
         rows_updated = cur.rowcount;
@@ -1482,9 +1501,9 @@ where round_no = ? and seq = ?""", alterations_reordered);
         return rows_updated;
     
     def get_player_from_name(self, name):
-        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s from player p left outer join team t on p.team_id = t.id where p.name = ?" % ("0" if self.db_version < (0, 7, 7) else "p.avoid_prune");
+        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s from player p left outer join team t on p.team_id = t.id where lower(p.name) = ?" % ("0" if self.db_version < (0, 7, 7) else "p.avoid_prune");
         cur = self.db.cursor();
-        cur.execute(sql, (name,));
+        cur.execute(sql, (name.lower(),));
         row = cur.fetchone();
         cur.close();
         if row is None:
@@ -1606,6 +1625,56 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             return row[0]
         else:
             return 0
+
+    def get_games_between(self, round_no, player_name_1, player_name_2):
+        conditions = []
+        params = []
+
+        if round_no is not None:
+            conditions.append("g.round_no = ?")
+            params.append(round_no)
+
+        conditions.append("((lower(p1.name) = ? and lower(p2.name) = ?) or (lower(p2.name) = ? and lower(p1.name) = ?))")
+        params.append(player_name_1.lower())
+        params.append(player_name_2.lower())
+        params.append(player_name_1.lower())
+        params.append(player_name_2.lower())
+
+        conditions.append("(g.p1 is not null and g.p2 is not null)")
+
+        cur = self.db.cursor()
+        sql = """select g.round_no, g.seq, g.table_no, g.division, g.game_type,
+                 g.p1, g.p1_score, g.p2, g.p2_score, g.tiebreak
+                 from game g, player p1 on g.p1 = p1.id,
+                 player p2 on g.p2 = p2.id
+                 where g.p1 is not null and g.p2 is not null """;
+        for c in conditions:
+            sql += " and " + c
+        sql += "\norder by g.round_no, g.division, g.seq";
+        if len(params) == 0:
+            cur.execute(sql)
+        else:
+            cur.execute(sql, params)
+
+        games = []
+        for row in cur:
+            (round_no, game_seq, table_no, division, game_type, p1, p1_score, p2, p2_score, tb) = row
+            if tb is not None:
+                if tb:
+                    tb = True
+                else:
+                    tb = False
+            p1 = self.get_player_from_id(p1)
+            p2 = self.get_player_from_id(p2)
+            game = Game(round_no, game_seq, table_no, division, game_type, p1, p2, p1_score, p2_score, tb)
+            games.append(game);
+
+        cur.close();
+        self.db.commit();
+
+        return games;
+
+
 
     def get_games(self, round_no=None, table_no=None, game_type=None, only_players_known=True, division=None):
         conditions = [];
@@ -1856,7 +1925,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         return [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9]) for x in results ]
     
-    def get_logs_since(self, seq=None, include_new_games=False):
+    def get_logs_since(self, seq=None, include_new_games=False, round_no=None, maxrows=None):
         cur = self.db.cursor();
         sql = """select seq, datetime(ts, 'localtime') ts, round_no,
                 round_seq, table_no, game_type, p1.name p1, p1_score,
@@ -1872,9 +1941,13 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                 where p1 = p1.id and p2 = p2.id""";
         if seq is not None:
             sql += " and seq > ?"
+        if round_no is not None:
+            sql += " and round_no = %d" % (round_no)
         if not(include_new_games):
             sql += " and log_type > 0";
-        sql += " order by seq";
+        sql += " order by seq desc";
+        if maxrows:
+            sql += " limit %d" % (maxrows)
 
         if seq is not None:
             cur.execute(sql, (seq,));
@@ -1883,7 +1956,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         results = cur.fetchall();
         cur.close();
-        return results;
+        return results[::-1]
 
     def get_teleost_modes(self):
         cur = self.db.cursor();
@@ -1994,6 +2067,24 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             d[table] = count;
         cur.close();
         return d;
+    
+    def get_max_games_per_table(self, round_no=None):
+        sql = """select max(game_count) from (
+            select table_no, count(*) game_count
+            from game""";
+        if round_no is not None:
+            sql += " where round_no = %d" % (round_no)
+        sql += " group by table_no) x"
+
+        cur = self.db.cursor()
+        cur.execute(sql)
+        row = cur.fetchone()
+        value = None
+        if row is not None:
+            if row[0] is not None:
+                value = row[0]
+        cur.close()
+        return value
     
     def get_latest_game_times_by_table(self, round_no=None):
         sql = "select table_no, max(ts) from game_log";

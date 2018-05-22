@@ -309,7 +309,7 @@ try:
                     try:
                         tourney.merge_games(fixtures);
                         print "<h2>%d fixtures added successfully</h2>" % (len(fixtures));
-                        print "<p><a href=\"/cgi-bin/games.py?tourney=%s&round=%d\">View games</a></p>" % (urllib.quote_plus(tourney_name), earliest_round_no);
+                        print "<p><a href=\"/cgi-bin/games.py?tourney=%s&round=%d\">Go to result entry page</a></p>" % (urllib.quote_plus(tourney_name), earliest_round_no);
                     except countdowntourney.TourneyException as e:
                         print "<p>Failed to add new fixtures to database!</p>";
                         cgicommon.show_tourney_exception(e);

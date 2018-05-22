@@ -115,6 +115,10 @@ table.scorestable td.tableno {
 	text-align: center;
 }
 
+table.scorestable td.gamedivision {
+    padding: 5px;
+}
+
 .scorestable {
 	border-collapse:collapse;
 }
@@ -395,6 +399,7 @@ div.tourneyexceptionmessagecontainer {
 	max-width: 450px;
 	vertical-align: middle;
 	display: table-cell;
+    padding: 10px;
 }
 
 div.tourneyexceptionmessage {
@@ -402,10 +407,10 @@ div.tourneyexceptionmessage {
 }
 
 div.infoboxcontainer {
-        background-color: #ccccff;
-        border: 5px solid blue;
-        max-width: 750px;
-        display: table;
+    background-color: #ccccff;
+    border: 5px solid blue;
+    max-width: 750px;
+    display: table;
 	vertical-align: middle;
 }
 
@@ -704,4 +709,303 @@ div.teleostoptionblock {
 div.teleostoption {
        padding-left: 4em;
        font-size: 10pt;
+}
+
+/* Results editor data entry tool */
+
+div.scoreentry {
+    width: 600px;
+    background-color: #cccccc; /*#ffff88;*/
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border: 2px solid navy;
+}
+
+div.scoreentryheaderrow {
+    width: 600px;
+    float: left;
+    position: relative;
+    height: 30px;
+}
+
+div.scoreentryplayerinfo {
+    margin-left: 5px;
+    height: 30px;
+    line-height: 30px;
+    vertical-align: middle;
+    float: left;
+    font-size: 10pt;
+    font-color: black;
+    padding-left: 10px;
+}
+
+div.scoreentryplayerinfo1 {
+    position: absolute;
+    left: 0px;
+    max-width: 250px;
+}
+
+div.scoreentryplayerinfo2 {
+    position: absolute;
+    left: 300px;
+    max-width: 250px;
+}
+
+div.scoreentryclear {
+    left: 545px;
+    position: absolute;
+    height: 20px;
+    line-height: 20px;
+    font-size: 10pt;
+    color: navy;
+    background-color: white;
+    padding-left: 2px;
+    padding-right: 2px;
+    margin: 5px;
+    width: 40px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+div.scoreentrynamerow {
+    width: 600px;
+    /*height: 80px;*/
+    float: left;
+}
+
+div.scoreentryname {
+    width: 268px;
+    /*height: 60px;*/
+    float: left;
+    padding: 10px;
+    margin: 5px;
+    border: 1px solid gray;
+    background-color: #ffdd66;
+}
+
+div.scoreentryspacer {
+    clear: both;
+}
+
+div.scoreentryscorerow {
+    width: 600px;
+    /*height: 80px;*/
+    /*margin: 10px;*/
+    float: left;
+    /*background-color: #ffaaff;*/
+}
+
+div.scoreentryscore {
+    width: 268px;
+    /*height: 60px;*/
+    float: left;
+    padding: 10px;
+    margin: 5px;
+    background-color: #ffdd66;
+    border: 1px solid gray;
+    /*background-color: cyan;*/
+}
+
+input.entryname {
+    width: 255px;
+    padding: 5px;
+    font-size: 14pt;
+}
+
+input.entryscore {
+    padding: 5px;
+    font-size: 14pt;
+    width: 80px;
+    text-align: center;
+}
+
+#entryname1 {
+    float: right;
+}
+
+#entryname2 {
+    float: left;
+}
+
+#entryscore1 {
+    float: right;
+}
+
+#entryscore2 {
+    float: left;
+}
+
+div.scoreentryotherrow {
+    width: 600px;
+    /*height: 40px;*/
+    float: left;
+    /*background-color: #ffdd66;*/
+}
+
+div.scoreentrytiebreak {
+    float: left;
+    margin: 5px;
+    padding: 10px;
+    color: black;
+    display: none;
+}
+
+div.scoreentrysubmit {
+    margin: 5px;
+    padding: 10px;
+    float: right;
+}
+
+div.lastentry {
+    width: 600px;
+    padding: 10px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    background-color: gray;
+}
+
+/* Videprinter on result entry page */
+div.videprinter {
+    width: 600px;
+    height: 180px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    background-color: black;
+    border: 2px solid navy;
+    color: white;
+    font-size: 12pt;
+    font-family: "Helvetica", "Arial", sans-serif;
+    overflow: auto;
+}
+
+div.videprinterentry {
+    padding: 2px;
+    margin-left: 5px;
+    margin-right: 5px;
+    background-color: black;
+    color: white;
+    cursor: pointer;
+}
+
+span.videprintersuperseded {
+    text-decoration: line-through;
+    color: gray;
+}
+
+span.videprinterdivision {
+    color: #00cccc;
+}
+
+span.videprinterroundandtable {
+    color: #ffbb88;
+}
+
+span.videprinterplayer {
+    color: #dddd00;
+}
+
+span.videprinterwinningplayer {
+    color: #00dd00;
+}
+
+span.videprinterlosingplayer {
+    color: #ff4444;
+}
+
+span.videprinterscore {
+    color: white;
+}
+
+/* Blinkenlights */
+
+div.blinkenlights {
+    background-color: navy;
+    display: inline-block;
+}
+
+table.blinkenlightstable {
+    border: 2px solid navy;
+    border-collapse: collapse;
+}
+
+tr.blinkenlightsrow {
+    height: 60px;
+}
+
+td.blinkenlightscell {
+    height: 60px;
+    min-width: 72px;
+    border: 1px solid gray;
+}
+
+td.blinkenlightspaddingcell {
+    height: 60px;
+    min-width: 73px;
+    border: 1px solid gray;
+    background-color: black;
+}
+
+div.blinkenlightsdivision {
+    height: 10px;
+    font-size: 10pt;
+    color: silver;
+    background-color: black;
+}
+
+div.blinkenlightstablenumber {
+    height: 40px;
+    line-height: 40px;
+    font-size: 20pt;
+    color: yellow;
+    text-align: center;
+    vertical-align: middle;
+    background-color: black;
+    cursor: pointer;
+}
+
+div.blinkenlightsgamesleft {
+    height: 20px;
+    font-size: 16pt;
+    color: white;
+    text-align: center;
+    background-color: black;
+}
+
+.blinkenlightsgamesleft table {
+    width: 100%;
+}
+
+.blinkenlightsgamesleft tr {
+}
+
+td.blinkenlightsgameleft {
+    background-color: red;
+    border: 2px solid red;
+    height: 10px;
+    cursor: pointer;
+}
+
+td.blinkenlightsgameplayed {
+    background-color: #222222;
+    height: 10px;
+    border: 2px solid #222222;
+    cursor: pointer;
+}
+
+label.closeselectedgame {
+    background-color: white;
+    cursor: pointer;
+}
+
+div.blinkenlightsfooter {
+    background-color: black;
+    height: 12pt;
+    padding: 5px;
+}
+
+div.blinkenlightsmouseovertext {
+    float: right;
+    color: silver;
+    font-style: italic;
+    font-size: 12pt;
 }
