@@ -4,8 +4,8 @@ import sqlite3;
 import re;
 import os;
 
-SW_VERSION = "0.7.7"
-SW_VERSION_SPLIT = (0, 7, 7)
+SW_VERSION = "0.8.0"
+SW_VERSION_SPLIT = (0, 8, 0)
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
 RANK_WINS_POINTS = 0;
