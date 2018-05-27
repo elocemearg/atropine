@@ -1442,7 +1442,6 @@ class Tourney(object):
             for row in cur:
                 (round_no, seq, seat, player_id) = row;
                 updcur.execute("update game set p%d = ? where round_no = ? and seq = ? and p1_score is NULL and p2_score is NULL" % (seat), (player_id, round_no, seq));
-
             self.db.commit();
         except:
             self.db.rollback();
@@ -2380,8 +2379,30 @@ and g.p2 = p2.id
 
     def clear_banner_text(self):
         self.set_attribute("teleost_banner_text", "")
+    
+    def get_game_table_revision_no(self, round_no):
+        cur = self.db.cursor()
+        cur.execute("select max(seq) from game_log where round_no = ?", (round_no,))
+        row = cur.fetchone()
+        if row is None or row[0] is None:
+            revision_no = 0
+        else:
+            revision_no = row[0]
+        cur.close()
+        return revision_no
 
+    def get_game_table_revision_time(self, round_no, revision_no):
+        cur = self.db.cursor()
+        cur.execute("select datetime(ts, 'localtime') ts from game_log where round_no = ? and seq = ?", (round_no, revision_no))
+        row = cur.fetchone()
+        if row is None or row[0] is None:
+            timestamp = None
+        else:
+            timestamp = row[0]
+        cur.close()
+        return timestamp
 
+    
 def get_5_3_table_sizes(num_players):
     if num_players < 8:
         return []

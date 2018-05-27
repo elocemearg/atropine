@@ -1009,3 +1009,80 @@ div.blinkenlightsmouseovertext {
     font-style: italic;
     font-size: 12pt;
 }
+
+/* Conflict resolution form */
+div.conflictresolution {
+    margin-top: 20px;
+    margin-bottom: 30px;
+    padding: 5px;
+    border: 5px solid orange;
+    width: 590px;
+}
+
+div.conflictresolutiontoprow {
+    padding: 5px;
+    font-style: italic;
+    background-color: #ffff88;
+}
+
+div.conflictresolutionchoicerow {
+    padding: 5px;
+    display: table-row;
+}
+
+div.conflictresolutionradiobutton {
+    width: 20px;
+    padding: 5px;
+    display: table-cell;
+}
+
+div.conflictresolutionlabel {
+    padding: 5px;
+    display: table-cell;
+}
+
+div.conflictresolutionbottomrow {
+    padding: 5px;
+    height: 20px;
+    vertical-align: middle;
+    background-color: #ffff88;
+}
+
+div.conflictresolutionsubmit {
+    float: right;
+    height: 20px;
+}
+
+div.conflictresolutionexample {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    margin-left: 35px;
+}
+
+div.conflictresolutionexampletitle {
+    font-style: italic;
+    padding-bottom: 5px;
+}
+
+table.conflictresolutionexampletable {
+    border-collapse: collapse;
+}
+
+table.conflictresolutionexampletable th {
+    border-bottom: 1px solid black;
+    background-color: #aaaaaa;
+    padding: 5px;
+}
+
+table.conflictresolutionexampletable tr {
+}
+
+table.conflictresolutionexampletable td {
+    text-align: center;
+    padding: 5px;
+    background-color: #dddddd;
+}
+
+td.cr_newresultcol {
+    font-weight: bold;
+}

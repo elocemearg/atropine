@@ -202,7 +202,7 @@ def show_team_score_table(team_scores):
         print '</tr>'
     print '</table>'
 
-def show_games_as_html_table(games, editable=True, remarks=None, include_round_column=False, round_namer=None, player_to_link=None):
+def show_games_as_html_table(games, editable=True, remarks=None, include_round_column=False, round_namer=None, player_to_link=None, remarks_heading=""):
     if remarks is None:
         remarks = dict()
      
@@ -217,7 +217,7 @@ def show_games_as_html_table(games, editable=True, remarks=None, include_round_c
     if include_round_column:
         print "<th>Round</th>"
     print "<th>Table</th><th>Type</th>";
-    print "<th>Player 1</th><th>Score</th><th>Player 2</th><th></th>";       
+    print "<th>Player 1</th><th>Score</th><th>Player 2</th><th>%s</th>" % (cgi.escape(remarks_heading));
     print "</tr>"
     last_table_no = None;
     last_round_no = None
