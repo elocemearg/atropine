@@ -26,8 +26,8 @@
 	<p>
 	To use Atropine, you need
 	<a href="http://www.python.org/download/">Python 2.x</a> installed.
-	At the time of writing, the latest version of this is
-	<a href="https://www.python.org/downloads/release/python-2711/">2.7.11</a>.
+	At the time of writing (May 2018), the latest version of this is
+    <a href="https://www.python.org/downloads/release/python-2715/">2.7.15</a>.
 	If you are using Windows, you want the "Windows x86 MSI Installer".
 	</p>
 	<p>
@@ -41,6 +41,16 @@
 	is the Windows installer for the specific pygame version compatible
 	with Python 2.7.
 	</p>
+    <h3>Python 3?</h3>
+    <p>
+    One day, Atropine will be ported over to Python 3. The main reason this
+    hasn't happened yet is the reliance on pygame, which doesn't have
+    a Windows port compatible with any recent version of Python 3. The
+    long-term plan is to remove the dependency on the pygame module and draw
+    the public-facing screen another way, and at that point atropine will be
+    ported to Python 3. When that happens you'll need to download Python 3
+    to continue to use atropine, but you don't need to worry about that yet.
+    </p>
 
 	<h2>Installation</h2>
 	<p>
@@ -176,46 +186,117 @@
 	<p>
 	You should then see a page telling you the fixtures were added
 	successfully. Click the <em>View games</em> link to go to the
-	score editor.
+	results entry page.
 	</p>
 
-	<h2>Filling in scores</h2>
-	<p>
-	The score editor is the page you'll be using the most. There is one for
-	every round, and you can get to the score editor for a particular round
-	by clicking the link with that round's name in the sidebar, e.g.
-	"Round 1".
-	</p>
-	<p>
-	When a game is finished and you have the score, type it in the
-	corresponding box and click <em>Save</em> or press ENTER.
-	</p>
-	<p>
-	Normally a score is two numbers separated by a hyphen, e.g. 56-52, but
-	the score editor is pretty permissive with what it will accept as a
-	score. As long as it looks like a number, followed by a hyphen,
-	followed by another number, it'll accept it. If you enter something it
-	doesn't understand, a suitable admonishment will appear in the
-	"Remarks" column for that game.
-	</p>
-	<p>
-	If a game was won on a tiebreak, include an asterisk (*) in the score.
-	This can immediately follow either number. Points scored on tiebreaks
-	do not count towards a player's total.
-	</p>
-	<p>
-	Remember to click <em>Save</em> (or press ENTER) after entering
-	a result. If you change a score box and don't save it, its background
-	will turn yellow to warn you that it hasn't been saved. Scores are not
-	written to the database until you save them. If you try to navigate
-	away from the page when there are unsaved results, a box will appear
-	warning you that you're about to lose work.
-	</p>
-	<p>
-	If you've got Teleost open, you'll find that when you enter the first
-	result the display switches to showing the standings table and a
-	scrolling window for the latest results.
-	</p>
+	<h2>Filling in results</h2>
+    <p>
+    This is the page you'll be using the most. After you generate fixtures
+    you'll be led here. You can also get here using the "Results entry"
+    link in the sidebar.
+    </p>
+    <p>
+    As of atropine 0.8.0, the results entry interface gives you a space to
+    enter results at the top of the screen, then a videprinter-like display
+    of recently-entered results below that, then a box of blinkenlights.
+    </p>
+
+    <h3>Result entry</h3>
+    <p>
+    When you want to enter a result, first enter the players' names in the
+    player name boxes, then enter the players' scores in the boxes below, then
+    press enter or click <em>Submit result</em>. As you type a player's name,
+    it will be auto-completed for you when you've typed enough. You can press
+    TAB to move on to the next box.
+    </p>
+    <p>
+    It doesn't matter which way round the two players appear on the fixture
+    list - you can enter either name first. It is recommended that if you're
+    handed a scoresheet with a result on it, you enter the names in the order
+    they appear on the scoresheet. It's easier and avoids mistakes.
+    </p>
+    <p>
+    If the score you enter has a winning margin of exactly 10, a checkbox will
+    appear asking you whether this game was won on a tiebreak conundrum. Tick
+    the box if so. This will cause the winner's extra 10 points for the
+    tiebreak not to be counted in the standings table. If you're used to the
+    old interface, typing an asterisk (*) next to the score in one of the score
+    boxes is another way of indicating that a game was won on a tiebreak.
+    </p>
+
+    <h3>Recent results</h3>
+    <p>
+    This is the videprinter-like display on the Results Entry page. It shows
+    all the results so far entered for this round. If you want to correct a
+    result, click it in the videprinter and the details will be loaded into the
+    result entry form. Correct the score and submit it.
+    </p>
+    <p>
+    Corrected entries appear grey with a line through them.
+    </p>
+
+    <h3>Blinkenlights</h3>
+    <p>
+    The Blinkenlights are a grid of numbered boxes. Each box represents a
+    table, or board, on which one or more games are being played in that round.
+    Within each numbered box is one coloured box for each game being played on
+    that table. A grey box means the result for that game has been entered, and
+    a red box means we don't have the result yet.
+    </p>
+    <p>
+    The purpose of the Blinkenlights is to show you at a glance which tables
+    have had their results entered and which haven't. At a Lincoln-style event
+    this can be useful to identify which tables are playing slowly or hoarding
+    their scoresheets.
+    </p>
+    <p>
+    If you hover the mouse cursor over a table number, the message bar at the
+    bottom of the Blinkenlights shows you the list of players on that table.
+    If you hover over a red or grey box representing a game, it shows you the
+    players playing in that game, and the score if applicable.
+    </p>
+    <p>
+    You can click a red or grey box to load that game's details into the
+    results entry interface, for results input or correction. If you'd rather
+    the names and scores were loaded into the results entry interface the other
+    way round, click the same game again and they'll swap over.
+    </p>
+
+    <h3>I hate this new interface! I want the old interface back, the one with the list of games!</h3>
+    <p>
+    The old one is still there, but I would strongly recommend trying out the
+    new interface if you can. The main reason for this is that with the old
+    interface, it was very, very easy to accidentally enter the result for a
+    game the wrong way round and not notice.
+    This usually happened when the score editor showed, say, "Alice v Bob" and
+    the scoresheet handed to the organiser had the names the other way
+    round, "Bob 34-56 Alice". If you've entered 200 results already that
+    day, it's very likely you'll accidentally type in "34-56" for Alice v Bob
+    instead of the correct "56-34".
+    </p>
+    <p>
+    Nevertheless, if you need to use the old interface, which showed you all
+    the games in a list with an edit box for each one, it's still there: just
+    click the <em>"show all the games in this round as a list"</em> link at the
+    bottom of the results entry page.
+    </p>
+    <p>
+    There are some very rare cases where you might need the old interface. If
+    you've generated a round in which two players play each other twice (this
+    used to be possible with some fixture generators), only the old interface
+    will work for those matches. Also, the old interface allowed you to declare
+    that a match was won on a tiebreak when the winning margin was something
+    other than 10. Arguably this was a bug, but if you ever need to do that
+    because some event has weird rules, then you need to use the old interface
+    to do that.
+    </p>
+    <p>
+    Aside from that, you should be using the new interface. If there's any
+    problem with the new interface that's driving you back to the old one,
+    let me know, and I'll look at making appropriate improvements to the new
+    interface.
+    </p>
+
 	<h2>The rest of the tourney</h2>
 	<p>
 	When you've entered all results for one round and you're ready to
