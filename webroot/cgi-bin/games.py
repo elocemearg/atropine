@@ -306,6 +306,7 @@ function entry_name_change_finished(control_id, opponent_control_id) {
                 opponent_score_control.value = last_match["opponent_score"].toString();
                 tiebreak_control.checked = last_match["tb"];
             }
+            entry_score_change();
             highlight_game_button(last_match["seq"]);
         }
         else {
