@@ -109,6 +109,18 @@ def write_autocomplete_scripts(tourney, games):
     print json.dumps(players_summaries, indent=4)
     print ";"
 
+    player_links = dict()
+    tourney_name = tourney.get_name()
+    for name in players_summaries:
+        try:
+            p = tourney.get_player_from_name(name)
+            player_links[name] = cgicommon.player_to_link(p, tourney_name, False, False, True, players_summaries[name])
+        except PlayerDoesNotExistException:
+            pass
+
+    print "var player_links = "
+    print json.dumps(player_links, indent=4)
+    print ";"
     print
 
     print """
@@ -119,8 +131,8 @@ function set_infobox(name_control_id, info_control_id) {
     var name_control = document.getElementById(name_control_id);
     var info_control = document.getElementById(info_control_id);
 
-    if (name_control.value in player_snapshots) {
-        info_control.innerHTML = player_snapshots[name_control.value];
+    if (name_control.value in player_links) {
+        info_control.innerHTML = player_links[name_control.value];
     }
     else {
         info_control.innerHTML = "";

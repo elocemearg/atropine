@@ -383,13 +383,13 @@ def show_standings_table(tourney, show_draws_column, show_points_column, show_sp
             print "</tr>";
     print "</table>";
 
-def player_to_link(player, tourney_name, emboldenise=False, disable_tab_order=False, open_in_new_window=False):
+def player_to_link(player, tourney_name, emboldenise=False, disable_tab_order=False, open_in_new_window=False, custom_text=None):
     return "<a class=\"playerlink%s\" href=\"player.py?tourney=%s&id=%d\" %s%s>%s</a>" % (
             " thisplayerlink" if emboldenise else "",
             urllib.quote_plus(tourney_name), player.get_id(),
             "tabindex=\"-1\" " if disable_tab_order else "",
             "target=\"_blank\"" if open_in_new_window else "",
-            cgi.escape(player.get_name())
+            cgi.escape(custom_text) if custom_text is not None else cgi.escape(player.get_name())
     )
 
 def ordinal_number(n):
