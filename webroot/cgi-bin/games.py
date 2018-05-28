@@ -823,7 +823,9 @@ try:
             round_no = int(form.getfirst("round"));
         except ValueError:
             print "<h1>Invalid round number</h1>";
-            print "<p>\"%s\" is not a valid round number.</p>";
+            print "<p>\"%s\" is not a valid round number.</p>" % (cgi.escape(form.getfirst("round")));
+    else:
+        print "<h1>No round number specified</h1>";
     
     if round_no is not None:
         games = tourney.get_games(round_no=round_no);
@@ -1034,9 +1036,10 @@ try:
         write_autocomplete_scripts(tourney, games)
 
 
-    print "<p style=\"font-size: 10pt;\">";
-    print "<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Show all the games in this round as a list</a>" % (urllib.quote_plus(tourney_name), round_no);
-    print "</p>";
+    if round_no is not None:
+        print "<p style=\"font-size: 10pt;\">";
+        print "<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Show all the games in this round as a list</a>" % (urllib.quote_plus(tourney_name), round_no);
+        print "</p>";
 
     print "</div>"; #mainpane
 
