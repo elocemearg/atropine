@@ -434,7 +434,8 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
     print "<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no;
 
     # Print new-fangled friendlier data-entry controls
-    print "<div class=\"scoreentry\">"
+    print "<div class=\"scoreentry boxshadow\">"
+    print "<div class=\"resultsentrytitle\">Result entry</div>"
     print "<div class=\"scoreentryheaderrow\">"
     print "<div class=\"scoreentryplayerinfo scoreentryplayerinfo1\" id=\"entryinfo1\"></div>"
     print "<div class=\"scoreentryplayerinfo scoreentryplayerinfo2\" id=\"entryinfo2\"></div>"
@@ -496,8 +497,10 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
     print "<p id=\"diag\"></p>"
 
 def write_videprinter(tourney, round_no):
-    print "<div class=\"videprinter\" id=\"videprinterdiv\">"
-    
+    print "<div class=\"videprinter boxshadow\" id=\"videprinterdiv\">"
+    print "<div class=\"resultsentrytitle\">Recent results</div>"
+    print "<div class=\"videprinterwindow\" id=\"videprinterwindow\">"
+
     logs = tourney.get_logs_since(None, False, round_no)
     num_divisions = tourney.get_num_divisions()
 
@@ -539,7 +542,8 @@ def write_videprinter(tourney, round_no):
             print "<span class=\"videprinterscore\">%s-%s</span>" % (scorestr1, scorestr2)
             print "<span class=\"%s\">%s</span>" % (player_classes[1], cgi.escape(name2))
         print "</div>"
-    print "</div>"
+    print "</div>" # videprinterwindow
+    print "</div>" # videprinter
 
 def write_blinkenlights(tourney, round_no):
     games = tourney.get_games(round_no)
@@ -669,7 +673,8 @@ function set_blinkenlights_mouseover(text) {
 
     max_games_on_table = max([ len(tables_to_games[t]) for t in tables_to_games ])
 
-    print "<div class=\"blinkenlights\">"
+    print "<div class=\"blinkenlights boxshadow\">"
+    print "<div class=\"resultsentrytitle\" style=\"padding: 7px;\">Blinkenlights</div>"
     print "<table class=\"blinkenlightstable\">"
     
     num_tables_drawn = 0
@@ -794,7 +799,7 @@ function scroll_to_bottom(element) {
 }
 
 function games_on_load() {
-    element = document.getElementById("videprinterdiv");
+    element = document.getElementById("videprinterwindow");
     if (element != null) {
         scroll_to_bottom(element);
     }
@@ -832,8 +837,11 @@ try:
             round_name = "Round " + str(round_no);
 
         remarks = dict();
+        print "<div class=\"roundnamebox boxshadow\">"
+        print cgi.escape(round_name);
+        print "</div>"
 
-        print "<h1>%s</h1>" % cgi.escape(round_name);
+        print "<div style=\"clear: both;\"></div>"
 
         last_entry_valid = False
         last_entry_error = None

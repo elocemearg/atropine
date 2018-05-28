@@ -361,7 +361,8 @@ div.warningbox {
 	height: 130px;
 	max-width: 600px;
 	display: table;
-	margin-bottom: 1ex;
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 div.warningboximage {
@@ -387,6 +388,9 @@ div.tourneyexception {
 	height: 130px;
 	max-width: 600px;
 	display: table;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    /*box-shadow: 5px 5px 5px gray;*/
 }
 
 div.tourneyexceptionimage {
@@ -867,7 +871,6 @@ div.lastentry {
 /* Videprinter on result entry page */
 div.videprinter {
     width: 600px;
-    height: 180px;
     margin-top: 20px;
     margin-bottom: 20px;
     background-color: black;
@@ -875,7 +878,11 @@ div.videprinter {
     color: white;
     font-size: 12pt;
     font-family: "Helvetica", "Arial", sans-serif;
+}
+
+div.videprinterwindow {
     overflow: auto;
+    height: 180px;
 }
 
 div.videprinterentry {
@@ -1085,4 +1092,36 @@ table.conflictresolutionexampletable td {
 
 td.cr_newresultcol {
     font-weight: bold;
+}
+
+div.resultsentrytitle {
+    color: #dddddd;
+    background-color: navy;
+    padding: 5px;
+}
+
+/* Round name */
+div.roundnamebox {
+    display: inline-block;
+    background-color: #dddddd;
+    width: 580px;
+    font-size: 16pt;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+    border: 2px solid navy;
+}
+
+div.boxshadow {
+    box-shadow: 5px 5px 8px gray;
+}
+
+/* This might be useful someday */
+.outlinetext {
+    color: white;
+	text-shadow:
+		-1px -1px 0 #000,
+		1px -1px 0 #000,
+		-1px 1px 0 #000,
+		1px 1px 0 #000;
 }
