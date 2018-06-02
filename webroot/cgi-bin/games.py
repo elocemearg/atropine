@@ -700,11 +700,10 @@ function select_game(game_seq, from_videprinter) {
         load_data_entry_form(game["name1"], game["name2"], game["score1"], game["score2"], game["tb"]);
     }
 
-    /* If this game has not been played, give score1 focus */
-    if (game["score1"] == null || game["score2"] == null) {
-        var score1element = document.getElementById("entryscore1");
-        score1element.focus();
-    }
+    /* Give the score1 field focus */
+    var score1element = document.getElementById("entryscore1");
+    score1element.focus();
+    score1element.select();
 }
 
 function set_blinkenlights_mouseover(text) {
