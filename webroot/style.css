@@ -718,7 +718,9 @@ div.teleostoption {
 /* Results editor data entry tool */
 
 div.scoreentry {
+    position: relative;
     width: 600px;
+    height: 240px;
     background-color: #cccccc; /*#ffff88;*/
     margin-top: 20px;
     margin-bottom: 20px;
@@ -777,14 +779,47 @@ div.scoreentrynamerow {
     float: left;
 }
 
+div.scoreentryeditboxes {
+    position: relative;
+    width: 600px;
+}
+
 div.scoreentryname {
-    width: 268px;
+    /*width: 268px;*/
     /*height: 60px;*/
     float: left;
     padding: 10px;
     margin: 5px;
     border: 1px solid gray;
     background-color: #ffdd66;
+}
+
+#name1div {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 268px;
+}
+
+#name2div {
+    position: absolute;
+    top: 0px;
+    left: 300px;
+    width: 268px;
+}
+
+#score1div {
+    position: absolute;
+    top: 70px;
+    left: 0px;
+    width: 268px;
+}
+
+#score2div {
+    position: absolute;
+    top: 70px;
+    left: 300px;
+    width: 268px;
 }
 
 div.scoreentryspacer {
@@ -840,7 +875,9 @@ input.entryscore {
 }
 
 div.scoreentryotherrow {
+    position: absolute;
     width: 600px;
+    top: 190px;
     /*height: 40px;*/
     float: left;
     /*background-color: #ffdd66;*/
@@ -1124,4 +1161,64 @@ div.boxshadow {
 		1px -1px 0 #000,
 		-1px 1px 0 #000,
 		1px 1px 0 #000;
+}
+
+/* Preferences */
+div.prefsdiv {
+    max-width: 600px;
+}
+
+div.prefsheading {
+    background-color: navy;
+    color: white;
+    padding: 5px;
+}
+
+div.prefstaborder {
+    padding: 5px;
+    margin-bottom: 10px;
+    background-color: #dddddd;
+}
+
+div.prefstaborderrow {
+    position: relative;
+    padding: 5px;
+    vertical-align: middle;
+    height: 30px;
+    line-height: 30px;
+    border-bottom: 1px dashed black;
+}
+
+div.prefstaborderimage {
+    position: absolute;
+    left: 0px;
+}
+
+div.prefstabordercontrol {
+    position: absolute;
+    left: 40px;
+    padding-left: 10px;
+}
+
+div.prefsclear {
+    clear: both;
+}
+
+div.prefssubmitrow {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 5px;
+}
+
+div.prefsfeedback {
+    height: 20px;
+}
+
+span.prefssaved {
+    color: #008800;
+    font-size: 10pt;
+}
+
+div.prefstaborderfooter {
+    font-size: 10pt;
 }

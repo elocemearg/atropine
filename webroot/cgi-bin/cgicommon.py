@@ -4,8 +4,10 @@ import sys;
 import os;
 import cgi;
 import urllib;
+import sqlite3;
 
 dbdir = os.path.join("..", "tourneys");
+globaldbfile = os.path.join("..", "prefs.db");
 
 def int_or_none(s):
     try:
@@ -94,6 +96,7 @@ def set_module_path():
 
 
 def show_sidebar(tourney):
+    new_window_html = "<img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Opens in new window\" />"
     print "<div class=\"sidebar\">";
 
     print "<a href=\"/cgi-bin/home.py\"><img src=\"/images/robin128.png\" alt=\"Robin\" /></a><br />";
@@ -171,15 +174,20 @@ def show_sidebar(tourney):
         print "Tournament report"
         print "<div class=\"sidebarlinklist\">"
         print "<div class=\"exportlink\">"
-        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=html\" target=\"_blank\">HTML</a>" % (urllib.quote_plus(tourney.name))
+        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=html\" target=\"_blank\">HTML %s</a>" % (urllib.quote_plus(tourney.name), new_window_html)
         print "</div>"
         print "<div class=\"exportlink\">"
-        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=text\" target=\"_blank\">Text</a>" % (urllib.quote_plus(tourney.name))
+        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=text\" target=\"_blank\">Text %s</a>" % (urllib.quote_plus(tourney.name), new_window_html)
         print "</div>"
         print "<div class=\"exportlink\">"
-        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=wikitext\" target=\"_blank\">Wikitext</a>" % (urllib.quote_plus(tourney.name))
+        print "<a href=\"/cgi-bin/export.py?tourney=%s&format=wikitext\" target=\"_blank\">Wikitext %s</a>" % (urllib.quote_plus(tourney.name), new_window_html)
         print "</div>"
         print "</div>"
+    print "<br />"
+    print "<div class=\"globalprefslink\">"
+    print "<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" "
+    print "onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=450,height=500'); return false;\" >Preferences... " + new_window_html + "</a>"
+    print "</div>"
     print "</div>";
 
 def make_team_dot_html(team):
@@ -403,3 +411,47 @@ def ordinal_number(n):
         return "%drd" % (n)
     else:
         return "%dth" % (n)
+
+class GlobalPreferences(object):
+    def __init__(self, names_values):
+        self.mapping = names_values.copy()
+
+    def get_result_entry_tab_order(self):
+        return self.mapping.get("resultsentrytaborder", "nnss")
+
+    def set_result_entry_tab_order(self, value):
+        self.mapping["resultsentrytaborder"] = value
+
+    def get_map(self):
+        return self.mapping.copy()
+
+def get_global_preferences():
+    db = sqlite3.connect(globaldbfile)
+    
+    cur = db.cursor()
+    cur.execute("create table if not exists prefs(name text, value text)")
+    cur.execute("select name, value from prefs")
+    prefs = dict()
+    for row in cur:
+        prefs[row[0]] = row[1]
+    cur.close()
+
+    db.close()
+
+    return GlobalPreferences(prefs)
+
+def set_global_preferences(prefs):
+    db = sqlite3.connect(globaldbfile)
+    db.execute("delete from prefs")
+    
+    rows_to_insert = []
+    
+    mapping = prefs.get_map()
+    for name in mapping:
+        rows_to_insert.append((name, mapping[name]))
+
+    db.executemany("insert into prefs values (?, ?)", rows_to_insert)
+
+    db.commit()
+
+    db.close()

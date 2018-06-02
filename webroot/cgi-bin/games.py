@@ -281,9 +281,13 @@ function entry_name_change_finished(control_id, opponent_control_id) {
     var opponent_name = opponent_control.value.trim()
     
     /* If both names are now filled in, and there is exactly one game in this
-       round between these two players, then fill in the score and
-       tiebreak checkbox. */
-    if (is_valid_player(player_name) && is_valid_player(opponent_name)) {
+       round between these two players, and the score fields are either blank
+       or contain something not entered by the user, then fill in the score
+       and tiebreak checkbox. */
+    if (is_valid_player(player_name) && is_valid_player(opponent_name) &&
+            ((player_score_control.value == "" && opponent_score_control.value == "") ||
+               !("scores" in control_last_change_was_manual) ||
+               !control_last_change_was_manual["scores"])) {
         var player_games = players[player_name];
         var last_match = null;
         var num_matches = 0;
@@ -306,7 +310,7 @@ function entry_name_change_finished(control_id, opponent_control_id) {
                 opponent_score_control.value = last_match["opponent_score"].toString();
                 tiebreak_control.checked = last_match["tb"];
             }
-            entry_score_change();
+            entry_score_change(false);
             highlight_game_button(last_match["seq"]);
         }
         else {
@@ -319,7 +323,7 @@ function entry_name_change_finished(control_id, opponent_control_id) {
     set_infoboxes();
 }
 
-function entry_score_change() {
+function entry_score_change(was_user_input) {
     var control1 = document.getElementById("entryscore1");
     var control2 = document.getElementById("entryscore2");
     var tiebreak_div = document.getElementById("tiebreakdiv");
@@ -329,6 +333,8 @@ function entry_score_change() {
     var possible_tiebreak = false;
     var p1_win = false;
     var p2_win = false;
+
+    control_last_change_was_manual["scores"] = was_user_input;
 
     /* If both scores are valid integers and they are 10 apart, make the
        tiebreak tickbox a bit less subtle. Otherwise resubtlify it. */
@@ -352,7 +358,14 @@ function entry_score_change() {
 
     if (possible_tiebreak) {
         tiebreak_div.style = "display: block;";
-        tiebreak_control.checked = tiebreak_prev_state;
+        if (was_user_input) {
+            /* The user filled in the score, so set the tiebreak checkbox
+               to the same checked state it was before. If this isn't user
+               input - that is, a script has filled the scores in - then it
+               would also have filled in the tiebreak checkbox so don't
+               fiddle with it. */
+            tiebreak_control.checked = tiebreak_prev_state;
+        }
         tiebreak_visible = true;
     }
     else {
@@ -395,7 +408,7 @@ function load_data_entry_form(name1, name2, score1, score2, tb) {
     else {
         document.getElementById("entryscore2").value = score2.toString();
     }
-    entry_score_change();
+    entry_score_change(false);
     document.getElementById("entrytiebreak").checked = tb;
     set_infoboxes();
 }
@@ -457,40 +470,59 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
     print "</div>"
     print "</div>"
 
-    print "<div class=\"scoreentrynamerow\">"
+    #print "<div class=\"scoreentrynamerow\">"
 
     print "<div class=\"scoreentryspacer\"></div>"
 
-    print "<div class=\"scoreentryname\" id=\"name1div\">"
-    print ("<input class=\"entryname\" type=\"text\" name=\"entryname1\" " +
+    print "<div class=\"scoreentryeditboxes\">"
+
+    name1div = "<div class=\"scoreentryname\" id=\"name1div\">"
+    name1div += ("<input class=\"entryname\" type=\"text\" name=\"entryname1\" " +
         "id=\"entryname1\" placeholder=\"Player name...\" value=\"%s\" " +
         "oninput=\"entry_name_change('entryname1', 'entryname2');\" " +
         "onchange=\"entry_name_change_finished('entryname1', 'entryname2');\"" +
         " />") % (cgi.escape(default_names[0], True))
-    print "</div>"
-    print "<div class=\"scoreentryname\" id=\"name2div\">"
-    print ("<input class=\"entryname\" type=\"text\" name=\"entryname2\" " +
+    name1div += "</div>"
+
+    name2div = "<div class=\"scoreentryname\" id=\"name2div\">"
+    name2div += ("<input class=\"entryname\" type=\"text\" name=\"entryname2\" " +
         "id=\"entryname2\" placeholder=\"Player name...\" value=\"%s\" " +
         "oninput=\"entry_name_change('entryname2', 'entryname1');\" " +
         "onchange=\"entry_name_change_finished('entryname2', 'entryname1');\"" +
         " />") % (cgi.escape(default_names[1], True))
-    print "</div>"
-    print "</div>" # scoreentrynamerow
+    name2div += "</div>"
+    #print "</div>" # scoreentrynamerow
 
-    print "<div class=\"scoreentryspacer\"></div>"
+    #print "<div class=\"scoreentryspacer\"></div>"
 
-    print "<div class=\"scoreentryscorerow\">"
-    print "<div class=\"scoreentryscore\" id=\"score1div\">"
-    print ("<input class=\"entryscore\" type=\"text\" name=\"entryscore1\" " +
+    #print "<div class=\"scoreentryscorerow\">"
+    score1div = "<div class=\"scoreentryscore\" id=\"score1div\">"
+    score1div += ("<input class=\"entryscore\" type=\"text\" name=\"entryscore1\" " +
             "id=\"entryscore1\" placeholder=\"Score\" value=\"%s\" " +
-            "oninput=\"entry_score_change();\" />") % (cgi.escape(default_scores[0], True))
-    print "</div>"
-    print "<div class=\"scoreentryscore\" id=\"score2div\">"
-    print ("<input class=\"entryscore\" type=\"text\" name=\"entryscore2\" " +
+            "oninput=\"entry_score_change(true);\" />") % (cgi.escape(default_scores[0], True))
+    score1div += "</div>"
+
+    score2div = "<div class=\"scoreentryscore\" id=\"score2div\">"
+    score2div += ("<input class=\"entryscore\" type=\"text\" name=\"entryscore2\" " +
             "id=\"entryscore2\" placeholder=\"Score\" value=\"%s\" " +
-            "oninput=\"entry_score_change();\" />") % (cgi.escape(default_scores[1], True))
-    print "</div>"
-    print "</div>" # scoreentryscorerow
+            "oninput=\"entry_score_change(true);\" />") % (cgi.escape(default_scores[1], True))
+    score2div += "</div>"
+
+    prefs = cgicommon.get_global_preferences()
+    tab_order = prefs.get_result_entry_tab_order()
+    if tab_order == "nsns":
+        div_order = [ name1div, score1div, name2div, score2div ]
+    elif tab_order == "nssn":
+        div_order = [ name1div, score1div, score2div, name2div ]
+    else:
+        div_order = [ name1div, name2div, score1div, score2div ]
+
+    for div in div_order:
+        print div
+
+    #print "</div>" # scoreentryscorerow
+
+    print "</div>" # scoreentryeditboxes
 
     print "<div class=\"scoreentryspacer\"></div>"
 
@@ -1050,8 +1082,8 @@ try:
 
 
     if round_no is not None:
-        print "<p style=\"font-size: 10pt;\">";
-        print "<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Show all the games in this round as a list</a>" % (urllib.quote_plus(tourney_name), round_no);
+        print "<div style=\"font-size: 10pt; margin-top: 20px;\">";
+        print "<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Show old interface: all the games in this round as a list</a>" % (urllib.quote_plus(tourney_name), round_no);
         print "</p>";
 
     print "</div>"; #mainpane
