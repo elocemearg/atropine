@@ -478,7 +478,7 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
 
     name1div = "<div class=\"scoreentryname\" id=\"name1div\">"
     name1div += ("<input class=\"entryname\" type=\"text\" name=\"entryname1\" " +
-        "id=\"entryname1\" placeholder=\"Player name...\" value=\"%s\" " +
+        "id=\"entryname1\" placeholder=\"Player name\" value=\"%s\" " +
         "oninput=\"entry_name_change('entryname1', 'entryname2');\" " +
         "onchange=\"entry_name_change_finished('entryname1', 'entryname2');\"" +
         " />") % (cgi.escape(default_names[0], True))
@@ -486,7 +486,7 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
 
     name2div = "<div class=\"scoreentryname\" id=\"name2div\">"
     name2div += ("<input class=\"entryname\" type=\"text\" name=\"entryname2\" " +
-        "id=\"entryname2\" placeholder=\"Player name...\" value=\"%s\" " +
+        "id=\"entryname2\" placeholder=\"Player name\" value=\"%s\" " +
         "oninput=\"entry_name_change('entryname2', 'entryname1');\" " +
         "onchange=\"entry_name_change_finished('entryname2', 'entryname1');\"" +
         " />") % (cgi.escape(default_names[1], True))
