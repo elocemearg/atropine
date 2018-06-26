@@ -416,6 +416,7 @@ class VideprinterView extends View {
         super(tourney_name, leftPc, topPc, widthPc, heightPc);
         this.numRows = numRows;
         this.latestGameRevisionSeen = null;
+        this.latestLogSeqShown = null;
     }
 
     setup(container) {
@@ -494,7 +495,9 @@ class VideprinterView extends View {
         this.latestGameRevisionSeen = game_state_revision;
         var game_state = this.get_game_state();
         var logs_reply = null;
-        var log_entries = []
+        var log_entries = [];
+        var maxLogSeq = null;
+
         if (game_state.success) {
             logs_reply = game_state.logs;
             var start = logs_reply.logs.length - 4;
@@ -503,18 +506,39 @@ class VideprinterView extends View {
             }
             for (var i = start; i < logs_reply.logs.length; ++i) {
                 log_entries.push(logs_reply.logs[i]);
+                if (maxLogSeq == null || logs_reply.logs[i].seq > maxLogSeq)
+                    maxLogSeq = logs_reply.logs[i].seq;
             }
         }
 
         for (var row = 0; row < this.numRows; ++row) {
             var entry_preamble = "";
             var entry_main = "";
+            var animate_entry = false;
             if (row < log_entries.length) {
                 entry_preamble = this.format_videprinter_preamble(log_entries[row]);
+                if (this.latestLogSeqShown != null && log_entries[row].seq > this.latestLogSeqShown) {
+                    animate_entry = true;
+                }
                 entry_main = this.format_videprinter_entry(log_entries[row]);
             }
-            document.getElementById("videprinterrow" + row.toString() + "_preamble").innerHTML = entry_preamble;
-            document.getElementById("videprinterrow" + row.toString() + "_main").innerHTML = entry_main;
+
+            var preamble_td = document.getElementById("videprinterrow" + row.toString() + "_preamble")
+            var main_td = document.getElementById("videprinterrow" + row.toString() + "_main");
+
+            /* If this is a new entry and so we're animating it, put it inside
+             * an animation div */
+            if (animate_entry) {
+                preamble_td.innerHTML = "<div class=\"videprinteranimatepreamble\">" + entry_preamble + "</div>";
+                main_td.innerHTML = "<div class=\"videprinteranimatescoreline\">" + entry_main + "</div>";
+            }
+            else {
+                preamble_td.innerHTML = entry_preamble;
+                main_td.innerHTML = entry_main;
+            }
+        }
+        if (this.latestLogSeqShown == null || (maxLogSeq != null && maxLogSeq > this.latestLogSeqShown)) {
+            this.latestLogSeqShown = maxLogSeq;
         }
     }
 }
