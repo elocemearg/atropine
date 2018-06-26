@@ -335,7 +335,7 @@ class Player(object):
         self.name = name;
         self.rating = rating;
         self.team = team;
-        self.withdrawn = withdrawn
+        self.withdrawn = bool(withdrawn)
         if short_name:
             self.short_name = short_name
         else:
@@ -2231,6 +2231,14 @@ and g.p2 = p2.id
             start_round_seq += 1
 
         if existing_fixtures:
+            # TODO: round_seq only has to be unique within the round, not the
+            # whole tournament, so if we're generating fixtures for many
+            # rounds then it's okay for the sequence numbers for each round
+            # to be [1,2,3,4], [1,2,3,4], [1,2,3,4]... rather than
+            # [1,2,3,4], [5,6,7,8], [9,10,11,12]. So we could make the
+            # calculating for max_existing_round_seq only consider games in
+            # the current round. It doesn't matter much though, because the way
+            # we do it currently still makes round_seq unique within the round.
             max_existing_round_seq = max([f.seq for f in existing_fixtures])
             if start_round_seq <= max_existing_round_seq:
                 start_round_seq = max_existing_round_seq + 1

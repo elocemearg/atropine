@@ -155,6 +155,10 @@ else:
         print "This page controls what Teleost shows and how it is shown, if you have Teleost running."
         print "</p>"
 
+        print "<p>"
+        print "<a href=\"/cgi-bin/display.py?tourney=%s\" target=\"_blank\">New Teleost Screen (experimental)</a>" % (urllib.quote_plus(tourney_name))
+        print "</p>"
+
         print "<form action=\"/cgi-bin/teleost.py?tourney=%s\" method=\"POST\">" % urllib.quote_plus(tourney_name);
         print("<h2>Banner</h2>")
         print("<p>If you want to display a message at the top of the screen, enter it here. To remove the banner, make it blank. The current banner text is also shown in the sidebar to remind you it's active.</p>")

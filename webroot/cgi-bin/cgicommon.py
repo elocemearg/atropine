@@ -16,7 +16,7 @@ def int_or_none(s):
     except:
         return None
 
-def print_html_head(title):
+def print_html_head(title, cssfile="style.css"):
     #print """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 #<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB" xml:lang="en-GB">
 #""";
@@ -25,15 +25,13 @@ def print_html_head(title):
     print "<head>";
     print "<title>%s</title>" % (cgi.escape(title));
     print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />";
-    print "<link rel=\"stylesheet\" type=\"text/css\" href=\"/style.css\" />";
+    print "<link rel=\"stylesheet\" type=\"text/css\" href=\"/%s\" />" % (cgi.escape(cssfile, True));
     print "<link rel=\"shortcut icon\" href=\"/favicon.ico\" type=\"image/x-icon\" />"
     print "<link rel=\"shortcut icon\" href=\"/favicon.png\" type=\"image/png\" />"
     print "</head>";
 
 def print_html_head_local(title):
-    print """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB" xml:lang="en-GB">
-"""
+    print "<!DOCTYPE html>"
     print "<head>"
     print "<title>%s</title>" % (cgi.escape(title))
     print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />"

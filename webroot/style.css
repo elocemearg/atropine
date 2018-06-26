@@ -1153,16 +1153,6 @@ div.boxshadow {
     box-shadow: 5px 5px 8px gray;
 }
 
-/* This might be useful someday */
-.outlinetext {
-    color: white;
-	text-shadow:
-		-1px -1px 0 #000,
-		1px -1px 0 #000,
-		-1px 1px 0 #000,
-		1px 1px 0 #000;
-}
-
 /* Preferences */
 div.prefsdiv {
     max-width: 600px;
