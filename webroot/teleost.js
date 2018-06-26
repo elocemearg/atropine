@@ -500,7 +500,7 @@ class VideprinterView extends View {
 
         if (game_state.success) {
             logs_reply = game_state.logs;
-            var start = logs_reply.logs.length - 4;
+            var start = logs_reply.logs.length - this.numRows;
             if (start < 0) {
                 start = 0;
             }
