@@ -473,5 +473,5 @@ td.tabindexnumber {
     background-color: blue;
     text-align: center;
     width: 15%;
-    /*font-family: var(--heading-font-family);*/
+    font-family: var(--heading-font-family);
 }
