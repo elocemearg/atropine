@@ -136,7 +136,7 @@ else:
         print "This page controls what's shown on the public-facing screen, which is opened with the \"Open Display\" link in the sidebar."
         print "</p>"
 
-        print "<form action=\"/cgi-bin/teleost.py?tourney=%s\" method=\"POST\">" % urllib.quote_plus(tourney_name);
+        print "<form action=\"" + baseurl + "?tourney=%s\" method=\"POST\">" % urllib.quote_plus(tourney_name);
         print("<h2>Banner</h2>")
         print("<p>If you want to display a message at the top of the screen, enter it here. To remove the banner, make it blank. The current banner text is also shown in the sidebar to remind you it's active.</p>")
         print("<p>")
