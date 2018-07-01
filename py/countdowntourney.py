@@ -19,6 +19,33 @@ RATINGS_UNIFORM = 2
 CONTROL_NUMBER = 1
 CONTROL_CHECKBOX = 2
 
+TELEOST_MODE_AUTO = 0
+TELEOST_MODE_STANDINGS = 1
+TELEOST_MODE_STANDINGS_VIDEPRINTER = 2
+TELEOST_MODE_STANDINGS_RESULTS = 3
+TELEOST_MODE_TECHNICAL_DIFFICULTIES = 4
+TELEOST_MODE_FIXTURES = 5
+TELEOST_MODE_TABLE_NUMBER_INDEX = 6
+TELEOST_MODE_OVERACHIEVERS = 7
+TELEOST_MODE_TUFF_LUCK = 8
+TELEOST_MODE_RECORDS = 9
+TELEOST_MODE_FASTEST_FINISHERS = 10
+
+teleost_per_view_option_list = [
+    (TELEOST_MODE_STANDINGS, "standings_only_lines", CONTROL_NUMBER, "Players per page", 12),
+    (TELEOST_MODE_STANDINGS, "standings_only_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12),
+    (TELEOST_MODE_STANDINGS_VIDEPRINTER, "standings_videprinter_standings_lines", CONTROL_NUMBER, "Players per page", 8),
+    (TELEOST_MODE_STANDINGS_VIDEPRINTER, "standings_videprinter_standings_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
+    (TELEOST_MODE_STANDINGS_RESULTS, "standings_results_standings_lines", CONTROL_NUMBER, "Players per standings page", 8),
+    (TELEOST_MODE_STANDINGS_RESULTS, "standings_results_standings_scroll", CONTROL_NUMBER, "Standings page scroll interval $CONTROL seconds", 10),
+    (TELEOST_MODE_FIXTURES, "fixtures_lines", CONTROL_NUMBER, "Lines per page", 12),
+    (TELEOST_MODE_FIXTURES, "fixtures_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
+    (TELEOST_MODE_TABLE_NUMBER_INDEX, "table_index_rows", CONTROL_NUMBER, "Rows per page $CONTROL", 12),
+    (TELEOST_MODE_TABLE_NUMBER_INDEX, "table_index_columns", CONTROL_NUMBER, "Columns per page", 2),
+    (TELEOST_MODE_TABLE_NUMBER_INDEX, "table_index_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12)
+]
+
+
 create_tables_sql = """
 begin transaction;
 
@@ -329,6 +356,16 @@ class DBVersionMismatchException(TourneyException):
 class InvalidEntryException(TourneyException):
     description = "Result entry is not valid."
     pass
+
+
+def add_teleost_mode(modes, name, description):
+    new_num = len(modes)
+    modes.append( {
+        "num" : new_num,
+        "name" : name,
+        "desc" : description,
+        "selected" : False
+    });
 
 class Player(object):
     def __init__(self, name, rating=0, team=None, short_name=None, withdrawn=False, division=0, division_fixed=False, player_id=None, avoid_prune=False):
@@ -1958,26 +1995,46 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         return results[::-1]
 
     def get_teleost_modes(self):
-        cur = self.db.cursor();
-        cur.execute("select current_mode from teleost");
-        row = cur.fetchone();
+        cur = self.db.cursor()
+        cur.execute("select current_mode from teleost")
+        row = cur.fetchone()
         if row is not None:
-            current_mode = row[0];
+            current_mode = row[0]
         else:
-            current_mode = None;
+            current_mode = None
 
-        cur.execute("select num, name, desc from teleost_modes order by num");
-        modes = [];
-        for row in cur:
-            mode = dict();
-            mode["num"] = row[0];
-            mode["name"] = row[1];
-            mode["desc"] = row[2];
-            mode["selected"] = (row[0] == current_mode);
-            modes.append(mode);
-        cur.close();
-        self.db.commit();
-        return modes;
+        cur.close()
+        self.db.commit()
+
+        modes = []
+        add_teleost_mode(modes, "Auto", "Automatic control. This will show Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played.")
+        add_teleost_mode(modes, "Standings", "Just the current standings table.")
+        add_teleost_mode(modes, "Standings / Videprinter", "Standings table with latest results appearing in the lower third of the screen.")
+        add_teleost_mode(modes, "Standings / Table Results", "Standings table with the current round's fixtures and results cycling on the lower third of the screen.")
+        add_teleost_mode(modes, "Technical Difficulties", "Ceci n'est pas un probleme technique.")
+        add_teleost_mode(modes, "Fixtures", "Table of all fixtures in the next or current round.")
+        add_teleost_mode(modes, "Table Number Index", "A list of all the player names and their table numbers, in alphabetical order of player name.")
+        add_teleost_mode(modes, "Overachievers", "Table of players ranked by how highly they finish above their seeding position. This is only relevant if the players have different ratings.")
+        add_teleost_mode(modes, "Tuff Luck", "Players who have lost three or mode games, ordered by the sum of their three lowest losing margins.")
+        add_teleost_mode(modes, "Records", "Highest winning scores, losing scores and combined scores.")
+        add_teleost_mode(modes, "Fastest Finishers", "A cheeky way to highlight which tables are taking too long to finish their games.")
+        if current_mode is not None and current_mode >= 0 and current_mode < len(modes):
+            modes[current_mode]["selected"] = True
+
+        return modes
+
+        #cur.execute("select num, name, desc from teleost_modes order by num");
+        #modes = [];
+        #for row in cur:
+        #    mode = dict();
+        #    mode["num"] = row[0];
+        #    mode["name"] = row[1];
+        #    mode["desc"] = row[2];
+        #    mode["selected"] = (row[0] == current_mode);
+        #    modes.append(mode);
+        #cur.close();
+        #self.db.commit();
+        #return modes;
 
     def set_teleost_mode(self, mode):
         cur = self.db.cursor();
@@ -1986,66 +2043,137 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         self.db.commit();
     
     def define_teleost_modes(self, modes):
-        cur = self.db.cursor();
-        cur.execute("delete from teleost_modes");
-        cur.executemany("insert into teleost_modes (num, name, desc) values (?, ?, ?)", modes);
-        cur.close();
-        self.db.commit();
+        # No longer done by Teleost
+        return
+
+        #cur = self.db.cursor();
+        #cur.execute("delete from teleost_modes");
+        #cur.executemany("insert into teleost_modes (num, name, desc) values (?, ?, ?)", modes);
+        #cur.close();
+        #self.db.commit();
     
     def get_current_teleost_mode(self):
         cur = self.db.cursor();
         cur.execute("select current_mode from teleost");
         row = cur.fetchone();
         if row is None:
-            return 0;
+            return TELEOST_MODE_AUTO;
         return row[0];
+    
+    def get_auto_effective_teleost_mode(self):
+        current_round = self.get_current_round()
+        if not current_round:
+            # There are no rounds yet, so just default to the standings table
+            return TELEOST_MODE_STANDINGS_VIDEPRINTER
+        
+        round_no = current_round["num"]
+        (played, unplayed) = self.get_played_unplayed_counts(round_no=round_no)
+        if played == 0 and unplayed == 0:
+            # No games in this round at all, so again default to the videprinter
+            return TELEOST_MODE_STANDINGS_VIDEPRINTER
+        
+        if played == 0 and unplayed > 0:
+            # Fixtures announced, but no games played yet.
+            if self.get_auto_use_table_index():
+                return TELEOST_MODE_TABLE_NUMBER_INDEX
+            else:
+                return TELEOST_MODE_FIXTURES
+
+        if played > 0 and unplayed == 0:
+            # All the games in this round have been played. Switch to the
+            # standings-and-results screen.
+            return TELEOST_MODE_STANDINGS_RESULTS
+
+        # Otherwise, the round is in progress. Use the standings and
+        # videprinter display.
+        return TELEOST_MODE_STANDINGS_VIDEPRINTER
+
+    def get_effective_teleost_mode(self):
+        # Same as get_current_teleost_mode() except that if it's auto then
+        # we look at the game state and return which view the display should
+        # be showing.
+        mode = self.get_current_teleost_mode();
+        if mode == TELEOST_MODE_AUTO:
+            mode = self.get_auto_effective_teleost_mode()
+        return mode
 
     def set_teleost_options(self, options):
-        if self.db_version < (0, 7, 7):
-            print self.db_version
-            return
-        cur = self.db.cursor()
-        options_rows = []
-        for o in options:
-            options_rows.append((o.mode, o.seq, o.name, o.control_type, o.desc, o.value))
-
+        # Nope
+        return
+        
+        #if self.db_version < (0, 7, 7):
+        #    print self.db_version
+        #    return
+        #cur = self.db.cursor()
+        #options_rows = []
+        #for o in options:
+        #    options_rows.append((o.mode, o.seq, o.name, o.control_type, o.desc, o.value))
         # Insert option metadata
-        cur.execute("delete from teleost_options")
-        cur.executemany("insert into teleost_options(mode, seq, name, control_type, desc, default_value) values (?, ?, ?, ?, ?, ?)", options_rows)
-
-        cur.close()
-        self.db.commit()
+        #cur.execute("delete from teleost_options")
+        #cur.executemany("insert into teleost_options(mode, seq, name, control_type, desc, default_value) values (?, ?, ?, ?, ?, ?)", options_rows)
+        #cur.close()
+        #self.db.commit()
 
     def get_teleost_options(self, mode=None):
         if self.db_version < (0, 7, 7):
             return []
-        cur = self.db.cursor()
+
         options = []
-        if mode is not None:
-            mode_clause = "where telo.mode = %d" % (mode)
-        else:
-            mode_clause = ""
-        cur.execute("select telo.mode, telo.seq, telo.name, telo.control_type, telo.desc, telo.default_value, att.value from teleost_options telo left outer join options att on telo.name = att.name " + mode_clause + " order by telo.mode, telo.seq")
-        for row in cur:
-            options.append(TeleostOption(int(row[0]), int(row[1]), row[2], row[3], row[4], row[6] if row[6] is not None else row[5]))
-        cur.close()
+        seq = -1
+        for opt in teleost_per_view_option_list:
+            seq += 1
+            cur = self.db.cursor()
+            if mode is not None and mode != opt[0]:
+                continue
+            cur.execute("select value from options where name = ?", (opt[1],))
+            row = cur.fetchone()
+            if row is None or row[0] is None:
+                value = opt[4] # default value
+            else:
+                if opt[2] == CONTROL_NUMBER:
+                    value = int(row[0])
+                else:
+                    value = row[0]
+            cur.close()
+
+            options.append(TeleostOption(
+                    opt[0], # teleost mode
+                    seq,
+                    opt[1], # option name
+                    opt[2], # control type
+                    opt[3], # description
+                    value   # effective value
+            ))
+
+        #if mode is not None:
+        #    mode_clause = "where telo.mode = %d" % (mode)
+        #else:
+        #    mode_clause = ""
+        #cur.execute("select telo.mode, telo.seq, telo.name, telo.control_type, telo.desc, telo.default_value, att.value from teleost_options telo left outer join options att on telo.name = att.name " + mode_clause + " order by telo.mode, telo.seq")
+        #for row in cur:
+        #    options.append(TeleostOption(int(row[0]), int(row[1]), row[2], row[3], row[4], row[6] if row[6] is not None else row[5]))
+        #cur.close()
         self.db.commit()
         return options
     
     def get_teleost_option_value(self, name):
         if self.db_version < (0, 7, 7):
             return None
-        cur = self.db.cursor()
-        cur.execute("select telo.default_value, att.value from teleost_options telo left outer join options att on telo.name = att.name where telo.name = ?", (name,))
-        row = cur.fetchone()
-        value = None
-        if row is not None:
-            if row[1] is not None:
-                value = row[1]
-            else:
-                value = row[0]
-        cur.close()
-        self.db.commit()
+        #cur.execute("select telo.default_value, att.value from teleost_options telo left outer join options att on telo.name = att.name where telo.name = ?", (name,))
+        #row = cur.fetchone()
+        #value = None
+        #if row is not None:
+        #    if row[1] is not None:
+        #        value = row[1]
+        #    else:
+        #        value = row[0]
+        value = self.get_attribute(name, None)
+        if value is None:
+            for opt in teleost_per_view_option_list:
+                if opt[1] == name:
+                    value = opt[4]
+                    break
+        
         return value
     
     def set_teleost_option_value(self, name, value):

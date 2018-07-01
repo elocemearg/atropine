@@ -73,6 +73,7 @@ def get_games(tourney, form):
     for div in range(num_divs):
         games = tourney.get_games(round_no=round_no, division=div)
         games_this_div = []
+        games_per_table = dict()
         for g in games:
             game_dict = dict()
             names = g.get_player_names()
@@ -82,19 +83,46 @@ def get_games(tourney, form):
             game_dict["score2"] = g.s2
             game_dict["tb"] = g.tb
             game_dict["table"] = g.table_no
+            games_per_table[(g.round_no, g.table_no)] = games_per_table.get((g.round_no, g.table_no), 0) + 1
             game_dict["seq"] = g.seq
             game_dict["round"] = g.round_no
             game_dict["complete"] = g.is_complete()
             game_dict["score_text"] = g.format_score()
             games_this_div.append(game_dict)
+
+        if len(games_per_table) > 0:
+            max_games_per_table = max([ games_per_table[x] for x in games_per_table ])
+        else:
+            max_games_per_table = 0
         div_dict = dict()
         div_dict["div_num"] = div
         div_dict["div_name"] = tourney.get_division_name(div)
         div_dict["div_short_name"] = tourney.get_short_division_name(div)
         div_dict["games"] = games_this_div
+        div_dict["max_games_per_table"] = max_games_per_table
         div_games.append(div_dict)
     reply["divisions"] = div_games
 
+    return reply
+
+def get_structure(tourney, form):
+    reply = dict()
+    reply["success"] = True
+
+    num_divs = tourney.get_num_divisions()
+
+    divs = []
+    for div in range(num_divs):
+        divs.append( { "name" : tourney.get_division_name(div),
+                       "num" : div,
+                       "short_name" : tourney.get_short_division_name(div)
+                    })
+
+    reply["divisions"] = divs
+
+    rounds = tourney.get_rounds()
+    reply["rounds"] = rounds
+    
     return reply
 
 def get_game_logs(tourney, form):
@@ -125,11 +153,24 @@ def get_game_logs(tourney, form):
     reply["logs"] = reply_logs
     return reply
 
+def get_teleost_state(tourney, form):
+    reply = dict()
+    reply["success"] = True
+    reply["current_mode"] = tourney.get_effective_teleost_mode()
+    opts = tourney.get_teleost_options(reply["current_mode"])
+    reply_opts = dict()
+    for opt in opts:
+        reply_opts[opt.name] = opt.value
+    reply["options"] = reply_opts
+    return reply
+
 def get_all(tourney, form):
     reply = dict()
     reply["standings"] = get_standings(tourney, form)
     reply["logs"] = get_game_logs(tourney, form)
     reply["games"] = get_games(tourney, form)
+    reply["structure"] = get_structure(tourney, form)
+    reply["teleost"] = get_teleost_state(tourney, form)
     reply["success"] = True;
     return reply
 
@@ -146,6 +187,8 @@ valid_requests = dict()
 valid_requests["standings"] = get_standings
 valid_requests["games"] = get_games
 valid_requests["logs"] = get_game_logs
+valid_requests["structure"] = get_structure
+valid_requests["teleost"] = get_teleost_state
 valid_requests["all"] = get_all
 
 cgicommon.set_module_path()

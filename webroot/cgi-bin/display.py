@@ -23,74 +23,28 @@ import countdowntourney
 
 cgicommon.print_html_head("Display: " + str(tourney_name), cssfile="teleoststyle.css")
 
-print "<script>var tourney_name = \"%s\";</script>" % (tourney_name);
+print "<script type=\"text/javascript\">"
+print "var tourneyName = \"%s\";" % (tourney_name);
 
-script_text = """
-<script type="text/javascript" src="/teleost.js"></script>
-<script type="text/javascript">
+print "var TELEOST_MODE_AUTO = %d;" % (countdowntourney.TELEOST_MODE_AUTO);
+print "var TELEOST_MODE_STANDINGS = %d;" % (countdowntourney.TELEOST_MODE_STANDINGS);
+print "var TELEOST_MODE_STANDINGS_VIDEPRINTER = %d;" % (countdowntourney.TELEOST_MODE_STANDINGS_VIDEPRINTER);
+print "var TELEOST_MODE_STANDINGS_RESULTS = %d;" % (countdowntourney.TELEOST_MODE_STANDINGS_RESULTS);
+print "var TELEOST_MODE_TECHNICAL_DIFFICULTIES = %d;" % (countdowntourney.TELEOST_MODE_TECHNICAL_DIFFICULTIES);
+print "var TELEOST_MODE_FIXTURES = %d;" % (countdowntourney.TELEOST_MODE_FIXTURES);
+print "var TELEOST_MODE_TABLE_NUMBER_INDEX = %d;" % (countdowntourney.TELEOST_MODE_TABLE_NUMBER_INDEX);
+print "var TELEOST_MODE_OVERACHIEVERS = %d;" % (countdowntourney.TELEOST_MODE_OVERACHIEVERS);
+print "var TELEOST_MODE_TUFF_LUCK = %d;" % (countdowntourney.TELEOST_MODE_TUFF_LUCK);
+print "var TELEOST_MODE_RECORDS = %d;" % (countdowntourney.TELEOST_MODE_RECORDS);
+print "var TELEOST_MODE_FASTEST_FINISHERS = %d;" % (countdowntourney.TELEOST_MODE_FASTEST_FINISHERS);
 
-var viewUpdateInterval = null;
-var refreshGameStateInterval = null;
-var currentView = null;
-var currentViewDrawn = false;
-var viewRefreshFrameInterval = null;
-var frame_ms = 40;
-var updatesSkipped = 0;
-var updatesMaxSkip = 5;
-
-function refreshFrame_current_view() {
-    var cont = currentView.refreshFrame(new Date().getTime());
-    if (!cont) {
-        /* animation complete - refreshFrame() calls no longer needed */
-        clearInterval(viewRefreshFrameInterval);
-        viewRefreshFrameInterval = null;
-    }
-}
-
-function update_current_view() {
-    /* If an animation is still going on, awkwardly walk back out of the room,
-       unless we've skipped updatesMaxSkip updates consecutively in this way,
-       in which case kill the animation and do the next refresh without
-       animating. */
-    var enableAnimation = true;
-    if (viewRefreshFrameInterval != null) {
-        if (updatesSkipped < updatesMaxSkip) {
-            updatesSkipped++;
-            return;
-        }
-        else {
-            clearInterval(viewRefreshFrameInterval);
-            viewRefreshFrameInterval = null;
-            enableAnimation = false;
-        }
-    }
-
-    updatesSkipped = 0;
-    var animate = currentView.refresh(new Date().getTime(), enableAnimation);
-    currentViewDrawn = true;
-    if (animate && enableAnimation) {
-        viewRefreshFrameInterval = setInterval(refreshFrame_current_view, frame_ms);
-    }
-}
-
-function display_setup() {
-    currentView = create_standings_and_videprinter(tourney_name);
-    var mainpane = document.getElementById("displaymainpane");
-    var viewdiv = document.createElement("div")
-    mainpane.appendChild(viewdiv);
-    currentView.setup(viewdiv);
-
-    fetch_game_state();
-    viewUpdateInterval = setInterval(update_current_view, 1000);
-    refreshGameStateInterval = setInterval(fetch_game_state, 5000);
-}
-</script>
-"""
-script_text = re.sub("\\$TOURNEY_NAME", tourney_name, script_text)
-print script_text
+print "</script>"
 
 
-print "<body class=\"display\" onload=\"display_setup();\">"
+
+print '<script type="text/javascript" src="/teleost.js"></script>';
+
+print "<body class=\"display\" onload=\"displaySetup();\">"
 
 if tourney_name is None:
     cgicommon.show_tourney_exception(countdowntourney.TourneyException("No tourney name specified."))
