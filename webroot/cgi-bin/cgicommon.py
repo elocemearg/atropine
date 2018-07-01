@@ -140,13 +140,16 @@ def show_sidebar(tourney):
 
         print "<br />"
 
-        print("<div>")
-        print("<a href=\"/cgi-bin/teleost.py?tourney=%s\">Display Control...</a><br />" % urllib.quote_plus(tourney.name));
+        print "<div>"
+        print("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\">Display options...</a>" % urllib.quote_plus(tourney.name));
+        print "</div>"
+        print("<div style=\"padding: 5px 5px 5px 0px;\">")
+        print("<a href=\"/cgi-bin/display.py?tourney=%s\" style=\"background-color: #88ccff; padding: 5px; border-radius: 5px;\" target=\"_blank\"><strong>Open Display %s</strong></a>" % (urllib.quote_plus(tourney.name), new_window_html));
         print "</div>"
 
         banner_text = tourney.get_banner_text()
         if banner_text:
-            print("<a href=\"/cgi-bin/teleost.py?tourney=%s\">" % (urllib.quote_plus(tourney.name)))
+            print("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\">" % (urllib.quote_plus(tourney.name)))
             #print("<div class=\"sidebarbannerheading\">")
             #print("BANNER ENABLED");
             #print("</div>")

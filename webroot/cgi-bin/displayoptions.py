@@ -13,7 +13,7 @@ cgitb.enable();
 print "Content-Type: text/html; charset=utf-8";
 print "";
 
-baseurl = "/cgi-bin/teleost.py";
+baseurl = "/cgi-bin/displayoptions.py";
 form = cgi.FieldStorage();
 tourney_name = form.getfirst("tourney");
 
@@ -25,7 +25,7 @@ cgicommon.set_module_path();
 import countdowntourney;
 import teleostcolours;
 
-cgicommon.print_html_head("Display control: " + str(tourney_name));
+cgicommon.print_html_head("Display options: " + str(tourney_name));
 
 print "<body>";
 
@@ -130,14 +130,10 @@ else:
         if not current_palette_name:
             current_palette_name = "Standard"
 
-        print "<h1>Display control</h1>";
+        print "<h1>Display options</h1>";
 
         print "<p>"
-        print "This page controls what Teleost shows and how it is shown, if you have Teleost running."
-        print "</p>"
-
-        print "<p>"
-        print "<a href=\"/cgi-bin/display.py?tourney=%s\" target=\"_blank\">New Teleost Screen (experimental)</a>" % (urllib.quote_plus(tourney_name))
+        print "This page controls what's shown on the public-facing screen, which is opened with the \"Open Display\" link in the sidebar."
         print "</p>"
 
         print "<form action=\"/cgi-bin/teleost.py?tourney=%s\" method=\"POST\">" % urllib.quote_plus(tourney_name);
