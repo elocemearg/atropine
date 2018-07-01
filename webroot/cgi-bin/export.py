@@ -334,8 +334,10 @@ try:
                     print "Table %d" % g.table_no
             if g.s1 is None or g.s2 is None:
                 score_str = "    -    "
+            elif g.is_double_loss():
+                score_str = "  X - X  "
             else:
-                score_str = "%3d%s-%s%d" % (g.s1, "*" if g.tb and g.s1 > g.s2 else " ", "*" if g.tb and g.s2 > g.s1 else " ", g.s2)
+                score_str = "%3d%s-%s%d" % (g.s1, "*" if g.tb and g.s1 > g.s2 else " ", "*" if g.tb and g.s2 >= g.s1 else " ", g.s2)
             names = g.get_player_names()
             print "%*s %-9s %s" % (max_name_len, names[0], score_str, names[1])
             prev_round_no = g.round_no

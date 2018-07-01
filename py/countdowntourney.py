@@ -176,14 +176,16 @@ select * from game_divided where game_type = 'P';
 create view if not exists player_wins as
 select p.id, sum(case when g.p_id is null then 0
                   when g.p_score is null or g.opp_score is null then 0
-              when g.p_score > g.opp_score then 1
-              else 0 end) wins
+                  when g.p_score == 0 and g.opp_score == 0 and g.tiebreak then 0
+                  when g.p_score > g.opp_score then 1
+                  else 0 end) wins
 from player p left outer join heat_game_divided g on p.id = g.p_id
 group by p.id;
 
 create view if not exists player_draws as
 select p.id, sum(case when g.p_id is null then 0
                    when g.p_score is null or g.opp_score is null then 0
+                   when g.p_score == 0 and g.opp_score == 0 and g.tiebreak then 0
                    when g.p_score == g.opp_score then 1
                    else 0 end) draws
 from player p left outer join heat_game_divided g on p.id = g.p_id
@@ -715,11 +717,20 @@ class Game(object):
         else:
             right = str(self.s2);
         if self.tb:
-            if self.s1 > self.s2:
+            if self.s1 == 0 and self.s2 == 0:
+                left = "X"
+                right = "X"
+            elif self.s1 > self.s2:
                 left += "*";
-            elif self.s2 > self.s1:
+            else:
                 right += "*";
         return left + " - " + right;
+
+    def is_double_loss(self):
+        if self.s1 is not None and self.s2 is not None and self.s1 == 0 and self.s2 == 0 and self.tb:
+            return True
+        else:
+            return False
     
     # Emulate a list of values
     def __len__(self):
@@ -2064,12 +2075,12 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         current_round = self.get_current_round()
         if not current_round:
             # There are no rounds yet, so just default to the standings table
-            return TELEOST_MODE_STANDINGS_VIDEPRINTER
+            return TELEOST_MODE_STANDINGS
         
         round_no = current_round["num"]
         (played, unplayed) = self.get_played_unplayed_counts(round_no=round_no)
         if played == 0 and unplayed == 0:
-            # No games in this round at all, so again default to the videprinter
+            # No games in this round at all, so default to the videprinter
             return TELEOST_MODE_STANDINGS_VIDEPRINTER
         
         if played == 0 and unplayed > 0:

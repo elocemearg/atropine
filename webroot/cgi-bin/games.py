@@ -32,7 +32,11 @@ def ordinal_suffix(num):
 def write_autocomplete_scripts(tourney, games):
     print "<script>"
     print "var previous_control_values = {};"
-    print "var control_last_change_was_manual = {};"
+
+    # Act as if the initial value of the score boxes is user input, otherwise
+    # if a user mistypes a name, submits the form, then corrects it, correcting
+    # the name would load the old (blank) score into the score boxes.
+    print "var control_last_change_was_manual = { \"scores\" : true };"
 
     players_dict = dict()
     players_tables = dict()
@@ -330,7 +334,9 @@ function entry_score_change(was_user_input) {
     var name1_div = document.getElementById("name1div");
     var name2_div = document.getElementById("name2div");
     var tiebreak_control = document.getElementById("entrytiebreak");
+    var tiebreak_label = document.getElementById("tiebreaklabel");
     var possible_tiebreak = false;
+    var possible_double_loss = false;
     var p1_win = false;
     var p2_win = false;
 
@@ -348,6 +354,9 @@ function entry_score_change(was_user_input) {
         if (Math.abs(score1 - score2) == 10) {
             possible_tiebreak = true;
         }
+        else if (score1 == 0 && score2 == 0) {
+            possible_double_loss = true;
+        }
         if (score1 > score2) {
             p1_win = true;
         }
@@ -356,7 +365,7 @@ function entry_score_change(was_user_input) {
         }
     }
 
-    if (possible_tiebreak) {
+    if (possible_tiebreak || possible_double_loss) {
         tiebreak_div.style = "display: block;";
         if (was_user_input) {
             /* The user filled in the score, so set the tiebreak checkbox
@@ -375,6 +384,13 @@ function entry_score_change(was_user_input) {
             tiebreak_visible = false;
             tiebreak_control.checked = false;
         }
+    }
+
+    if (possible_double_loss) {
+        tiebreak_label.innerText = "Loss for both players?";
+    }
+    else {
+        tiebreak_label.innerText = "Game won on tiebreak?";
     }
 
     /*
@@ -529,7 +545,7 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
     print "<div class=\"scoreentryotherrow\">"
     print "<div class=\"scoreentrytiebreak\" id=\"tiebreakdiv\">"
     print "<input class=\"entrytiebreak\" type=\"checkbox\" name=\"entrytiebreak\" id=\"entrytiebreak\" value=\"1\" style=\"cursor: pointer;\" %s />" % ("checked=\"checked\"" if default_tiebreak else "")
-    print "<label for=\"entrytiebreak\" style=\"cursor: pointer;\">Game won on tiebreak?</label>"
+    print "<label for=\"entrytiebreak\" style=\"cursor: pointer;\" id=\"tiebreaklabel\">Game won on tiebreak?</label>"
     print "</div>"
     print "<div class=\"scoreentrysubmit\">"
     print "<input type=\"submit\" name=\"entrysubmit\" value=\"Submit result\" />"
@@ -554,13 +570,17 @@ def write_videprinter(tourney, round_no):
         print "<div class=\"videprinterentry\" onclick=\"select_game(%d, true);\">" % (round_seq)
 
         if score1 is not None and score2 is not None:
-            scorestr1 = str(score1)
-            scorestr2 = str(score2)
-            if tiebreak:
-                if score1 > score2:
-                    scorestr1 += "*"
-                else:
-                    scorestr2 += "*"
+            if score1 == 0 and score2 == 0 and tiebreak:
+                scorestr1 = "&#10006"
+                scorestr2 = "&#10006"
+            else:
+                scorestr1 = str(score1)
+                scorestr2 = str(score2)
+                if tiebreak:
+                    if score1 > score2:
+                        scorestr1 += "*"
+                    else:
+                        scorestr2 += "*"
         else:
             scorestr1 = ""
             scorestr2 = ""
@@ -569,7 +589,9 @@ def write_videprinter(tourney, round_no):
             print "<span class=\"videprintersuperseded\">"
             if division:
                 print cgi.escape(tourney.get_short_division_name(division))
-            print cgi.escape("R%dT%d %s %s-%s %s" % (rno, table_no, name1, scorestr1, scorestr2, name2))
+            print cgi.escape("R%dT%d %s " % (rno, table_no, name1));
+            print "%s-%s" % (scorestr1, scorestr2)
+            print cgi.escape(" %s" % (name2))
             print "</span>"
         else:
             if num_divisions > 1 and division is not None:
@@ -578,7 +600,9 @@ def write_videprinter(tourney, round_no):
 
             player_classes = [ "videprinterplayer", "videprinterplayer" ]
             if score1 is not None and score2 is not None:
-                if score1 > score2:
+                if score1 == 0 and score2 == 0 and tiebreak:
+                    player_classes = [ "videprinterlosingplayer", "videprinterlosingplayer" ]
+                elif score1 > score2:
                     player_classes = [ "videprinterwinningplayer", "videprinterlosingplayer" ]
                 elif score2 > score1:
                     player_classes = [ "videprinterlosingplayer", "videprinterwinningplayer" ]
@@ -1011,7 +1035,7 @@ try:
                                     last_entry_error = "\"%s\" is not a valid score. This must be an integer." % (score1 if score_ints[0] is None else score2)
                                     score_valid = False
                                     control_with_error = ("entryscore1" if score_ints[0] is None else "entryscore2")
-                                elif tb and abs(score_ints[0] - score_ints[1]) != 10:
+                                elif tb and abs(score_ints[0] - score_ints[1]) != 10 and not(score_ints[0] == 0 and score_ints[1] == 0):
                                     last_entry_error = "This can't be a tiebreak game: the winning margin is not 10."
                                     control_with_error = "entryscore1"
                                     score_valid = False

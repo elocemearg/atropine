@@ -267,7 +267,10 @@ def show_games_as_html_table(games, editable=True, remarks=None, include_round_c
         p1_classes = ["gameplayer1"];
         p2_classes = ["gameplayer2"];
         if g.is_complete():
-            if g.s1 == g.s2:
+            if g.is_double_loss():
+                p1_classes.append("losingplayer")
+                p2_classes.append("losingplayer")
+            elif g.s1 == g.s2:
                 p1_classes.append("drawingplayer");
                 p2_classes.append("drawingplayer");
             elif g.s1 > g.s2:
@@ -280,7 +283,13 @@ def show_games_as_html_table(games, editable=True, remarks=None, include_round_c
         team_string = make_player_dot_html(g.p1)
 
         print "<td class=\"%s\" align=\"right\">%s %s</td>" % (" ".join(p1_classes), player_html_strings[0], team_string);
-        score = g.format_score();
+        if g.is_double_loss():
+            edit_box_score = "0 - 0*"
+            html_score = "&#10006; - &#10006;"
+        else:
+            edit_box_score = g.format_score()
+            html_score = cgi.escape(g.format_score())
+
         print "<td class=\"gamescore\" align=\"center\">";
 
         if g.are_players_known():
@@ -288,9 +297,9 @@ def show_games_as_html_table(games, editable=True, remarks=None, include_round_c
                 print """
 <input class="gamescore" id="gamescore_%d_%d" type="text" size="10"
 name="gamescore_%d_%d" value="%s"
-onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.round_no, g.seq, cgi.escape(score, True), g.round_no, g.seq);
+onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.round_no, g.seq, cgi.escape(edit_box_score, True), g.round_no, g.seq);
             else:
-                print cgi.escape(score)
+                print html_score;
 
         print "</td>";
         team_string = make_player_dot_html(g.p2)
