@@ -8,7 +8,7 @@ var refreshGameStateInterval = null;
 var currentView = null;
 var currentViewDrawn = false;
 var viewRefreshFrameInterval = null;
-var animationFrameMs = 40;
+var animationFrameMs = 50;
 var updatesSkipped = 0;
 var updatesMaxSkip = 5;
 
@@ -120,12 +120,6 @@ function displaySetup() {
     teleostModesToCreateFunctions[TELEOST_MODE_TUFF_LUCK] = createPlaceholderScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_RECORDS] = createPlaceholderScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_FASTEST_FINISHERS] = createPlaceholderScreen;
-    //setCurrentView(createStandingsAndVideprinterScreen(tourneyName));
-    //setCurrentView(createStandingsAndRoundResultsScreen(tourneyName));
-    //setCurrentView(createVideprinterScreen(tourneyName));
-    //setCurrentView(createRoundResultsScreen(tourneyName));
-    //setCurrentView(createFixturesScreen(tourneyName));
-    //setCurrentView(createTableNumberIndexScreen(tourneyName));
 
     fetchGameState();
     viewUpdateInterval = setInterval(updateCurrentView, 1000);

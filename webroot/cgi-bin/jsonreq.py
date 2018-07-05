@@ -166,12 +166,24 @@ def get_teleost_state(tourney, form):
 
 def get_all(tourney, form):
     reply = dict()
-    reply["standings"] = get_standings(tourney, form)
-    reply["logs"] = get_game_logs(tourney, form)
-    reply["games"] = get_games(tourney, form)
-    reply["structure"] = get_structure(tourney, form)
+    for request in valid_requests:
+        if request != "all" and request != "default":
+            reply[request] = valid_requests[request](tourney, form)
+    reply["success"] = True
+    return reply
+
+def get_info_required_by_mode(tourney, form):
+    reply = dict()
+    # Give the user the teleost state and the general tournament structure
+    # (divisions and rounds) plus anything required for the current
+    # teleost mode.
     reply["teleost"] = get_teleost_state(tourney, form)
-    reply["success"] = True;
+    reply["structure"] = get_structure(tourney, form)
+    requests = countdowntourney.get_teleost_mode_services_to_fetch(reply["teleost"]["current_mode"])
+    for request in requests:
+        if request != "default" and request in valid_requests:
+            reply[request] = valid_requests[request](tourney, form)
+    reply["success"] = True
     return reply
 
 cgitb.enable()
@@ -190,6 +202,7 @@ valid_requests["logs"] = get_game_logs
 valid_requests["structure"] = get_structure
 valid_requests["teleost"] = get_teleost_state
 valid_requests["all"] = get_all
+valid_requests["default"] = get_info_required_by_mode
 
 cgicommon.set_module_path()
 
@@ -200,8 +213,8 @@ if tourney_name is None:
     sys.exit(0)
 
 if request is None:
-    send_error_reply("Bad request: \"request\" attribute not set.")
-    sys.exit(0)
+    # Information we fetch depends on current mode
+    request = "default"
 
 if request not in valid_requests:
     send_error_reply("Bad request: request type \"%s\" is not recognised." % (request))

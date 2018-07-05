@@ -19,30 +19,93 @@ RATINGS_UNIFORM = 2
 CONTROL_NUMBER = 1
 CONTROL_CHECKBOX = 2
 
-TELEOST_MODE_AUTO = 0
-TELEOST_MODE_STANDINGS = 1
-TELEOST_MODE_STANDINGS_VIDEPRINTER = 2
-TELEOST_MODE_STANDINGS_RESULTS = 3
-TELEOST_MODE_TECHNICAL_DIFFICULTIES = 4
-TELEOST_MODE_FIXTURES = 5
-TELEOST_MODE_TABLE_NUMBER_INDEX = 6
-TELEOST_MODE_OVERACHIEVERS = 7
-TELEOST_MODE_TUFF_LUCK = 8
-TELEOST_MODE_RECORDS = 9
-TELEOST_MODE_FASTEST_FINISHERS = 10
+teleost_modes = [
+        {
+            "id" : "TELEOST_MODE_AUTO",
+            "name" : "Auto",
+            "desc" : "Automatic control. This will show Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played.",
+            "fetch" : [ "all" ]
+        },
+        {
+            "id" : "TELEOST_MODE_STANDINGS",
+            "name" : "Standings",
+            "desc" : "The current standings table.",
+            "fetch" : [ "standings" ]
+        },
+        {
+            "id" : "TELEOST_MODE_STANDINGS_VIDEPRINTER",
+            "name" : "Standings / Videprinter",
+            "desc" : "Standings table with latest results appearing in the lower third of the screen.",
+            "fetch" : [ "standings", "logs" ]
+        },
+        {
+            "id" : "TELEOST_MODE_STANDINGS_RESULTS",
+            "name" : "Standings / Table Results",
+            "desc" : "Standings table with the current round's fixtures and results cycling on the lower third of the screen.",
+            "fetch" : [ "standings", "games" ]
+        },
+        {
+            "id" : "TELEOST_MODE_TECHNICAL_DIFFICULTIES",
+            "name" : "Technical Difficulties",
+            "desc" : "Ceci n'est pas un probleme technique.",
+            "fetch" : []
+        },
+        {
+            "id" : "TELEOST_MODE_FIXTURES",
+            "name" : "Fixtures",
+            "desc" : "Table of all fixtures in the next or current round.",
+            "fetch" : [ "games" ]
+        },
+        {
+            "id" : "TELEOST_MODE_TABLE_NUMBER_INDEX",
+            "name" : "Table Number Index",
+            "desc" : "A list of all the player names and their table numbers, in alphabetical order of player name.",
+            "fetch" : [ "games" ]
+        },
+        {
+            "id" : "TELEOST_MODE_OVERACHIEVERS",
+            "name" : "Overachievers",
+            "desc" : "Table of players ranked by how highly they finish above their seeding position. This is only relevant if the players have different ratings.",
+            "fetch" : []
+        },
+        {
+            "id" : "TELEOST_MODE_TUFF_LUCK",
+            "name" : "Tuff Luck",
+            "desc" : "Players who have lost three or more games, ordered by the sum of their three lowest losing margins.",
+            "fetch" : []
+        },
+        {
+            "id" : "TELEOST_MODE_RECORDS",
+            "name" : "Records",
+            "desc" : "Highest winning scores, losing scores and combined scores.",
+            "fetch" : []
+        },
+        {
+            "id" : "TELEOST_MODE_FASTEST_FINISHERS",
+            "name" : "Fastest Finishers",
+            "desc" : "A cheeky way to highlight which tables are taking too long to finish their games.",
+            "fetch" : []
+        }
+]
+
+teleost_mode_id_to_num = dict()
+
+for idx in range(len(teleost_modes)):
+    teleost_modes[idx]["num"] = idx
+    teleost_mode_id_to_num[teleost_modes[idx]["id"]] = idx
 
 teleost_per_view_option_list = [
-    (TELEOST_MODE_STANDINGS, "standings_only_lines", CONTROL_NUMBER, "Players per page", 12),
-    (TELEOST_MODE_STANDINGS, "standings_only_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12),
-    (TELEOST_MODE_STANDINGS_VIDEPRINTER, "standings_videprinter_standings_lines", CONTROL_NUMBER, "Players per page", 8),
-    (TELEOST_MODE_STANDINGS_VIDEPRINTER, "standings_videprinter_standings_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
-    (TELEOST_MODE_STANDINGS_RESULTS, "standings_results_standings_lines", CONTROL_NUMBER, "Players per standings page", 8),
-    (TELEOST_MODE_STANDINGS_RESULTS, "standings_results_standings_scroll", CONTROL_NUMBER, "Standings page scroll interval $CONTROL seconds", 10),
-    (TELEOST_MODE_FIXTURES, "fixtures_lines", CONTROL_NUMBER, "Lines per page", 12),
-    (TELEOST_MODE_FIXTURES, "fixtures_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
-    (TELEOST_MODE_TABLE_NUMBER_INDEX, "table_index_rows", CONTROL_NUMBER, "Rows per page $CONTROL", 12),
-    (TELEOST_MODE_TABLE_NUMBER_INDEX, "table_index_columns", CONTROL_NUMBER, "Columns per page", 2),
-    (TELEOST_MODE_TABLE_NUMBER_INDEX, "table_index_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12)
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_lines", CONTROL_NUMBER, "Players per page", 12),
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12),
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_standings_lines", CONTROL_NUMBER, "Players per page", 8),
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_standings_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_lines", CONTROL_NUMBER, "Players per standings page", 8),
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_scroll", CONTROL_NUMBER, "Standings page scroll interval $CONTROL seconds", 10),
+    (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_lines", CONTROL_NUMBER, "Lines per page", 12),
+    (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
+    (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_rows", CONTROL_NUMBER, "Rows per page $CONTROL", 12),
+    (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_columns", CONTROL_NUMBER, "Columns per page", 2),
+    (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12)
 ]
 
 
@@ -359,15 +422,11 @@ class InvalidEntryException(TourneyException):
     description = "Result entry is not valid."
     pass
 
-
-def add_teleost_mode(modes, name, description):
-    new_num = len(modes)
-    modes.append( {
-        "num" : new_num,
-        "name" : name,
-        "desc" : description,
-        "selected" : False
-    });
+def get_teleost_mode_services_to_fetch(mode):
+    if mode < 0 or mode >= len(teleost_modes):
+        return [ "all" ]
+    else:
+        return teleost_modes[mode]["fetch"]
 
 class Player(object):
     def __init__(self, name, rating=0, team=None, short_name=None, withdrawn=False, division=0, division_fixed=False, player_id=None, avoid_prune=False):
@@ -2018,34 +2077,15 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         self.db.commit()
 
         modes = []
-        add_teleost_mode(modes, "Auto", "Automatic control. This will show Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played.")
-        add_teleost_mode(modes, "Standings", "Just the current standings table.")
-        add_teleost_mode(modes, "Standings / Videprinter", "Standings table with latest results appearing in the lower third of the screen.")
-        add_teleost_mode(modes, "Standings / Table Results", "Standings table with the current round's fixtures and results cycling on the lower third of the screen.")
-        add_teleost_mode(modes, "Technical Difficulties", "Ceci n'est pas un probleme technique.")
-        add_teleost_mode(modes, "Fixtures", "Table of all fixtures in the next or current round.")
-        add_teleost_mode(modes, "Table Number Index", "A list of all the player names and their table numbers, in alphabetical order of player name.")
-        add_teleost_mode(modes, "Overachievers", "Table of players ranked by how highly they finish above their seeding position. This is only relevant if the players have different ratings.")
-        add_teleost_mode(modes, "Tuff Luck", "Players who have lost three or mode games, ordered by the sum of their three lowest losing margins.")
-        add_teleost_mode(modes, "Records", "Highest winning scores, losing scores and combined scores.")
-        add_teleost_mode(modes, "Fastest Finishers", "A cheeky way to highlight which tables are taking too long to finish their games.")
+        for mode in teleost_modes:
+            mode_copy = mode.copy()
+            mode_copy["selected"] = False
+            modes.append(mode_copy)
+
         if current_mode is not None and current_mode >= 0 and current_mode < len(modes):
             modes[current_mode]["selected"] = True
 
         return modes
-
-        #cur.execute("select num, name, desc from teleost_modes order by num");
-        #modes = [];
-        #for row in cur:
-        #    mode = dict();
-        #    mode["num"] = row[0];
-        #    mode["name"] = row[1];
-        #    mode["desc"] = row[2];
-        #    mode["selected"] = (row[0] == current_mode);
-        #    modes.append(mode);
-        #cur.close();
-        #self.db.commit();
-        #return modes;
 
     def set_teleost_mode(self, mode):
         cur = self.db.cursor();
@@ -2057,56 +2097,59 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         # No longer done by Teleost
         return
 
-        #cur = self.db.cursor();
-        #cur.execute("delete from teleost_modes");
-        #cur.executemany("insert into teleost_modes (num, name, desc) values (?, ?, ?)", modes);
-        #cur.close();
-        #self.db.commit();
-    
     def get_current_teleost_mode(self):
         cur = self.db.cursor();
         cur.execute("select current_mode from teleost");
         row = cur.fetchone();
         if row is None:
-            return TELEOST_MODE_AUTO;
+            return teleost_mode_id_to_num.get("TELEOST_MODE_AUTO", 0)
         return row[0];
     
     def get_auto_effective_teleost_mode(self):
         current_round = self.get_current_round()
+        mode_name = None
+
         if not current_round:
             # There are no rounds yet, so just default to the standings table
-            return TELEOST_MODE_STANDINGS
-        
-        round_no = current_round["num"]
-        (played, unplayed) = self.get_played_unplayed_counts(round_no=round_no)
-        if played == 0 and unplayed == 0:
-            # No games in this round at all, so default to the videprinter
-            return TELEOST_MODE_STANDINGS_VIDEPRINTER
-        
-        if played == 0 and unplayed > 0:
-            # Fixtures announced, but no games played yet.
-            if self.get_auto_use_table_index():
-                return TELEOST_MODE_TABLE_NUMBER_INDEX
+            mode_name = "TELEOST_MODE_STANDINGS"
+        else:
+            round_no = current_round["num"]
+            (played, unplayed) = self.get_played_unplayed_counts(round_no=round_no)
+            if played == 0 and unplayed == 0:
+                # No games in this round at all, so default to the videprinter
+                mode_name = "TELEOST_MODE_STANDINGS_VIDEPRINTER"
+            elif played == 0 and unplayed > 0:
+                # Fixtures announced, but no games played yet.
+                if self.get_auto_use_table_index():
+                    mode_name = "TELEOST_MODE_TABLE_NUMBER_INDEX"
+                else:
+                    mode_name = "TELEOST_MODE_FIXTURES"
+            elif played > 0 and unplayed == 0:
+                # All the games in this round have been played. Switch to the
+                # standings-and-results screen.
+                mode_name = "TELEOST_MODE_STANDINGS_RESULTS"
             else:
-                return TELEOST_MODE_FIXTURES
+                # Otherwise, the round is in progress. Use the standings and
+                # videprinter display.
+                mode_name = "TELEOST_MODE_STANDINGS_VIDEPRINTER"
 
-        if played > 0 and unplayed == 0:
-            # All the games in this round have been played. Switch to the
-            # standings-and-results screen.
-            return TELEOST_MODE_STANDINGS_RESULTS
+        if not mode_name:
+            # Eh?
+            mode_name = "TELEOST_MODE_STANDINGS_VIDEPRINTER"
 
-        # Otherwise, the round is in progress. Use the standings and
-        # videprinter display.
-        return TELEOST_MODE_STANDINGS_VIDEPRINTER
+        return teleost_mode_id_to_num.get(mode_name, 1)
 
     def get_effective_teleost_mode(self):
         # Same as get_current_teleost_mode() except that if it's auto then
         # we look at the game state and return which view the display should
         # be showing.
         mode = self.get_current_teleost_mode();
-        if mode == TELEOST_MODE_AUTO:
-            mode = self.get_auto_effective_teleost_mode()
-        return mode
+        if mode < 0 or mode >= len(teleost_modes):
+            return 1
+        else:
+            if teleost_modes[mode]["id"] == "TELEOST_MODE_AUTO":
+                mode = self.get_auto_effective_teleost_mode()
+            return mode
 
     def set_teleost_options(self, options):
         # Nope
