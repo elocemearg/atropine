@@ -52,9 +52,22 @@ body.display {
 }
 
 #displaymainpane {
-    position: relative;
+    position: absolute;
     width: 100%;
     height: 100%;
+}
+
+#teleostbanner {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    background-color: #aa0000;
+    font-size: 4.5vmin;
+    height: 7vmin;
+    line-height: 7vmin;
+    z-index: 1;
+    display: none;
+    /*font-family: var(--heading-font-family);*/
 }
 
 /* General look and feel that applies to all screens */
@@ -125,8 +138,8 @@ th.teleoststandingsheadingnumber {
 }
 
 table.teleoststandings td {
-    padding-left: 2%;
-    padding-right: 2%;
+    padding-left: 2vw;
+    padding-right: 2vw;
     border-top: 1px solid gray;
     border-bottom: 1px solid gray;
 }
@@ -229,9 +242,45 @@ div.videprinteranimatescoreline {
     color: white;
 }
 
+.teamdotleftplayer {
+    padding-left: 1vmin;
+}
+
+.teamdotrightplayer {
+    padding-right: 1vmin;
+}
+
 .videprintersuperseded {
     text-decoration: line-through;
     color: gray;
+}
+
+/* Team score: appears on various views */
+.teamscore {
+    font-size: 4vmin;
+    padding-left: 2vmin;
+    padding-right: 2vmin;
+    margin-left: 1vmin;
+    margin-right: 1vmin;
+    width: 6vmin;
+    text-align: center;
+    font-family: var(--text-font-family);
+    font-weight: bold;
+    /*font-family: var(--heading-font-family);*/
+    color: black;
+    text-shadow:
+        -1px -1px 0 #fff,
+        1px -1px 0 #fff,
+        -1px 1px 0 #fff,
+        1px 1px 0 #fff;
+}
+
+.teamscoreleft {
+    float: left;
+}
+
+.teamscoreright {
+    float: right;
 }
 
 /* Current round per-table results */
@@ -363,6 +412,13 @@ div.fixturescontainer {
     text-align: center;
 }
 
+.fixturesheadingteamscore {
+    position: absolute;
+    left: 0%;
+    width: 94%;
+    text-align: right;
+}
+
 table.fixtures {
     position: absolute;
     font-size: 4vmin;
@@ -474,4 +530,91 @@ td.tabindexnumber {
     text-align: center;
     width: 15%;
     font-family: var(--heading-font-family);
+}
+
+/* Tuff luck */
+
+table.teleostmaintable {
+    position: absolute;
+    left: 5%;
+    top: 20%;
+    font-size: 4.8vmin;
+    width: 90%;
+    max-width: 90%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+table.teleostmaintable th {
+    padding-right: 2vw;
+}
+
+table.teleostmaintable tr {
+    border-bottom: 1px solid gray;
+}
+
+table.teleostmaintable td {
+    padding-left: 2vw;
+    padding-right: 2vw;
+}
+
+th.teleosttableheadingstring {
+    text-align: left;
+}
+
+th.teleosttableheadingnumber {
+    text-align: right;
+}
+
+table.teleostmaintable th {
+    font-weight: normal;
+}
+
+col.teleosttuffluckcolpos {
+    color: yellow;
+    width: 8vw;
+}
+
+col.teleosttuffluckcolname {
+    color: white;
+    width: 60vw;
+}
+
+col.teleosttuffluckcoltuffness {
+    color: cyan;
+    width: 15vw;
+}
+
+td.teleosttablecellpos {
+    color: yellow;
+}
+
+td.teleosttablecellname {
+    overflow: hidden;
+    color: white;
+}
+
+td.teleosttablecellnumber {
+    color: cyan;
+}
+
+/* Overachievers */
+col.teleostoverachieverscolpos {
+    width: 8vw;
+}
+
+col.teleostoverachieverscolname {
+    width: 50vw;
+}
+
+col.teleostoverachieverscolseed {
+    width: 8vw;
+}
+
+col.teleostoverachieverscolrank {
+    width: 8vw;
+}
+
+col.teleostoverachieverscoldiff {
+    width: 8vw;
 }

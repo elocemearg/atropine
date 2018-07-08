@@ -24,66 +24,88 @@ teleost_modes = [
             "id" : "TELEOST_MODE_AUTO",
             "name" : "Auto",
             "desc" : "Automatic control. This will show Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played.",
+            "menuorder" : 0,
+            "image" : "/images/screenthumbs/auto.png",
             "fetch" : [ "all" ]
         },
         {
             "id" : "TELEOST_MODE_STANDINGS",
             "name" : "Standings",
-            "desc" : "The current standings table.",
+            "desc" : "The current standings table and nothing else.",
+            "image" : "/images/screenthumbs/standings_only.png",
+            "menuorder" : 5,
             "fetch" : [ "standings" ]
         },
         {
             "id" : "TELEOST_MODE_STANDINGS_VIDEPRINTER",
             "name" : "Standings / Videprinter",
             "desc" : "Standings table with latest results appearing in the lower third of the screen.",
+            "image" : "/images/screenthumbs/standings_videprinter.png",
+            "menuorder" : 1,
             "fetch" : [ "standings", "logs" ]
         },
         {
             "id" : "TELEOST_MODE_STANDINGS_RESULTS",
             "name" : "Standings / Table Results",
             "desc" : "Standings table with the current round's fixtures and results cycling on the lower third of the screen.",
+            "image" : "/images/screenthumbs/standings_results.png",
+            "menuorder" : 2,
             "fetch" : [ "standings", "games" ]
         },
         {
             "id" : "TELEOST_MODE_TECHNICAL_DIFFICULTIES",
             "name" : "Technical Difficulties",
             "desc" : "Ceci n'est pas un probleme technique.",
+            "image" : "/images/screenthumbs/technical_difficulties.png",
+            "menuorder" : 10,
             "fetch" : []
         },
         {
             "id" : "TELEOST_MODE_FIXTURES",
             "name" : "Fixtures",
             "desc" : "Table of all fixtures in the next or current round.",
+            "image" : "/images/screenthumbs/fixtures.png",
+            "menuorder" : 3,
             "fetch" : [ "games" ]
         },
         {
             "id" : "TELEOST_MODE_TABLE_NUMBER_INDEX",
             "name" : "Table Number Index",
             "desc" : "A list of all the player names and their table numbers, in alphabetical order of player name.",
+            "image" : "/images/screenthumbs/table_index.png",
+            "menuorder" : 4,
             "fetch" : [ "games" ]
         },
         {
             "id" : "TELEOST_MODE_OVERACHIEVERS",
             "name" : "Overachievers",
             "desc" : "Table of players ranked by how highly they finish above their seeding position. This is only relevant if the players have different ratings.",
-            "fetch" : []
+            "image" : "/images/screenthumbs/placeholder.png",
+            "menuorder" : 6,
+            "fetch" : [ "overachievers" ]
         },
         {
             "id" : "TELEOST_MODE_TUFF_LUCK",
             "name" : "Tuff Luck",
             "desc" : "Players who have lost three or more games, ordered by the sum of their three lowest losing margins.",
-            "fetch" : []
+            "image" : "/images/screenthumbs/placeholder.png",
+            "menuorder" : 7,
+            "fetch" : [ "tuffluck" ]
         },
         {
             "id" : "TELEOST_MODE_RECORDS",
             "name" : "Records",
             "desc" : "Highest winning scores, losing scores and combined scores.",
+            "image" : "/images/screenthumbs/placeholder.png",
+            "menuorder" : 8,
             "fetch" : []
         },
         {
             "id" : "TELEOST_MODE_FASTEST_FINISHERS",
             "name" : "Fastest Finishers",
             "desc" : "A cheeky way to highlight which tables are taking too long to finish their games.",
+            "image" : "/images/screenthumbs/placeholder.png",
+            "menuorder" : 9,
             "fetch" : []
         }
 ]
@@ -95,12 +117,13 @@ for idx in range(len(teleost_modes)):
     teleost_mode_id_to_num[teleost_modes[idx]["id"]] = idx
 
 teleost_per_view_option_list = [
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindex", CONTROL_CHECKBOX, "$CONTROL Show name-to-table index at start of round", 0),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_lines", CONTROL_NUMBER, "Players per page", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_standings_lines", CONTROL_NUMBER, "Players per page", 8),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_standings_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_lines", CONTROL_NUMBER, "Players per standings page", 8),
-    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_scroll", CONTROL_NUMBER, "Standings page scroll interval $CONTROL seconds", 10),
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_scroll", CONTROL_NUMBER, "Standings scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_lines", CONTROL_NUMBER, "Lines per page", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_rows", CONTROL_NUMBER, "Rows per page $CONTROL", 12),
@@ -659,6 +682,9 @@ class Game(object):
             return True;
         else:
             return False;
+
+    def get_team_colours(self):
+        return [self.p1.get_team_colour_tuple(), self.p2.get_team_colour_tuple()]
 
     def contains_player(self, player):
         if self.p1 == player or self.p2 == player:
@@ -2086,6 +2112,12 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             modes[current_mode]["selected"] = True
 
         return modes
+
+    def get_teleost_mode_info(self, mode_index):
+        if mode_index < 0 or mode_index >= len(teleost_modes):
+            return None
+        else:
+            return teleost_modes[mode_index]
 
     def set_teleost_mode(self, mode):
         cur = self.db.cursor();

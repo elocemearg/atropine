@@ -29,11 +29,21 @@ def get_standings(tourney, form):
 
     reply["rank_fields"] = rank_fields
 
+    player_to_team_colour = dict()
+    if tourney.are_players_assigned_teams():
+        players = tourney.get_players()
+        for player in players:
+            player_to_team_colour[player.get_name()] = player.get_team_colour_tuple()
+
     div_standings_list = []
     for div in range(num_divs):
         standings = []
         div_standings = tourney.get_standings(div)
         for s in div_standings:
+            team_colour = player_to_team_colour.get(s.name, None)
+            if team_colour is not None:
+                team_colour = list(team_colour)
+
             p = tourney.get_player_from_name(s.name)
             standing = dict()
             standing["position"] = s.position
@@ -44,6 +54,7 @@ def get_standings(tourney, form):
             standing["draws"] = s.draws
             standing["spread"] = s.spread
             standing["rating"] = s.rating
+            standing["team_colour"] = team_colour
             standing["withdrawn"] = p.is_withdrawn()
             standings.append(standing)
         div_dict = dict()
@@ -75,12 +86,18 @@ def get_games(tourney, form):
         games_this_div = []
         games_per_table = dict()
         for g in games:
+            teams = g.get_team_colours()
+            for i in range(len(teams)):
+                if teams[i] is not None:
+                    teams[i] = list(teams[i])
             game_dict = dict()
             names = g.get_player_names()
             game_dict["name1"] = names[0]
             game_dict["name2"] = names[1]
             game_dict["score1"] = g.s1
             game_dict["score2"] = g.s2
+            game_dict["teamcolour1"] = teams[0]
+            game_dict["teamcolour2"] = teams[1]
             game_dict["tb"] = g.tb
             game_dict["table"] = g.table_no
             games_per_table[(g.round_no, g.table_no)] = games_per_table.get((g.round_no, g.table_no), 0) + 1
@@ -122,17 +139,44 @@ def get_structure(tourney, form):
 
     rounds = tourney.get_rounds()
     reply["rounds"] = rounds
+
+    if tourney.are_players_assigned_teams():
+        teams = tourney.get_team_scores()
+        team_list = []
+        for (team, score) in teams:
+            team_list.append({
+                "id" : team.get_id(),
+                "name" : team.get_name(),
+                "colour" : list(team.get_colour_tuple()),
+                "score" : score
+            })
+        reply["teams"] = team_list
+    else:
+        reply["teams"] = None
     
     return reply
 
 def get_game_logs(tourney, form):
     logs = tourney.get_logs_since()
-    
+
+    player_to_team_colour = dict()
+    if tourney.are_players_assigned_teams():
+        players = tourney.get_players()
+        for player in players:
+            player_to_team_colour[player.get_name()] = player.get_team_colour_tuple()
+
     reply = dict()
     reply["success"] = True
 
     reply_logs = []
     for l in logs:
+        tc1 = player_to_team_colour.get(l[6], None)
+        if tc1 is not None:
+            tc1 = list(tc1)
+        tc2 = player_to_team_colour.get(l[8], None)
+        if tc2 is not None:
+            tc2 = list(tc2)
+
         reply_logs.append({
             "seq" : l[0],
             "ts" : l[1],
@@ -147,21 +191,131 @@ def get_game_logs(tourney, form):
             "tb" : l[10],
             "log_type" : l[11],
             "div_num" : l[12],
-            "superseded" : bool(l[13])
+            "superseded" : bool(l[13]),
+            "tc1" : tc1,
+            "tc2" : tc2
         })
 
     reply["logs"] = reply_logs
     return reply
 
+def get_tuff_luck(tourney, form):
+    reply = dict()
+    reply["success"] = True
+
+    # If numlosinggames is silly, negative or nonexistent, then default to 3
+    num_losing_games = form.getfirst("numlosinggames")
+    if num_losing_games is None:
+        num_losing_games = 3
+    else:
+        try:
+            num_losing_games = int(num_losing_games)
+        except ValueError:
+            num_losing_games = 3
+    if num_losing_games < 0:
+        num_losing_games = 3
+
+    tuffness_list = tourney.get_players_tuff_luck(num_losing_games)
+
+    tuffness_reply = []
+    pos = 0
+    joint = 0
+    prev_tuffness = None
+
+    for entry in tuffness_list:
+        name = entry[0].get_name()
+        tuffness = entry[1]
+        margin_list = entry[2]
+
+        if prev_tuffness is not None and tuffness == prev_tuffness:
+            joint += 1
+        else:
+            pos += 1 + joint
+            joint = 0
+
+        reply_entry = {
+                "pos" : pos,
+                "name" : name,
+                "tuffness" : tuffness,
+                "margins" : margin_list
+        }
+        tuffness_reply.append(reply_entry)
+        prev_tuffness = tuffness
+
+    reply["table"] = tuffness_reply
+    return reply
+
+def get_overachievers(tourney, form):
+    reply = dict()
+    reply["success"] = True
+
+    divisions = []
+
+    num_divisions = tourney.get_num_divisions()
+    for div_index in range(num_divisions):
+        division_element = dict()
+        division_element["div_num"] = div_index
+        division_element["div_name"] = tourney.get_division_name(div_index)
+
+        overachievers_list = tourney.get_players_overachievements(div_index)
+
+        entry_list = []
+        pos = 0
+        joint = 0
+        prev_diff = None
+
+        for entry in overachievers_list:
+            name = entry[0].get_name()
+            seed = entry[1]
+            rank = entry[2]
+            diff = entry[3]
+            if prev_diff is not None and prev_diff == diff:
+                joint += 1
+            else:
+                pos += 1 + joint
+                joint = 0
+
+            reply_entry = {
+                    "pos" : pos,
+                    "name" : name,
+                    "seed" : seed,
+                    "rank" : rank,
+                    "diff" : diff
+            }
+            entry_list.append(reply_entry)
+            prev_diff = diff
+
+        division_element["table"] = entry_list
+        divisions.append(division_element)
+
+    reply["divisions"] = divisions
+    return reply
+
+
 def get_teleost_state(tourney, form):
     reply = dict()
     reply["success"] = True
-    reply["current_mode"] = tourney.get_effective_teleost_mode()
+
+    mode = -1
+    if "mode" in form:
+        try:
+            mode = int(form.getfirst("mode"))
+        except ValueError:
+            mode = -1
+
+    if mode > 0:
+        reply["current_mode"] = int(form.getfirst("mode"))
+    elif mode == 0:
+        # If we were in auto mode, which mode would we be showing now
+        reply["current_mode"] = tourney.get_auto_effective_teleost_mode()
+    else:
+        reply["current_mode"] = tourney.get_effective_teleost_mode()
     opts = tourney.get_teleost_options(reply["current_mode"])
     reply_opts = dict()
     for opt in opts:
         reply_opts[opt.name] = opt.value
     reply["options"] = reply_opts
+    reply["banner_text"] = tourney.get_banner_text()
     return reply
 
 def get_all(tourney, form):
@@ -199,6 +353,8 @@ valid_requests = dict()
 valid_requests["standings"] = get_standings
 valid_requests["games"] = get_games
 valid_requests["logs"] = get_game_logs
+valid_requests["tuffluck"] = get_tuff_luck
+valid_requests["overachievers"] = get_overachievers
 valid_requests["structure"] = get_structure
 valid_requests["teleost"] = get_teleost_state
 valid_requests["all"] = get_all

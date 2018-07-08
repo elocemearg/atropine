@@ -8,6 +8,51 @@ import cgicommon;
 import urllib;
 import re;
 
+def show_view_preview(tourney, form, selected_view):
+    info = tourney.get_teleost_mode_info(selected_view)
+    if (info):
+        alt_text = info["name"]
+    else:
+        alt_text = ""
+    print "<iframe src=\"/cgi-bin/display.py?tourney=%s&mode=%d\" height=\"300\" width=\"400\"></iframe>" % (urllib.quote_plus(tourney.get_name()), selected_view)
+
+def show_view_option_controls(tourney, form, selected_view):
+    options = tourney.get_teleost_options(mode=selected_view)
+    if options:
+        print "<div class=\"teleostoptionheading\">Options for this screen mode</div>"
+    for o in options:
+        print "<div class=\"teleostoption\">"
+        name_escaped = "teleost_option_" + cgi.escape(o.name, True)
+        if o.value is None:
+            value_escaped = ""
+        else:
+            value_escaped = cgi.escape(str(o.value), True)
+
+        m = re.search("\\$CONTROL\\b", o.desc)
+        if m:
+            before_control = o.desc[0:m.start()]
+            after_control = o.desc[m.end():]
+        else:
+            before_control = o.desc
+            after_control = ""
+
+        print cgi.escape(before_control)
+        
+        if o.control_type == countdowntourney.CONTROL_NUMBER:
+            print "<input type=\"text\" size=\"6\" name=\"%s\" value=\"%s\" />" % (name_escaped, value_escaped)
+        elif o.control_type == countdowntourney.CONTROL_CHECKBOX:
+            if o.value is not None and int(o.value):
+                checked_str = "checked"
+            else:
+                checked_str = ""
+            print "<input type=\"checkbox\" name=\"%s\" value=\"1\" %s />" % (name_escaped, checked_str)
+            print "<input type=\"hidden\" name=\"%s\" value=\"1\" />" % ("exists_checkbox_" + name_escaped)
+
+        print cgi.escape(after_control)
+
+        print "</div>"
+
+
 cgitb.enable();
 
 print "Content-Type: text/html; charset=utf-8";
@@ -23,197 +68,188 @@ request_method = os.environ.get("REQUEST_METHOD", "");
 cgicommon.set_module_path();
 
 import countdowntourney;
-import teleostcolours;
 
-cgicommon.print_html_head("Display options: " + str(tourney_name));
+cgicommon.print_html_head("Display setup: " + str(tourney_name), "style.css");
+
+print "<script type=\"text/javascript\">"
+print """
+function clearBannerEditBox() {
+    document.getElementById("bannereditbox").value = "";
+}
+"""
+print "</script>"
 
 print "<body>";
-
-print """
-<script type="text/javascript">
-//<![CDATA[
-function fingerpoken(show) {
-    var elements = document.getElementsByClassName("fingerpokenzeug");
-    for (var i = 0; i < elements.length; ++i) {
-        if (show) {
-            elements[i].style.display = "block";
-        }
-        else {
-            elements[i].style.display = "none";
-        }
-    }
-    var button = document.getElementById("fingerpokenbutton");
-    if (show) {
-        button.setAttribute("value", "Hide advanced settings");
-        button.setAttribute("onclick", "fingerpoken(false);");
-    }
-    else {
-        button.setAttribute("value", "Show advanced settings");
-        button.setAttribute("onclick", "fingerpoken(true);");
-    }
-
-    var hidden_control = document.getElementById("showadvanced");
-    hidden_control.setAttribute("value", show ? "1" : "0");
-}
-//]]>
-</script>
-"""
 
 if tourney_name is None:
     print "<h1>No tourney specified</h1>";
     print "<p><a href=\"/cgi-bin/home.py\">Home</a></p>";
-else:
-    try:
-        tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
+    print "</body>"
+    print "</html>"
+    sys.exit(0)
 
-        show_advanced = False
+try:
+    tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
 
-        if request_method == "POST":
-            mode = form.getfirst("mode");
-            auto_use_table_index = form.getfirst("autousetableindex")
-            palette_name = form.getfirst("palette")
-            banner_text = form.getfirst("bannertext")
-            show_advanced = form.getfirst("showadvanced")
+    teleost_modes = tourney.get_teleost_modes();
 
-            if mode is not None:
-                try:
-                    mode = int(mode);
-                    tourney.set_teleost_mode(mode);
-                except ValueError:
-                    pass;
+    selected_view = form.getfirst("selectedview")
+    if selected_view is not None:
+        try:
+            selected_view = int(selected_view)
+        except ValueError:
+            selectedView = None
 
-            if auto_use_table_index is not None:
-                try:
-                    auto_use_table_index = int(auto_use_table_index)
-                    tourney.set_auto_use_table_index(auto_use_table_index != 0)
-                except ValueError:
-                    pass
-            else:
-                tourney.set_auto_use_table_index(False)
+    if selected_view < 0 or selected_view >= len(teleost_modes):
+        selected_view = None
 
-            if palette_name is not None:
-                tourney.set_teleost_colour_palette(palette_name)
+    if selected_view is None or selected_view == "":
+        selected_view = tourney.get_current_teleost_mode()
 
-            if banner_text is not None:
-                banner_text = banner_text.strip()
-            if not banner_text:
-                tourney.clear_banner_text()
-            else:
-                tourney.set_banner_text(banner_text)
+    mode_info = teleost_modes[selected_view]
 
-            if show_advanced is not None:
-                try:
-                    show_advanced = int(show_advanced)
-                except ValueError:
-                    pass
-            else:
-                show_advanced = False
-
+    if request_method == "POST":
+        if "setoptions" in form:
             for name in form.keys():
                 if name.startswith("teleost_option_"):
                     option_name = name[15:]
                     option_value = form.getfirst(name)
                     tourney.set_teleost_option_value(option_name, option_value)
-
-
-        banner_text = tourney.get_banner_text()
-        if banner_text is None:
-            banner_text = ""
-
-        cgicommon.show_sidebar(tourney);
-
-        print("<div class=\"mainpane\">")
-
-
-        views = tourney.get_teleost_modes();
-        current_palette_name = tourney.get_teleost_colour_palette()
-        if not current_palette_name:
-            current_palette_name = "Standard"
-
-        print "<h1>Display options</h1>";
-
-        print "<p>"
-        print "This page controls what's shown on the public-facing screen, which is opened with the \"Open Display\" link in the sidebar."
-        print "</p>"
-
-        print "<form action=\"" + baseurl + "?tourney=%s\" method=\"POST\">" % urllib.quote_plus(tourney_name);
-        print("<h2>Banner</h2>")
-        print("<p>If you want to display a message at the top of the screen, enter it here. To remove the banner, make it blank. The current banner text is also shown in the sidebar to remind you it's active.</p>")
-        print("<p>")
-        print("<input type=\"text\" name=\"bannertext\" value=\"%s\" size=\"40\" />" % (cgi.escape(banner_text, True)))
-        print("</p>")
-
-        print "<h2>Select current view</h2>"
-        print "<p>"
-        print "<input type=\"button\" name=\"advanced\" id=\"fingerpokenbutton\" value=\"%s advanced settings\" onclick=\"fingerpoken(%s);\" />" % ("Hide" if show_advanced else "Show", "false" if show_advanced else "true");
-        print "<input type=\"hidden\" name=\"showadvanced\" id=\"showadvanced\" value=\"%d\" />" % (1 if show_advanced else 0)
-        print "</p>"
-        for v in views:
-            view_num = v.get("num", -1);
-            view_name = v.get("name", "View %d" % view_num);
-            view_desc = v.get("desc", "");
-            view_selected = v.get("selected", False);
-            print "<div>"
-            print "<input type=\"radio\" name=\"mode\" value=\"%d\" %s />" % (view_num, "checked" if view_selected else "");
-            print "<strong>%s</strong>: %s" % (cgi.escape(view_name), cgi.escape(view_desc));
-            print "</div>"
-            if view_num == 0:
-                use_table_index = tourney.get_auto_use_table_index()
-                print "<div class=\"teleostoptionblock\">"
-                print "<div class=\"teleostoption\">"
-                print "<input type=\"checkbox\" name=\"autousetableindex\" value=\"1\" %s /> Use name-to-table index at start of round rather than fixtures view" % ("checked" if use_table_index else "")
-                print "</div>"
-                print "</div>"
+                elif name.startswith("exists_checkbox_teleost_option_"):
+                    cgi_option_name = name[16:]
+                    if cgi_option_name not in form:
+                        tourney.set_teleost_option_value(cgi_option_name[15:], 0)
+            text = form.getfirst("bannertext")
+            if not text:
+                tourney.clear_banner_text()
             else:
-                options = tourney.get_teleost_options(view_num)
-                print "<div class=\"teleostoptionblock fingerpokenzeug\" style=\"display: %s\">" % ("block" if show_advanced else "None")
-                for o in options:
-                    print "<div class=\"teleostoption\">"
-                    name_escaped = "teleost_option_" + cgi.escape(o.name, True)
-                    if o.value is None:
-                        value_escaped = ""
-                    else:
-                        value_escaped = cgi.escape(str(o.value), True)
+                tourney.set_banner_text(text)
+        if "switchview" in form:
+            tourney.set_teleost_mode(selected_view)
+            teleost_modes = tourney.get_teleost_modes();
+            mode_info = teleost_modes[selected_view]
 
-                    m = re.search("\\$CONTROL\\b", o.desc)
-                    if m:
-                        before_control = o.desc[0:m.start()]
-                        after_control = o.desc[m.end():]
-                    else:
-                        before_control = o.desc
-                        after_control = ""
+    banner_text = tourney.get_banner_text()
+    if banner_text is None:
+        banner_text = ""
 
-                    print cgi.escape(before_control)
-                    
-                    if o.control_type == countdowntourney.CONTROL_NUMBER:
-                        print "<input type=\"text\" size=\"6\" name=\"%s\" value=\"%s\" />" % (name_escaped, value_escaped)
-                    elif o.control_type == countdowntourney.CONTROL_CHECKBOX:
-                        if o.value is not None and int(o.value):
-                            checked_str = "checked"
-                        else:
-                            checked_str = ""
-                        print "<input type=\"checkbox\" name=\"%s\" value=\"1\" %s />" % (name_escaped, checked_str)
+    cgicommon.show_sidebar(tourney);
 
-                    print cgi.escape(after_control)
+    print "<div class=\"mainpane\">"
 
-                    print "</div>"
+    print "<h1>Display Setup</h1>";
+
+    print "<div class=\"opendisplaylink\">"
+    print """
+    <a href="/cgi-bin/display.py?tourney=%s"
+       target=\"_blank\">
+       Open Display Window
+       <img src=\"/images/opensinnewwindow.png\"
+            alt=\"Opens in new window\"
+            title=\"Opens in new window\" />
+        </a>""" % (urllib.quote_plus(tourney.name));
+    print "</div>"
+
+    print "<div class=\"viewselection\">"
+    print "<div class=\"viewdetails\">"
+    print "<div class=\"viewdetailstext\">"
+    print "<h2>"
+    print cgi.escape(mode_info["name"])
+    print "</h2>"
+    print "<p>"
+    print cgi.escape(mode_info["desc"])
+    print "</p>"
+    print "</div>" # viewdetailstext
+
+    print "</div>" # viewdetails
+
+    print "<div style=\"clear: both;\"></div>"
+
+    print "<div class=\"viewpreviewandoptions\">"
+    print "<div class=\"viewpreview\" id=\"viewpreview\">"
+    show_view_preview(tourney, form, selected_view)
+    if teleost_modes[selected_view].get("selected", False):
+        print "<div class=\"viewpreviewcurrent\">"
+        print "Currently showing"
+        print "</div>"
+    else:
+        print "<div class=\"viewpreviewswitch\">"
+        print "<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.quote_plus(tourney_name), selected_view)
+        print "<input class=\"switchviewbutton\" type=\"submit\" name=\"switchview\" value=\"Switch to this screen mode\" />"
+        print "</form>"
+        print "</div>"
+    print "</div>"
+
+    print "<div class=\"viewcontrols\">"
+    print "<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.quote_plus(tourney_name), selected_view)
+
+    print "<div class=\"viewoptions\" id=\"viewoptions\">"
+    print "<div class=\"teleostoptionheading\">Banner text</div>"
+    print "<div class=\"teleostoptionblock\">"
+    print "<input type=\"text\" name=\"bannertext\" id=\"bannereditbox\" value=\"%s\" size=\"40\" onclick=\"this.select();\" />" % (cgi.escape(banner_text, True))
+    print "<button type=\"button\" onclick=\"clearBannerEditBox();\">Clear</button>";
+    print "</div>"
+    show_view_option_controls(tourney, form, selected_view)
+    print "</div>"
+
+    print "<div class=\"viewsubmitbuttons\">"
+    print "<div class=\"viewoptionssave\">"
+    print "<input type=\"submit\" class=\"setdisplayoptionsbutton\" name=\"setoptions\" value=\"Save options\" />"
+    print "</div>"
+    print "</div>" # viewsubmitbuttons
+
+    print "</form>"
+    print "</div>" # viewcontrols
+    print "</div>" # viewpreviewandoptions
+
+    print "<div style=\"clear: both;\"></div>"
+
+    print "</div>" # viewselection
+
+    print "<div class=\"viewmenu\">"
+
+    print "<div class=\"viewmenuheading\">Available screen modes</div>"
+
+    menu_row_size = 5
+    teleost_modes_sorted = sorted(teleost_modes, key=lambda x : (x.get("menuorder", 100000), x["num"], x["name"]))
+
+    for idx in range(len(teleost_modes_sorted)):
+        mode = teleost_modes_sorted[idx]
+        if idx % menu_row_size == 0:
+            if idx > 0:
                 print "</div>"
+            print "<div class=\"viewmenurow\">"
+        classes = ["viewmenucell"]
+        if mode.get("selected", False):
+            # This is the view currently showing on the public display
+            classes.append("viewmenucellshowing")
+        elif mode["num"] == selected_view:
+            # This is the view the user has clicked in the display options page
+            classes.append("viewmenucellselected")
+        else:
+            # This is neither showing nor selected
+            classes.append("viewmenucellbystander")
+        print "<div class=\"%s\">" % (" ".join(classes))
+        print "<a href=\"%s?tourney=%s&selectedview=%d\">" % (baseurl, urllib.quote_plus(tourney_name), mode["num"])
+        img_src = mode.get("image", None)
+        if img_src:
+            print "<img src=\"%s\" alt=\"%s\" title=\"%s\" />" % (
+                    cgi.escape(img_src, True), cgi.escape(mode["name"], True),
+                    cgi.escape(mode["name"], True))
+        else:
+            print cgi.escape(mode["name"])
+        print "</a>"
+        print "</div>"
 
-        #print "<h2>Select colour scheme</h2>"
-        #print "<p>"
-        #for palette_name in teleostcolours.list_palettes():
-        #    print "<input type=\"radio\" name=\"palette\" value=\"%s\" %s /> %s<br />" % (cgi.escape(palette_name, True), "checked" if current_palette_name == palette_name else "", cgi.escape(palette_name))
-        #print "</p>"
+    if len(teleost_modes) > 0:
+        print "</div>"
 
-        print "<p>"
-        print "<input type=\"submit\" name=\"submit\" value=\"Apply Settings\" />";
-        print "</p>"
-        print "</form>";
+    print "</div>" #viewmenu
 
-        print "</div>";
+    print "</div>" # mainpane
 
-    except countdowntourney.TourneyException as e:
-        cgicommon.show_tourney_exception(e);
+except countdowntourney.TourneyException as e:
+    cgicommon.show_tourney_exception(e);
 
 print "</body></html>";
 

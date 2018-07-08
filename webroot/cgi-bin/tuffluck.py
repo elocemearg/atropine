@@ -83,7 +83,7 @@ try:
             prev_tuffness = tuffness
         print "</table>"
     print "<p>"
-    print "For the purpose of Tuff Luck, games which go to a tiebreak have a margin of zero. Only games which count towards the standings are considered."
+    print "For the purpose of Tuff Luck, games which go to a tiebreak have a margin of zero. Games adjudicated as a loss for both players do not count. Only games which count towards the standings are considered."
     print "</p>"
     print "</div>" #mainpane
 except countdowntourney.TourneyException as e:

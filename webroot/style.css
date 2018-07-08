@@ -706,15 +706,6 @@ div.sidebarbanner {
        width: 156px;
 }
 
-div.teleostoptionblock {
-    padding: 5px;
-}
-
-div.teleostoption {
-       padding-left: 4em;
-       font-size: 10pt;
-}
-
 /* Results editor data entry tool */
 
 div.scoreentry {
@@ -1211,4 +1202,155 @@ span.prefssaved {
 
 div.prefstaborderfooter {
     font-size: 10pt;
+}
+
+
+div.viewselection {
+    position: relative;
+}
+
+div.viewdetails {
+    width: 700px;
+}
+
+div.viewdetailstext {
+    float: left;
+    width: 100%;
+}
+
+div.viewdetailstitle {
+    font-size: 18pt;
+    font-weight: bold;
+}
+
+div.viewdetailsdescription {
+}
+
+
+input.switchviewbutton {
+    width: 200px;
+    height: 30px;
+}
+
+div.viewpreviewandoptions {
+    position: relative;
+    background-color: red;
+}
+
+div.teleostoptionheading {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-top: 10px;
+    padding-left: 10px;
+}
+
+div.teleostoptionblock {
+    padding: 10px;
+}
+
+div.teleostoption {
+    padding-left: 15px;
+    padding-top: 5px;
+}
+
+div.viewpreview {
+    position: relative;
+    background-color: green;
+    top: 0px;
+    left: 0px;
+    width: 400px;
+    min-height: 360px;
+    padding: 10px;
+    left: 0;
+    float: left;
+}
+
+div.viewpreviewswitch {
+    background-color: #66aaff;
+    text-align: center;
+    width: 100%;
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+div.viewpreviewcurrent {
+    width: 100%;
+    text-align: center;
+    background-color: pink;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+div.viewcontrols {
+    border: 1px solid gray;
+    padding: 10px;
+    top: 0px;
+    height: 360px;
+    min-width: 360px;
+    margin-left: 10px;
+    float: left;
+}
+
+div.viewoptions {
+    height: 320px;
+    overflow-y: auto;
+}
+
+div.viewsubmitbuttons {
+    width: 360px;
+    text-align: center;
+}
+
+input.setdisplayoptionsbutton {
+    height: 30px;
+    width: 200px;
+}
+
+div.viewmenu {
+    margin-top: 20px;
+    border: 1px solid gray;
+    background-color: silver;
+    padding: 5px;
+    width: 800px;
+}
+
+div.viewmenuheading {
+    font-size: 16pt;
+    font-weight: bold;
+    padding: 10px;
+}
+
+div.viewmenurow {
+    clear: both;
+    height: 120px;
+    width: auto;
+}
+
+div.viewmenucell {
+    width: 133px;
+    height: 100px;
+    float: left;
+    padding: 5px;
+}
+
+div.viewmenucellbystander {
+    border: 5px solid transparent;
+}
+
+div.viewmenucellselected {
+    border: 5px solid blue;
+}
+
+div.viewmenucellshowing {
+    border: 5px solid red;
+}
+
+div.opendisplaylink {
+    font-weight: bold;
+}
+
+div.opendisplaylink a {
+    background-color: cyan;
+    padding: 5px;
+    border-radius: 5px;
 }

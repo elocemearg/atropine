@@ -16,7 +16,7 @@ def int_or_none(s):
     except:
         return None
 
-def print_html_head(title, cssfile="style.css"):
+def print_html_head(title, cssfile="style.css", othercssfiles=[]):
     #print """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 #<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB" xml:lang="en-GB">
 #""";
@@ -26,6 +26,8 @@ def print_html_head(title, cssfile="style.css"):
     print "<title>%s</title>" % (cgi.escape(title));
     print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />";
     print "<link rel=\"stylesheet\" type=\"text/css\" href=\"/%s\" />" % (cgi.escape(cssfile, True));
+    for f in othercssfiles:
+        print "<link rel=\"stylesheet\" type=\"text/css\" href=\"/%s\" />" % (cgi.escape(f, True));
     print "<link rel=\"shortcut icon\" href=\"/favicon.ico\" type=\"image/x-icon\" />"
     print "<link rel=\"shortcut icon\" href=\"/favicon.png\" type=\"image/png\" />"
     print "</head>";
@@ -113,6 +115,20 @@ def show_sidebar(tourney):
         print("</div>")
         print "</div>"
 
+        print "<br />"
+
+        print "<div>"
+        print("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\"><strong>Display Setup</strong></a>" % urllib.quote_plus(tourney.name));
+        print "</div>"
+
+        banner_text = tourney.get_banner_text()
+        if banner_text:
+            print("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\">" % (urllib.quote_plus(tourney.name)))
+            print("<div class=\"sidebarbanner\" title=\"Banner is active\">")
+            print(cgi.escape(banner_text))
+            print("</div>")
+            print("</a>")
+
         print("<br />")
 
         rounds = tourney.get_rounds();
@@ -137,26 +153,6 @@ def show_sidebar(tourney):
         print "<div class=\"genroundlink\">";
         print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Generate fixtures...</a>" % (urllib.quote_plus(tourney.name));
         print "</div>";
-
-        print "<br />"
-
-        print "<div>"
-        print("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\">Display options...</a>" % urllib.quote_plus(tourney.name));
-        print "</div>"
-        print("<div style=\"padding: 5px 5px 5px 0px;\">")
-        print("<a href=\"/cgi-bin/display.py?tourney=%s\" style=\"background-color: #88ccff; padding: 5px; border-radius: 5px;\" target=\"_blank\"><strong>Open Display %s</strong></a>" % (urllib.quote_plus(tourney.name), new_window_html));
-        print "</div>"
-
-        banner_text = tourney.get_banner_text()
-        if banner_text:
-            print("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\">" % (urllib.quote_plus(tourney.name)))
-            #print("<div class=\"sidebarbannerheading\">")
-            #print("BANNER ENABLED");
-            #print("</div>")
-            print("<div class=\"sidebarbanner\" title=\"Banner is active\">")
-            print(cgi.escape(banner_text))
-            print("</div>")
-            print("</a>")
 
         print "<br />"
         print("<div class=\"misclinks\">")

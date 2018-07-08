@@ -14,6 +14,12 @@ print ""
 
 form = cgi.FieldStorage()
 tourney_name = form.getfirst("tourney")
+mode = form.getfirst("mode")
+if mode is not None:
+    try:
+        mode = int(mode)
+    except ValueError:
+        mode = None
 
 cgicommon.set_module_path()
 
@@ -36,6 +42,11 @@ teleost_modes = tourney.get_teleost_modes()
 print "<script type=\"text/javascript\">"
 print "var tourneyName = \"%s\";" % (tourney_name);
 
+if mode is None:
+    print "var displayMode = -1;" # display whatever the db says the current mode is
+else:
+    print "var displayMode = %d;" % (mode)
+
 for mode in teleost_modes:
     print "var %s = %d;" % (mode["id"], mode["num"])
 
@@ -50,6 +61,9 @@ if tourney_name is None:
     print "</body>"
     print "</html>"
     sys.exit(0)
+
+print "<div id=\"teleostbanner\">"
+print "</div>"
 
 print "<div id=\"displaymainpane\">"
 print "</div>"
