@@ -90,9 +90,6 @@ modify_player_submit = form.getfirst("modifyplayersubmit");
 rank = form.getfirst("rank");
 rank = int_or_none(rank);
 show_draws_column = int_or_none(form.getfirst("showdrawscolumn"))
-show_tournament_rating = bool(int_or_none(form.getfirst("showtournamentratingcolumn")))
-tr_bonus = float_or_none(form.getfirst("tournamentratingbonus"))
-tr_diff_cap = float_or_none(form.getfirst("tournamentratingdiffcap"))
 rules_submit = form.getfirst("rulessubmit");
 
 tourney = None;
@@ -122,7 +119,6 @@ if tourneyname is None:
 elif not tourney:
     print "<p>No valid tourney name specified</p>";
 else:
-    #print '<p><a href="%s?tourney=%s">%s</a></p>' % (baseurl, urllib.quote_plus(tourneyname), cgi.escape(tourneyname));
     if request_method == "POST" and player_list_submit:
         div_index = 0
         if not playerlist:
@@ -149,13 +145,29 @@ else:
             print "<p><strong>Player list updated successfully.</strong></p>";
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
+
+    num_divisions = tourney.get_num_divisions()
+
     if request_method == "POST" and rules_submit:
         try:
             tourney.set_rank_method(rank);
             tourney.set_show_draws_column(show_draws_column);
-            tourney.set_show_tournament_rating_column(show_tournament_rating)
-            tourney.set_tournament_rating_config(tr_bonus, tr_diff_cap)
-            #tourney.set_table_size(players_per_table);
+            for div_index in range(num_divisions):
+                div_prefix = "div%d_" % (div_index)
+                suffixes = [ "lastround", "numgamesperplayer", "qualplaces" ]
+                for suffix in suffixes:
+                    name = div_prefix + suffix
+                    value = form.getfirst(name)
+                    if value is None:
+                        value = 0
+                    else:
+                        try:
+                            value = int(value)
+                        except ValueError:
+                            value = 0
+                        if value < 0:
+                            value = 0
+                    tourney.set_attribute(name, value)
             print "<p><strong>Rules updated successfully.</strong></p>";
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
@@ -190,7 +202,6 @@ add new players.</p>""" % (urllib.quote_plus(tourney.get_name())))
             cgicommon.show_info_box("<p>This tourney has no players defined yet. Before doing anything else, enter the list of player names below. You can always add more players, or withdraw them, later on if necessary.</p>");
 
 
-    num_divisions = tourney.get_num_divisions()
     if num_divisions > 1:
         print "<p>The players are distributed into <a href=\"divsetup.py?tourney=%s\">%d divisions</a>.</p>" % (urllib.quote_plus(tourney.get_name()), num_divisions)
         print "<blockquote>"
@@ -311,36 +322,52 @@ add new players.</p>""" % (urllib.quote_plus(tourney.get_name())))
 
         print("<h3>Draws</h3>")
         print "<p>"
-        print("Tick this box if draws are possible in your tournament. It affects whether the draws column is shown in Teleost and in exported HTML or text results. The <a href=\"/cgi-bin/standings.py?tourney=%s\">standings page</a> will always show a draws column regardless." % (urllib.quote_plus(tourney.get_name())))
+        print """
+        Tick this box if draws are possible in your tournament.
+        Leaving it unticked won't stop you recording a drawn game - it only
+        affects analysis of whether a player is guaranteed to finish in the
+        qualification zone, and whether the draws column is shown in exported
+        HTML or text results.
+        The <a href=\"/cgi-bin/standings.py?tourney=%s\">standings page</a>
+        will always show a draws column regardless.""" % (urllib.quote_plus(tourney.get_name()))
         print("</p><p>")
         print("<input type=\"checkbox\" name=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else ""))
-        print("Show draws column in exported results standings table")
+        print("Expect that draws might happen")
         print "</p>"
 
-        print("<h3>Tournament Ratings</h3>")
-        print("<p>If you don't know what tournament ratings are, you can safely leave these as the defaults and they won't affect anything.</p>")
-        print("<p>")
-        print("<input type=\"checkbox\" name=\"showtournamentratingcolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_tournament_rating_column() else ""))
-        print("Show tournament ratings in exported results standings table")
-        print("</p>")
-        print("<p>")
-        print("For each game you play, your tournament rating is calculated as follows.")
-        print("</p>")
-        print("<ul>")
-        print("<li>If you win, your opponent's <em>effective rating</em> plus the <em>win value</em>.</li>")
-        print("<li>If you draw, your opponent's <em>effective rating</em>.</li>")
-        print("<li>If you lose, your opponent's <em>effective rating</em> minus the <em>win value</em>.</li>")
-        print("</ul>")
-        print("<p>")
-        print("The <em>win value</em> is <input type=\"number\" name=\"tournamentratingbonus\" value=\"%g\" maxlength=\"5\" />" % (tourney.get_tournament_rating_bonus_value()))
-        print("</p><p>")
-        print("Your opponent's <em>effective rating</em> for a game is their rating at the start of the tournament, capped to within")
-        print("<input type=\"number\" name=\"tournamentratingdiffcap\" value=\"%g\" maxlength=\"5\" />" % (tourney.get_tournament_rating_diff_cap()))
-        print("of your own.")
-        print("</p>")
-        print("<p>")
-        print("Your overall tournament rating is the mean average from all your games.")
-        print("</p>")
+        print "<h3>Intended number of rounds, and qualification</h3>"
+        print "<p>"
+        print "If you fill in these values, Atropine will automatically work out when a player is guaranteed to finish in the qualification zone, and highlight them in green the standings table."
+        print "If you don't fill these in, or if you set them to zero, Atropine won't do that."
+        print "</p>"
+
+        for div_index in range(num_divisions):
+            if num_divisions > 1:
+                print "<h4>%s</h4>" % (cgi.escape(tourney.get_division_name(div_index)))
+            div_prefix = "div%d_" % (div_index)
+            
+            last_round = str(tourney.get_attribute(div_prefix + "lastround", ""))
+            if last_round == "0":
+                last_round = ""
+
+            num_games_per_player = str(tourney.get_attribute(div_prefix + "numgamesperplayer", ""))
+            if num_games_per_player == "0":
+                num_games_per_player = ""
+
+            qual_places = str(tourney.get_attribute(div_prefix + "qualplaces", ""))
+            if qual_places == "0":
+                qual_places = ""
+
+            print "<div class=\"tourneyqualifyingcontrols\">"
+            print "The last round is expected to be round number <input class=\"tourneysetupnumber\" type=\"number\" name=\"%slastround\" value=\"%s\" />" % (div_prefix, cgi.escape(last_round, True))
+            print "</div>"
+            print "<div class=\"tourneyqualifyingcontrols\">"
+            print "Each player is expected to play <input class=\"tourneysetupnumber\" type=\"number\" name=\"%snumgamesperplayer\" value=\"%s\" /> games" % (div_prefix, cgi.escape(num_games_per_player, True))
+            print "</div>"
+            print "<div class=\"tourneyqualifyingcontrols\">"
+            print "The qualification zone is the top <input class=\"tourneysetupnumber\" type=\"number\" name=\"%squalplaces\" value=\"%s\" /> places in the standings table" % (div_prefix, cgi.escape(qual_places, True))
+            print "</div>"
+
         print('<p><input type="submit" name="rulessubmit" value="Save Rules" /></p>')
         print("</form>");
 

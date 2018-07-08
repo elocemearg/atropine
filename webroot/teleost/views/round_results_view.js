@@ -1,7 +1,6 @@
 class RoundResultsView extends PagedTableView {
     constructor(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod) {
         super(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage < 2 ? 2 : rowsPerPage, scrollPeriod);
-        this.lastGameRevisionSeen = null;
     }
 
     setup(container) {
@@ -34,7 +33,6 @@ class RoundResultsView extends PagedTableView {
     }
 
     getPageInfo() {
-        this.lastGameRevisionSeen = gameStateRevision;
         var gameState = this.getGameState();
         var pages = [];
         var page = [];

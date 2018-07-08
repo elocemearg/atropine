@@ -8,6 +8,7 @@ class PagedTableView extends View {
         this.lastScroll = 0;
         this.newPageInfo = null;
         this.scrollPeriod = scrollPeriod;
+        this.lastGameRevisionSeen = null;
     }
 
     nextPage() {
@@ -34,6 +35,7 @@ class PagedTableView extends View {
         }
 
         if (doRedraw) {
+            this.lastGameRevisionSeen = gameStateRevision;
             this.newPageInfo = this.getPageInfo();
 
             /* Don't do the scrolly effect if we're scrolling from one

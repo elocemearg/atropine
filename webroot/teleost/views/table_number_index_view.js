@@ -3,15 +3,14 @@ class TableNumberIndexView extends PagedTableView {
         super(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerColumn, scrollPeriod);
         this.rowsPerColumn = rowsPerColumn;
         this.colsPerPage = colsPerPage;
-        this.latestGameRevisionSeen = null;
     }
 
     setup(container) {
         super.setup(container);
         var html = "";
 
-        html += "<div class=\"headingbar tabindexheading\">";
-        html += "<div class=\"tabindexheadingtext\">";
+        html += "<div class=\"headingbar viewheading\">";
+        html += "<div class=\"viewheadingtext\">";
         html += "Table numbers";
         html += "</div>";
         html += "</div>";
@@ -53,7 +52,6 @@ class TableNumberIndexView extends PagedTableView {
     }
 
     getPageInfo() {
-        this.lastGameRevisionSeen = gameStateRevision;
         var gameState = this.getGameState();
         var pages = [];
         var page = [];

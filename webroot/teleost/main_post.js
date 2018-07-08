@@ -60,6 +60,14 @@ function createTechnicalDifficultiesScreen(tourneyName, options) {
     return new ImageView(tourneyName, 0, 0, 100, 100, "/images/technical_difficulties.jpg");
 }
 
+function createNotableGamesScreen(tourneyName, options) {
+    return new NotableGamesView(tourneyName, 0, 0, 100, 100);
+}
+
+/*function createClockScreen(tourneyName, options) {
+    return new ClockView(tourneyName, 0, 0, 100, 100);
+}*/
+
 var teleostModesToCreateFunctions = {};
 
 function showBanner(text) {
@@ -274,8 +282,9 @@ function displaySetup() {
     teleostModesToCreateFunctions[TELEOST_MODE_TABLE_NUMBER_INDEX] = createTableNumberIndexScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_OVERACHIEVERS] = createOverachieversScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_TUFF_LUCK] = createTuffLuckScreen;
-    teleostModesToCreateFunctions[TELEOST_MODE_RECORDS] = createPlaceholderScreen;
+    teleostModesToCreateFunctions[TELEOST_MODE_RECORDS] = createNotableGamesScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_FASTEST_FINISHERS] = createPlaceholderScreen;
+    //teleostModesToCreateFunctions[TELEOST_MODE_CLOCK] = createClockScreen;
 
     fetchGameState();
     viewUpdateInterval = setInterval(updateCurrentView, 1000);

@@ -10,8 +10,8 @@ class TuffLuckView extends View {
         super.setup(container);
         container.style.maxWidth = "100%";
         var html = "";
-        html += "<div class=\"headingbar tabindexheading\">";
-        html += "<div class=\"tabindexheadingtext\">";
+        html += "<div class=\"headingbar viewheading\">";
+        html += "<div class=\"viewheadingtext\">";
         html += "Tuff Luck";
         html += "</div>";
         html += "</div>";

@@ -2,15 +2,14 @@ class OverachieversView extends PagedTableView {
     constructor(tourneyName, leftPc, topPc, widthPc, heightPc) {
         super(tourneyName, leftPc, topPc, widthPc, heightPc, 10, 10000);
         this.numRows = 10;
-        this.lastGameRevisionSeen = null;
     }
 
     setup(container) {
         super.setup(container);
         container.style.maxWidth = "100%";
         var html = "";
-        html += "<div class=\"headingbar tabindexheading\">";
-        html += "<div class=\"tabindexheadingtext\">";
+        html += "<div class=\"headingbar viewheading\">";
+        html += "<div class=\"viewheadingtext\">";
         html += "Overachievers";
         html += "</div>";
         html += "</div>";
@@ -59,7 +58,6 @@ class OverachieversView extends PagedTableView {
     }
 
     getPageInfo() {
-        this.lastGameRevisionSeen = gameStateRevision;
         var gameState = this.getGameState();
         var pages = [];
         var page = [];
@@ -140,7 +138,7 @@ class OverachieversView extends PagedTableView {
                 var name = "";
                 var seed = "";
                 var rank = "";
-                var diff = ""
+                var diff = "";
 
                 var rowName = "teleostoverachievers" + rowNum.toString();
 

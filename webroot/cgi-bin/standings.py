@@ -61,7 +61,7 @@ try:
         print '<br />'
 
     rank_method = tourney.get_rank_method()
-    cgicommon.show_standings_table(tourney, True, True, True, True, True, tourney.get_show_tournament_rating_column())
+    cgicommon.show_standings_table(tourney, True, True, True, True, True, tourney.get_show_tournament_rating_column(), True)
 
     print "</div>"; #mainpane
 except countdowntourney.TourneyException as e:

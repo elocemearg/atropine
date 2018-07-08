@@ -3,6 +3,7 @@
 import sqlite3;
 import re;
 import os;
+import qualification
 
 SW_VERSION = "0.8.0"
 SW_VERSION_SPLIT = (0, 8, 0)
@@ -98,7 +99,7 @@ teleost_modes = [
             "desc" : "Highest winning scores, losing scores and combined scores.",
             "image" : "/images/screenthumbs/placeholder.png",
             "menuorder" : 8,
-            "fetch" : []
+            "fetch" : [ "notablegames" ]
         },
         {
             "id" : "TELEOST_MODE_FASTEST_FINISHERS",
@@ -108,6 +109,14 @@ teleost_modes = [
             "menuorder" : 9,
             "fetch" : []
         }
+        #,{
+        #    "id" : "TELEOST_MODE_CLOCK",
+        #    "name" : "Clock",
+        #    "desc" : "For some reason.",
+        #    "image" : "/images/screenthumbs/placeholder.png",
+        #    "menuorder" : 10,
+        #    "fetch" : []
+        #}
 ]
 
 teleost_mode_id_to_num = dict()
@@ -647,6 +656,7 @@ class StandingsRow(object):
         self.played_first = played_first
         self.rating = rating
         self.tournament_rating = tournament_rating
+        self.qualified = False
 
     def __str__(self):
         return "%3d. %-25s %3dw %3dd %4dp" % (self.position, self.name, self.wins, self.draws, self.points)
@@ -657,6 +667,9 @@ class StandingsRow(object):
     
     def __getitem__(self, index):
         return [self.position, self.name, self.played, self.wins, self.points, self.draws, self.spread, self.played_first][index]
+    
+    def is_qualified(self):
+        return self.qualified
 
 class Game(object):
     def __init__(self, round_no, seq, table_no, division, game_type, p1, p2, s1=None, s2=None, tb=False):
@@ -1718,6 +1731,18 @@ where round_no = ? and seq = ?""", alterations_reordered);
         else:
             cur.close();
             return row[0];
+
+    # Get the latest round number for which there is at least one game in
+    # this division
+    def get_latest_round_in_division(self, division):
+        cur = self.db.cursor()
+        cur.execute("select max(round_no) from game where division = ?", (division,))
+        row = cur.fetchone()
+        latest_round = None
+        if row is not None and row[0] is not None:
+            latest_round = row[0]
+        cur.close()
+        return latest_round
     
     def get_played_unplayed_counts(self, round_no=None):
         cur = self.db.cursor();
@@ -1806,9 +1831,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         return games;
 
-
-
-    def get_games(self, round_no=None, table_no=None, game_type=None, only_players_known=True, division=None):
+    def get_games(self, round_no=None, table_no=None, game_type=None, only_players_known=True, division=None, only_unplayed=False):
         conditions = [];
         params = [];
 
@@ -1826,6 +1849,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         if division is not None:
             conditions.append("g.division = ?")
             params.append(division)
+        if only_unplayed:
+            conditions.append("(g.p1_score is null or g.p2_score is null)")
 
         cur = self.db.cursor();
         sql = """select g.round_no, g.seq, g.table_no, g.division, g.game_type,
@@ -1930,7 +1955,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         cur = self.db.cursor();
         cur.execute("select value from options where name = ?", (name,));
         value = cur.fetchone();
-        if value is None:
+        if value is None or value[0] is None:
             value = defval;
         else:
             value = str(value[0]);
@@ -2055,7 +2080,45 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         results = self.ranked_query("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws from player_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id " + condition + orderby, rankcols);
 
-        return [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9]) for x in results ]
+        standings = [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9]) for x in results ]
+
+        # If we can, mark already-qualified players as such
+        qual_places = self.get_int_attribute("div%d_qualplaces" % (division), 0)
+        last_round = self.get_int_attribute("div%d_lastround" % (division), 0)
+        all_games_generated = (last_round != 0 and last_round == self.get_latest_round_in_division(division))
+        num_games_per_player = self.get_int_attribute("div%d_numgamesperplayer" % (division), 0)
+        draws_expected = self.get_show_draws_column()
+
+        if qual_places > 0 and num_games_per_player > 0:
+            qualification_standings = [
+                    {
+                        "pos" : x.position,
+                        "name" : x.name,
+                        "played" : x.played,
+                        "win_points" : x.wins * 2 + x.draws
+                    }
+                    for x in standings
+            ]
+
+            unplayed_games = [ g.get_player_names()
+                                for g in self.get_games(
+                                    game_type="P", division=division,
+                                    only_unplayed=True
+                                )
+                             ]
+
+            for row in standings:
+                qualified = False
+                if row.position <= qual_places and method == RANK_WINS_POINTS:
+                    # This player is in the qualification zone - work out if
+                    #they are guaranteed to stay there
+                    qualified = qualification.player_has_qualified(
+                            qualification_standings, row.name, unplayed_games,
+                            qual_places, all_games_generated,
+                            num_games_per_player, draws_expected)
+                row.qualified = qualified
+
+        return standings
     
     def get_logs_since(self, seq=None, include_new_games=False, round_no=None, maxrows=None):
         cur = self.db.cursor();
@@ -2100,7 +2163,6 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             current_mode = None
 
         cur.close()
-        self.db.commit()
 
         modes = []
         for mode in teleost_modes:
@@ -2239,7 +2301,6 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         #for row in cur:
         #    options.append(TeleostOption(int(row[0]), int(row[1]), row[2], row[3], row[4], row[6] if row[6] is not None else row[5]))
         #cur.close()
-        self.db.commit()
         return options
     
     def get_teleost_option_value(self, name):
@@ -2623,6 +2684,71 @@ and g.p2 = p2.id
             timestamp = row[0]
         cur.close()
         return timestamp
+
+    def query_result_to_game_dict_list(self, query):
+        cur = self.db.cursor()
+        cur.execute(query)
+
+        retlist = []
+        for row in cur:
+            retlist.append({
+                "round_num" : row[0],
+                "division" : row[3],
+                "name1" : row[4],
+                "name2" : row[5],
+                "score1" : row[6],
+                "score2" : row[7],
+                "tb" : row[8]
+            })
+        cur.close()
+        return retlist
+    
+    def get_highest_winning_scores(self, max_rows):
+        return self.query_result_to_game_dict_list(
+            """
+            select g.round_no, g.seq, g.table_no, g.division, p1.name, p2.name,
+                   g.p1_score, g.p2_score, g.tiebreak, case when g.p1_score > g.p2_score then g.p1_score else g.p2_score end winning_score
+            from game g,
+                 player p1 on g.p1 = p1.id,
+                 player p2 on g.p2 = p2.id
+            where g.game_type = 'P'
+                  and g.p1_score is not null and g.p2_score is not null
+                  and g.p1_score <> g.p2_score
+                  order by 10 desc, 1, 2 limit %d
+            """ % (max_rows)
+        )
+
+    def get_highest_losing_scores(self, max_rows):
+        return self.query_result_to_game_dict_list(
+            """
+            select g.round_no, g.seq, g.table_no, g.division, p1.name, p2.name,
+                   g.p1_score, g.p2_score, g.tiebreak,
+                   case when g.p1_score < g.p2_score then g.p1_score else g.p2_score end losing_score
+            from game g,
+                 player p1 on g.p1 = p1.id,
+                 player p2 on g.p2 = p2.id
+            where g.game_type = 'P'
+                  and g.p1_score is not null and g.p2_score is not null
+                  and g.p1_score <> g.p2_score
+                  order by 10 desc, 1, 2 limit %d
+            """ % (max_rows)
+        )
+
+    def get_highest_combined_scores(self, max_rows):
+        return self.query_result_to_game_dict_list(
+            """
+            select g.round_no, g.seq, g.table_no, g.division, p1.name, p2.name,
+                   g.p1_score, g.p2_score, g.tiebreak,
+                   g.p1_score + g.p2_score combined_score
+            from game g,
+                 player p1 on g.p1 = p1.id,
+                 player p2 on g.p2 = p2.id
+            where g.game_type = 'P'
+                  and g.p1_score is not null and g.p2_score is not null
+                  and g.p1_score <> g.p2_score
+                  order by 10 desc, 1, 2 limit %d
+            """ % (max_rows)
+        )
 
     
 def get_5_3_table_sizes(num_players):

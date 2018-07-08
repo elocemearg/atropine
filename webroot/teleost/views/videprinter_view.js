@@ -46,7 +46,10 @@ class VideprinterView extends View {
         html += "<span class=\"videprinterplayer" + supersededClass + "\">";
         html += escapeHTML(entry.p1);
         if (entry.tc1 != null) {
-            html += "<span class=\"teamdotleftplayer\" style=\"color: " + teamColourToHTML(entry.tc1) + ";\">" + teamIndicatorHTML + "</span>";
+            html += "<span class=\"teamdotleftplayer\"";
+            if (!entry.superseded)
+                html += " style=\"color: " + teamColourToHTML(entry.tc1) + ";\"";
+            html += ">" + teamIndicatorHTML + "</span>";
         }
         html += "</span>";
 
@@ -71,7 +74,10 @@ class VideprinterView extends View {
         html += "</span>";
         html += "<span class=\"videprinterplayer" + supersededClass + "\">";
         if (entry.tc2 != null) {
-            html += "<span class=\"teamdotrightplayer\" style=\"color: " + teamColourToHTML(entry.tc2) + ";\">" + teamIndicatorHTML + "</span>";
+            html += "<span class=\"teamdotrightplayer\"";
+            if (!entry.superseded)
+                html += " style=\"color: " + teamColourToHTML(entry.tc2) + ";\"";
+            html += ">" + teamIndicatorHTML + "</span>";
         }
         html += escapeHTML(entry.p2);
         html += "</span>";

@@ -144,6 +144,10 @@ table.teleoststandings td {
     border-bottom: 1px solid gray;
 }
 
+tr.teleoststandingsqualified {
+    background-color: #006600;
+}
+
 col.teleoststandingscolpos {
     color: yellow;
     width: 8vw;
@@ -265,14 +269,14 @@ div.videprinteranimatescoreline {
     width: 6vmin;
     text-align: center;
     font-family: var(--text-font-family);
-    font-weight: bold;
+    /*font-weight: bold;*/
     /*font-family: var(--heading-font-family);*/
-    color: black;
+    /*color: black;
     text-shadow:
         -1px -1px 0 #fff,
         1px -1px 0 #fff,
         -1px 1px 0 #fff,
-        1px 1px 0 #fff;
+        1px 1px 0 #fff;*/
 }
 
 .teamscoreleft {
@@ -472,7 +476,7 @@ td.fixturesp2 {
 
 /* Name-to-table index */
 
-div.tabindexheading {
+div.viewheading {
     position: absolute;
     top: 5vh;
     left: 0%;
@@ -482,7 +486,7 @@ div.tabindexheading {
     text-align: center;
 }
 
-div.tabindexheadingtext {
+div.viewheadingtext {
     position: relative;
     line-height: 10vh;
 }
@@ -617,4 +621,60 @@ col.teleostoverachieverscolrank {
 
 col.teleostoverachieverscoldiff {
     width: 8vw;
+}
+
+/* Notable games view */
+
+div.notablegamesheading {
+}
+
+table.tableofgames {
+    position: absolute;
+    font-size: 4vmin;
+    left: 5vw;
+    top: 20vh;
+    width: 90%;
+    max-width: 90%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+table.tableofgames tr {
+    border-top: 1px solid gray;
+    border-bottom: 1px solid gray;
+}
+
+table.notablegamestable td {
+    padding: 1vmin;
+}
+
+col.notablegamescolround {
+    width: 10%;
+}
+
+col.notablegamescolp1 {
+    width: 35%;
+}
+
+col.notablegamescolp2 {
+    width: 35%;
+}
+
+col.notablegamescolscore {
+    width: 20%;
+}
+
+td.notablegamesround {
+    color: orange;
+}
+
+/* Clock */
+img.teleostclockhourhand {
+    position: absolute;
+    z-index: 1;
+}
+
+img.teleostclockminutehand {
+    position: absolute;
+    z-index: 2;
 }

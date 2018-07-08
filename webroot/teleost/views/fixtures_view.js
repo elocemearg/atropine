@@ -1,7 +1,6 @@
 class FixturesView extends PagedTableView {
     constructor(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod, whichDivision, whichRound) {
         super(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod);
-        this.lastGameRevisionSeen = null;
 
         /* whichDivision: if it's -1, then it means all divisions. */
         this.whichDivision = whichDivision;
@@ -45,7 +44,6 @@ class FixturesView extends PagedTableView {
     }
 
     getPageInfo() {
-        this.lastGameRevisionSeen = gameStateRevision;
         var gameState = this.getGameState();
 
         // games, partitioned into division&round, then table number

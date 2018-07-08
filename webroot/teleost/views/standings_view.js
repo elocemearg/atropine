@@ -1,7 +1,6 @@
 class StandingsView extends PagedTableView {
     constructor (tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod) {
         super(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod);
-        this.lastGameRevisionSeen = null;
     }
 
     setup(container) {
@@ -38,7 +37,6 @@ class StandingsView extends PagedTableView {
     }
 
     getPageInfo() {
-        this.lastGameRevisionSeen = gameStateRevision;
         var gameState = this.getGameState();
         var pages = [];
         var pageDivisions = [];
@@ -119,6 +117,7 @@ class StandingsView extends PagedTableView {
     clearRow(rowNum) {
         var rowName = "standingsrow" + rowNum.toString();
 
+        document.getElementById(rowName).classList.remove("teleoststandingsqualified")
         document.getElementById(rowName + "_pos").innerHTML = "&nbsp;";
         document.getElementById(rowName + "_name").innerHTML = "&nbsp;";
         document.getElementById(rowName + "_played").innerHTML = "&nbsp;";
@@ -196,6 +195,13 @@ class StandingsView extends PagedTableView {
             pointsElement.innerHTML = spread;
         else
             pointsElement.innerHTML = points;
+
+        if (standing.qualified) {
+            document.getElementById(rowName).classList.add("teleoststandingsqualified");
+        }
+        else {
+            document.getElementById(rowName).classList.remove("teleoststandingsqualified");
+        }
     }
 
     pageInfoIsSuccessful(standingsObject) {

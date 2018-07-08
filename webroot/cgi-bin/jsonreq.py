@@ -56,6 +56,7 @@ def get_standings(tourney, form):
             standing["rating"] = s.rating
             standing["team_colour"] = team_colour
             standing["withdrawn"] = p.is_withdrawn()
+            standing["qualified"] = s.qualified
             standings.append(standing)
         div_dict = dict()
         div_dict["div_num"] = div
@@ -318,6 +319,45 @@ def get_teleost_state(tourney, form):
     reply["banner_text"] = tourney.get_banner_text()
     return reply
 
+def get_notable_games(tourney, form):
+    reply = dict()
+    reply["success"] = True
+
+    num_divs = tourney.get_num_divisions()
+
+    game_sets = [ tourney.get_highest_winning_scores(10),
+                  tourney.get_highest_losing_scores(10),
+                  tourney.get_highest_combined_scores(10) ]
+    
+    set_names = [ "highest_winning_scores",
+                  "highest_losing_scores",
+                  "highest_combined_scores"
+                ]
+
+    for idx in range(len(game_sets)):
+        reply_set = []
+        for game in game_sets[idx]:
+            names = [game["name1"], game["name2"]]
+            round_num = game["round_num"]
+            if num_divs > 1:
+                div_short_name = tourney.get_short_division_name(game["division"])
+            else:
+                div_short_name = None;
+                
+            reply_set.append( {
+                    "round_num" : round_num,
+                    "div_short_name" : div_short_name,
+                    "name1" : names[0],
+                    "name2" : names[1],
+                    "score1" : game["score1"],
+                    "score2" : game["score2"],
+                    "tb" : game["tb"]
+                }
+            )
+        reply[set_names[idx]] = reply_set
+
+    return reply
+
 def get_all(tourney, form):
     reply = dict()
     for request in valid_requests:
@@ -357,6 +397,7 @@ valid_requests["tuffluck"] = get_tuff_luck
 valid_requests["overachievers"] = get_overachievers
 valid_requests["structure"] = get_structure
 valid_requests["teleost"] = get_teleost_state
+valid_requests["notablegames"] = get_notable_games
 valid_requests["all"] = get_all
 valid_requests["default"] = get_info_required_by_mode
 

@@ -1354,3 +1354,14 @@ div.opendisplaylink a {
     padding: 5px;
     border-radius: 5px;
 }
+
+
+input.tourneysetupnumber {
+    width: 60px;
+}
+
+div.tourneyqualifyingcontrols {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 10px;
+}

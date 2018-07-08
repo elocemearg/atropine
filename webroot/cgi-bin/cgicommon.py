@@ -113,6 +113,9 @@ def show_sidebar(tourney):
         print("<div>")
         print("<a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Teams...</a>" % (urllib.quote_plus(tourney.name)))
         print("</div>")
+        print("<div>")
+        print("<a href=\"/cgi-bin/tourneysetupadvanced.py?tourney=%s\">Advanced...</a>" % (urllib.quote_plus(tourney.name)))
+        print("</div>")
         print "</div>"
 
         print "<br />"
@@ -311,7 +314,10 @@ onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.roun
     
     print "</table>";
 
-def show_standings_table(tourney, show_draws_column, show_points_column, show_spread_column, show_first_second_column=False, linkify_players=False, show_tournament_rating_column=False):
+def show_standings_table(tourney, show_draws_column, show_points_column,
+        show_spread_column, show_first_second_column=False,
+        linkify_players=False, show_tournament_rating_column=False,
+        show_qualified=False):
     num_divisions = tourney.get_num_divisions()
     ranking_by_wins = tourney.is_ranking_by_wins()
 
@@ -352,11 +358,15 @@ def show_standings_table(tourney, show_draws_column, show_points_column, show_sp
 
                 if player.is_withdrawn():
                     bgcolour = "#cccccc"
+                elif s.qualified and show_qualified:
+                    bgcolour = "#66ff66"
                 else:
                     bgcolour = tr_bgcolours[bgcolour_index]
             else:
                 if player.is_withdrawn():
                     bgcolour = "#cccccc"
+                elif s.qualified and show_qualified:
+                    bgcolour = "#66ff66"
                 else:
                     bgcolour = "#ffdd66"
 
