@@ -6,8 +6,17 @@ import urllib
 import cgi
 import cgitb
 import re
+import os
 
 cgitb.enable()
+
+def include_scripts(dir_name, url_path):
+    for filename in sorted(os.listdir(dir_name)):
+        if (os.path.isdir(dir_name + "/" + filename)):
+            include_scripts(dir_name + "/" + filename, url_path + "/" + filename)
+        elif filename[-3:] == ".js":
+            base_filename = os.path.basename(filename)
+            print "<script type=\"text/javascript\" src=\"%s/%s\"></script>" % (cgi.escape(url_path, True), cgi.escape(base_filename, True))
 
 print "Content-Type: text/html; charset=utf-8"
 print ""
@@ -52,7 +61,16 @@ for mode in teleost_modes:
 
 print "</script>"
 
-print '<script type="text/javascript" src="/teleost.js"></script>';
+# Load main.js first
+print "<script type=\"text/javascript\" src=\"/teleost/main.js\"></script>"
+
+# Now load everything under teleost/views, loading the files and contents of
+# directories in alphabetical order. The order is important, because some files
+# depend on others.
+include_scripts("./teleost/views", "/teleost/views")
+
+# Finally, load main_post.js
+print "<script type=\"text/javascript\" src=\"/teleost/main_post.js\"></script>"
 
 print "<body class=\"display\" onload=\"displaySetup();\">"
 
