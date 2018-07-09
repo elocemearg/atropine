@@ -64,12 +64,13 @@ class RoundResultsView extends PagedTableView {
             for (var divIndex = 0; divIndex < divisions.length; ++divIndex) {
                 if (!(divIndex in divisionToCurrentRound))
                     continue;
-                var maxGamesPerTable = divisions[divIndex].max_games_per_table;
+                var currentRound = divisionToCurrentRound[divIndex];
+                var maxGamesPerTable = divisions[divIndex].max_games_per_table_per_round[currentRound];
                 var divGames = divisions[divIndex].games;
                 for (var gameIndex = 0; gameIndex < divGames.length; ++gameIndex) {
                     var game = divGames[gameIndex];
 
-                    if (game.round != divisionToCurrentRound[divIndex])
+                    if (game.round != currentRound)
                         continue;
                     if (page.length > 0) {
                         /* If we already have an entry on this page, and this

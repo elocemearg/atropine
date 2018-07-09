@@ -86,6 +86,7 @@ def get_games(tourney, form):
         games = tourney.get_games(round_no=round_no, division=div)
         games_this_div = []
         games_per_table = dict()
+        rounds_seen = set()
         for g in games:
             teams = g.get_team_colours()
             for i in range(len(teams)):
@@ -106,10 +107,20 @@ def get_games(tourney, form):
             game_dict["round"] = g.round_no
             game_dict["complete"] = g.is_complete()
             game_dict["score_text"] = g.format_score()
+            rounds_seen.add(g.round_no)
             games_this_div.append(game_dict)
 
-        if len(games_per_table) > 0:
-            max_games_per_table = max([ games_per_table[x] for x in games_per_table ])
+        max_games_per_table_per_round = dict()
+        for round_no in sorted(rounds_seen):
+            games_per_table_this_round = dict()
+            for x in games_per_table:
+                if x[0] == round_no:
+                    games_per_table_this_round[x[1]] = games_per_table[(round_no, x[1])]
+            if len(games_per_table_this_round) > 0:
+                max_games_per_table = max([ games_per_table_this_round[x] for x in games_per_table_this_round ])
+            else:
+                max_games_per_table = 0
+            max_games_per_table_per_round[round_no] = max_games_per_table
         else:
             max_games_per_table = 0
         div_dict = dict()
@@ -117,7 +128,7 @@ def get_games(tourney, form):
         div_dict["div_name"] = tourney.get_division_name(div)
         div_dict["div_short_name"] = tourney.get_short_division_name(div)
         div_dict["games"] = games_this_div
-        div_dict["max_games_per_table"] = max_games_per_table
+        div_dict["max_games_per_table_per_round"] = max_games_per_table_per_round
         div_games.append(div_dict)
     reply["divisions"] = div_games
 
