@@ -100,7 +100,7 @@ else:
 exceptions_to_show = []
 edit_notifications = []
 
-if request_method == "POST" and form.getfirst("editplayer"):
+if cgicommon.is_client_from_localhost() and request_method == "POST" and form.getfirst("editplayer"):
     new_rating = float_or_none(form.getfirst("setrating"))
     new_name = form.getfirst("setname")
     new_withdrawn = int_or_none(form.getfirst("setwithdrawn"))
@@ -147,7 +147,7 @@ if request_method == "POST" and form.getfirst("editplayer"):
         except countdowntourney.TourneyException as e:
             exceptions_to_show.append(("<p>Failed to change player's name...</p>", e))
     player = tourney.get_player_from_id(player_id)
-elif request_method == "POST" and form.getfirst("newplayersubmit"):
+elif cgicommon.is_client_from_localhost() and request_method == "POST" and form.getfirst("newplayersubmit"):
     new_player_name = form.getfirst("newplayername")
 
     # If no rating has been entered, default to 1000
