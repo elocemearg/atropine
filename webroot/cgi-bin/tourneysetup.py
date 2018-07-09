@@ -99,6 +99,8 @@ cgicommon.print_html_head("Tourney Setup: " + str(tourneyname));
 
 print "<body>";
 
+cgicommon.assert_client_from_localhost()
+
 if tourneyname is not None:
     try:
         tourney = countdowntourney.tourney_open(tourneyname, cgicommon.dbdir);

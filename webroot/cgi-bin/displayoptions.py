@@ -81,6 +81,8 @@ print "</script>"
 
 print "<body>";
 
+cgicommon.assert_client_from_localhost()
+
 if tourney_name is None:
     print "<h1>No tourney specified</h1>";
     print "<p><a href=\"/cgi-bin/home.py\">Home</a></p>";

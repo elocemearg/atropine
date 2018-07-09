@@ -471,3 +471,37 @@ def set_global_preferences(prefs):
     db.commit()
 
     db.close()
+
+def is_client_from_localhost():
+    # If the web server is listening only on the loopback interface, then
+    # disable this check - instead we'll rely on the fact that we're only
+    # listening on that interface.
+    if os.environ.get("ATROPINE_LISTEN_ON_LOCALHOST_ONLY", "0") == "1":
+        return True
+
+    valid_answers = ["127.0.0.1", "localhost"]
+
+    remote_addr = os.environ.get("REMOTE_ADDR", None)
+    if remote_addr:
+        if remote_addr in valid_answers:
+            return True
+    else:
+        remote_host = os.environ.get("REMOTE_HOST", None)
+        if remote_host in valid_answers:
+            return True
+    return False
+
+class FakeException(object):
+    def __init__(self, description):
+        self.description = description
+
+def assert_client_from_localhost():
+    if not is_client_from_localhost():
+        show_tourney_exception(FakeException(
+            "You're only allowed to access this page from the same computer " +
+            "as the one on which atropine is running. Your address is " + 
+            os.environ.get("REMOTE_ADDR", "(unknown)") + " and I'll only " +
+            "serve you this page if you're from localhost."))
+        print "</body></html>"
+        sys.exit(1)
+

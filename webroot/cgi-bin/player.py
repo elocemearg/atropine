@@ -191,6 +191,10 @@ if player:
 else:
     cgicommon.print_html_head("Player View")
 
+print "<body>"
+
+cgicommon.assert_client_from_localhost()
+
 cgicommon.show_sidebar(tourney)
 
 print "<div class=\"mainpane\">"

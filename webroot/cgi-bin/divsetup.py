@@ -67,17 +67,24 @@ function hide_div_rename(div) {
 function hide_div_renames() {
     buttons = document.getElementsByClassName("divrenamebutton");
     renames = document.getElementsByClassName("divrenamecontrols");
-    for (var i = 0; i < buttons.length; ++i) {
-        buttons[i].style.display = "inline";
+    if (buttons != null) {
+        for (var i = 0; i < buttons.length; ++i) {
+            buttons[i].style.display = "inline";
+        }
     }
-    for (var i = 0; i < renames.length; ++i) {
-        renames[i].style.display = "none";
+
+    if (renames != null) {
+        for (var i = 0; i < renames.length; ++i) {
+            renames[i].style.display = "none";
+        }
     }
 }
 </script>
 """
 
 print "<body onload=\"hide_div_renames();\">";
+
+cgicommon.assert_client_from_localhost()
 
 if tourneyname is not None:
     try:

@@ -68,6 +68,10 @@ if min_names_per_column is None or min_names_per_column < 0:
 
 cgicommon.print_html_head("Table assignment")
 
+print "<body>"
+
+cgicommon.assert_client_from_localhost()
+
 cgicommon.show_sidebar(tourney)
 
 print "<div class=\"mainpane\">"

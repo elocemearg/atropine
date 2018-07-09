@@ -26,6 +26,8 @@ saved_prefs = False
 
 print "<body>"
 
+cgicommon.assert_client_from_localhost()
+
 print """
 <script>
 function change_saved_indicator(on) {

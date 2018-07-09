@@ -587,6 +587,11 @@ table.tourneylist td.tourneylistmtime {
 	background-color: #ffffaa;
 }
 
+table.tourneylist td.tourneylistlink {
+	border: 1px dashed grey;
+	background-color: #ffffaa;
+}
+
 table.miscranktable {
 	border-collapse: collapse;
 }

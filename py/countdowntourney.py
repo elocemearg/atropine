@@ -2082,41 +2082,43 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         standings = [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9]) for x in results ]
 
-        # If we can, mark already-qualified players as such
-        qual_places = self.get_int_attribute("div%d_qualplaces" % (division), 0)
-        last_round = self.get_int_attribute("div%d_lastround" % (division), 0)
-        all_games_generated = (last_round != 0 and last_round == self.get_latest_round_in_division(division))
-        num_games_per_player = self.get_int_attribute("div%d_numgamesperplayer" % (division), 0)
-        draws_expected = self.get_show_draws_column()
+        if division is not None:
+            # If we can, mark already-qualified players as such
+            qual_places = self.get_int_attribute("div%d_qualplaces" % (division), 0)
+            last_round = self.get_int_attribute("div%d_lastround" % (division), 0)
+            all_games_generated = (last_round != 0 and last_round == self.get_latest_round_in_division(division))
+            num_games_per_player = self.get_int_attribute("div%d_numgamesperplayer" % (division), 0)
+            draws_expected = self.get_show_draws_column()
 
-        if qual_places > 0 and num_games_per_player > 0:
-            qualification_standings = [
-                    {
-                        "pos" : x.position,
-                        "name" : x.name,
-                        "played" : x.played,
-                        "win_points" : x.wins * 2 + x.draws
-                    }
-                    for x in standings
-            ]
+            if qual_places > 0 and num_games_per_player > 0:
+                qualification_standings = [
+                        {
+                            "pos" : x.position,
+                            "name" : x.name,
+                            "played" : x.played,
+                            "win_points" : x.wins * 2 + x.draws
+                        }
+                        for x in standings
+                ]
 
-            unplayed_games = [ g.get_player_names()
-                                for g in self.get_games(
-                                    game_type="P", division=division,
-                                    only_unplayed=True
-                                )
-                             ]
+                unplayed_games = [ g.get_player_names()
+                                    for g in self.get_games(
+                                        game_type="P", division=division,
+                                        only_unplayed=True
+                                    )
+                                 ]
 
-            for row in standings:
-                qualified = False
-                if row.position <= qual_places and method == RANK_WINS_POINTS:
-                    # This player is in the qualification zone - work out if
-                    #they are guaranteed to stay there
-                    qualified = qualification.player_has_qualified(
-                            qualification_standings, row.name, unplayed_games,
-                            qual_places, all_games_generated,
-                            num_games_per_player, draws_expected)
-                row.qualified = qualified
+                for row in standings:
+                    qualified = False
+                    if row.position <= qual_places and method == RANK_WINS_POINTS:
+                        # This player is in the qualification zone - work out if
+                        # they are guaranteed to stay there
+                        qualified = qualification.player_has_qualified(
+                                qualification_standings, row.name,
+                                unplayed_games, qual_places,
+                                all_games_generated, num_games_per_player,
+                                draws_expected)
+                    row.qualified = qualified
 
         return standings
     

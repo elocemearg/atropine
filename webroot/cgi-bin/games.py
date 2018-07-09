@@ -135,11 +135,13 @@ function set_infobox(name_control_id, info_control_id) {
     var name_control = document.getElementById(name_control_id);
     var info_control = document.getElementById(info_control_id);
 
-    if (name_control.value in player_links) {
-        info_control.innerHTML = player_links[name_control.value];
-    }
-    else {
-        info_control.innerHTML = "";
+    if (name_control != null && info_control != null) {
+        if (name_control.value in player_links) {
+            info_control.innerHTML = player_links[name_control.value];
+        }
+        else {
+            info_control.innerHTML = "";
+        }
     }
 }
 
@@ -853,6 +855,8 @@ import countdowntourney;
 cgicommon.print_html_head("Games: " + str(tourney_name));
 
 print "<body onload=\"games_on_load();\">";
+
+cgicommon.assert_client_from_localhost()
 
 if tourney_name is None:
     print "<h1>No tourney specified</h1>";
