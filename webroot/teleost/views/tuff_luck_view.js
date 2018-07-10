@@ -33,7 +33,7 @@ class TuffLuckView extends View {
             html += "<tr id=\"" + rowName + "\">";
             html += "<td class=\"teleosttablecellpos teleostnumber\" id=\"" + rowName + "_pos\">&nbsp;</td>";
             html += "<td class=\"teleosttablecellname\" id=\"" + rowName + "_name\">&nbsp;</td>";
-            html += "<td class=\"teleosttablecelltuffness teleostnumber\" id=\"" + rowName + "_tuffness\">&nbsp;</td>";
+            html += "<td class=\"teleosttablecellnumber teleostnumber\" id=\"" + rowName + "_tuffness\">&nbsp;</td>";
             html += "</tr>"
         }
         html += "</table>";
