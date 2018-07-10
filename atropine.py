@@ -4,8 +4,12 @@ import sys;
 import os;
 import BaseHTTPServer;
 import CGIHTTPServer;
+import SocketServer
 import socket;
 import errno;
+
+class ThreadedHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+    pass
 
 listen_port = 3960;
 
@@ -22,7 +26,7 @@ os.chdir("webroot");
 
 try:
 	server_address = ('', listen_port);
-	httpd = BaseHTTPServer.HTTPServer(server_address, CGIHTTPServer.CGIHTTPRequestHandler);
+	httpd = ThreadedHTTPServer(server_address, CGIHTTPServer.CGIHTTPRequestHandler);
 	print "Tourney web server";
 	print
 	print "Browser link: http://localhost:" + str(listen_port) + "/cgi-bin/home.py"
