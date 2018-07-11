@@ -89,7 +89,7 @@ teleost_modes = [
             "id" : "TELEOST_MODE_TUFF_LUCK",
             "name" : "Tuff Luck",
             "desc" : "Players who have lost three or more games, ordered by the sum of their three lowest losing margins.",
-            "image" : "/images/screenthumbs/placeholder.png",
+            "image" : "/images/screenthumbs/tuff_luck.png",
             "menuorder" : 7,
             "fetch" : [ "tuffluck" ]
         },
