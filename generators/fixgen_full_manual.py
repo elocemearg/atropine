@@ -7,8 +7,8 @@ import cgi;
 import urllib;
 import re
 
-name = "Manual Pairings/Groups"
-description = "Player groups are specified manually. A fixture is generated between each pair in a group."
+name = "Fully Manual Fixtures"
+description = "Organiser has full control over how many matches are in the round and who plays whom. There are no table groups, and there is no requirement that all players play."
 
 def int_or_none(s):
     try:
@@ -25,7 +25,9 @@ def lookup_player(players, name):
 
 def get_user_form(tourney, settings, div_rounds):
     num_divisions = tourney.get_num_divisions()
-    div_table_sizes = dict()
+    div_num_games = dict()
+    div_default_game_types = dict()
+
     players = sorted(tourney.get_active_players(), key=lambda x : x.get_name());
 
     latest_round_no = tourney.get_latest_round_no()
@@ -42,7 +44,7 @@ def get_user_form(tourney, settings, div_rounds):
                 settings[key] = prev_settings[key]
 
     elements = []
-    elements.append(htmlform.HTMLFormHiddenInput("tablesizesubmit", "1"))
+    elements.append(htmlform.HTMLFormHiddenInput("numgamessubmit", "1"))
     elements.append(htmlform.HTMLFormHiddenInput("roundno", str(latest_round_no + 1)))
 
     # If there's a previously-saved form for this round, offer to load it
@@ -64,105 +66,116 @@ def get_user_form(tourney, settings, div_rounds):
         elements.append(htmlform.HTMLFragment("</div></div></div>"))
 
     for div_index in div_rounds:
-        div_players = filter(lambda x : x.get_division() == div_index, players)
-        table_size = None
-        table_size_name = "d%d_groupsize" % (div_index)
-        if settings.get(table_size_name, None) is not None:
+        num_games_name = "d%d_numgames" % (div_index)
+        default_game_type_name = "d%d_defaultgametype" % (div_index)
+
+        if settings.get(num_games_name, None) is not None:
             try:
-                div_table_sizes[div_index] = int(settings.get(table_size_name))
+                div_num_games[div_index] = int(settings.get(num_games_name))
+                if div_num_games[div_index] < 0:
+                    div_num_games[div_index] = 0
             except ValueError:
-                div_table_sizes[div_index] = None
+                div_num_games[div_index] = 0
         else:
-            div_table_sizes[div_index] = None
-        choices = []
-        for size in (2,3,4,5):
-            if len(div_players) % size == 0:
-                choices.append(htmlform.HTMLFormChoice(str(size), str(size), size == div_table_sizes[div_index]))
-        if len(div_players) >= 8:
-            choices.append(htmlform.HTMLFormChoice("-5", "5&3", div_table_sizes[div_index] == -5))
+            div_num_games[div_index] = 0
+
+        if settings.get(default_game_type_name, None) is not None:
+            try:
+                div_default_game_types[div_index] = settings.get(default_game_type_name)
+            except ValueError:
+                div_default_game_types[div_index] = None
+
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))))
-        elements.append(htmlform.HTMLFragment("<p>"))
-        elements.append(htmlform.HTMLFormRadioButton(table_size_name, "Players per table", choices))
-        elements.append(htmlform.HTMLFragment("</p>"))
 
-    all_table_sizes_given = True
-    for div in div_table_sizes:
-        if div_table_sizes.get(div) is None:
-            all_table_sizes_given = False
+        elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
+        num_games_element = htmlform.HTMLFormTextInput("Number of games to create", num_games_name, "")
+        elements.append(num_games_element)
+        elements.append(htmlform.HTMLFragment("</div>"))
 
-    if not all_table_sizes_given or not(settings.get("tablesizesubmit", "")):
-        elements.append(htmlform.HTMLFragment("<p>"))
-        elements.append(htmlform.HTMLFormSubmitButton("submit", "Submit table sizes and select players"))
-        elements.append(htmlform.HTMLFragment("</p>"))
+        elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
+        elements.append(htmlform.HTMLFragment("Create games of this type: "))
+
+        game_type_options = [ htmlform.HTMLFormDropDownOption(x["code"], x["name"] + " (" + x["code"] + ")") for x in countdowntourney.get_game_types() ]
+        default_type_element = htmlform.HTMLFormDropDownBox("d%d_defaultgametype" % (div_index), game_type_options)
+
+        current_setting = settings.get("d%d_defaultgametype" % (div_index))
+        if current_setting:
+            default_type_element.set_value(current_setting)
+        elements.append(default_type_element)
+        elements.append(htmlform.HTMLFragment("</div>"))
+
+    num_games_total = sum( [ div_num_games[x] for x in div_num_games ] )
+
+    if num_games_total == 0 or not(settings.get("numgamessubmit", "")):
+        elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
+        elements.append(htmlform.HTMLFormSubmitButton("submit", "Continue"))
+        elements.append(htmlform.HTMLFragment("</div>"))
         return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.quote_plus(tourney.name)), elements)
     
     show_already_assigned_players = bool(settings.get("showallplayers"))
-    for div_index in div_rounds:
-        div_players = filter(lambda x : x.get_division() == div_index, players);
-        table_size = div_table_sizes[div_index]
-        if table_size > 0 and len(div_players) % table_size != 0:
-            raise countdowntourney.FixtureGeneratorException("%s: table size of %d is not allowed, as the number of players (%d) is not a multiple of it." % (tourney.get_division_name(div_index), table_size, len(div_players)))
-
-        if table_size == -5 and len(div_players) < 8:
-            raise countdowntourney.FixtureGeneratorException("%s: can't use table sizes of five and three - you need at least 8 players and you have %d" % (tourney.get_division_name(div_index), len(div_players)))
-
-        if table_size not in (2,3,4,5,-5):
-            raise countdowntourney.FixtureGeneratorException("%s: invalid table size: %d" % (tourney.get_division_name(div_index), table_size))
 
     div_set_players = dict()
-    div_duplicate_slots = dict()
     div_empty_slots = dict()
-    div_count_in_standings = dict()
+    div_invalid_slots = dict()
+    div_game_types = dict()
+    div_default_game_types = dict()
+    div_num_games = dict()
+
     all_filled = True
     for div_index in div_rounds:
+        num_games = int(settings.get("d%d_numgames" % (div_index), "0"))
         div_players = filter(lambda x : x.get_division() == div_index, players);
-        set_players = [ None for i in range(0, len(div_players)) ];
+        set_players = [ None for i in range(0, num_games * 2) ];
+        game_types = [ None for i in range(num_games) ]
 
-        if not settings.get("submitplayers"):
-            count_in_standings = True
-        else:
-            count_in_standings = settings.get("d%d_heats" % (div_index))
-            if count_in_standings is None:
-                count_in_standings = False
-            else:
-                count_in_standings = True
+        if num_games is None:
+            num_games = 0
 
-        # Ask the user to fill in N little drop-down boxes, where N is the
-        # number of players, to decide who's going on what table.
-        for player_index in range(0, len(div_players)):
-            name = settings.get("d%d_player%d" % (div_index, player_index));
+        default_game_type = settings.get("d%d_defaultgametype" % (div_index), "P")
+
+        # Ask the user to fill in N little drop-down boxes, where N is twice
+        # the number of games, to decide who's playing.
+        for slot_index in range(num_games * 2):
+            name = settings.get("d%d_player%d" % (div_index, slot_index));
             if name:
-                set_players[player_index] = lookup_player(div_players, name);
+                set_players[slot_index] = lookup_player(div_players, name);
             else:
-                set_players[player_index] = None
+                set_players[slot_index] = None
     
-        # Slot numbers which contain a player already contained in another slot
-        duplicate_slots = [];
-
+        for game_index in range(num_games):
+            game_types[game_index] = settings.get("d%d_type%d" % (div_index, game_index))
+        
         # Slot numbers which don't contain a player
         empty_slots = [];
-        player_index = 0;
+        slot_index = 0;
         for p in set_players:
             if p is None:
-                empty_slots.append(player_index);
+                empty_slots.append(slot_index);
                 all_filled = False;
-            else:
-                count = 0;
-                for q in set_players:
-                    if q is not None and q.get_name() == p.get_name():
-                        count += 1;
-                if count > 1:
-                    duplicate_slots.append(player_index);
-                    all_filled = False;
-            player_index += 1;
+            slot_index += 1;
+
+        invalid_slots = []
+        # Make sure no player is playing themselves - if they are, then set
+        # all_filled to false because we haven't completed setup, and mark them
+        # as invalid slots
+        for game_index in range(num_games):
+            slot1 = set_players[game_index * 2]
+            slot2 = set_players[game_index * 2 + 1]
+            if slot1 is not None and slot2 is not None and slot1 == slot2:
+                all_filled = False
+                invalid_slots.append(game_index * 2)
+                invalid_slots.append(game_index * 2 + 1)
 
         div_set_players[div_index] = set_players
-        div_duplicate_slots[div_index] = duplicate_slots
+        div_invalid_slots[div_index] = invalid_slots
         div_empty_slots[div_index] = empty_slots
-        div_count_in_standings[div_index] = count_in_standings
+        div_game_types[div_index] = game_types
+        div_default_game_types[div_index] = default_game_type
+        div_num_games[div_index] = num_games
 
     if all_filled and settings.get("submitplayers"):
+        # All slots are filled, so we can now generate fixtures
         return None
 
     elements = [];
@@ -193,48 +206,51 @@ function unset_unsaved_data_warning() {
 }
 </script>
 """));
-    elements.append(htmlform.HTMLFragment("<p>Use the drop-down boxes to select which players are on each table.</p>\n"));
+    elements.append(htmlform.HTMLFragment("<p>Use the drop-down boxes to select who is playing in each game.</p>\n"));
     elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
-    elements.append(htmlform.HTMLFormCheckBox("showallplayers", "Show all players in drop-down boxes, even those already assigned a table", show_already_assigned_players))
+    elements.append(htmlform.HTMLFormCheckBox("showallplayers", "Show all players in drop-down boxes, even those already assigned a game", show_already_assigned_players))
     elements.append(htmlform.HTMLFragment("</div>"))
 
     table_no = 1;
     for div_index in div_rounds:
         div_players = filter(lambda x : x.get_division() == div_index, players);
         player_index = 0;
-        table_size = div_table_sizes[div_index]
-        duplicate_slots = div_duplicate_slots[div_index]
+        table_size = 2
+        invalid_slots = div_invalid_slots[div_index]
         empty_slots = div_empty_slots[div_index]
         set_players = div_set_players[div_index]
-        count_in_standings = div_count_in_standings[div_index]
+        default_game_type = div_default_game_types[div_index]
+        game_types = div_game_types[div_index]
+        num_games = div_num_games[div_index]
+
+        elements.append(htmlform.HTMLFormHiddenInput("d%d_numgames" % (div_index), str(div_num_games[div_index])))
+        elements.append(htmlform.HTMLFormHiddenInput("d%d_defaultgametype" % (div_index), str(div_default_game_types[div_index])))
+
+        if num_games == 0:
+            continue
 
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))))
 
-        elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
-        elements.append(htmlform.HTMLFormCheckBox("d%d_heats" % (div_index), "Count the results of these matches in the standings table", div_count_in_standings[div_index]))
-        elements.append(htmlform.HTMLFragment("</div>"))
+        #elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
+        #elements.append(htmlform.HTMLFormCheckBox("d%d_heats" % (div_index), "Count the results of these matches in the standings table", div_count_in_standings[div_index]))
+        #elements.append(htmlform.HTMLFragment("</div>"))
 
         elements.append(htmlform.HTMLFragment("<table class=\"seltable\">\n"));
         prev_table_no = None;
         unselected_names = map(lambda x : x.get_name(), div_players);
 
-        if table_size > 0:
-            table_sizes = [table_size for i in range(0, len(div_players) / table_size)]
-        else:
-            table_sizes = countdowntourney.get_5_3_table_sizes(len(div_players))
-
         for p in set_players:
             if p and p.get_name() in unselected_names:
                 unselected_names.remove(p.get_name())
 
-        for table_size in table_sizes:
+        for game_index in range(num_games):
             elements.append(htmlform.HTMLFragment("<tr>\n"))
             elements.append(htmlform.HTMLFragment("<td>Table %d</td>\n" % table_no));
             for i in range(table_size):
                 p = set_players[player_index]
                 td_style = "";
-                if player_index in duplicate_slots:
+                if player_index in invalid_slots:
                     td_style = "class=\"duplicateplayer\"";
                 elif player_index in empty_slots:
                     td_style = "class=\"emptyslot\"";
@@ -275,19 +291,17 @@ function unset_unsaved_data_warning() {
         elements.append(htmlform.HTMLFormSubmitButton("submit", "Submit", other_attrs={ "onclick": "unset_unsaved_data_warning();" }));
         elements.append(htmlform.HTMLFragment("</p>\n"))
 
-        if duplicate_slots:
-            elements.append(htmlform.HTMLFragment("<p>You have players in multiple slots: these are highlighted in <font color=\"#ff0000\"><strong>red</strong></font>.</p>"));
+        if invalid_slots:
+            elements.append(htmlform.HTMLFragment("<p>You have players playing themselves: these are highlighted in <font color=\"#ff0000\"><strong>red</strong></font>.</p>"));
         if empty_slots:
             elements.append(htmlform.HTMLFragment("<p>Some slots are not yet filled: these are highlighted in <font color=\"#ffaa00\"><strong>orange</strong></font>.</p>"));
 
         if unselected_names:
-            elements.append(htmlform.HTMLFragment("<p>Players still to be given a table:</p>\n"));
+            elements.append(htmlform.HTMLFragment("<p>Players not yet assigned a game:</p>\n"));
             elements.append(htmlform.HTMLFragment("<blockquote>\n"));
             for name in unselected_names:
                 elements.append(htmlform.HTMLFragment("<li>%s</li>\n" % cgi.escape(name)));
             elements.append(htmlform.HTMLFragment("</blockquote>\n"));
-
-        elements.append(htmlform.HTMLFormHiddenInput("d%d_groupsize" % (div_index), str(div_table_sizes[div_index])))
 
     form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.quote_plus(tourney.name)), elements);
     return form;
@@ -295,94 +309,59 @@ function unset_unsaved_data_warning() {
 def check_ready(tourney, div_rounds):
     for div in div_rounds:
         round_no = div_rounds[div]
-        existing_games = tourney.get_games(round_no=round_no, game_type="P", division=div)
+        existing_games = tourney.get_games(round_no=round_no, division=div)
         if existing_games:
             return (False, "%s: round %d already has %d games in it." % (tourney.get_division_name(div), round_no, len(existing_games)))
     return (True, None)
 
 def generate(tourney, settings, div_rounds):
     num_divisions = tourney.get_num_divisions()
-    div_table_sizes = dict()
+    table_size = 2
 
     players = tourney.get_active_players();
-    for div_index in div_rounds:
-        table_size = settings.get("d%d_groupsize" % (div_index), None)
-        div_players = filter(lambda x : x.get_division() == div_index, players)
-
-        if table_size is None:
-            raise countdowntourney.FixtureGeneratorException("%s: No table size specified" % tourney.get_division_name(div_index))
-        else:
-            try:
-                table_size = int(table_size)
-            except ValueError:
-                raise countdowntourney.FixtureGeneratorException("%s: Invalid table size %s" % (tourney.get_division_name(div_index), table_size))
-
-        if table_size not in (2,3,4,5,-5):
-            raise countdowntourney.FixtureGeneratorException("%s: Invalid table size: %d" % (tourney.get_division_name(div_index), table_size))
-        
-        if table_size > 0:
-            if len(div_players) % table_size != 0:
-                raise countdowntourney.FixtureGeneratorException("%s: Number of players (%d) is not a multiple of the table size (%d)" % (tourney.get_division_name(div_index), len(div_players), table_size))
-            table_sizes = [ table_size for i in range(0, len(div_players) / table_size) ]
-        else:
-            if len(div_players) < 8:
-                raise countdowntourney.FixtureGeneratorException("%s: Can't use a 5&3 configuration if there are fewer than 8 players, and there are %d" % (tourney.get_division_name(div_index), len(div_players)))
-            table_sizes = countdowntourney.get_5_3_table_sizes(len(div_players))
-        div_table_sizes[div_index] = table_sizes
 
     (ready, excuse) = check_ready(tourney, div_rounds);
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
 
-    #latest_round_no = tourney.get_latest_round_no('P')
-    #if latest_round_no is None:
-    #    round_no = 1
-    #else:
-    #    round_no = latest_round_no + 1
     fixtures = []
     round_numbers_generated = []
     for div_index in div_rounds:
         round_no = div_rounds[div_index]
         groups = [];
-        table_sizes = div_table_sizes[div_index]
         div_players = filter(lambda x : x.get_division() == div_index, players)
-        if settings.get("d%d_heats" % (div_index)):
-            game_type = "P"
-        else:
-            game_type = "N"
+        num_games = int(settings.get("d%d_numgames" % (div_index), "0"))
+        default_game_type = settings.get("d%d_defaultgametype" % (div_index))
+
+        if num_games == 0:
+            continue
 
         # Player names should have been specified by a series of drop-down
         # boxes.
         player_names = [];
-        for i in range(0, len(div_players)):
+        for i in range(num_games * 2):
             name = settings.get("d%d_player%d" % (div_index, i));
             if name:
                 player_names.append(name);
             else:
-                raise countdowntourney.FixtureGeneratorException("%s: Player %d not specified. This is probably a bug, as the form should have made you fill in all the boxes." % (tourney.get_division_name(div_index), i));
+                raise countdowntourney.FixtureGeneratorException("%s: Slot %d has no player in it. This is probably a bug, as the form should have made you fill in all the boxes." % (tourney.get_division_name(div_index), i));
 
         selected_players = map(lambda x : lookup_player(div_players, x), player_names);
 
-        player_index = 0
         groups = []
-        for size in table_sizes:
-            group = []
-            for i in range(size):
-                group.append(selected_players[player_index])
-                player_index += 1
-            groups.append(group)
+        for game_index in range(num_games):
+            groups.append([ selected_players[game_index * 2], selected_players[game_index * 2 + 1] ])
 
         if round_no not in round_numbers_generated:
             round_numbers_generated.append(round_no)
 
-        fixtures += tourney.make_fixtures_from_groups(groups, fixtures, round_no, table_size == -5, division=div_index, game_type=game_type)
+        fixtures += tourney.make_fixtures_from_groups(groups, fixtures, round_no, False, division=div_index, game_type=default_game_type)
 
     d = dict();
     d["fixtures"] = fixtures;
     d["rounds"] = [
             {
-                "round" : round_no,
-                "name" : "Round %d" % round_no
+                "round" : round_no
             } for round_no in round_numbers_generated
     ];
 

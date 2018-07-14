@@ -38,10 +38,17 @@ class RoundResultsView extends PagedTableView {
         var page = [];
         var divisionToCurrentRound = {};
         var divisionToMaxGamesPerTable = {};
+        var roundToName = {};
 
         if (gameState.success) {
             var games = gameState.games;
             var divisions = games.divisions;
+
+            for (var idx = 0; idx < gameState.structure.rounds.length; ++idx) {
+                var r = gameState.structure.rounds[idx];
+                roundToName[r.num] = r.name;
+            }
+
             /* For each division, find the latest round which has at least
              * one game completed, and call that the "current" round for the
              * purpose of this view */
@@ -90,7 +97,7 @@ class RoundResultsView extends PagedTableView {
                         page.push( { "errorString" : null,
                                      "divName" : (divisions.length > 1 ? divisions[divIndex].div_name : ""),
                                      "roundNumber" : game.round,
-                                     "roundName" : ("Round " + game.round.toString()),
+                                     "roundName" : (roundToName[game.round]),
                                      "tableNumber" : (maxGamesPerTable > 1 ? game.table : null)
                                     });
                     }

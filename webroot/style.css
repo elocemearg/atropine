@@ -454,6 +454,11 @@ div.exportedresults {
 	margin-left: 20px;
 }
 
+div.fixgenoption {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
 .fixgentable {
 	border-collapse: collapse;
 }

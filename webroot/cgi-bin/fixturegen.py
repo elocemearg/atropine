@@ -320,7 +320,7 @@ try:
                         for r in dict_rounds:
                             try:
                                 round_no = int(r["round"]);
-                                round_name = r.get("name", "Round %d" % round_no);
+                                round_name = r.get("name", "");
                                 tourney.name_round(round_no, round_name);
                             except countdowntourney.TourneyException as e:
                                 print "<p>Failed to name a round</p>";

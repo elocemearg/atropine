@@ -82,11 +82,38 @@ try:
     print """
 <script type="text/javascript">
 //<![CDATA[
-function div_heat_switch_all(class_name, tick) {
-    var elements = document.getElementsByClassName(class_name);
-    var i;
-    for (i = 0; i < elements.length; ++i) {
-        elements[i].checked = tick;
+// Set all drop-down boxes in this division to have the value of the first one
+function div_type_select(div) {
+    var idStub = "div" + div.toString() + "_gametype_";
+
+    var dropDown = document.getElementById(idStub + "0");
+
+    if (dropDown) {
+        var selectedValue = null;
+        for (var i = 0; i < dropDown.options.length; ++i) {
+            if (dropDown.options[i].selected) {
+                selectedValue = dropDown.options[i].text;
+                break;
+            }
+        }
+        if (selectedValue) {
+            var otherDropDown;
+            var num = 0;
+            do {
+                ++num;
+                otherDropDown = document.getElementById(idStub + num.toString());
+                if (otherDropDown) {
+                    for (var i = 0; i < otherDropDown.options.length; ++i) {
+                        if (otherDropDown.options[i].text == selectedValue) {
+                            otherDropDown.options[i].selected = true;
+                        }
+                        else {
+                            otherDropDown.options[i].selected = false;
+                        }
+                    }
+                }
+            } while (otherDropDown);
+        }
     }
 }
 //]]>
@@ -107,14 +134,15 @@ function div_heat_switch_all(class_name, tick) {
             seq = g.seq;
             set1 = form.getfirst("gamep1_%d_%d" % (g.round_no, g.seq));
             set2 = form.getfirst("gamep2_%d_%d" % (g.round_no, g.seq));
-            set_heat = form.getfirst("gameheat_%d_%d" % (g.round_no, g.seq))
+            set_type = form.getfirst("gametype_%d_%d" % (g.round_no, g.seq))
+            #set_heat = form.getfirst("gameheat_%d_%d" % (g.round_no, g.seq))
 
             new_p1 = lookup_player(players, set1);
             new_p2 = lookup_player(players, set2);
-            if not set_heat or set_heat != "1":
-                new_game_type = "N"
-            else:
+            if not set_type:
                 new_game_type = "P"
+            else:
+                new_game_type = set_type
 
             if new_p1 == new_p2:
                 remarks[(g.round_no, g.seq)] = "Not updated (%s v %s): players can't play themselves" % (new_p1.get_name(), new_p2.get_name());
@@ -140,6 +168,8 @@ function div_heat_switch_all(class_name, tick) {
     if num_games_deleted:
         print "<p>%d games deleted.</p>" % (num_games_deleted)
 
+    game_types = countdowntourney.get_game_types()
+
     print "<div class=\"scorestable\">";
     print "<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.quote_plus(tourney_name), round_no);
     print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourney_name, True);
@@ -153,13 +183,12 @@ function div_heat_switch_all(class_name, tick) {
         print "<table class=\"scorestable\">";
         print "<tr>";
         print "<th colspan=\"5\"></th>"
-        print "<th>Count in standings</th>"
+        print "<th>Game type</th>"
         print "</tr>"
         print "<th>Table</th><th></th>";
         print "<th>Player 1</th><th>Score</th><th>Player 2</th>"
         print "<th>"
-        print "<input type=\"button\" name=\"div%d_tick_all\" value=\"Tick all\" onclick=\"div_heat_switch_all('heatcheckbox_div%d', true);\" />" % (div_index, div_index)
-        print "<input type=\"button\" name=\"div%d_untick_all\" value=\"Untick all\" onclick=\"div_heat_switch_all('heatcheckbox_div%d', false);\" />" % (div_index, div_index)
+        print "<input type=\"button\" name=\"div%d_set_all\" value=\"Set all to match first game\" onclick=\"div_type_select(%d);\" />" % (div_index, div_index)
         print "</th>"
         print "<th></th></tr>";
 
@@ -201,7 +230,19 @@ function div_heat_switch_all(class_name, tick) {
             print "</td>";
 
             print "<td class=\"gameheat\">"
-            print "<input type=\"checkbox\" class=\"heatcheckbox_div%d\" name=\"gameheat_%d_%d\" value=\"1\" %s />" % (div_index, g.round_no, g.seq, "checked" if g.game_type == "P" else "")
+            print "<select name=\"%s\" id=\"%s\">" % (
+                    "gametype_%d_%d" % (g.round_no, g.seq),
+                    "div%d_gametype_%d" % (div_index, gamenum)
+            )
+            for game_type in game_types:
+                print "<option value=\"%s\" %s >%s (%s)</option>" % (
+                        cgi.escape(game_type["code"], True),
+                        "selected" if g.game_type == game_type["code"] else "",
+                        cgi.escape(game_type["name"]),
+                        cgi.escape(game_type["code"])
+                )
+            print "</select>"
+            #print "<input type=\"checkbox\" class=\"heatcheckbox_div%d\" name=\"gameheat_%d_%d\" value=\"1\" %s />" % (div_index, g.round_no, g.seq, "checked" if g.game_type == "P" else "")
             print "</td>"
             
             print "<td class=\"remarks\">";

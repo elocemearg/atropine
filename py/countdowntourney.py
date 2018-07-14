@@ -5,8 +5,8 @@ import re;
 import os;
 import qualification
 
-SW_VERSION = "0.8.0"
-SW_VERSION_SPLIT = (0, 8, 0)
+SW_VERSION = "0.8.1"
+SW_VERSION_SPLIT = (0, 8, 1)
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
 RANK_WINS_POINTS = 0;
@@ -247,6 +247,29 @@ create table if not exists rounds (
     type text,
     name text
 );
+
+create view if not exists rounds_derived as
+select r.id,
+       case when r.name is not null and r.name != '' then r.name
+            when gc.qf = gc.total then 'Quarter-finals'
+            when gc.sf = gc.total then 'Semi-finals'
+            when gc.f = gc.total then 'Final'
+            when gc.tp = gc.total then 'Third Place'
+            when gc.f + gc.tp = gc.total then 'Final & Third Place'
+            else 'Round ' || cast(r.id as text) end as name
+from rounds r,
+     (select g.round_no,
+             sum(case when g.game_type = 'QF' then 1 else 0 end) qf,
+             sum(case when g.game_type = 'SF' then 1 else 0 end) sf,
+             sum(case when g.game_type = '3P' then 1 else 0 end) tp,
+             sum(case when g.game_type = 'F' then 1 else 0 end) f,
+             sum(case when g.game_type = 'N' then 1 else 0 end) n,
+             sum(case when g.game_type = 'P' then 1 else 0 end) p,
+             count(*) total
+      from game g
+      group by g.round_no) gc
+where gc.round_no = r.id;
+
 
 create view if not exists completed_game as
 select * from game
@@ -890,6 +913,11 @@ class Tourney(object):
                 self.db_version = tuple(version_split)
         else:
             self.db_version = (0, 0, 0)
+
+        if self.db_version >= (0,8,1):
+            self.round_view_name = "rounds_derived"
+        else:
+            self.round_view_name = "rounds"
     
     def get_name(self):
         return self.name
@@ -939,7 +967,7 @@ class Tourney(object):
     
     def get_round_name(self, round_no):
         cur = self.db.cursor();
-        cur.execute("select name from rounds where id = ?", (round_no,));
+        cur.execute("select name from " + self.round_view_name + " where id = ?", (round_no,));
         row = cur.fetchone();
         if not row:
             cur.close();
@@ -961,11 +989,12 @@ class Tourney(object):
     
     def get_rounds(self):
         cur = self.db.cursor();
-        cur.execute("select g.round_no, r.name from game g left outer join rounds r on g.round_no = r.id group by g.round_no");
+        cur.execute("select g.round_no, r.name from game g left outer join " +
+                self.round_view_name + " r on g.round_no = r.id group by g.round_no");
         rounds = [];
         for row in cur:
             rdict = dict();
-            if row[1] is None:
+            if not row[1]:
                 rdict["name"] = "Round " + str(row[0]);
             else:
                 rdict["name"] = row[1];
@@ -976,7 +1005,7 @@ class Tourney(object):
 
     def get_round(self, round_no):
         cur = self.db.cursor();
-        cur.execute("select r.id, r.name from rounds r where id = ?", (round_no,));
+        cur.execute("select r.id, r.name from " + self.round_view_name + " r where id = ?", (round_no,));
         row = cur.fetchone()
         d = None
         if row is not None:
@@ -2440,6 +2469,7 @@ select t.id, sum(case when p1.team_id != t.id and p2.team_id != t.id then 0
 from team t, game g, player p1, player p2
 where g.p1 = p1.id
 and g.p2 = p2.id
+and g.game_type = 'P'
 """
         if round_no is not None:
             sql += " and g.round_no = %d" % round_no
@@ -2765,6 +2795,16 @@ def get_5_3_table_sizes(num_players):
         table_sizes = [5] + table_sizes
         players_left -= 5
     return table_sizes
+
+def get_game_types():
+    return [
+            { "code" : "P", "name" : "Standard heat game" },
+            { "code" : "QF", "name" : "Quarter-final" },
+            { "code" : "SF", "name" : "Semi-final" },
+            { "code" : "3P", "name" : "Third-place play-off" },
+            { "code" : "F", "name" : "Final" } ,
+            { "code" : "N", "name" : "Other game not counted in standings" }
+    ]
 
 def tourney_open(dbname, directory="."):
     if not re.match("^[A-Za-z0-9_-]+$", dbname):
