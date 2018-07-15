@@ -5,8 +5,8 @@ import re;
 import os;
 import qualification
 
-SW_VERSION = "0.8.1"
-SW_VERSION_SPLIT = (0, 8, 1)
+SW_VERSION = "0.9.0"
+SW_VERSION_SPLIT = (0, 9, 0)
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
 RANK_WINS_POINTS = 0;
@@ -914,7 +914,7 @@ class Tourney(object):
         else:
             self.db_version = (0, 0, 0)
 
-        if self.db_version >= (0,8,1):
+        if self.db_version > (0,8,0):
             self.round_view_name = "rounds_derived"
         else:
             self.round_view_name = "rounds"
