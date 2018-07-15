@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import sys
 import sqlite3;
 import re;
 import os;
@@ -332,7 +333,7 @@ group by p.id;
 
 create view if not exists player_played_first as
 select p.id, count(g.p1) played_first
-from player p left outer join completed_game g on p.id = g.p1
+from player p left outer join completed_heat_game g on p.id = g.p1
 group by p.id;
 
 create view if not exists player_standings as
@@ -668,7 +669,7 @@ class Team(object):
         return ((self.colour >> 16) & 0xff, (self.colour >> 8) & 0xff, self.colour & 0xff)
 
 class StandingsRow(object):
-    def __init__(self, position, name, played, wins, points, draws, spread, played_first, rating, tournament_rating):
+    def __init__(self, position, name, played, wins, points, draws, spread, played_first, rating, tournament_rating, withdrawn):
         self.position = position
         self.name = name
         self.played = played
@@ -679,10 +680,11 @@ class StandingsRow(object):
         self.played_first = played_first
         self.rating = rating
         self.tournament_rating = tournament_rating
+        self.withdrawn = withdrawn
         self.qualified = False
 
     def __str__(self):
-        return "%3d. %-25s %3dw %3dd %4dp" % (self.position, self.name, self.wins, self.draws, self.points)
+        return "%3d. %-25s %3dw %3dd %4dp%s" % (self.position, self.name, self.wins, self.draws, self.points, " (W)" if self.withdrawn else "")
 
     # Emulate a list for bits of the code that require it
     def __len__(self):
@@ -2107,9 +2109,9 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         else:
             condition = ""
 
-        results = self.ranked_query("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws from player_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id " + condition + orderby, rankcols);
+        results = self.ranked_query("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws, p.withdrawn from player_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id " + condition + orderby, rankcols);
 
-        standings = [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9]) for x in results ]
+        standings = [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], bool(x[11])) for x in results ]
 
         if division is not None:
             # If we can, mark already-qualified players as such
@@ -2125,10 +2127,38 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                             "pos" : x.position,
                             "name" : x.name,
                             "played" : x.played,
-                            "win_points" : x.wins * 2 + x.draws
+                            "win_points" : x.wins * 2 + x.draws,
+                            "non_player" : (x.withdrawn or x.rating == 0)
                         }
                         for x in standings
                 ]
+
+                # Look through the list for any withdrawn players or prunes,
+                # which will have a non_player value of True. Non-players
+                # aren't eligible to win anything, so any player ranked
+                # below a non-player gets bumped up for the purpose of
+                # deciding qualification.
+                num_non_players = 0
+                last_non_player_pos = None
+                for row in qualification_standings:
+                    if row["non_player"]:
+                        num_non_players += 1
+                        last_non_player_pos = row["pos"]
+                    elif num_non_players > 0:
+                        # Any player below a non-player in the standings
+                        # table gets bumped up one place. If they're below two
+                        # non-players then they get bumped up two places,
+                        # and so on.
+                        if row["pos"] > last_non_player_pos:
+                            row["pos"] -= num_non_players
+
+                # Now remove the non-players from the list we'll pass
+                # to player_has_qualified().
+                new_qual_standings = []
+                for row in qualification_standings:
+                    if not row["non_player"]:
+                        new_qual_standings.append(row)
+                qualification_standings = new_qual_standings
 
                 unplayed_games = [ g.get_player_names()
                                     for g in self.get_games(
@@ -2137,18 +2167,20 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                                     )
                                  ]
 
-                for row in standings:
-                    qualified = False
-                    if row.position <= qual_places and method == RANK_WINS_POINTS:
+                for row in qualification_standings:
+                    if row["pos"] <= qual_places and method == RANK_WINS_POINTS:
                         # This player is in the qualification zone - work out if
                         # they are guaranteed to stay there
                         qualified = qualification.player_has_qualified(
-                                qualification_standings, row.name,
+                                qualification_standings, row["name"],
                                 unplayed_games, qual_places,
                                 all_games_generated, num_games_per_player,
                                 draws_expected)
-                    row.qualified = qualified
-
+                        if qualified:
+                            for standings_row in standings:
+                                if standings_row.name == row["name"]:
+                                    standings_row.qualified = True
+                                    break
         return standings
     
     def get_logs_since(self, seq=None, include_new_games=False, round_no=None, maxrows=None):
@@ -2573,6 +2605,16 @@ and g.game_type = 'P'
                             fixture = Game(round_no, round_seq, table_no, division, game_type, p2, p1)
                             fixtures.append(fixture)
                             round_seq += 1
+            elif len(group) == 4:
+                # Four players on each table. Don't do the general catch-all
+                # thing in the next branch, instead show the matches in a
+                # specific order so that the first two can be played
+                # simultaneously, then the next two, then the last two.
+                indices = [ (0,1), (2,3), (0,2), (1,3), (1,2), (3,0) ]
+                for (x, y) in indices:
+                    fixture = Game(round_no, round_seq, table_no, division, game_type, group[x], group[y])
+                    fixtures.append(fixture)
+                    round_seq += 1
             else:
                 # There are an even number of players. Each player X from
                 # X = 0 .. len(group) - 1 plays each player Y for

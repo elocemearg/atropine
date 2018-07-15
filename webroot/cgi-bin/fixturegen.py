@@ -181,7 +181,7 @@ try:
                 # when we call it later on
                 tourney.store_fixgen_settings(generator_name, fixgen_settings)
 
-                print "<p>I've generated the following fixtures. Click \"Accept Fixtures\" to commit them to the database.</p>";
+                print "<p>I've generated the following fixtures. Click <em>Accept Fixtures</em> below to commit them to the database. The fixtures won't be saved until you do.</p>";
                 num_divisions = tourney.get_num_divisions()
                 for r in rounds:
                     round_no = int(r["round"]);
