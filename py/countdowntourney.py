@@ -81,7 +81,7 @@ teleost_modes = [
             "id" : "TELEOST_MODE_OVERACHIEVERS",
             "name" : "Overachievers",
             "desc" : "Table of players ranked by how highly they finish above their seeding position. This is only relevant if the players have different ratings.",
-            "image" : "/images/screenthumbs/placeholder.png",
+            "image" : "/images/screenthumbs/overachievers.png",
             "menuorder" : 6,
             "fetch" : [ "overachievers" ]
         },
@@ -95,20 +95,20 @@ teleost_modes = [
         },
         {
             "id" : "TELEOST_MODE_RECORDS",
-            "name" : "Records",
-            "desc" : "Highest winning scores, losing scores and combined scores.",
-            "image" : "/images/screenthumbs/placeholder.png",
+            "name" : "High scores",
+            "desc" : "Highest winning scores, losing scores and combined scores in all heat games.",
+            "image" : "/images/screenthumbs/high_scores.jpg",
             "menuorder" : 8,
             "fetch" : [ "notablegames" ]
-        },
-        {
-            "id" : "TELEOST_MODE_FASTEST_FINISHERS",
-            "name" : "Fastest Finishers",
-            "desc" : "A cheeky way to highlight which tables are taking too long to finish their games.",
-            "image" : "/images/screenthumbs/placeholder.png",
-            "menuorder" : 9,
-            "fetch" : []
         }
+        #{
+        #    "id" : "TELEOST_MODE_FASTEST_FINISHERS",
+        #    "name" : "Fastest Finishers",
+        #    "desc" : "A cheeky way to highlight which tables are taking too long to finish their games.",
+        #    "image" : "/images/screenthumbs/placeholder.png",
+        #    "menuorder" : 9,
+        #    "fetch" : []
+        #}
         #,{
         #    "id" : "TELEOST_MODE_CLOCK",
         #    "name" : "Clock",

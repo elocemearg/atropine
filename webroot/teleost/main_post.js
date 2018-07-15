@@ -283,7 +283,7 @@ function displaySetup() {
     teleostModesToCreateFunctions[TELEOST_MODE_OVERACHIEVERS] = createOverachieversScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_TUFF_LUCK] = createTuffLuckScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_RECORDS] = createNotableGamesScreen;
-    teleostModesToCreateFunctions[TELEOST_MODE_FASTEST_FINISHERS] = createPlaceholderScreen;
+    //teleostModesToCreateFunctions[TELEOST_MODE_FASTEST_FINISHERS] = createPlaceholderScreen;
     //teleostModesToCreateFunctions[TELEOST_MODE_CLOCK] = createClockScreen;
 
     fetchGameState();
