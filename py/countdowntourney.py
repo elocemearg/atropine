@@ -94,12 +94,12 @@ teleost_modes = [
             "fetch" : [ "tuffluck" ]
         },
         {
-            "id" : "TELEOST_MODE_RECORDS",
+            "id" : "TELEOST_MODE_HIGH_SCORES",
             "name" : "High scores",
             "desc" : "Highest winning scores, losing scores and combined scores in all heat games.",
             "image" : "/images/screenthumbs/high_scores.jpg",
             "menuorder" : 8,
-            "fetch" : [ "notablegames" ]
+            "fetch" : [ "highscores" ]
         }
         #{
         #    "id" : "TELEOST_MODE_FASTEST_FINISHERS",

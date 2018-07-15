@@ -330,7 +330,7 @@ def get_teleost_state(tourney, form):
     reply["banner_text"] = tourney.get_banner_text()
     return reply
 
-def get_notable_games(tourney, form):
+def get_high_scores(tourney, form):
     reply = dict()
     reply["success"] = True
 
@@ -408,7 +408,7 @@ valid_requests["tuffluck"] = get_tuff_luck
 valid_requests["overachievers"] = get_overachievers
 valid_requests["structure"] = get_structure
 valid_requests["teleost"] = get_teleost_state
-valid_requests["notablegames"] = get_notable_games
+valid_requests["highscores"] = get_high_scores
 valid_requests["all"] = get_all
 valid_requests["default"] = get_info_required_by_mode
 

@@ -1220,7 +1220,7 @@ div.viewselection {
 }
 
 div.viewdetails {
-    width: 700px;
+    max-width: 800px;
 }
 
 div.viewdetailstext {

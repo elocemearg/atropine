@@ -623,9 +623,9 @@ col.teleostoverachieverscoldiff {
     width: 8vw;
 }
 
-/* Notable games view */
+/* High scores view */
 
-div.notablegamesheading {
+div.highscoresheading {
 }
 
 table.tableofgames {
@@ -644,27 +644,27 @@ table.tableofgames tr {
     border-bottom: 1px solid gray;
 }
 
-table.notablegamestable td {
+table.highscorestable td {
     padding: 1vmin;
 }
 
-col.notablegamescolround {
+col.highscorescolround {
     width: 10%;
 }
 
-col.notablegamescolp1 {
+col.highscorescolp1 {
     width: 35%;
 }
 
-col.notablegamescolp2 {
+col.highscorescolp2 {
     width: 35%;
 }
 
-col.notablegamescolscore {
+col.highscorescolscore {
     width: 20%;
 }
 
-td.notablegamesround {
+td.highscoresround {
     color: orange;
 }
 

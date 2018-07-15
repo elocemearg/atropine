@@ -1,4 +1,4 @@
-class NotableGamesView extends PagedTableView {
+class HighScoresView extends PagedTableView {
     constructor(tourneyName, leftPc, topPc, widthPc, heightPc) {
         super(tourneyName, leftPc, topPc, widthPc, heightPc, 10, 10000);
         this.numRows = 10;
@@ -10,22 +10,22 @@ class NotableGamesView extends PagedTableView {
         
         var html = "";
         html += "<div class=\"viewheading headingbar\">";
-        html += "<div class=\"viewheadingtext\" id=\"notablegamesheading\">";
+        html += "<div class=\"viewheadingtext\" id=\"highscoresheading\">";
         html += "</div>";
         html += "</div>";
 
-        html += "<table class=\"tableofgames notablegamestable\">";
+        html += "<table class=\"tableofgames highscorestable\">";
         html += "<colgroup>";
-        html += "<col class=\"notablegamescolround\" />";
-        html += "<col class=\"notablegamescolp1\" />";
-        html += "<col class=\"notablegamescolscore\" />";
-        html += "<col class=\"notablegamescolp2\" />";
+        html += "<col class=\"highscorescolround\" />";
+        html += "<col class=\"highscorescolp1\" />";
+        html += "<col class=\"highscorescolscore\" />";
+        html += "<col class=\"highscorescolp2\" />";
         html += "</colgroup>";
 
         for (var rowNum = 0; rowNum < this.numRows; ++rowNum) {
-            var rowName = "notablegamesrow" + rowNum.toString();
+            var rowName = "highscoresrow" + rowNum.toString();
             html += "<tr id=\"" + rowName + "\">";
-            html += "<td class=\"notablegamesround\" id=\"" + rowName + "_round\">&nbsp;</td>";
+            html += "<td class=\"highscoresround\" id=\"" + rowName + "_round\">&nbsp;</td>";
             html += "<td class=\"roundresultsp1\" id=\"" + rowName + "_p1\">&nbsp;</td>";
             html += "<td class=\"roundresultsscore\" id=\"" + rowName + "_score\">&nbsp;</td>";
             html += "<td class=\"roundresultsp2\" id=\"" + rowName + "_p2\">&nbsp;</td>";
@@ -39,7 +39,7 @@ class NotableGamesView extends PagedTableView {
 
 
     setRowDisplay(rowNum, value) {
-        var rowName = "notablegamesrow" + rowNum.toString();
+        var rowName = "highscoresrow" + rowNum.toString();
         document.getElementById(rowName).style.display = value;
     }
 
@@ -69,15 +69,15 @@ class NotableGamesView extends PagedTableView {
             var gameSet = [];
             switch (this.currentPageIndex) {
                 case 0:
-                    gameSet = gameState.notablegames.highest_winning_scores;
+                    gameSet = gameState.highscores.highest_winning_scores;
                     replyDict.title = "Highest winning scores";
                     break;
                 case 1:
-                    gameSet = gameState.notablegames.highest_losing_scores;
+                    gameSet = gameState.highscores.highest_losing_scores;
                     replyDict.title = "Highest losing scores";
                     break;
                 case 2:
-                    gameSet = gameState.notablegames.highest_combined_scores;
+                    gameSet = gameState.highscores.highest_combined_scores;
                     replyDict.title = "Highest combined scores";
                     break;
                 default:
@@ -105,15 +105,15 @@ class NotableGamesView extends PagedTableView {
     }
 
     redrawHeadings(obj) {
-        document.getElementById("notablegamesheading").innerText = obj.title;
+        document.getElementById("highscoresheading").innerText = obj.title;
     }
 
     redrawError(obj) {
-        document.getElementById("notablegamesheading").innerText = obj.errorString;
+        document.getElementById("highscoresheading").innerText = obj.errorString;
     }
 
     clearRow(rowNum) {
-        var rowName = "notablegamesrow" + rowNum.toString();
+        var rowName = "highscoresrow" + rowNum.toString();
         var suffixes = [ "round", "p1", "score", "p2" ];
         for (var i = 0; i < suffixes.length; ++i) {
             var elementName = rowName + "_" + suffixes[i];
@@ -131,7 +131,7 @@ class NotableGamesView extends PagedTableView {
             }
             else {
                 var entry = obj.entries[rowNum];
-                var rowName = "notablegamesrow" + rowNum.toString();
+                var rowName = "highscoresrow" + rowNum.toString();
 
                 var roundText = "R" + entry.round_num.toString();
                 if (entry.div_short_name) {
