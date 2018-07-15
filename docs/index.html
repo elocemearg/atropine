@@ -9,19 +9,14 @@
 
 	<p>
 	Atropine is a Countdown tournament administration system controlled
-	by your web browser. Teleost is a program that continually reads the
-	state of the tournament and updates a window showing standings, results
-	and other information.
+	by your web browser.
 	</p>
 
 	<h2>Prerequisites</h2>
 	<p>
-	The two things you need that might not be installed on your computer
-	already are <a href="http://www.python.org">Python</a> and
-	<a href="http://pygame.org">pygame</a>. Python is the programming
-	language in which Atropine and Teleost are written. pygame is a module
-	for Python which, among other things, gives graphical capabilities to
-	a Python application.
+	There is only one thing you need to have installed that you might not have
+    installed already, and that is <a href="http://www.python.org">Python</a>.
+	Python is the programming language in which Atropine is written.
 	</p>
 	<p>
 	To use Atropine, you need
@@ -30,35 +25,19 @@
     <a href="https://www.python.org/downloads/release/python-2715/">2.7.15</a>.
 	If you are using Windows, you want the "Windows x86 MSI Installer".
 	</p>
-	<p>
-	To use Teleost, which is the program that displays standings and
-	results on the screen, you need <a href="http://pygame.org">pygame</a>
-	in addition to Python. Go to the
-	<a href="http://pygame.org/download.shtml">pygame download page</a>
-	and download and install the version of pygame compatible with your
-	Python installation. At the time of writing, the latest version of
-	pygame is 1.9.1, and <a href="http://pygame.org/ftp/pygame-1.9.1.win32-py2.7.msi">pygame-1.9.1.win32-py2.7.msi</a>
-	is the Windows installer for the specific pygame version compatible
-	with Python 2.7.
-	</p>
-    <h3>Python 3?</h3>
     <p>
-    One day, Atropine will be ported over to Python 3. The main reason this
-    hasn't happened yet is the reliance on pygame, which doesn't have
-    a Windows port compatible with any recent version of Python 3. The
-    long-term plan is to remove the dependency on the pygame module and draw
-    the public-facing screen another way, and at that point atropine will be
-    ported to Python 3. When that happens you'll need to download Python 3
-    to continue to use atropine, but you don't need to worry about that yet.
+    Earlier versions of Atropine needed the Python module "pygame" for the
+    public-facing screen. As of version 0.9, pygame is no longer needed.
     </p>
+    <h3>Python 3?</h3>
+    <p>Soon!</p>
 
 	<h2>Installation</h2>
 	<p>
 	After you have installed the prerequisites detailed above, unzip
 	atropine.zip into a directory of your choosing. There are a number
-	of files and directories, but the only ones you need to know about
-	to use Atropine and Teleost are <tt>atropine.py</tt> and
-	<tt>teleost.py</tt>.
+	of files and directories, but the only one you need to know about
+	to use Atropine is <tt>atropine.py</tt>.
 	</p>
 	<h2>Starting Atropine</h2>
 	<p>
@@ -83,15 +62,11 @@
 	When that succeeds, click the "click here to continue" link
 	and you will land on the Tourney Setup page.
 	</p>
-	<h2>Starting Teleost (optional)</h2>
-	<p>
-	If you want to show everyone the standings and results, you'll use
-	Teleost for this. This step isn't necessary to administer a tournament,
-	but if you want to use Teleost then just run <tt>teleost.py</tt> and
-	enter the name of your tournament when prompted. The Teleost window
-	should then appear. Once it's running and you've got the window
-	positioned where you want it, it shouldn't need any more
-	intervention.
+    <h2>Public-facing screen</h2>
+    <p>
+    This used to be a separate script called <tt>teleost.py</tt>. This no
+    longer exists. Now it's part of the web interface. See the <em>Display
+    Setup</em> section below.
 	</p>
 	<h2>Tourney Setup</h2>
 	<p>
@@ -104,62 +79,36 @@
 	A tourney isn't much of a tourney without players. The text area under
 	the heading <em>Player List</em> is where your list of players
 	goes. Put each player name on a separate line, starting with the
-	highest-rated player and finishing with the lowest-rated player. The
-	reason this is one big text box rather than many little text boxes, one
-	for each player, is to make it easier to copy and paste the list of
-	players from somewhere else.
-	</p>
-	<p>
-	Each player is assigned a rating. If you want to assign a rating to
-	a player, follow their name with a comma and the rating, like this:
-	</p>
-	<pre>	Kevin Birks,1850</pre>
-	<p>
-	If any players are not given ratings, ratings are automatically
-	assigned to players with the top player receiving a rating of 2000,
-	the second player 1980, the next player 1960, and so on.
+	highest-rated player and finishing with the lowest-rated player. If
+    your tournament is split into divisions, put a hyphen (-) on a line
+    by itself to indicate where the splits are.
 	</p>
 	<p>
 	<em>N.B.</em> If you need to add a prune (an imaginary player who always
     scores zero) to take the number of players up to a multiple of two or
-    three, give them a rating of zero. This is important because some of the
-	fixture generators treat prunes specially to avoid drawing prunes
-	against each other, and to avoid players playing two different prunes
-	twice.
+    three, give them a rating of zero by adding a comma and a zero after their
+    name. This is important because some of the fixture generators treat
+    prunes specially to avoid drawing prunes against each other, and to avoid
+    players playing two different prunes twice.
 	</p>
 	<p>
-	Copy and paste the following example players into the player list box.
+	Here's an example list of players you can copy and paste into the player
+    list box.
 	</p>
-	<pre>	Kevin Birks
-	Jonathan Rawlplug
-	Dark Meeks
-	Giles Huc-Things
-	Ed McBellface
-	Admiral Glad
-	Jack Worzel
-	Some Hurst
-	Some Other Hurst
-	Randy Prat
-	David B Barnyard
+	<pre>	Cymbelina Spatchcock
+	Lord Hoppleton
+	Compton Pauncefoot
+	Vampira Smithersby
+	Tinned Peaches
+	Infumbula Trousers
+	Jacquard Hookflash
+	Trilby Battenberg
+	Blancmange McTaggart
+	Sincerity Sandwich
+	Salzburg Pound-Quedgeley
 	Apterous Prune,0</pre>
 	<p>
 	Then click <em>Save Player List</em>.
-	</p>
-	<p>
-	If you want to split the players into two teams, use the
-	"Assign players to teams" link in the Team Setup section of the setup
-	page. If you assign players to teams, a red or blue dot will appear
-	next to their name in results and standings.
-	</p>
-	<p>
-	If you have a large tournament which is split up into divisions, you
-	can use the "Divisions" link in the sidebar. This will split the
-	players up into however many divisions you specify, giving each division
-	a multiple of a certain number of players, provided the numbers you
-	give are possible. If you have many divisions in your tournament, the
-	divisions are effectively parallel tournaments. When generating
-	fixtures for a round, all divisions' fixtures must be generated at the
-	same time.
 	</p>
 	<p>
 	The General Setup stage is also where you can specify other
@@ -176,8 +125,10 @@
 	<p>
 	Click the <em>Generate new round...</em> link in the sidebar.
 	You'll be presented with a list of fixture generators. Click
-	<em>Swiss Army Blunderbuss</em>. For the first round, this
-	will come back to you with a list of fixtures immediately.
+    <em>Swiss Army Blunderbuss</em> or <em>Random Pairings/Groups</em> and
+    answer the questions, telling it you want three players per table.
+    For the first round, this will come back to you with a list of fixtures
+    immediately.
 	</p>
 	<p>
 	Review the fixtures, then click <em>Accept Fixtures</em>. The
@@ -215,6 +166,7 @@
     handed a scoresheet with a result on it, you enter the names in the order
     they appear on the scoresheet. It's easier and avoids mistakes.
     </p>
+    <h4>Tiebreaks</h4>
     <p>
     If the score you enter has a winning margin of exactly 10, a checkbox will
     appear asking you whether this game was won on a tiebreak conundrum. Tick
@@ -222,6 +174,15 @@
     tiebreak not to be counted in the standings table. If you're used to the
     old interface, typing an asterisk (*) next to the score in one of the score
     boxes is another way of indicating that a game was won on a tiebreak.
+    </p>
+    <h4>Double loss</h4>
+    <p>
+    If you want to record a game as having been lost by both players, enter a
+    score of 0-0 and tick the tiebreak box, which will now have become the
+    "loss for both players" box. This causes the game to be a 0-0 loss on
+    both sides. Neither player is credited with any points for the game and
+    it is not counted as a draw. This is useful if neither player turns up to
+    play their game.
     </p>
 
     <h3>Recent results</h3>
@@ -302,8 +263,8 @@
 	When you've entered all results for one round and you're ready to
 	generate fixtures for the next round, click
 	<em>Generate new round...</em> as before. This time, if you
-	click <em>Swiss Army Blunderbuss</em> you'll be asked a
-	question before proceeding. This fixture generator needs to
+	click <em>Swiss Army Blunderbuss</em> you'll be asked for more
+    information before proceeding. This fixture generator needs to
 	group together players with similar performance, ensuring players don't
 	play anyone they've already played in the tourney. This is rather
 	complicated, so you can specify a time limit after which it will give
@@ -316,37 +277,46 @@
 	fixtures. With our example of 12 players it should be very quick, but
 	in larger tournaments the fixtures will take longer to generate.
 	</p>
-	<h2>Display Control</h2>
+	<h2>Display Setup</h2>
 	<p>
-	The <em>Display Control</em> link in the sidebar takes you to
-	a menu asking which screen you want Teleost to show. It does no harm to
-	leave it on the default setting "Auto", but if you want the Teleost
-	window to show a particular screen, you can select it and click
-	<em>Apply Settings</em>. Teleost will then show only that
-	screen until you specify otherwise.
+	The <em>Display Setup</em> link in the sidebar takes you the page
+    which administers the public-facing screen. Click the <em>Open
+    Display Window</em> link at the top of this page to open the
+    public-facing screen in a new browser window. You can then drag this
+    new browser window onto a second screen (e.g. a projector) and full-screen
+    or resize it as necessary.
+    </p>
+    <p>
+    The menu on the Display Setup page shows you all the views you can
+    choose from. If you want the least-effort solution, leave it on the
+    default setting, "Auto".
+    </p>
+    <p>
+    If you want the public-facing window to show a particular screen, you can
+    select it from "Available screen modes" and click "Switch to this screen
+    mode". The public-facing window will then show only that screen until you
+    specify otherwise.
 	</p>
 	<p>
-	In <em>Auto</em> mode, Teleost uses the following rules to
+	In <em>Auto</em> mode, Atropine uses the following rules to
 	decide which screen to show:
 	</p>
 	<ul>
-		<li>If the tourney is in a knockout stage, Teleost displays
-		the <em>Fixtures</em> screen.</li>
-		<li>Otherwise, if the latest round has had fixtures generated
-		but no scores have been filled in yet, Teleost displays the
+		<li>If the latest round has had fixtures generated
+		but no scores have been filled in yet, we display the
 		<em>Fixtures</em> screen.</li>
 		<li>Otherwise, if the latest round has had some but not all of
-		its scores filled in, Teleost displays the
+		its scores filled in, we display the
 		<em>Standings / Videprinter</em> screen.</li>
 		<li>If in the latest round all games have had their
-		scores filled in, Teleost displays the
+		scores filled in, we display the
 		<em>Standings / Table Results</em> screen.</li>
 	</ul>
 	<p>
-	In <em>Auto</em> mode, Teleost never shows other screens such as the
+	<em>Auto</em> mode never shows other screens such as the
 	<em>High Scores</em> or <em>Overachievers</em> screens,
 	so if you want to show those you need to switch to them manually using
-	the Display Control menu.
+	the Display Setup menu.
 	</p>
 <hr />
 	<p>
