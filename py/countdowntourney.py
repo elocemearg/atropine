@@ -2782,6 +2782,28 @@ and g.game_type = 'P'
             """ % (max_rows)
         )
 
+    def rerate_players_by_id(self):
+        cur = self.db.cursor()
+        cur.execute("select id, rating from player where rating != 0 order by id")
+        player_ids = []
+        for row in cur:
+            player_ids.append(row[0])
+
+        player_ids_new_ratings = []
+        max_rating = 2000
+        min_rating = 1000
+        for idx in range(len(player_ids)):
+            pid = player_ids[idx]
+            if len(player_ids) == 1:
+                new_rating = max_rating
+            else:
+                new_rating = max_rating - float(idx * (max_rating - min_rating)) / (len(player_ids) - 1)
+            player_ids_new_ratings.append((new_rating, pid))
+
+        cur.executemany("update player set rating = ? where id = ?", player_ids_new_ratings)
+        cur.close()
+        self.db.commit()
+        self.set_attribute("autoratingbehaviour", RATINGS_GRADUATED);
     
 def get_5_3_table_sizes(num_players):
     if num_players < 8:

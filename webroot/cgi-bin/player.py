@@ -100,6 +100,15 @@ else:
 exceptions_to_show = []
 edit_notifications = []
 
+
+
+if cgicommon.is_client_from_localhost() and request_method == "POST" and form.getfirst("reratebyplayerid") and form.getfirst("reratebyplayeridconfirm"):
+    try:
+        tourney.rerate_players_by_id()
+        edit_notifications.append("Players rerated by player ID")
+    except countdowntourney.TourneyException as e:
+        exceptions_to_show.append(("<p>Failed to rerate players...</p>", e))
+
 if cgicommon.is_client_from_localhost() and request_method == "POST" and form.getfirst("editplayer"):
     new_rating = float_or_none(form.getfirst("setrating"))
     new_name = form.getfirst("setname")
@@ -217,9 +226,11 @@ for item in edit_notifications:
 if edit_notifications:
     print "</blockquote>"
     print "<blockquote>"
-    print "<a href=\"%s?tourney=%s&id=%d\">OK</a>" % (cgi.escape(baseurl, True), urllib.quote_plus(tourney.get_name()), player.get_id())
+    if player:
+        print "<a href=\"%s?tourney=%s&id=%d\">OK</a>" % (cgi.escape(baseurl, True), urllib.quote_plus(tourney.get_name()), player.get_id())
+    else:
+        print "<a href=\"%s?tourney=%s\">OK</a>" % (cgi.escape(baseurl, True), urllib.quote_plus(tourney.get_name()))
     print "</blockquote>"
-
 
 if player:
     print "<hr />"
@@ -388,6 +399,7 @@ show_player_search_form(tourney)
 
 if player is None:
     print "<hr />"
+
     print "<h2>Add player</h2>"
     if tourney.get_num_games() > 0:
         print "<p>The tournament has already started. You may add new players, but these new players will not be added to any rounds whose fixtures have already been generated.</p>"
@@ -409,6 +421,43 @@ if player is None:
     print "<input type=\"submit\" name=\"newplayersubmit\" value=\"Add New Player\" />"
     print "</p>"
     print "</form>"
+
+    if tourney.get_num_games() > 0:
+        print "<hr />"
+        print "<h2>Rerate players by player ID</h2>"
+        print "<p>"
+        print """
+        Set the ratings of players in order, by player ID, which corresponds
+        to the order in which they appeared in the list you put into the text
+        box at the start of the tournament. The player at the top of the list
+        (the lowest player ID) gets the highest rating, and the player at the
+        bottom of the list (the highest player ID) gets the lowest rating. Any
+        player with a rating of zero remains unchanged."""
+        print "</p>"
+        print "<p>"
+        print """
+        This is useful if when you pasted in the player list you forgot to
+        select the option which tells Atropine that they're in rating order,
+        and now the Overachievers page thinks they're all seeded the same.
+        """
+        print "</p>"
+
+        print "<p>"
+        print """
+        If you press this button, it will overwrite all other non-zero ratings
+        you may have given the players. That's why you need to tick the box as
+        well.
+        """
+        print "</p>"
+
+        print "<p>"
+        print "<form method=\"POST\" action=\"%s?tourney=%s\">" % (cgi.escape(baseurl), urllib.quote_plus(tourneyname))
+        print "<input type=\"submit\" name=\"reratebyplayerid\" value=\"Rerate players by player ID\" />"
+        print "<input type=\"checkbox\" name=\"reratebyplayeridconfirm\" id=\"reratebyplayeridconfirm\" style=\"margin-left: 20px\" />"
+        print "<label for=\"reratebyplayeridconfirm\">Yes, I'm sure</label>"
+
+        print "</form>"
+        print "</p>"
 
 print "<hr />"
 
