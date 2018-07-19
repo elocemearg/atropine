@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import cgi
@@ -111,16 +111,16 @@ def get_games(tourney, form):
             games_this_div.append(game_dict)
 
         max_games_per_table_per_round = dict()
-        for round_no in sorted(rounds_seen):
+        for round_seen in sorted(rounds_seen):
             games_per_table_this_round = dict()
             for x in games_per_table:
-                if x[0] == round_no:
-                    games_per_table_this_round[x[1]] = games_per_table[(round_no, x[1])]
+                if x[0] == round_seen:
+                    games_per_table_this_round[x[1]] = games_per_table[(round_seen, x[1])]
             if len(games_per_table_this_round) > 0:
                 max_games_per_table = max([ games_per_table_this_round[x] for x in games_per_table_this_round ])
             else:
                 max_games_per_table = 0
-            max_games_per_table_per_round[round_no] = max_games_per_table
+            max_games_per_table_per_round[round_seen] = max_games_per_table
         else:
             max_games_per_table = 0
         div_dict = dict()
@@ -393,8 +393,8 @@ def get_info_required_by_mode(tourney, form):
 
 cgitb.enable()
 
-print "Content-Type: application/json; charset=utf-8"
-print ""
+print("Content-Type: application/json; charset=utf-8")
+print("")
 
 form = cgi.FieldStorage()
 tourney_name = form.getfirst("tourney")

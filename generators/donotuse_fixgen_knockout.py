@@ -1,6 +1,6 @@
 import countdowntourney;
 import htmlform;
-import urllib;
+import urllib.request, urllib.parse, urllib.error;
 import random;
 import cgi;
 import cgicommon;
@@ -152,7 +152,7 @@ def generate_knockout(tourney, seeds, next_round_no=None):
         if not current_rounds:
             next_round_no = 1;
         else:
-            next_round_no = max(map(lambda x : x["num"], current_rounds)) + 1;
+            next_round_no = max([x["num"] for x in current_rounds]) + 1;
 
     if po2 != num_players:
         # The bottom 2(num_players - po2) play in prelims
@@ -390,7 +390,7 @@ def get_user_form(tourney, settings):
             if "generate" in settings:
                 del settings["generate"];
     
-    return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % urllib.quote_plus(tourney.name), elements);
+    return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % urllib.parse.quote_plus(tourney.name), elements);
 
 def check_ready(tourney):
     # If there are at least two players registered, that's fine

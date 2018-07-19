@@ -1,10 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import random;
 import countdowntourney;
 import htmlform;
 import cgi;
-import urllib;
+import urllib.request, urllib.parse, urllib.error;
 import gencommon
 
 name = "King of the Hill"
@@ -33,7 +33,7 @@ def generate(tourney, settings, div_rounds):
     round_numbers_added = []
     rounds = []
     for div_index in sorted(div_rounds):
-        players = filter(lambda x : x.get_division() == div_index, tourney.get_active_players());
+        players = [x for x in tourney.get_active_players() if x.get_division() == div_index];
         group_size = int(settings.get("d%d_groupsize" % (div_index)))
 
         groups = [];
@@ -55,13 +55,13 @@ def generate(tourney, settings, div_rounds):
             # This is the first round. Put the top rated players on the top
             # table, and so on.
             ordered_players = sorted(players, key=lambda x : x.rating, reverse=True)
-            prunes = filter(lambda x : x.rating == 0, ordered_players)
-            ordered_players = filter(lambda x : x.rating != 0, ordered_players)
+            prunes = [x for x in ordered_players if x.rating == 0]
+            ordered_players = [x for x in ordered_players if x.rating != 0]
 
         if group_size == -5:
             group_sizes = countdowntourney.get_5_3_table_sizes(len(players))
         else:
-            group_sizes = [ group_size for i in range(len(players) / group_size) ]
+            group_sizes = [ group_size for i in range(len(players) // group_size) ]
 
         groups = [ [] for i in group_sizes ]
 

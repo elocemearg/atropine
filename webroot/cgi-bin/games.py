@@ -1,8 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys;
 import cgicommon;
-import urllib;
+import urllib.request, urllib.parse, urllib.error;
 import cgi;
 import cgitb;
 import os;
@@ -18,7 +18,7 @@ def int_or_none(s):
         return None
 
 def ordinal_suffix(num):
-    if (num / 10) % 10 == 1:
+    if (num // 10) % 10 == 1:
         return "th"
     elif num % 10 == 1:
         return "st"
@@ -30,21 +30,21 @@ def ordinal_suffix(num):
         return "th"
 
 def write_autocomplete_scripts(tourney, games):
-    print "<script>"
-    print "var previous_control_values = {};"
+    print("<script>")
+    print("var previous_control_values = {};")
 
     # Act as if the initial value of the score boxes is user input, otherwise
     # if a user mistypes a name, submits the form, then corrects it, correcting
     # the name would load the old (blank) score into the score boxes.
-    print "var control_last_change_was_manual = { \"scores\" : true };"
+    print("var control_last_change_was_manual = { \"scores\" : true };")
 
     players_dict = dict()
     players_tables = dict()
 
-    print "var players = "
+    print("var players = ")
 
     if not games:
-        print "{}"
+        print("{}")
     else:
         for g in games:
             names = g.get_player_names()
@@ -67,10 +67,10 @@ def write_autocomplete_scripts(tourney, games):
                 elif g.table_no not in players_tables[name]:
                     players_tables[name] = sorted(players_tables[name] + [g.table_no])
 
-        print json.dumps(players_dict, indent=4)
-    print ";"
+        print(json.dumps(players_dict, indent=4))
+    print(";")
 
-    print "var player_snapshots = "
+    print("var player_snapshots = ")
 
     players_summaries = dict()
     num_divisions = tourney.get_num_divisions()
@@ -110,8 +110,8 @@ def write_autocomplete_scripts(tourney, games):
                     ordinal_suffix(row.position), row.played, row.wins,
                     draw_string, row.played - row.wins - row.draws, row.points)
 
-    print json.dumps(players_summaries, indent=4)
-    print ";"
+    print(json.dumps(players_summaries, indent=4))
+    print(";")
 
     player_links = dict()
     tourney_name = tourney.get_name()
@@ -122,12 +122,12 @@ def write_autocomplete_scripts(tourney, games):
         except PlayerDoesNotExistException:
             pass
 
-    print "var player_links = "
-    print json.dumps(player_links, indent=4)
-    print ";"
-    print
+    print("var player_links = ")
+    print(json.dumps(player_links, indent=4))
+    print(";")
+    print()
 
-    print """
+    print("""
 var tiebreak_prev_state = false;
 var tiebreak_visible = false;
 
@@ -431,8 +431,8 @@ function load_data_entry_form(name1, name2, score1, score2, tb) {
     set_infoboxes();
 }
 
-"""
-    print "</script>"
+""")
+    print("</script>")
 
 def escape_double_quotes(value):
     return "".join([ x if x not in ('\\', '\"') else "\\\\" + x for x in value ])
@@ -474,25 +474,25 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
         cgicommon.show_tourney_exception(countdowntourney.InvalidEntryException(last_entry_error))
 
     tourney_name = tourney.get_name()
-    print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourney_name, True);
-    print "<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no;
+    print("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourney_name, True));
+    print("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
 
     # Print new-fangled friendlier data-entry controls
-    print "<div class=\"scoreentry boxshadow\">"
-    print "<div class=\"resultsentrytitle\">Result entry</div>"
-    print "<div class=\"scoreentryheaderrow\">"
-    print "<div class=\"scoreentryplayerinfo scoreentryplayerinfo1\" id=\"entryinfo1\"></div>"
-    print "<div class=\"scoreentryplayerinfo scoreentryplayerinfo2\" id=\"entryinfo2\"></div>"
-    print "<div class=\"scoreentryclear\">"
-    print "<label class=\"closeselectedgame\" onclick=\"deselect_game();\">clear</label>"
-    print "</div>"
-    print "</div>"
+    print("<div class=\"scoreentry boxshadow\">")
+    print("<div class=\"resultsentrytitle\">Result entry</div>")
+    print("<div class=\"scoreentryheaderrow\">")
+    print("<div class=\"scoreentryplayerinfo scoreentryplayerinfo1\" id=\"entryinfo1\"></div>")
+    print("<div class=\"scoreentryplayerinfo scoreentryplayerinfo2\" id=\"entryinfo2\"></div>")
+    print("<div class=\"scoreentryclear\">")
+    print("<label class=\"closeselectedgame\" onclick=\"deselect_game();\">clear</label>")
+    print("</div>")
+    print("</div>")
 
     #print "<div class=\"scoreentrynamerow\">"
 
-    print "<div class=\"scoreentryspacer\"></div>"
+    print("<div class=\"scoreentryspacer\"></div>")
 
-    print "<div class=\"scoreentryeditboxes\">"
+    print("<div class=\"scoreentryeditboxes\">")
 
     name1div = "<div class=\"scoreentryname\" id=\"name1div\">"
     name1div += ("<input class=\"entryname\" type=\"text\" name=\"entryname1\" " +
@@ -536,40 +536,40 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
         div_order = [ name1div, name2div, score1div, score2div ]
 
     for div in div_order:
-        print div
+        print(div)
 
     #print "</div>" # scoreentryscorerow
 
-    print "</div>" # scoreentryeditboxes
+    print("</div>") # scoreentryeditboxes
 
-    print "<div class=\"scoreentryspacer\"></div>"
+    print("<div class=\"scoreentryspacer\"></div>")
 
-    print "<div class=\"scoreentryotherrow\">"
-    print "<div class=\"scoreentrytiebreak\" id=\"tiebreakdiv\">"
-    print "<input class=\"entrytiebreak\" type=\"checkbox\" name=\"entrytiebreak\" id=\"entrytiebreak\" value=\"1\" style=\"cursor: pointer;\" %s />" % ("checked=\"checked\"" if default_tiebreak else "")
-    print "<label for=\"entrytiebreak\" style=\"cursor: pointer;\" id=\"tiebreaklabel\">Game won on tiebreak?</label>"
-    print "</div>"
-    print "<div class=\"scoreentrysubmit\">"
-    print "<input type=\"submit\" name=\"entrysubmit\" value=\"Submit result\" />"
-    print "</div>"
-    print "</div>" #scoreentryotherrow
-    print "<div class=\"scoreentryspacer\"></div>"
+    print("<div class=\"scoreentryotherrow\">")
+    print("<div class=\"scoreentrytiebreak\" id=\"tiebreakdiv\">")
+    print("<input class=\"entrytiebreak\" type=\"checkbox\" name=\"entrytiebreak\" id=\"entrytiebreak\" value=\"1\" style=\"cursor: pointer;\" %s />" % ("checked=\"checked\"" if default_tiebreak else ""))
+    print("<label for=\"entrytiebreak\" style=\"cursor: pointer;\" id=\"tiebreaklabel\">Game won on tiebreak?</label>")
+    print("</div>")
+    print("<div class=\"scoreentrysubmit\">")
+    print("<input type=\"submit\" name=\"entrysubmit\" value=\"Submit result\" />")
+    print("</div>")
+    print("</div>") #scoreentryotherrow
+    print("<div class=\"scoreentryspacer\"></div>")
 
-    print "</div>" # scoreentry
+    print("</div>") # scoreentry
 
-    print "<p id=\"diag\"></p>"
+    print("<p id=\"diag\"></p>")
 
 def write_videprinter(tourney, round_no):
-    print "<div class=\"videprinter boxshadow\" id=\"videprinterdiv\">"
-    print "<div class=\"resultsentrytitle\">Recent results</div>"
-    print "<div class=\"videprinterwindow\" id=\"videprinterwindow\">"
+    print("<div class=\"videprinter boxshadow\" id=\"videprinterdiv\">")
+    print("<div class=\"resultsentrytitle\">Recent results</div>")
+    print("<div class=\"videprinterwindow\" id=\"videprinterwindow\">")
 
     logs = tourney.get_logs_since(None, False, round_no)
     num_divisions = tourney.get_num_divisions()
 
     for entry in logs:
         (seq_no, timestamp, rno, round_seq, table_no, game_type, name1, score1, name2, score2, tiebreak, log_type, division, superseded) = entry
-        print "<div class=\"videprinterentry\" onclick=\"select_game(%d, true);\">" % (round_seq)
+        print("<div class=\"videprinterentry\" onclick=\"select_game(%d, true);\">" % (round_seq))
 
         if score1 is not None and score2 is not None:
             if score1 == 0 and score2 == 0 and tiebreak:
@@ -588,17 +588,17 @@ def write_videprinter(tourney, round_no):
             scorestr2 = ""
 
         if superseded:
-            print "<span class=\"videprintersuperseded\">"
+            print("<span class=\"videprintersuperseded\">")
             if division:
-                print cgi.escape(tourney.get_short_division_name(division))
-            print cgi.escape("R%dT%d %s " % (rno, table_no, name1));
-            print "%s-%s" % (scorestr1, scorestr2)
-            print cgi.escape(" %s" % (name2))
-            print "</span>"
+                print(cgi.escape(tourney.get_short_division_name(division)))
+            print(cgi.escape("R%dT%d %s " % (rno, table_no, name1)));
+            print("%s-%s" % (scorestr1, scorestr2))
+            print(cgi.escape(" %s" % (name2)))
+            print("</span>")
         else:
             if num_divisions > 1 and division is not None:
-                print "<span class=\"videprinterdivision\">%s</span>" % (tourney.get_short_division_name(division))
-            print "<span class=\"videprinterroundandtable\">R%dT%d</span>" % (rno, table_no)
+                print("<span class=\"videprinterdivision\">%s</span>" % (tourney.get_short_division_name(division)))
+            print("<span class=\"videprinterroundandtable\">R%dT%d</span>" % (rno, table_no))
 
             player_classes = [ "videprinterplayer", "videprinterplayer" ]
             if score1 is not None and score2 is not None:
@@ -609,12 +609,12 @@ def write_videprinter(tourney, round_no):
                 elif score2 > score1:
                     player_classes = [ "videprinterlosingplayer", "videprinterwinningplayer" ]
 
-            print "<span class=\"%s\">%s</span>" % (player_classes[0], cgi.escape(name1))
-            print "<span class=\"videprinterscore\">%s-%s</span>" % (scorestr1, scorestr2)
-            print "<span class=\"%s\">%s</span>" % (player_classes[1], cgi.escape(name2))
-        print "</div>"
-    print "</div>" # videprinterwindow
-    print "</div>" # videprinter
+            print("<span class=\"%s\">%s</span>" % (player_classes[0], cgi.escape(name1)))
+            print("<span class=\"videprinterscore\">%s-%s</span>" % (scorestr1, scorestr2))
+            print("<span class=\"%s\">%s</span>" % (player_classes[1], cgi.escape(name2)))
+        print("</div>")
+    print("</div>") # videprinterwindow
+    print("</div>") # videprinter
 
 def write_blinkenlights(tourney, round_no):
     games = tourney.get_games(round_no)
@@ -645,20 +645,20 @@ def write_blinkenlights(tourney, round_no):
                 "type" : g.game_type
         }
 
-    print "<script>"
-    print "var games_this_round = ";
+    print("<script>")
+    print("var games_this_round = ");
 
-    print json.dumps(game_seq_to_game, indent=4)
-    print ";"
+    print(json.dumps(game_seq_to_game, indent=4))
+    print(";")
 
-    print "var player_name_to_link_html = ";
+    print("var player_name_to_link_html = ");
     link_dict = dict()
     for p in tourney.get_players():
         link_dict[p.get_name()] = cgicommon.player_to_link(p, tourney.get_name(), False, False, True)
-    print json.dumps(link_dict, indent=4)
-    print ";"
+    print(json.dumps(link_dict, indent=4))
+    print(";")
 
-    print """
+    print("""
 function get_link_html(name) {
     if (name == null) {
         return "";
@@ -738,14 +738,14 @@ function set_blinkenlights_mouseover(text) {
         element.innerHTML = text;
     }
 }
-    """
-    print "</script>"
+    """)
+    print("</script>")
 
     max_games_on_table = max([ len(tables_to_games[t]) for t in tables_to_games ])
 
-    print "<div class=\"blinkenlights boxshadow\">"
-    print "<div class=\"resultsentrytitle\" style=\"padding: 7px;\">Blinkenlights</div>"
-    print "<table class=\"blinkenlightstable\">"
+    print("<div class=\"blinkenlights boxshadow\">")
+    print("<div class=\"resultsentrytitle\" style=\"padding: 7px;\">Blinkenlights</div>")
+    print("<table class=\"blinkenlightstable\">")
     
     num_tables_drawn = 0
     tables_per_row = 8
@@ -757,8 +757,8 @@ function set_blinkenlights_mouseover(text) {
 
         if num_tables_drawn % tables_per_row == 0:
             if num_tables_drawn > 0:
-                print "</tr>"
-            print "<tr class=\"blinkenlightsrow\">"
+                print("</tr>")
+            print("<tr class=\"blinkenlightsrow\">")
 
         for g in table_games:
             for p in g.get_player_names():
@@ -775,21 +775,21 @@ function set_blinkenlights_mouseover(text) {
 
         mouseover_event = cgi.escape("set_blinkenlights_mouseover(\"" + cgi.escape(", ".join(sorted(players_on_table)), True) + "\");", True)
 
-        print "<td class=\"blinkenlightscell\">"
-        print "<div class=\"blinkenlightsdivision\">"
-        print cgi.escape(division_letters_string)
-        print "</div>"
-        print "<div class=\"blinkenlightstablenumber\" onmouseover=\"%s\" onmouseout=\"set_blinkenlights_mouseover(&quot;&quot;)\">" % (mouseover_event)
+        print("<td class=\"blinkenlightscell\">")
+        print("<div class=\"blinkenlightsdivision\">")
+        print(cgi.escape(division_letters_string))
+        print("</div>")
+        print("<div class=\"blinkenlightstablenumber\" onmouseover=\"%s\" onmouseout=\"set_blinkenlights_mouseover(&quot;&quot;)\">" % (mouseover_event))
 
         num_games_left = len([ x for x in table_games if not x.is_complete() ])
         if num_games_left == 0:
-            print "<span style=\"color: gray;\">%d</span>" % (table_no)
+            print("<span style=\"color: gray;\">%d</span>" % (table_no))
         else:
-            print "%d" % (table_no)
-        print "</div>"
+            print("%d" % (table_no))
+        print("</div>")
 
-        print "<div class=\"blinkenlightsgamesleft\">"
-        print "<table><tr>"
+        print("<div class=\"blinkenlightsgamesleft\">")
+        print("<table><tr>")
         for g in table_games:
             onclick_script = "select_game(%d, false);" % (g.seq)
             element_id = "gameselectionbutton%d" % (g.seq)
@@ -798,29 +798,29 @@ function set_blinkenlights_mouseover(text) {
                 tdclass = "blinkenlightsgameplayed"
             else:
                 tdclass = "blinkenlightsgameleft"
-            print "<td class=\"%s\" onclick=\"%s\" id=\"%s\" onmouseover=\"%s\" onmouseout=\"set_blinkenlights_mouseover(&quot;&quot;);\"> </td>" % (tdclass, onclick_script, element_id, mouseover_event)
-        print "</tr></table>"
-        print "</div>"
-        print "</td>"
+            print("<td class=\"%s\" onclick=\"%s\" id=\"%s\" onmouseover=\"%s\" onmouseout=\"set_blinkenlights_mouseover(&quot;&quot;);\"> </td>" % (tdclass, onclick_script, element_id, mouseover_event))
+        print("</tr></table>")
+        print("</div>")
+        print("</td>")
         num_tables_drawn += 1
 
     # Draw dummy table cells to fill out the row
     while num_tables_drawn % 8 != 0:
-        print "<td class=\"blinkenlightspaddingcell\"></td>"
+        print("<td class=\"blinkenlightspaddingcell\"></td>")
         num_tables_drawn += 1
 
-    print "</tr>"
-    print "</table>"
+    print("</tr>")
+    print("</table>")
 
-    print "<div class=\"blinkenlightsfooter\">"
-    print "<div class=\"blinkenlightsmouseovertext\">"
-    print "<span id=\"blinkenlightsmouseoverlabel\"></span>"
-    print "</div>"
-    print "</div>"
+    print("<div class=\"blinkenlightsfooter\">")
+    print("<div class=\"blinkenlightsmouseovertext\">")
+    print("<span id=\"blinkenlightsmouseoverlabel\"></span>")
+    print("</div>")
+    print("</div>")
 
-    print "</div>"
+    print("</div>")
 
-    print "<div style=\"clear: both;\"></div>"
+    print("<div style=\"clear: both;\"></div>")
 
 
 def parse_score(score):
@@ -838,8 +838,8 @@ def parse_score(score):
 
 cgitb.enable();
 
-print "Content-Type: text/html; charset=utf-8";
-print "";
+print("Content-Type: text/html; charset=utf-8");
+print("");
 
 baseurl = "/cgi-bin/games.py";
 form = cgi.FieldStorage();
@@ -854,17 +854,17 @@ import countdowntourney;
 
 cgicommon.print_html_head("Games: " + str(tourney_name));
 
-print "<body onload=\"games_on_load();\">";
+print("<body onload=\"games_on_load();\">");
 
 cgicommon.assert_client_from_localhost()
 
 if tourney_name is None:
-    print "<h1>No tourney specified</h1>";
-    print "<p><a href=\"/cgi-bin/home.py\">Home</a></p>";
-    print "</body></html>";
+    print("<h1>No tourney specified</h1>");
+    print("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
+    print("</body></html>");
     sys.exit(0);
 
-print """
+print("""
 <script>
 function scroll_to_bottom(element) {
     element.scrollTop = element.scrollHeight - element.clientHeight;
@@ -878,14 +878,14 @@ function games_on_load() {
     set_infoboxes();
 }
 </script>
-""";
+""");
 
 try:
     tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
 
     cgicommon.show_sidebar(tourney);
 
-    print "<div class=\"mainpane\">";
+    print("<div class=\"mainpane\">");
 
     # If a round is selected, show the scores for that round, in editable
     # boxes so they can be changed.
@@ -894,10 +894,10 @@ try:
         try:
             round_no = int(form.getfirst("round"));
         except ValueError:
-            print "<h1>Invalid round number</h1>";
-            print "<p>\"%s\" is not a valid round number.</p>" % (cgi.escape(form.getfirst("round")));
+            print("<h1>Invalid round number</h1>");
+            print("<p>\"%s\" is not a valid round number.</p>" % (cgi.escape(form.getfirst("round"))));
     else:
-        print "<h1>No round number specified</h1>";
+        print("<h1>No round number specified</h1>");
     
     if round_no is not None:
         games = tourney.get_games(round_no=round_no);
@@ -911,11 +911,11 @@ try:
             round_name = "Round " + str(round_no);
 
         remarks = dict();
-        print "<div class=\"roundnamebox boxshadow\">"
-        print cgi.escape(round_name);
-        print "</div>"
+        print("<div class=\"roundnamebox boxshadow\">")
+        print(cgi.escape(round_name));
+        print("</div>")
 
-        print "<div style=\"clear: both;\"></div>"
+        print("<div style=\"clear: both;\"></div>")
 
         last_entry_valid = False
         last_entry_error = None
@@ -1073,13 +1073,13 @@ try:
 
         num_divisions = tourney.get_num_divisions()
 
-        print "<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.quote_plus(tourney_name), round_no);
+        print("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no));
 
         write_new_data_entry_controls(tourney, round_no, last_entry_valid,
                 last_entry_error, last_entry_names, last_entry_scores,
                 last_entry_tb)
 
-        print "</form>"
+        print("</form>")
 
         write_videprinter(tourney, round_no)
 
@@ -1096,11 +1096,11 @@ try:
                 highlight_control = True
             else:
                 control_with_focus = "entryname1"
-            print "<script>"
-            print "document.getElementById('" + control_with_focus + "').focus();"
+            print("<script>")
+            print("document.getElementById('" + control_with_focus + "').focus();")
             if highlight_control:
-                print "document.getElementById('" + control_with_focus + "').select();"
-            print "</script>"
+                print("document.getElementById('" + control_with_focus + "').select();")
+            print("</script>")
 
         # For the auto-completion of player names in the data entry box, we need
         # a Javascript-accessible mapping of all the players playing in this
@@ -1109,16 +1109,16 @@ try:
 
 
     if round_no is not None:
-        print "<div style=\"font-size: 10pt; margin-top: 20px;\">";
-        print "<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Show old interface: all the games in this round as a list</a>" % (urllib.quote_plus(tourney_name), round_no);
-        print "</p>";
+        print("<div style=\"font-size: 10pt; margin-top: 20px;\">");
+        print("<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Show old interface: all the games in this round as a list</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+        print("</p>");
 
-    print "</div>"; #mainpane
+    print("</div>"); #mainpane
 
 except countdowntourney.TourneyException as e:
     cgicommon.show_tourney_exception(e);
 
-print "</body>";
-print "</html>";
+print("</body>");
+print("</html>");
 
 sys.exit(0);

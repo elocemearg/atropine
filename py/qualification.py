@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 
@@ -552,7 +552,7 @@ if __name__ == "__main__":
         draws_allowed = test.get("draws_allowed", False)
         expected_qualifiers = test["qualified"]
 
-        print "Test %d" % (test_num)
+        print("Test %d" % (test_num))
 
         failed = False
         for row in standings:
@@ -561,10 +561,10 @@ if __name__ == "__main__":
                     unplayed_games, qual_threshold, all_games_generated,
                     num_games_per_player, draws_allowed)
             if qualified and name not in expected_qualifiers:
-                print "Test %d: %s wrongly marked as qualified." % (test_num, name)
+                print("Test %d: %s wrongly marked as qualified." % (test_num, name))
                 failed = True
             elif not qualified and name in expected_qualifiers:
-                print "Test %d: %s wrongly not marked as qualified." % (test_num, name)
+                print("Test %d: %s wrongly not marked as qualified." % (test_num, name))
                 failed = True
 
         if failed:

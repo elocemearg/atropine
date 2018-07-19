@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import time
@@ -155,7 +155,7 @@ def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank
     for i in range(matrix_size):
         for j in range(matrix_size):
             if matrix[i][j] != matrix[j][i]:
-                print "i %d, j %d, matrix[i][j] %f, matrix[j][i] %f!" % (i, j, matrix[i][j], matrix[j][i]);
+                print("i %d, j %d, matrix[i][j] %f, matrix[j][i] %f!" % (i, j, matrix[i][j], matrix[j][i]));
     
     return matrix;
 
@@ -274,7 +274,7 @@ def swissN_first_round(cdt_players, group_size):
     # Put the players in rating order, largest to smallest
     players = sorted(cdt_players, key=lambda x : x.rating, reverse=True);
 
-    num_groups = len(cdt_players) / group_size;
+    num_groups = len(cdt_players) // group_size;
     groups = [];
     for i in range(num_groups):
         player_list = [];
@@ -295,7 +295,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
                 players.append(StandingsPlayer(p.name, p.rating, s.wins + float(s.draws) / 2, s.position, s.played, s.played_first, p.is_avoiding_prune()));
                 break
         else:
-            print p.name + " not in standings table for this division"
+            print(p.name + " not in standings table for this division")
             raise PlayerNotInStandingsException()
 
     # Sort "players" by their position in the standings table, as that means
@@ -308,7 +308,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
             raise IllegalNumberOfPlayersException()
         group_size_list = countdowntourney.get_5_3_table_sizes(len(players))
     else:
-        group_size_list = [ group_size for i in range(len(players) / group_size) ]
+        group_size_list = [ group_size for i in range(len(players) // group_size) ]
 
     played_matrix = []
     for p in players:
@@ -363,8 +363,8 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
     best_weight = None
     max_rematches = init_max_rematches
     max_wins_diff = init_max_win_diff
-    max_wins = max(map(lambda x : x.wins, players))
-    min_wins = min(map(lambda x : x.wins, players))
+    max_wins = max([x.wins for x in players])
+    min_wins = min([x.wins for x in players])
 
     start_time = time.time()
 
@@ -379,7 +379,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
         else:
             max_wins_diff = 1
             for wins in range(int(min_wins), int(max_wins + 1.5)):
-                num = len(filter(lambda x : x.wins == wins, players))
+                num = len([x for x in players if x.wins == wins])
                 if num % group_size != 0:
                     if log:
                         sys.stderr.write("%d players on %d wins, not a multiple of %d, so not bothering to look for perfection\n" % (num, wins, group_size))
@@ -421,7 +421,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
 
     # Sort the groups so the players high up in the standings are on
     # low-numbered tables
-    groups = sorted(groups, key=lambda x : sum(map(lambda y : (players[y].position), x)));
+    groups = sorted(groups, key=lambda x : sum([(players[y].position) for y in x]));
 
     if log:
         group_no = 1
@@ -562,7 +562,7 @@ if __name__ == "__main__":
         for (p1, p2) in cartesian_product(group):
             (s1, s2) = random_result(p1, p2)
             add_game(games, players, 1, group_no, p1.name, s1, s2, p2.name)
-            print "R%dT%d: %30s %3d - %-3d %-30s" % (1, group_no, p1.name, s1, s2, p2.name)
+            print("R%dT%d: %30s %3d - %-3d %-30s" % (1, group_no, p1.name, s1, s2, p2.name))
         group_no += 1
 
     #add_game(games, players, 1, 1, "Innis Carson", 82, 47, "Gevin Chapwell");
@@ -717,17 +717,17 @@ if __name__ == "__main__":
 
     (weight, player_groups) = swissN(games, players, group_size, rank_by_wins=True, limit_ms=limit_ms);
 
-    print "Weight %d" % weight;
+    print("Weight %d" % weight);
     table_no = 1;
     for group in player_groups:
-        legend = map(lambda x : "%s (%d-%d)" % (x.name, player_wins(games, x), player_points(games, x)), group);
-        print "T%2d (%5d) %s" % (table_no, group.weight, ", ".join(legend));
+        legend = ["%s (%d-%d)" % (x.name, player_wins(games, x), player_points(games, x)) for x in group];
+        print("T%2d (%5d) %s" % (table_no, group.weight, ", ".join(legend)));
 
         # Check there are no rematches
-        names = map(lambda x : x.name, group);
+        names = [x.name for x in group];
         for g in games:
             if g.p1.name in names and g.p2.name in names:
-                print "Rematch on table %d!" % table_no;
+                print("Rematch on table %d!" % table_no);
         table_no += 1;
 
     sys.exit(0);

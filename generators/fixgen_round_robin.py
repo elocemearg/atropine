@@ -2,7 +2,7 @@ import sys
 import random
 import countdowntourney
 import htmlform
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import cgi
 
 name = "Round Robin"
@@ -23,7 +23,7 @@ def check_ready(tourney, div_rounds):
     num_divisions = tourney.get_num_divisions()
     players = tourney.get_active_players()
     for div in div_rounds:
-        div_players = filter(lambda x : x.get_division() == div, players)
+        div_players = [x for x in players if x.get_division() == div]
         if len(div_players) % 2 != 0:
             if num_divisions == 1:
                 div_name = "The tournament"
@@ -46,7 +46,7 @@ def generate(tourney, settings, div_rounds):
     round_numbers_generated = []
 
     for div in div_rounds:
-        div_players = sorted(filter(lambda x : x.get_division() == div, players), key=lambda x : x.get_rating(), reverse=True)
+        div_players = sorted([x for x in players if x.get_division() == div], key=lambda x : x.get_rating(), reverse=True)
         num_rounds = len(div_players) - 1
 
         if num_rounds <= 0:
@@ -73,8 +73,8 @@ def generate(tourney, settings, div_rounds):
         # 5 4 3 2
         # That's the third round. And so on.
 
-        top_line = range(len(div_players) / 2)
-        bottom_line = range(len(div_players) - 1, len(div_players) / 2 - 1, -1)
+        top_line = list(range(len(div_players) // 2))
+        bottom_line = list(range(len(div_players) - 1, len(div_players) // 2 - 1, -1))
         for round_offset in range(num_rounds):
             # Check there aren't already games in this round for this division
             existing_games = tourney.get_games(round_no=(start_round_no + round_offset), division=div)

@@ -65,9 +65,9 @@ def get_user_form(tourney, settings, div_rounds):
         init_max_win_diff = int_or_none(settings.get("d%d_initmaxwindiff" % (div_index), 0))
 
         games = tourney.get_games(game_type='P', division=div_index);
-        players = filter(lambda x : x.division == div_index, tourney.get_active_players());
+        players = [x for x in tourney.get_active_players() if x.division == div_index];
 
-        if max_time > 0 and group_size in valid_group_sizes and (group_size == -5 or len(players) % group_size == 0):
+        if max_time is not None and max_time > 0 and group_size in valid_group_sizes and (group_size == -5 or len(players) % group_size == 0):
             div_ready[div_index] = True
 #        else:
 #            if max_time is None or max_time == 0:
@@ -186,7 +186,7 @@ function generate_fixtures_clicked() {
 
     div_valid_table_sizes = []
     for div_index in sorted(div_rounds):
-        div_players = filter(lambda x : x.get_division() == div_index, tourney.get_active_players())
+        div_players = [x for x in tourney.get_active_players() if x.get_division() == div_index]
         sizes = get_valid_group_sizes(len(div_players), len(rounds))
         div_valid_table_sizes.append(sizes)
 
@@ -228,7 +228,7 @@ function generate_fixtures_clicked() {
         group_size = div_group_size[div_index]
         init_max_rematches = div_init_max_rematches[div_index]
         init_max_win_diff = div_init_max_win_diff[div_index]
-        players = filter(lambda x : x.division == div_index, tourney.get_active_players());
+        players = [x for x in tourney.get_active_players() if x.division == div_index];
         div_prefix = "d%d_" % (div_index)
 
         if num_divisions > 1:
@@ -274,7 +274,7 @@ def check_ready(tourney, div_rounds):
 
     for div_index in sorted(div_rounds):
         players = tourney.get_active_players();
-        players = filter(lambda x : x.division == div_index, players)
+        players = [x for x in players if x.division == div_index]
 
         round_no = div_rounds[div_index]
 
@@ -339,7 +339,7 @@ def generate(tourney, settings, div_rounds):
     fixtures = []
     for div_index in sorted(div_rounds):
         players = tourney.get_active_players()
-        players = filter(lambda x : x.division == div_index, players)
+        players = [x for x in players if x.division == div_index]
 
         div_prefix = "d%d_" % (div_index)
 

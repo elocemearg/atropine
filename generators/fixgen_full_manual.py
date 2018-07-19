@@ -1,10 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import random;
 import countdowntourney;
 import htmlform;
 import cgi;
-import urllib;
+import urllib.request, urllib.parse, urllib.error;
 import re
 
 name = "Fully Manual Fixtures"
@@ -111,7 +111,7 @@ def get_user_form(tourney, settings, div_rounds):
         elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
         elements.append(htmlform.HTMLFormSubmitButton("submit", "Continue"))
         elements.append(htmlform.HTMLFragment("</div>"))
-        return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.quote_plus(tourney.name)), elements)
+        return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.parse.quote_plus(tourney.name)), elements)
     
     show_already_assigned_players = bool(settings.get("showallplayers"))
 
@@ -125,7 +125,7 @@ def get_user_form(tourney, settings, div_rounds):
     all_filled = True
     for div_index in div_rounds:
         num_games = int(settings.get("d%d_numgames" % (div_index), "0"))
-        div_players = filter(lambda x : x.get_division() == div_index, players);
+        div_players = [x for x in players if x.get_division() == div_index];
         set_players = [ None for i in range(0, num_games * 2) ];
         game_types = [ None for i in range(num_games) ]
 
@@ -213,7 +213,7 @@ function unset_unsaved_data_warning() {
 
     table_no = 1;
     for div_index in div_rounds:
-        div_players = filter(lambda x : x.get_division() == div_index, players);
+        div_players = [x for x in players if x.get_division() == div_index];
         player_index = 0;
         table_size = 2
         invalid_slots = div_invalid_slots[div_index]
@@ -238,7 +238,7 @@ function unset_unsaved_data_warning() {
 
         elements.append(htmlform.HTMLFragment("<table class=\"seltable\">\n"));
         prev_table_no = None;
-        unselected_names = map(lambda x : x.get_name(), div_players);
+        unselected_names = [x.get_name() for x in div_players];
 
         for p in set_players:
             if p and p.get_name() in unselected_names:
@@ -303,7 +303,7 @@ function unset_unsaved_data_warning() {
                 elements.append(htmlform.HTMLFragment("<li>%s</li>\n" % cgi.escape(name)));
             elements.append(htmlform.HTMLFragment("</blockquote>\n"));
 
-    form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.quote_plus(tourney.name)), elements);
+    form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.parse.quote_plus(tourney.name)), elements);
     return form;
 
 def check_ready(tourney, div_rounds):
@@ -329,7 +329,7 @@ def generate(tourney, settings, div_rounds):
     for div_index in div_rounds:
         round_no = div_rounds[div_index]
         groups = [];
-        div_players = filter(lambda x : x.get_division() == div_index, players)
+        div_players = [x for x in players if x.get_division() == div_index]
         num_games = int(settings.get("d%d_numgames" % (div_index), "0"))
         default_game_type = settings.get("d%d_defaultgametype" % (div_index))
 
@@ -346,7 +346,7 @@ def generate(tourney, settings, div_rounds):
             else:
                 raise countdowntourney.FixtureGeneratorException("%s: Slot %d has no player in it. This is probably a bug, as the form should have made you fill in all the boxes." % (tourney.get_division_name(div_index), i));
 
-        selected_players = map(lambda x : lookup_player(div_players, x), player_names);
+        selected_players = [lookup_player(div_players, x) for x in player_names];
 
         groups = []
         for game_index in range(num_games):

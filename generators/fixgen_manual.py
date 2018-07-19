@@ -1,10 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import random;
 import countdowntourney;
 import htmlform;
 import cgi;
-import urllib;
+import urllib.request, urllib.parse, urllib.error;
 import re
 
 name = "Manual Pairings/Groups"
@@ -64,7 +64,7 @@ def get_user_form(tourney, settings, div_rounds):
         elements.append(htmlform.HTMLFragment("</div></div></div>"))
 
     for div_index in div_rounds:
-        div_players = filter(lambda x : x.get_division() == div_index, players)
+        div_players = [x for x in players if x.get_division() == div_index]
         table_size = None
         table_size_name = "d%d_groupsize" % (div_index)
         if settings.get(table_size_name, None) is not None:
@@ -95,11 +95,11 @@ def get_user_form(tourney, settings, div_rounds):
         elements.append(htmlform.HTMLFragment("<p>"))
         elements.append(htmlform.HTMLFormSubmitButton("submit", "Submit table sizes and select players"))
         elements.append(htmlform.HTMLFragment("</p>"))
-        return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.quote_plus(tourney.name)), elements)
+        return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.parse.quote_plus(tourney.name)), elements)
     
     show_already_assigned_players = bool(settings.get("showallplayers"))
     for div_index in div_rounds:
-        div_players = filter(lambda x : x.get_division() == div_index, players);
+        div_players = [x for x in players if x.get_division() == div_index];
         table_size = div_table_sizes[div_index]
         if table_size > 0 and len(div_players) % table_size != 0:
             raise countdowntourney.FixtureGeneratorException("%s: table size of %d is not allowed, as the number of players (%d) is not a multiple of it." % (tourney.get_division_name(div_index), table_size, len(div_players)))
@@ -116,7 +116,7 @@ def get_user_form(tourney, settings, div_rounds):
     div_count_in_standings = dict()
     all_filled = True
     for div_index in div_rounds:
-        div_players = filter(lambda x : x.get_division() == div_index, players);
+        div_players = [x for x in players if x.get_division() == div_index];
         set_players = [ None for i in range(0, len(div_players)) ];
 
         if not settings.get("submitplayers"):
@@ -200,7 +200,7 @@ function unset_unsaved_data_warning() {
 
     table_no = 1;
     for div_index in div_rounds:
-        div_players = filter(lambda x : x.get_division() == div_index, players);
+        div_players = [x for x in players if x.get_division() == div_index];
         player_index = 0;
         table_size = div_table_sizes[div_index]
         duplicate_slots = div_duplicate_slots[div_index]
@@ -217,10 +217,10 @@ function unset_unsaved_data_warning() {
 
         elements.append(htmlform.HTMLFragment("<table class=\"seltable\">\n"));
         prev_table_no = None;
-        unselected_names = map(lambda x : x.get_name(), div_players);
+        unselected_names = [x.get_name() for x in div_players];
 
         if table_size > 0:
-            table_sizes = [table_size for i in range(0, len(div_players) / table_size)]
+            table_sizes = [table_size for i in range(0, len(div_players) // table_size)]
         else:
             table_sizes = countdowntourney.get_5_3_table_sizes(len(div_players))
 
@@ -289,7 +289,7 @@ function unset_unsaved_data_warning() {
 
         elements.append(htmlform.HTMLFormHiddenInput("d%d_groupsize" % (div_index), str(div_table_sizes[div_index])))
 
-    form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.quote_plus(tourney.name)), elements);
+    form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.parse.quote_plus(tourney.name)), elements);
     return form;
 
 def check_ready(tourney, div_rounds):
@@ -307,7 +307,7 @@ def generate(tourney, settings, div_rounds):
     players = tourney.get_active_players();
     for div_index in div_rounds:
         table_size = settings.get("d%d_groupsize" % (div_index), None)
-        div_players = filter(lambda x : x.get_division() == div_index, players)
+        div_players = [x for x in players if x.get_division() == div_index]
 
         if table_size is None:
             raise countdowntourney.FixtureGeneratorException("%s: No table size specified" % tourney.get_division_name(div_index))
@@ -323,7 +323,7 @@ def generate(tourney, settings, div_rounds):
         if table_size > 0:
             if len(div_players) % table_size != 0:
                 raise countdowntourney.FixtureGeneratorException("%s: Number of players (%d) is not a multiple of the table size (%d)" % (tourney.get_division_name(div_index), len(div_players), table_size))
-            table_sizes = [ table_size for i in range(0, len(div_players) / table_size) ]
+            table_sizes = [ table_size for i in range(0, len(div_players) // table_size) ]
         else:
             if len(div_players) < 8:
                 raise countdowntourney.FixtureGeneratorException("%s: Can't use a 5&3 configuration if there are fewer than 8 players, and there are %d" % (tourney.get_division_name(div_index), len(div_players)))
@@ -345,7 +345,7 @@ def generate(tourney, settings, div_rounds):
         round_no = div_rounds[div_index]
         groups = [];
         table_sizes = div_table_sizes[div_index]
-        div_players = filter(lambda x : x.get_division() == div_index, players)
+        div_players = [x for x in players if x.get_division() == div_index]
         if settings.get("d%d_heats" % (div_index)):
             game_type = "P"
         else:
@@ -361,7 +361,7 @@ def generate(tourney, settings, div_rounds):
             else:
                 raise countdowntourney.FixtureGeneratorException("%s: Player %d not specified. This is probably a bug, as the form should have made you fill in all the boxes." % (tourney.get_division_name(div_index), i));
 
-        selected_players = map(lambda x : lookup_player(div_players, x), player_names);
+        selected_players = [lookup_player(div_players, x) for x in player_names];
 
         player_index = 0
         groups = []

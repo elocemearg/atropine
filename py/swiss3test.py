@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys;
 import countdowntourney;
@@ -65,12 +65,12 @@ def simulate_tourney(num_players, num_rounds, limit_ms):
         players.append(countdowntourney.Player(name, rating));
     
     for round_no in range(1, num_rounds + 1):
-        print "Generating round %d..." % round_no;
+        print("Generating round %d..." % round_no);
         if round_no == 1:
             (weight, groups) = swiss3.swiss3_first_round(players);
         else:
             (weight, groups) = swiss3.swiss3(games, players, rank_by_wins=True, limit_ms=limit_ms);
-        print "Done.";
+        print("Done.");
 
         round_games = [];
         table_no = 1;
@@ -87,7 +87,7 @@ def simulate_tourney(num_players, num_rounds, limit_ms):
         table_no = 1;
         for g in groups:
             if g.weight > 10000:
-                print "Warning: round %d table %d (%s) has penalty %d" % (round_no, table_no, ", ".join(map(lambda x : x.name, g)), g.weight);
+                print("Warning: round %d table %d (%s) has penalty %d" % (round_no, table_no, ", ".join([x.name for x in g]), g.weight));
             table_no += 1;
 
         for g in round_games:
@@ -99,10 +99,10 @@ def simulate_tourney(num_players, num_rounds, limit_ms):
 
 for size in range(18, 49, 3):
     num_rounds = 3;
-    print "%d players, %d rounds" % (size, num_rounds);
+    print("%d players, %d rounds" % (size, num_rounds));
     games = simulate_tourney(size, num_rounds, 3000);
     #for g in games:
     #    print "%2d %2d %20s %3d-%-3d%s %-20s" % (g.round_no, g.table_no, g.p1.name, g.s1, g.s2, "*" if g.tb else " ", g.p2.name);
-    print
+    print()
 
 sys.exit(0);

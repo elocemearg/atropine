@@ -36,7 +36,7 @@ def generate(tourney, settings, div_rounds):
     round_numbers_generated = []
     for div_index in div_rounds:
         round_no = div_rounds[div_index]
-        players = filter(lambda x : x.get_division() == div_index, tourney.get_active_players());
+        players = [x for x in tourney.get_active_players() if x.get_division() == div_index];
 
         tables = [];
         
@@ -52,7 +52,7 @@ def generate(tourney, settings, div_rounds):
 
         if table_size > 0:
             # Distribute the players across the tables
-            num_tables = len(players) / table_size;
+            num_tables = len(players) // table_size;
             tables = [ [] for i in range(num_tables) ]
             table_no = 0
             for p in players:
@@ -67,7 +67,7 @@ def generate(tourney, settings, div_rounds):
             while players_left % 5 != 0:
                 table_sizes.append(3)
                 players_left -= 3
-            for i in range(players_left / 5):
+            for i in range(players_left // 5):
                 table_sizes.append(5)
             tables = [ [] for x in table_sizes ]
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import sqlite3;
@@ -6,8 +6,8 @@ import re;
 import os;
 import qualification
 
-SW_VERSION = "0.9.0"
-SW_VERSION_SPLIT = (0, 9, 0)
+SW_VERSION = "1.0.0"
+SW_VERSION_SPLIT = (1, 0, 0)
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
 RANK_WINS_POINTS = 0;
@@ -792,9 +792,9 @@ class Game(object):
         return score;
     
     def get_player_name_score(self, player_name):
-        if self.p1.is_player_known() and self.p1.get_name().lower() == player_name.lower():
+        if self.p1.is_player_known() and (self.p1.get_name().lower() == player_name.lower() or self.p1.get_name() == player_name):
             return self.s1
-        elif self.p2.is_player_known() and self.p2.get_name().lower() == player_name.lower():
+        elif self.p2.is_player_known() and (self.p2.get_name().lower() == player_name.lower() or self.p2.get_name() == player_name):
             return self.s2
         else:
             raise PlayerNotInGameException("Player %s not in the game between %s and %s." % (str(player_name), str(self.p1), str(self.p2)))
@@ -907,7 +907,7 @@ class Tourney(object):
                     raise DBVersionMismatchException("This tourney database has an invalid version number %s." % (version))
                 else:
                     try:
-                        version_split = map(int, version_split)
+                        version_split = list(map(int, version_split))
                     except ValueError:
                         raise DBVersionMismatchException("This tourney database has an invalid version number %s." % (version))
                     if tuple(version_split) < EARLIEST_COMPATIBLE_DB_VERSION:
@@ -1047,7 +1047,7 @@ class Tourney(object):
     
     def player_name_exists(self, name):
         cur = self.db.cursor()
-        cur.execute("select count(*) from player where lower(name) = ?", (name.lower(),))
+        cur.execute("select count(*) from player where lower(name) = ? or name = ?", (name.lower(), name))
         row = cur.fetchone()
         if row[0]:
             cur.close()
@@ -1060,7 +1060,7 @@ class Tourney(object):
         if self.db_version < (0, 7, 7):
             return
         cur = self.db.cursor()
-        cur.execute("update player set avoid_prune = ? where lower(name) = ?", (1 if value else 0, name.lower()))
+        cur.execute("update player set avoid_prune = ? where lower(name) = ? or name = ?", (1 if value else 0, name.lower(), name))
         cur.close()
         self.db.commit()
     
@@ -1068,7 +1068,7 @@ class Tourney(object):
         if self.db_version < (0, 7, 7):
             return False
         cur = self.db.cursor()
-        cur.execute("select avoid_prune from player where lower(name) = ?", (name.lower(),))
+        cur.execute("select avoid_prune from player where lower(name) = ? or name = ?", (name.lower(), name))
         row = cur.fetchone()
         if row:
             retval = bool(row[0])
@@ -1092,7 +1092,7 @@ class Tourney(object):
         players = self.get_players()
         for p in players:
             short_name = get_short_name(p.get_name(), players)
-            cur.execute("update player set short_name = ? where lower(name) = ?", (short_name, p.get_name().lower()))
+            cur.execute("update player set short_name = ? where (lower(name) = ? or name = ?)", (short_name, p.get_name().lower(), p.get_name()))
         self.db.commit()
 
     # players must be a list of 2-tuples or 3-tuples. Each tuple is (name,
@@ -1172,7 +1172,7 @@ class Tourney(object):
 
             new_players = [];
             rating = max_rating;
-            num_unrated_players = len(filter(lambda x : x[1] is None, players))
+            num_unrated_players = len([x for x in players if x[1] is None])
             num_players_given_auto_rating = 0
 
             if max_rating != min_rating and num_unrated_players > max_rating - min_rating:
@@ -1206,7 +1206,7 @@ class Tourney(object):
         return self.get_players(exclude_withdrawn=True)
     
     def get_withdrawn_players(self):
-        return filter(lambda x : x.withdrawn, self.get_players())
+        return [x for x in self.get_players() if x.withdrawn]
     
     def get_players(self, exclude_withdrawn=False):
         cur = self.db.cursor();
@@ -1236,7 +1236,7 @@ class Tourney(object):
         except ValueError:
             raise InvalidRatingException("Cannot set %s's rating - invalid rating." % name);
         cur = self.db.cursor();
-        cur.execute("update player set rating = ? where lower(name) = ?", (rating, name.lower()));
+        cur.execute("update player set rating = ? where (lower(name) = ? or name = ?)", (rating, name.lower(), name));
         if cur.rowcount < 1:
             self.db.rollback();
             raise PlayerDoesNotExistException("Cannot change the rating of player \"" + name + "\" because no player by that name exists.");
@@ -1253,7 +1253,7 @@ class Tourney(object):
             if p.name == newname:
                 raise PlayerExistsException("Cannot rename player \"%s\" to \"%s\" because there's already another player called %s." % (oldname, newname, newname));
         cur = self.db.cursor();
-        cur.execute("update player set name = ? where lower(name) = ?", (newname, oldname.lower()));
+        cur.execute("update player set name = ? where (lower(name) = ? or name = ?)", (newname, oldname.lower(), oldname));
         if cur.rowcount < 1:
             self.db.rollback();
             raise PlayerDoesNotExistException("Cannot rename player \"" + oldname + "\" because no player by that name exists.");
@@ -1265,14 +1265,14 @@ class Tourney(object):
         players = self.get_players()
         for p in players:
             short_name = get_short_name(p.get_name(), players)
-            cur.execute("update player set short_name = ? where lower(name) = ?", (short_name, p.get_name().lower()))
+            cur.execute("update player set short_name = ? where (lower(name) = ? or name = ?)", (short_name, p.get_name().lower(), p.get_name()))
 
         cur.close()
         self.db.commit();
 
     def set_player_division(self, player_name, new_division):
         cur = self.db.cursor()
-        cur.execute("update player set division = ? where lower(name) = ?", (new_division, player_name.lower()))
+        cur.execute("update player set division = ? where (lower(name) = ? or name = ?)", (new_division, player_name.lower(), player_name))
         cur.close()
         self.db.commit()
 
@@ -1315,12 +1315,12 @@ class Tourney(object):
         # Number of players in the top division is at least
         # num_players / num_divisions rounded up to the nearest multiple of
         # division_size_multiple.
-        players_in_div = len(players) / num_divisions
+        players_in_div = len(players) // num_divisions
         if players_in_div % division_size_multiple > 0:
             players_in_div += division_size_multiple - (players_in_div % division_size_multiple)
 
-        max_tables_in_div = (len(players) / division_size_multiple) / num_divisions
-        if (len(players) / division_size_multiple) % num_divisions > 0:
+        max_tables_in_div = (len(players) // division_size_multiple) // num_divisions
+        if (len(players) // division_size_multiple) % num_divisions > 0:
             max_tables_in_div += 1
 
         while len(div_players[0]) < players_in_div:
@@ -1340,7 +1340,7 @@ class Tourney(object):
             raise IllegalDivisionException()
 
         # Number of tables in total
-        num_tables = len(players) / division_size_multiple
+        num_tables = len(players) // division_size_multiple
 
         # If we need an unequal number of players in each division, make
         # sure the top divisions get more players
@@ -1357,13 +1357,13 @@ class Tourney(object):
                 raise ImpossibleDivisionException()
 
             # Number of tables in the divisions after division 1
-            num_tables = len(remaining_players) / division_size_multiple
+            num_tables = len(remaining_players) // division_size_multiple
 
             # Distribute players amongst divisions, and if we have to have some
             # divisions larger than others, make it the higher divisions.
             for division in range(1, num_divisions):
-                div_players[division] += remaining_players[0:((num_tables / (num_divisions - 1)) * division_size_multiple)]
-                remaining_players = remaining_players[((num_tables / (num_divisions - 1)) * division_size_multiple):]
+                div_players[division] += remaining_players[0:((num_tables // (num_divisions - 1)) * division_size_multiple)]
+                remaining_players = remaining_players[((num_tables // (num_divisions - 1)) * division_size_multiple):]
                 if num_tables % (num_divisions - 1) >= division:
                     # This division needs an extra tablesworth
                     div_players[division] += remaining_players[0:division_size_multiple]
@@ -1379,7 +1379,7 @@ class Tourney(object):
                      max(player_ranks[x.get_name()] for x in div_players[div_index])
             ))
 
-        withdrawn_players = filter(lambda x : x.is_withdrawn(), self.get_players(exclude_withdrawn=False))
+        withdrawn_players = [x for x in self.get_players(exclude_withdrawn=False) if x.is_withdrawn()]
         for p in withdrawn_players:
             for div in range(num_divisions):
                 if div == num_divisions - 1 or player_ranks[p.get_name()] <= div_rank_ranges[div][1]:
@@ -1390,11 +1390,11 @@ class Tourney(object):
         division = 0
         for l in div_players:
             for p in l:
-                sql_params.append((division, int(p.get_name() in automatic_top_div_players), p.get_name().lower()))
+                sql_params.append((division, int(p.get_name() in automatic_top_div_players), p.get_name().lower(), p.get_name()))
             division += 1
 
         cur = self.db.cursor()
-        cur.executemany("update player set division = ?, division_fixed = ? where lower(name) = ?", sql_params)
+        cur.executemany("update player set division = ?, division_fixed = ? where (lower(name) = ? or name = ?)", sql_params)
         cur.close()
         self.db.commit()
 
@@ -1429,7 +1429,7 @@ class Tourney(object):
 
     def get_player_tournament_rating(self, name):
         cur = self.db.cursor()
-        cur.execute("select tournament_rating from tournament_rating where lower(name) = ?", (name.lower(),))
+        cur.execute("select tournament_rating from tournament_rating where (lower(name) = ? or name = ?)", (name.lower(), name))
         row = cur.fetchone()
         if row is None:
             raise PlayerDoesNotExistException()
@@ -1475,16 +1475,16 @@ class Tourney(object):
     # (round_no, seq, table_no, game_type, name1, score1, name2, score2, tiebreak)
     def merge_games(self, games):
         try:
-            known_games = filter(lambda x : x.are_players_known(), games);
-            pending_games = filter(lambda x : not x.are_players_known(), games);
+            known_games = [x for x in games if x.are_players_known()];
+            pending_games = [x for x in games if not x.are_players_known()];
 
             # Records to insert into game_staging, where we use NULL if the
             # player isn't known yet
-            game_records = map(lambda x : (x.round_no, x.seq, x.table_no,
+            game_records = [(x.round_no, x.seq, x.table_no,
                 x.division, x.game_type,
                 x.p1.name if x.p1.is_player_known() else None, x.s1,
                 x.p2.name if x.p2.is_player_known() else None, x.s2,
-                x.tb), games);
+                x.tb) for x in games];
 
             cur = self.db.cursor();
 
@@ -1663,12 +1663,12 @@ class Tourney(object):
         # alterations is (round_no, seq, p1, p2, game_type)
         # but we want (p1name, p2name, game_type, round_no, seq) for feeding
         # into the executemany() call.
-        alterations_reordered = map(lambda x : (x[2].get_name().lower(), x[3].get_name().lower(), x[4], x[0], x[1]), alterations);
+        alterations_reordered = [(x[2].get_name().lower(), x[2].get_name(), x[3].get_name().lower(), x[3].get_name(), x[4], x[0], x[1]) for x in alterations];
         cur = self.db.cursor();
         cur.executemany("""
 update game
-set p1 = (select id from player where lower(name) = ?),
-p2 = (select id from player where lower(name) = ?),
+set p1 = (select id from player where (lower(name) = ? or name = ?)),
+p2 = (select id from player where (lower(name) = ? or name = ?)),
 game_type = ?
 where round_no = ? and seq = ?""", alterations_reordered);
         rows_updated = cur.rowcount;
@@ -1677,9 +1677,9 @@ where round_no = ? and seq = ?""", alterations_reordered);
         return rows_updated;
     
     def get_player_from_name(self, name):
-        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s from player p left outer join team t on p.team_id = t.id where lower(p.name) = ?" % ("0" if self.db_version < (0, 7, 7) else "p.avoid_prune");
+        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s from player p left outer join team t on p.team_id = t.id where (lower(p.name) = ? or p.name = ?)" % ("0" if self.db_version < (0, 7, 7) else "p.avoid_prune");
         cur = self.db.cursor();
-        cur.execute(sql, (name.lower(),));
+        cur.execute(sql, (name.lower(), name));
         row = cur.fetchone();
         cur.close();
         if row is None:
@@ -1822,11 +1822,15 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             conditions.append("g.round_no = ?")
             params.append(round_no)
 
-        conditions.append("((lower(p1.name) = ? and lower(p2.name) = ?) or (lower(p2.name) = ? and lower(p1.name) = ?))")
+        conditions.append("(((lower(p1.name) = ? or p1.name = ?) and (lower(p2.name) = ? or p2.name = ?)) or ((lower(p2.name) = ? or p2.name = ?) and (lower(p1.name) = ? or p1.name = ?)))")
         params.append(player_name_1.lower())
+        params.append(player_name_1)
         params.append(player_name_2.lower())
+        params.append(player_name_2)
         params.append(player_name_1.lower())
+        params.append(player_name_1)
         params.append(player_name_2.lower())
+        params.append(player_name_2)
 
         conditions.append("(g.p1 is not null and g.p2 is not null)")
 
@@ -2460,7 +2464,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         sql = "update player set team_id = ? where name = ?"
         params = []
         for pt in player_teams:
-            params.append((None if pt[1] < 0 else pt[1], pt[0]))
+            params.append((None if pt[1] is None or pt[1] < 0 else pt[1], pt[0]))
         self.db.executemany(sql, params)
         self.db.commit()
 
@@ -2593,7 +2597,7 @@ and g.game_type = 'P'
                 # anticlockwise from the host,
                 # for X in 1 .. (len(group) - 1) / 2.
                 for host in range(len(group)):
-                    for x in range(1, (len(group) - 1) / 2 + 1):
+                    for x in range(1, (len(group) - 1) // 2 + 1):
                         left = (host + len(group) + x) % len(group)
                         right = (host + len(group) - x) % len(group)
                         p1 = group[left]

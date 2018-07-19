@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import cgi
 import cgitb
@@ -6,7 +6,7 @@ import cgicommon
 import sys
 import csv
 import os
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 cgitb.enable()
 
@@ -21,8 +21,8 @@ def int_or_none(s):
     except ValueError:
         return None;
 
-print "Content-Type: text/html; charset=utf-8"
-print ""
+print("Content-Type: text/html; charset=utf-8")
+print("")
 
 baseurl = "/cgi-bin/divsetup.py"
 form = cgi.FieldStorage()
@@ -45,7 +45,7 @@ request_method = os.environ.get("REQUEST_METHOD", "");
 
 cgicommon.print_html_head("Division Setup: " + str(tourneyname));
 
-print """
+print("""
 <script type="text/javascript">
 function show_div_rename(div) {
     buttondiv = document.getElementById("divrenamebutton" + div.toString());
@@ -80,9 +80,9 @@ function hide_div_renames() {
     }
 }
 </script>
-"""
+""")
 
-print "<body onload=\"hide_div_renames();\">";
+print("<body onload=\"hide_div_renames();\">");
 
 cgicommon.assert_client_from_localhost()
 
@@ -94,14 +94,14 @@ if tourneyname is not None:
 
 cgicommon.show_sidebar(tourney)
 
-print "<div class=\"mainpane\">";
-print "<h1>Division Setup</h1>";
+print("<div class=\"mainpane\">");
+print("<h1>Division Setup</h1>");
 
 if tourneyname is None:
-    print "<h1>Sloblock</h1>";
-    print "<p>No tourney name specified. <a href=\"/cgi-bin/home.py\">Home</a></p>";
+    print("<h1>Sloblock</h1>");
+    print("<p>No tourney name specified. <a href=\"/cgi-bin/home.py\">Home</a></p>");
 elif not tourney:
-    print "<p>No valid tourney name specified</p>";
+    print("<p>No valid tourney name specified</p>");
 else:
     #print '<p><a href="%s?tourney=%s">%s</a></p>' % (baseurl, urllib.quote_plus(tourneyname), cgi.escape(tourneyname));
     name_to_position = dict()
@@ -112,9 +112,9 @@ else:
     if request_method == "POST":
         if form.getfirst("setdivs"):
             if num_divisions_required is None or num_divisions_required < 1:
-                print "<p>Number of divisions must be a positive integer.</p>"
+                print("<p>Number of divisions must be a positive integer.</p>")
             elif division_size_multiple is None or division_size_multiple < 1:
-                print "<p>Division size multiple must be a positive integer.</p>"
+                print("<p>Division size multiple must be a positive integer.</p>")
             else:
                 # Find which players' names have had the "put in top division"
                 # box ticked
@@ -144,12 +144,12 @@ else:
         num_divisions = tourney.get_num_divisions()
         num_games = tourney.get_num_games()
         if len(players) == 0:
-            print "<p>"
-            print "The tourney doesn't have any players yet, so you can't set up divisions."
+            print("<p>")
+            print("The tourney doesn't have any players yet, so you can't set up divisions.")
             if num_games == 0:
-                print "You can define the list of players on the <a href=\"tourneysetup.py?tourney=%s\">Tourney Setup</a> page." % (urllib.quote_plus(tourney.get_name()))
+                print("You can define the list of players on the <a href=\"tourneysetup.py?tourney=%s\">Tourney Setup</a> page." % (urllib.parse.quote_plus(tourney.get_name())))
 
-            print "</p>"
+            print("</p>")
         else:
             for div_index in range(num_divisions):
                 for s in tourney.get_standings(div_index):
@@ -165,101 +165,101 @@ else:
                 for div_index in range(0, num_divisions):
                     div_players[div_index] = sorted(div_players[div_index], key=lambda x : (x.get_rating()), reverse=True)
             
-            print "<h2>Summary</h2>"
-            print "<table class=\"divsummarytable\">"
-            print "<tr><th></th><th colspan=\"2\">Players</th><th></th></tr>"
-            print "<tr><th>Division</th><th>Active</th><th>Withdrawn</th><th></th></tr>"
+            print("<h2>Summary</h2>")
+            print("<table class=\"divsummarytable\">")
+            print("<tr><th></th><th colspan=\"2\">Players</th><th></th></tr>")
+            print("<tr><th>Division</th><th>Active</th><th>Withdrawn</th><th></th></tr>")
 
             div_active_player_count = [ len([p for p in div_players[div_index] if not p.is_withdrawn()]) for div_index in range(num_divisions) ]
             div_withdrawn_player_count = [ len([p for p in div_players[div_index] if p.is_withdrawn()]) for div_index in range(num_divisions) ]
 
             for div_index in range(num_divisions):
                 div_name = tourney.get_division_name(div_index)
-                print "<tr>"
-                print "<td class=\"divsummaryname\">%s</td>" % (cgi.escape(div_name))
-                print "<td class=\"divsummaryactiveplayers\">%d</td>" % (div_active_player_count[div_index])
-                print "<td class=\"divsummarywithdrawnplayers\">%d</td>" % (div_withdrawn_player_count[div_index])
-                print "<td class=\"divsummaryrename\">"
-                print "<div class=\"divrenamecontrols\" id=\"divrenamecontrols%d\">" % (div_index)
-                print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
-                print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourneyname, True))
-                print "<input type=\"text\" id=\"newdivnameinput%d\" name=\"newdivname%d\" value=\"%s\" />" % (div_index, div_index, cgi.escape(div_name, True))
-                print "<input type=\"submit\" name=\"setdivname%d\" value=\"Save\" />" % (div_index)
-                print "<input type=\"button\" name=\"canceldivrename%d\" value=\"Cancel\" onclick=\"hide_div_rename(%d);\" />" % (div_index, div_index)
-                print "</form>"
-                print "</div>"
-                print "<div class=\"divrenamebutton\" id=\"divrenamebutton%d\">" % (div_index)
-                print "<input type=\"button\" name=\"showdivrename%d\" value=\"Rename\" onclick=\"show_div_rename(%d);\" />" % (div_index, div_index)
-                print "</div>"
-                print "</td></tr>"
-            print "</table>"
+                print("<tr>")
+                print("<td class=\"divsummaryname\">%s</td>" % (cgi.escape(div_name)))
+                print("<td class=\"divsummaryactiveplayers\">%d</td>" % (div_active_player_count[div_index]))
+                print("<td class=\"divsummarywithdrawnplayers\">%d</td>" % (div_withdrawn_player_count[div_index]))
+                print("<td class=\"divsummaryrename\">")
+                print("<div class=\"divrenamecontrols\" id=\"divrenamecontrols%d\">" % (div_index))
+                print("<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourneyname)))
+                print("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourneyname, True)))
+                print("<input type=\"text\" id=\"newdivnameinput%d\" name=\"newdivname%d\" value=\"%s\" />" % (div_index, div_index, cgi.escape(div_name, True)))
+                print("<input type=\"submit\" name=\"setdivname%d\" value=\"Save\" />" % (div_index))
+                print("<input type=\"button\" name=\"canceldivrename%d\" value=\"Cancel\" onclick=\"hide_div_rename(%d);\" />" % (div_index, div_index))
+                print("</form>")
+                print("</div>")
+                print("<div class=\"divrenamebutton\" id=\"divrenamebutton%d\">" % (div_index))
+                print("<input type=\"button\" name=\"showdivrename%d\" value=\"Rename\" onclick=\"show_div_rename(%d);\" />" % (div_index, div_index))
+                print("</div>")
+                print("</td></tr>")
+            print("</table>")
 
-            print "<hr />"
+            print("<hr />")
 
-            print "<p><strong>N.B.</strong> To change the division assignment of an individual player, use the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page. The form below will overwrite, and lose, any previous assignments of players to divisions, whether made from this page or in Player Setup.</p>" % (urllib.quote_plus(tourneyname))
+            print("<p><strong>N.B.</strong> To change the division assignment of an individual player, use the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page. The form below will overwrite, and lose, any previous assignments of players to divisions, whether made from this page or in Player Setup.</p>" % (urllib.parse.quote_plus(tourneyname)))
             if num_games > 0:
                 cgicommon.show_warning_box("The tourney has already started. Reassigning player divisions will only take effect for rounds whose fixtures have yet to be generated. Existing games will not be changed.")
-            print "<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.quote_plus(tourneyname))
-            print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourneyname))
+            print("<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourneyname)))
+            print("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourneyname)))
 
             # Show a table for each division, containing its players
-            print "<p>Players may be manually assigned to the top division by ticking the boxes below before distributing. Any players manually promoted in this way will <em>replace</em> that many non-ticked players in the top division. If you want the top-rated players to remain in the top division along with the manually-promoted players, and have a larger top division, tick the promote box on all the players in the top division before distributing.</p>"
+            print("<p>Players may be manually assigned to the top division by ticking the boxes below before distributing. Any players manually promoted in this way will <em>replace</em> that many non-ticked players in the top division. If you want the top-rated players to remain in the top division along with the manually-promoted players, and have a larger top division, tick the promote box on all the players in the top division before distributing.</p>")
             player_seq = 0
             for div_index in range(0, num_divisions):
                 div_name = tourney.get_division_name(div_index)
-                print "<h2>%s</h2>" % (cgi.escape(div_name))
-                print "<table class=\"divtable\">"
-                print "<tr>"
-                print "<th rowspan=\"2\">Name</th>"
-                print "<th rowspan=\"2\">Rating</th>"
-                print "<th colspan=\"2\">Position</th>"
-                print "<th rowspan=\"2\">Promote to top division</th>"
-                print "</tr>"
-                print "<tr>"
-                print "<th>Division</th><th>Overall</th>"
-                print "</tr>"
+                print("<h2>%s</h2>" % (cgi.escape(div_name)))
+                print("<table class=\"divtable\">")
+                print("<tr>")
+                print("<th rowspan=\"2\">Name</th>")
+                print("<th rowspan=\"2\">Rating</th>")
+                print("<th colspan=\"2\">Position</th>")
+                print("<th rowspan=\"2\">Promote to top division</th>")
+                print("</tr>")
+                print("<tr>")
+                print("<th>Division</th><th>Overall</th>")
+                print("</tr>")
                 for p in div_players[div_index]:
-                    print "<tr>"
-                    print "<td class=\"divtablename divtable\">%s%s</td>" % (cgicommon.player_to_link(p, tourney.get_name()), " (withdrawn)" if p.is_withdrawn() else "")
-                    print "<td class=\"divtablerating divtable\">%g</td>" % (p.get_rating())
-                    print "<td class=\"divtabledivpos divtable\">%d</td>" % (name_to_div_position[p.get_name()])
-                    print "<td class=\"divtablepos divtable\">%d</td>" % (name_to_position[p.get_name()])
-                    print "<td class=\"divtablepromote divtable\"><input type=\"checkbox\" name=\"promote%d\" value=\"1\" %s />" % (
-                            player_seq, "checked" if p.is_division_fixed() else "")
-                    print "<input type=\"hidden\" name=\"promotename%d\" value=\"%s\" />" % (player_seq, cgi.escape(p.get_name(), True))
-                    print "</tr>"
+                    print("<tr>")
+                    print("<td class=\"divtablename divtable\">%s%s</td>" % (cgicommon.player_to_link(p, tourney.get_name()), " (withdrawn)" if p.is_withdrawn() else ""))
+                    print("<td class=\"divtablerating divtable\">%g</td>" % (p.get_rating()))
+                    print("<td class=\"divtabledivpos divtable\">%d</td>" % (name_to_div_position[p.get_name()]))
+                    print("<td class=\"divtablepos divtable\">%d</td>" % (name_to_position[p.get_name()]))
+                    print("<td class=\"divtablepromote divtable\"><input type=\"checkbox\" name=\"promote%d\" value=\"1\" %s />" % (
+                            player_seq, "checked" if p.is_division_fixed() else ""))
+                    print("<input type=\"hidden\" name=\"promotename%d\" value=\"%s\" />" % (player_seq, cgi.escape(p.get_name(), True)))
+                    print("</tr>")
                     player_seq += 1
-                print "</table>"
+                print("</table>")
 
-            print "<hr />"
+            print("<hr />")
 
-            print "<h2>Divide players into divisions</h2>"
-            print "<p>"
-            print "Number of divisions: <input type=\"number\" min=\"1\" size=\"4\" maxlength=\"4\" name=\"numdivisions\" value=\"%d\" />" % (num_divisions)
-            print "</p><p>"
-            print "When assigning divisions, ensure the number of active players in a division is a multiple of "
-            print "<input type=\"number\" name=\"divsizemultiple\" min=\"1\" size=\"4\" maxlength=\"4\" value=\"%d\" />" % (division_size_multiple)
-            print "</p>"
+            print("<h2>Divide players into divisions</h2>")
+            print("<p>")
+            print("Number of divisions: <input type=\"number\" min=\"1\" size=\"4\" maxlength=\"4\" name=\"numdivisions\" value=\"%d\" />" % (num_divisions))
+            print("</p><p>")
+            print("When assigning divisions, ensure the number of active players in a division is a multiple of ")
+            print("<input type=\"number\" name=\"divsizemultiple\" min=\"1\" size=\"4\" maxlength=\"4\" value=\"%d\" />" % (division_size_multiple))
+            print("</p>")
 
-            print "<p>"
-            print "<input type=\"radio\" name=\"divsort\" value=\"ratings\" %s /> Assign divisions by rating" % ("checked" if div_sort == "ratings" else "")
-            print "<br />"
-            print "<input type=\"radio\" name=\"divsort\" value=\"standings\" %s /> Assign divisions by standings position" % ("checked" if div_sort == "standings" else "")
-            print "</p>"
+            print("<p>")
+            print("<input type=\"radio\" name=\"divsort\" value=\"ratings\" %s /> Assign divisions by rating" % ("checked" if div_sort == "ratings" else ""))
+            print("<br />")
+            print("<input type=\"radio\" name=\"divsort\" value=\"standings\" %s /> Assign divisions by standings position" % ("checked" if div_sort == "standings" else ""))
+            print("</p>")
 
-            print "<p>Players will be distributed into divisions. The divisions will be sized as equally as possible subject to the constraints above. If the divisions cannot be equally-sized, higher divisions will be given more players.</p>"
-            print "<p>"
-            print "<input type=\"submit\" name=\"setdivs\" value=\"Distribute players into divisions\" />"
-            print "</p>"
+            print("<p>Players will be distributed into divisions. The divisions will be sized as equally as possible subject to the constraints above. If the divisions cannot be equally-sized, higher divisions will be given more players.</p>")
+            print("<p>")
+            print("<input type=\"submit\" name=\"setdivs\" value=\"Distribute players into divisions\" />")
+            print("</p>")
 
             #print "<p>"
             #print "<input type=\"submit\" name=\"setdivs\" value=\"Distribute players into divisions\" />"
             #print "</p>"
-            print "</form>"
+            print("</form>")
 
-print "</div>"
-print "</body>"
+print("</div>")
+print("</body>")
 
-print "</html>"
+print("</html>")
 
 sys.exit(0)

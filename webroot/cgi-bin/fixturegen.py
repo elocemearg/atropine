@@ -1,18 +1,18 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys;
 import cgi;
 import cgitb;
 import os;
 import cgicommon;
-import urllib;
+import urllib.request, urllib.parse, urllib.error;
 import importlib;
 import json;
 
 cgitb.enable();
 
-print "Content-Type: text/html; charset=utf-8";
-print "";
+print("Content-Type: text/html; charset=utf-8");
+print("");
 
 baseurl = "/cgi-bin/fixturegen.py";
 form = cgi.FieldStorage();
@@ -81,50 +81,50 @@ class FixtureGeneratorSettings(object):
 
 cgicommon.print_html_head("Fixture Generator: " + str(tourney_name));
 
-print "<body>";
+print("<body>");
 
 cgicommon.assert_client_from_localhost()
 
 if tourney_name is None:
-    print "<h1>No tourney specified</h1>";
-    print "<p><a href=\"/cgi-bin/home.py\">Home</a></p>";
-    print "</body>";
-    print "</html>";
+    print("<h1>No tourney specified</h1>");
+    print("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
+    print("</body>");
+    print("</html>");
     sys.exit(0);
 
 try:
     tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
     cgicommon.show_sidebar(tourney);
 
-    print "<div class=\"mainpane\">";
+    print("<div class=\"mainpane\">");
     generator_name = form.getfirst("generator");
     module_list = generators.get_fixture_generator_list();
     num_divisions = tourney.get_num_divisions()
     if len(tourney.get_active_players()) == 0:
-        print "<h1>Fixture Generator</h1>";
-        print "<p>You can't generate fixtures because the tournament doesn't have any active players.</p>"
+        print("<h1>Fixture Generator</h1>");
+        print("<p>You can't generate fixtures because the tournament doesn't have any active players.</p>")
     elif generator_name is None:
-        print "<h1>Fixture Generator</h1>";
-        print "<p>The following fixture generators are available.</p>";
+        print("<h1>Fixture Generator</h1>");
+        print("<p>The following fixture generators are available.</p>");
 
-        print "<table class=\"fixgentable\">";
-        print "<tr><th class=\"fixgentable fixgenth\">Fixture Generator</th><th class=\"fixgentable fixgenth\">Module Name</th><th class=\"fixgentable fixgenth\">Description</th></tr>";
+        print("<table class=\"fixgentable\">");
+        print("<tr><th class=\"fixgentable fixgenth\">Fixture Generator</th><th class=\"fixgentable fixgenth\">Module Name</th><th class=\"fixgentable fixgenth\">Description</th></tr>");
         for module_name in module_list:
             fixgen_module = importlib.import_module(module_name);
-            print "<tr>";
-            print "<td class=\"fixgentable fixgen\">";
-            print "<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">%s</a>" % (urllib.quote_plus(module_name), urllib.quote_plus(tourney_name), cgi.escape(fixgen_module.name));
-            print "</td>";
-            print "<td class=\"fixgentable fixgenmodule\">%s</td>" % (cgi.escape(module_name));
-            print "<td class=\"fixgentable fixgendescription\">%s</td>" % (cgi.escape(fixgen_module.description));
-            print "</tr>";
-        print "</table>";
+            print("<tr>");
+            print("<td class=\"fixgentable fixgen\">");
+            print("<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">%s</a>" % (urllib.parse.quote_plus(module_name), urllib.parse.quote_plus(tourney_name), cgi.escape(fixgen_module.name)));
+            print("</td>");
+            print("<td class=\"fixgentable fixgenmodule\">%s</td>" % (cgi.escape(module_name)));
+            print("<td class=\"fixgentable fixgendescription\">%s</td>" % (cgi.escape(fixgen_module.description)));
+            print("</tr>");
+        print("</table>");
     elif generator_name not in module_list:
-        print "<h1>Fixture Generator</h1>";
-        print "<p>No such generator %s.</p>" % cgi.escape(generator_name);
+        print("<h1>Fixture Generator</h1>");
+        print("<p>No such generator %s.</p>" % cgi.escape(generator_name));
     elif num_divisions > 1 and not form.getfirst("_divsubmit") and "accept" not in form:
         fixturegen = importlib.import_module(generator_name);
-        print "<h1>%s</h1>" % (cgi.escape(fixturegen.name));
+        print("<h1>%s</h1>" % (cgi.escape(fixturegen.name)));
         fixgen_settings = FixtureGeneratorSettings(tourney.get_fixgen_settings(generator_name));
         elements = []
         elements.append(htmlform.HTMLFragment("<p>Which divisions do you want to generate fixtures for, starting from which rounds? By default, a division's fixtures will go in the round after the latest round which has games for that division.</p>"))
@@ -135,11 +135,11 @@ try:
             elements.append(htmlform.HTMLFormTextInput(" round ", "_div%dround" % (div), str(next_free_round_number)))
             elements.append(htmlform.HTMLFragment("</p>"))
         elements.append(htmlform.HTMLFormSubmitButton("_divsubmit", "Next"))
-        settings_form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s&generator=%s" % (urllib.quote_plus(tourney.get_name()), urllib.quote_plus(generator_name)), elements)
-        print settings_form.html();
+        settings_form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s&generator=%s" % (urllib.parse.quote_plus(tourney.get_name()), urllib.parse.quote_plus(generator_name)), elements)
+        print(settings_form.html());
     else:
         fixturegen = importlib.import_module(generator_name);
-        print "<h1>%s</h1>" % (cgi.escape(fixturegen.name));
+        print("<h1>%s</h1>" % (cgi.escape(fixturegen.name)));
         if "submit" not in form:
             fixgen_settings = FixtureGeneratorSettings(tourney.get_fixgen_settings(generator_name));
         else:
@@ -181,14 +181,14 @@ try:
                 # when we call it later on
                 tourney.store_fixgen_settings(generator_name, fixgen_settings)
 
-                print "<p>I've generated the following fixtures. Click <em>Accept Fixtures</em> below to commit them to the database. The fixtures won't be saved until you do.</p>";
+                print("<p>I've generated the following fixtures. Click <em>Accept Fixtures</em> below to commit them to the database. The fixtures won't be saved until you do.</p>");
                 num_divisions = tourney.get_num_divisions()
                 for r in rounds:
                     round_no = int(r["round"]);
-                    print "<h2>%s</h2>" % r.get("name", "Round %d" % round_no);
+                    print("<h2>%s</h2>" % r.get("name", "Round %d" % round_no));
 
                     for div_index in range(num_divisions):
-                        round_fixtures = filter(lambda x : x.round_no == round_no and x.division == div_index, fixtures);
+                        round_fixtures = [x for x in fixtures if x.round_no == round_no and x.division == div_index];
                         if len(round_fixtures) == 0:
                             continue
 
@@ -197,25 +197,25 @@ try:
                         for s in standings:
                             standings_dict[s.name] = s
                         if num_divisions > 1:
-                            print "<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))
-                        print "<table class=\"fixturetable\">";
-                        print "<tr><th>Table</th><th>Type</th><th></th><th></th><th></th><th></th></tr>";
+                            print("<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index))))
+                        print("<table class=\"fixturetable\">");
+                        print("<tr><th>Table</th><th>Type</th><th></th><th></th><th></th><th></th></tr>");
 
                         fixnum = 0;
                         last_table_no = None;
                         for f in round_fixtures:
                             if last_table_no is None or last_table_no != f.table_no:
-                                num_games_on_table = len(filter(lambda x : x.table_no == f.table_no, round_fixtures));
+                                num_games_on_table = len([x for x in round_fixtures if x.table_no == f.table_no]);
                                 first_game_on_table = True;
-                                print "<tr class=\"firstgameintable\">";
+                                print("<tr class=\"firstgameintable\">");
                             else:
                                 first_game_on_table = False;
-                                print "<tr>";
+                                print("<tr>");
 
                             if first_game_on_table:
-                                print "<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, f.table_no);
+                                print("<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, f.table_no));
 
-                            print "<td class=\"gametype\">%s</td>" % cgi.escape(f.game_type);
+                            print("<td class=\"gametype\">%s</td>" % cgi.escape(f.game_type));
                             player_td_html = []
                             for player in [f.p1, f.p2]:
                                 name = player.name
@@ -230,26 +230,26 @@ try:
                                                 "" if standings_row.wins == 1 else "s",
                                                 "" if standings_row.draws == 0 else ", %d draw%s" % (standings_row.draws, "" if standings_row.draws == 1 else "s")))
 
-                            print "<td class=\"gameplayer1\">%s</td><td class=\"gamescore\">v</td><td class=\"gameplayer2\">%s</td>" % tuple(player_td_html);
+                            print("<td class=\"gameplayer1\">%s</td><td class=\"gamescore\">v</td><td class=\"gameplayer2\">%s</td>" % tuple(player_td_html));
                             num_repeats = tourney.count_games_between(f.p1, f.p2)
                             if num_repeats:
-                                print "<td class=\"gamerepeats\">%s repeat</td>" % (cgicommon.ordinal_number(num_repeats))
+                                print("<td class=\"gamerepeats\">%s repeat</td>" % (cgicommon.ordinal_number(num_repeats)))
                             else:
-                                print "<td class=\"gameremarks\"></td>"
-                            print "</tr>";
+                                print("<td class=\"gameremarks\"></td>")
+                            print("</tr>");
                             fixnum += 1;
                             last_table_no = f.table_no;
 
-                        print "</table>";
-                print "<form method=\"POST\" action=\"/cgi-bin/fixturegen.py\">";
-                print "<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourney_name, True);
-                print "<input type=\"hidden\" name=\"generator\" value=\"%s\" />" % cgi.escape(generator_name, True);
+                        print("</table>");
+                print("<form method=\"POST\" action=\"/cgi-bin/fixturegen.py\">");
+                print("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourney_name, True));
+                print("<input type=\"hidden\" name=\"generator\" value=\"%s\" />" % cgi.escape(generator_name, True));
 
                 # Remember all the _div* settings, or check_ready might
                 # object when we do try to submit the fixtures
                 for name in fixgen_settings:
                     if name[0:4] == "_div":
-                        print "<input type=\"hidden\" name=\"%s\" value=\"%s\" />" % (cgi.escape(name, True), cgi.escape(fixgen_settings[name], True))
+                        print("<input type=\"hidden\" name=\"%s\" value=\"%s\" />" % (cgi.escape(name, True), cgi.escape(fixgen_settings[name], True)))
 
                 dict_fixtures = [];
                 for f in fixtures:
@@ -260,11 +260,11 @@ try:
                         "rounds" : rounds
                 };
                 json_fixture_plan = json.dumps(fixture_plan);
-                print "<input type=\"hidden\" name=\"jsonfixtureplan\" value=\"%s\" />" % cgi.escape(json_fixture_plan, True);
-                print "<p>"
-                print "<input type=\"submit\" name=\"accept\" value=\"Accept Fixtures\" />";
-                print "</p>"
-                print "</form>";
+                print("<input type=\"hidden\" name=\"jsonfixtureplan\" value=\"%s\" />" % cgi.escape(json_fixture_plan, True));
+                print("<p>")
+                print("<input type=\"submit\" name=\"accept\" value=\"Accept Fixtures\" />");
+                print("</p>")
+                print("</form>");
             elif "accept" in form:
                 json_fixture_plan = form.getfirst("jsonfixtureplan");
                 if not json_fixture_plan:
@@ -304,16 +304,16 @@ try:
                     cgicommon.show_tourney_exception(e);
                     fixtures = None;
                 except ValueError:
-                    print "<p>Fixtures contained garbage. Not much else I can do now other than sit down and refuse to work.</p>";
+                    print("<p>Fixtures contained garbage. Not much else I can do now other than sit down and refuse to work.</p>");
                     fixtures = None;
 
                 if fixtures:
                     try:
                         tourney.merge_games(fixtures);
-                        print "<h2>%d fixtures added successfully</h2>" % (len(fixtures));
-                        print "<p><a href=\"/cgi-bin/games.py?tourney=%s&round=%d\">Go to result entry page</a></p>" % (urllib.quote_plus(tourney_name), earliest_round_no);
+                        print("<h2>%d fixtures added successfully</h2>" % (len(fixtures)));
+                        print("<p><a href=\"/cgi-bin/games.py?tourney=%s&round=%d\">Go to result entry page</a></p>" % (urllib.parse.quote_plus(tourney_name), earliest_round_no));
                     except countdowntourney.TourneyException as e:
-                        print "<p>Failed to add new fixtures to database!</p>";
+                        print("<p>Failed to add new fixtures to database!</p>");
                         cgicommon.show_tourney_exception(e);
 
                     if dict_rounds:
@@ -323,11 +323,11 @@ try:
                                 round_name = r.get("name", "");
                                 tourney.name_round(round_no, round_name);
                             except countdowntourney.TourneyException as e:
-                                print "<p>Failed to name a round</p>";
+                                print("<p>Failed to name a round</p>");
                                 cgicommon.show_tourney_exception(e);
 
             else:
-                print "<h2>Information this fixture generator needs from you...</h2>";
+                print("<h2>Information this fixture generator needs from you...</h2>");
                 settings_form.add_element(htmlform.HTMLFormHiddenInput("tourney", tourney_name));
                 settings_form.add_element(htmlform.HTMLFormHiddenInput("generator", generator_name));
                 for name in fixgen_settings:
@@ -335,25 +335,25 @@ try:
                         settings_form.add_element(htmlform.HTMLFormHiddenInput(name, fixgen_settings.get(name, "")));
                 if fixgen_settings.get("submit", None) and fixturegen.save_form_on_submit():
                     tourney.store_fixgen_settings(generator_name, fixgen_settings)
-                print settings_form.html();
+                print(settings_form.html());
         else:
             # Can't use this fixture generator at the moment, and it's not
             # because the user needs to provide us information - it's
             # that there aren't the right number of players, or the
             # previous round hasn't finished, or something like that.
-            print "<h2>Cannot generate fixtures...</h2>"
-            print "<p>%s</p>" % excuse;
-    print "</div>";
+            print("<h2>Cannot generate fixtures...</h2>")
+            print("<p>%s</p>" % excuse);
+    print("</div>");
 
 except countdowntourney.TourneyException as e:
     cgicommon.show_tourney_exception(e);
     generator_name = form.getfirst("generator");
-    print "<p>"
+    print("<p>")
     if generator_name:
-        print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s&amp;generator=%s\">Sigh...</a>" % (urllib.quote_plus(tourney_name), urllib.quote_plus(generator_name))
+        print("<a href=\"/cgi-bin/fixturegen.py?tourney=%s&amp;generator=%s\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name), urllib.parse.quote_plus(generator_name)))
     else:
-        print "<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Sigh...</a>" % (urllib.quote_plus(tourney_name))
-    print "</p>"
+        print("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name)))
+    print("</p>")
 
-print "</body>";
-print "</html>";
+print("</body>");
+print("</html>");

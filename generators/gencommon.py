@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import countdowntourney
 import htmlform
@@ -8,7 +8,7 @@ def check_ready_existing_games_and_table_size(tourney, div_rounds):
     num_divisions = tourney.get_num_divisions()
     for div_index in div_rounds:
         round_no = div_rounds[div_index]
-        players = filter(lambda x : x.get_division() == div_index, tourney.get_active_players());
+        players = [x for x in tourney.get_active_players() if x.get_division() == div_index];
 
         existing_games = tourney.get_games(round_no=round_no, division=div_index)
         if existing_games:
@@ -32,7 +32,7 @@ def get_user_form_div_table_size(tourney, settings, div_rounds):
     valid_table_sizes_submitted = []
     for div_index in div_rounds:
         valid_table_size_submitted = False
-        players = filter(lambda x : x.get_division() == div_index, tourney.get_active_players());
+        players = [x for x in tourney.get_active_players() if x.get_division() == div_index];
         table_size = None
         if settings.get("d%d_groupsize" % (div_index), None) is not None:
             try:

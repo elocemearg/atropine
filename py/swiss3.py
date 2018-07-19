@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys;
 import time;
@@ -41,14 +41,14 @@ def add_game(games, players, round_no, table_no, name1, score1, score2, name2, t
     p2 = None;
     division = 0
 
-    round_seq = len(filter(lambda x : x.round_no == round_no, games)) + 1;
+    round_seq = len([x for x in games if x.round_no == round_no]) + 1;
 
     for p in players:
         if name1 == p.name:
             p1 = p;
             break;
     else:
-        print "Unknown player %s" % name1;
+        print("Unknown player %s" % name1);
         raise UnknownPlayerException();
 
     for p in players:
@@ -56,7 +56,7 @@ def add_game(games, players, round_no, table_no, name1, score1, score2, name2, t
             p2 = p;
             break;
     else:
-        print "Unknown player %s" % name2;
+        print("Unknown player %s" % name2);
         raise UnknownPlayerException();
     
     g = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', p1, p2, score1, score2, tb);
@@ -137,7 +137,7 @@ def calculate_weight_matrix(games, players, rank_by_wins=True):
     for i in range(matrix_size):
         for j in range(matrix_size):
             if matrix[i][j] != matrix[j][i]:
-                print "i %d, j %d, matrix[i][j] %f, matrix[j][i] %f!" % (i, j, matrix[i][j], matrix[j][i]);
+                print("i %d, j %d, matrix[i][j] %f, matrix[j][i] %f!" % (i, j, matrix[i][j], matrix[j][i]));
     
     return matrix;
 
@@ -267,7 +267,7 @@ def best_grouping(weight_cube, player_indices, limit_ms=None, depth=0, best_tota
                     step_time_limit = 10;
 
         if depth <= max_log_depth:
-            print "[%02d] %sGroup %d of %d, best so far %d, %sms allotted" % (depth, indent, iter_num, len(best_groups), best_total_so_far if best_total_so_far else 0, str(int(step_time_limit) if step_time_limit is not None else "?"));
+            print("[%02d] %sGroup %d of %d, best so far %d, %sms allotted" % (depth, indent, iter_num, len(best_groups), best_total_so_far if best_total_so_far else 0, str(int(step_time_limit) if step_time_limit is not None else "?")));
 
         # The recursive bit.
         (total_weight, grouping) = best_grouping(weight_cube, players_remaining, step_time_limit, depth + 1, best_total_so_far, result_cache);
@@ -300,7 +300,7 @@ def best_grouping(weight_cube, player_indices, limit_ms=None, depth=0, best_tota
         # iteration.
         if size >= 10 and limit_ms is not None and start_time + limit_ms / 1000.0 < time.time():
             if depth <= max_log_depth:
-                print "[%02d] %sout of time!" % (depth, indent);
+                print("[%02d] %sout of time!" % (depth, indent));
             break;
 
     # We're ready to return our result. Put it in the result cache in case
@@ -327,7 +327,7 @@ def swiss3_first_round(cdt_players):
     # Put the players in rating order, largest to smallest
     players = sorted(cdt_players, key=lambda x : x.rating, reverse=True);
 
-    num_groups = len(cdt_players) / 3;
+    num_groups = len(cdt_players) // 3;
     groups = [];
     for i in range(num_groups):
         player_list = [];
@@ -374,11 +374,11 @@ def swiss3(games, cdt_players, rank_by_wins=True, limit_ms=None):
             vj.append(vk);
         weighted_companion_cube.append(vj);
 
-    (weight, groups) = best_grouping(weighted_companion_cube, range(matrix_size), limit_ms=limit_ms);
+    (weight, groups) = best_grouping(weighted_companion_cube, list(range(matrix_size)), limit_ms=limit_ms);
 
     # Sort the groups so the highest-performing players are on low-numbered
     # tables
-    groups = sorted(groups, key=lambda x : sum(map(lambda y : players[y].wins * 10000 + players[y].points, x)), reverse=True);
+    groups = sorted(groups, key=lambda x : sum([players[y].wins * 10000 + players[y].points for y in x]), reverse=True);
 
     player_groups = [];
     for g in groups:
@@ -606,17 +606,17 @@ if __name__ == "__main__":
 
     (weight, player_groups) = swiss3(games, players, rank_by_wins=True, limit_ms=limit_ms);
 
-    print "Weight %d" % weight;
+    print("Weight %d" % weight);
     table_no = 1;
     for group in player_groups:
-        legend = map(lambda x : "%s (%d-%d)" % (x.name, player_wins(games, x), player_points(games, x)), group);
-        print "T%2d (%5d) %s" % (table_no, group.weight, ", ".join(legend));
+        legend = ["%s (%d-%d)" % (x.name, player_wins(games, x), player_points(games, x)) for x in group];
+        print("T%2d (%5d) %s" % (table_no, group.weight, ", ".join(legend)));
 
         # Check there are no rematches
-        names = map(lambda x : x.name, group);
+        names = [x.name for x in group];
         for g in games:
             if g.p1.name in names and g.p2.name in names:
-                print "Rematch on table %d!" % table_no;
+                print("Rematch on table %d!" % table_no);
         table_no += 1;
 
     sys.exit(0);

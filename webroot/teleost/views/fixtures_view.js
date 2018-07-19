@@ -209,7 +209,7 @@ class FixturesView extends PagedTableView {
             }
         }
         else {
-            pages = [];
+            pages = [[]];
             errorString = gameState.description;
         }
 
@@ -217,7 +217,7 @@ class FixturesView extends PagedTableView {
         if (this.currentPageIndex >= pages.length)
             this.currentPageIndex = 0;
         if (this.currentPageIndex >= pages.length)
-            return { "teamScores" : teamScores, "page" : [] };
+            return { "teamScores" : teamScores, "page" : [[]] };
 
         return {
             "teamScores" : teamScores,
@@ -240,6 +240,10 @@ class FixturesView extends PagedTableView {
            return;
 
         var page = fixturesObject.page;
+
+        if (page == null || page.length == 0 || page[0].length == 0) {
+            return;
+        }
 
         var firstGame = page[0][0];
         var headingElement = document.getElementById("fixturesheadingtext");
