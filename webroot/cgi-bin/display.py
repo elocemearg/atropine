@@ -16,10 +16,10 @@ def include_scripts(dir_name, url_path):
             include_scripts(dir_name + "/" + filename, url_path + "/" + filename)
         elif filename[-3:] == ".js":
             base_filename = os.path.basename(filename)
-            print("<script type=\"text/javascript\" src=\"%s/%s\"></script>" % (cgi.escape(url_path, True), cgi.escape(base_filename, True)))
+            cgicommon.writeln("<script type=\"text/javascript\" src=\"%s/%s\"></script>" % (cgicommon.escape(url_path, True), cgicommon.escape(base_filename, True)))
 
-print("Content-Type: text/html; charset=utf-8")
-print("")
+cgicommon.writeln("Content-Type: text/html; charset=utf-8")
+cgicommon.writeln("")
 
 form = cgi.FieldStorage()
 tourney_name = form.getfirst("tourney")
@@ -39,30 +39,30 @@ cgicommon.print_html_head("Display: " + str(tourney_name), cssfile="teleoststyle
 try:
     tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir)
 except countdowntourney.TourneyException as e:
-    print("<body>")
-    print("<p>")
-    print(cgi.escape(e.description))
-    print("</p>")
-    print("</body></html>")
+    cgicommon.writeln("<body>")
+    cgicommon.writeln("<p>")
+    cgicommon.writeln(cgicommon.escape(e.description))
+    cgicommon.writeln("</p>")
+    cgicommon.writeln("</body></html>")
     sys.exit(0)
 
 teleost_modes = tourney.get_teleost_modes()
 
-print("<script type=\"text/javascript\">")
-print("var tourneyName = \"%s\";" % (tourney_name));
+cgicommon.writeln("<script type=\"text/javascript\">")
+cgicommon.writeln("var tourneyName = \"%s\";" % (tourney_name));
 
 if mode is None:
-    print("var displayMode = -1;") # display whatever the db says the current mode is
+    cgicommon.writeln("var displayMode = -1;") # display whatever the db says the current mode is
 else:
-    print("var displayMode = %d;" % (mode))
+    cgicommon.writeln("var displayMode = %d;" % (mode))
 
 for mode in teleost_modes:
-    print("var %s = %d;" % (mode["id"], mode["num"]))
+    cgicommon.writeln("var %s = %d;" % (mode["id"], mode["num"]))
 
-print("</script>")
+cgicommon.writeln("</script>")
 
 # Load main.js first
-print("<script type=\"text/javascript\" src=\"/teleost/main.js\"></script>")
+cgicommon.writeln("<script type=\"text/javascript\" src=\"/teleost/main.js\"></script>")
 
 # Now load everything under teleost/views, loading the files and contents of
 # directories in alphabetical order. The order is important, because some files
@@ -70,21 +70,21 @@ print("<script type=\"text/javascript\" src=\"/teleost/main.js\"></script>")
 include_scripts("./teleost/views", "/teleost/views")
 
 # Finally, load main_post.js
-print("<script type=\"text/javascript\" src=\"/teleost/main_post.js\"></script>")
+cgicommon.writeln("<script type=\"text/javascript\" src=\"/teleost/main_post.js\"></script>")
 
-print("<body class=\"display\" onload=\"displaySetup();\">")
+cgicommon.writeln("<body class=\"display\" onload=\"displaySetup();\">")
 
 if tourney_name is None:
     cgicommon.show_tourney_exception(countdowntourney.TourneyException("No tourney name specified."))
-    print("</body>")
-    print("</html>")
+    cgicommon.writeln("</body>")
+    cgicommon.writeln("</html>")
     sys.exit(0)
 
-print("<div id=\"teleostbanner\">")
-print("</div>")
+cgicommon.writeln("<div id=\"teleostbanner\">")
+cgicommon.writeln("</div>")
 
-print("<div id=\"displaymainpane\">")
-print("</div>")
+cgicommon.writeln("<div id=\"displaymainpane\">")
+cgicommon.writeln("</div>")
 
-print("</body>")
-print("</html>")
+cgicommon.writeln("</body>")
+cgicommon.writeln("</html>")

@@ -2,14 +2,15 @@
 
 import sys;
 import cgi;
+import cgicommon;
 
 form = cgi.FieldStorage();
 
 tourney = form.getfirst("tourney", "NONE");
 
-print("Content-Type: text/plain; charset=utf-8");
-print("");
-print("Hello, world!");
-print("Tourney is %s" % tourney);
+cgicommon.writeln("Content-Type: text/plain; charset=utf-8");
+cgicommon.writeln("");
+cgicommon.writeln("Hello, world!");
+cgicommon.writeln("Tourney is %s" % tourney);
 
 sys.exit(0);

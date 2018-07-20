@@ -8,8 +8,8 @@ import cgitb;
 
 cgitb.enable();
 
-print("Content-Type: text/html; charset=utf-8");
-print("");
+cgicommon.writeln("Content-Type: text/html; charset=utf-8");
+cgicommon.writeln("");
 
 form = cgi.FieldStorage();
 tourney_name = form.getfirst("tourney");
@@ -22,14 +22,14 @@ import countdowntourney;
 
 cgicommon.print_html_head("Standings: " + str(tourney_name));
 
-print("<body>");
+cgicommon.writeln("<body>");
 
 cgicommon.assert_client_from_localhost()
 
 if tourney_name is None:
-    print("<h1>No tourney specified</h1>");
-    print("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
-    print("</body></html>");
+    cgicommon.writeln("<h1>No tourney specified</h1>");
+    cgicommon.writeln("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
+    cgicommon.writeln("</body></html>");
     sys.exit(0);
 
 try:
@@ -37,40 +37,40 @@ try:
 
     cgicommon.show_sidebar(tourney);
 
-    print("<div class=\"mainpane\">");
+    cgicommon.writeln("<div class=\"mainpane\">");
 
-    print("<h1>Standings</h1>");
+    cgicommon.writeln("<h1>Standings</h1>");
 
     #if round_nos:
     #    print "<p>Rounds: %s</p>" % (", ".join(map(str, round_nos)));
     #if round_types:
     #    print "<p>Round types: %s</p>" % (", ".join(round_types));
 
-    print("<p>")
+    cgicommon.writeln("<p>")
     rank_method = tourney.get_rank_method();
     if rank_method == countdowntourney.RANK_WINS_POINTS:
-        print("Players are ranked by wins, then points.");
+        cgicommon.writeln("Players are ranked by wins, then points.");
     elif rank_method == countdowntourney.RANK_WINS_SPREAD:
-        print("Players are ranked by wins, then cumulative winning margin.");
+        cgicommon.writeln("Players are ranked by wins, then cumulative winning margin.");
     elif rank_method == countdowntourney.RANK_POINTS:
-        print("Players are ranked by points.");
+        cgicommon.writeln("Players are ranked by points.");
     else:
-        print("Players are ranked somehow. Your guess is as good as mine.");
-        print("</p>")
+        cgicommon.writeln("Players are ranked somehow. Your guess is as good as mine.");
+        cgicommon.writeln("</p>")
 
     if tourney.are_players_assigned_teams():
         cgicommon.show_team_score_table(tourney.get_team_scores())
-        print('<br />')
+        cgicommon.writeln('<br />')
 
     rank_method = tourney.get_rank_method()
     cgicommon.show_standings_table(tourney, True, True, True, True, True, tourney.get_show_tournament_rating_column(), True)
 
-    print("</div>"); #mainpane
+    cgicommon.writeln("</div>"); #mainpane
 except countdowntourney.TourneyException as e:
     cgicommon.show_tourney_exception(e);
 
-print("</body>")
-print("</html>")
+cgicommon.writeln("</body>")
+cgicommon.writeln("</html>")
 
 sys.exit(0);
 

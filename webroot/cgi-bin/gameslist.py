@@ -113,7 +113,7 @@ def show_conflict_resolution_box(tourney, games, round_no, stored_revision_no, s
     if existing_strategy is None:
         existing_strategy = CONFLICT_STRATEGY_DO_NOT_EMBLANKIFY
 
-    print("""
+    cgicommon.writeln("""
 <script>
 function update_conflict_resolution_example(value) {
     var blank_to_non_blank = document.getElementById("cr_blanktononblank");
@@ -144,11 +144,11 @@ function update_conflict_resolution_example(value) {
 </script>
     """)
 
-    print("<div class=\"conflictresolution\">")
-    print("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no));
-    print("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourney_name, True)));
-    print("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no));
-    print("<input type=\"hidden\" name=\"revision\" value=\"%d\" />" % (stored_revision_no))
+    cgicommon.writeln("<div class=\"conflictresolution\">")
+    cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no));
+    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)));
+    cgicommon.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no));
+    cgicommon.writeln("<input type=\"hidden\" name=\"revision\" value=\"%d\" />" % (stored_revision_no))
 
     # Include the submitted scores in this conflict resolution form, so that
     # when the user presses "Resolve Conflicts" we remember what the original
@@ -157,83 +157,83 @@ function update_conflict_resolution_example(value) {
         input_name = "gamescore_%d_%d" % (g.round_no, g.seq)
         submitted_score = form.getfirst(input_name)
         if submitted_score is not None:
-            print("<input type=\"hidden\" name=\"%s\" value=\"%s\" />" % (cgi.escape(input_name), cgi.escape(submitted_score, True)))
+            cgicommon.writeln("<input type=\"hidden\" name=\"%s\" value=\"%s\" />" % (cgicommon.escape(input_name), cgicommon.escape(submitted_score, True)))
 
     score = form.getfirst("gamescore_%d_%d" % (g.round_no, g.seq));
-    print("<div class=\"conflictresolutiontoprow\">")
-    print("Last conflicting modification occurred at: %s" % (cgi.escape(stored_revision_timestamp)))
-    print("</div>")
+    cgicommon.writeln("<div class=\"conflictresolutiontoprow\">")
+    cgicommon.writeln("Last conflicting modification occurred at: %s" % (cgicommon.escape(stored_revision_timestamp)))
+    cgicommon.writeln("</div>")
 
-    print("<div class=\"conflictresolutionchoicerow\">")
-    print("<div class=\"conflictresolutionradiobutton\">")
-    print("<input type=\"radio\" name=\"conflictstrategy\" id=\"conflictstrategydiscard\" value=\"%d\" onchange=\"update_conflict_resolution_example(this.value)\" %s />" % (CONFLICT_STRATEGY_DISCARD, "checked" if existing_strategy == CONFLICT_STRATEGY_DISCARD else ""))
-    print("</div>")
-    print("<div class=\"conflictresolutionlabel\">")
-    print("<label for=\"conflictstrategydiscard\">Discard my submission - go with what's currently in the database.</label>")
-    print("</div>")
-    print("</div>")
+    cgicommon.writeln("<div class=\"conflictresolutionchoicerow\">")
+    cgicommon.writeln("<div class=\"conflictresolutionradiobutton\">")
+    cgicommon.writeln("<input type=\"radio\" name=\"conflictstrategy\" id=\"conflictstrategydiscard\" value=\"%d\" onchange=\"update_conflict_resolution_example(this.value)\" %s />" % (CONFLICT_STRATEGY_DISCARD, "checked" if existing_strategy == CONFLICT_STRATEGY_DISCARD else ""))
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("<div class=\"conflictresolutionlabel\">")
+    cgicommon.writeln("<label for=\"conflictstrategydiscard\">Discard my submission - go with what's currently in the database.</label>")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>")
 
-    print("<div class=\"conflictresolutionchoicerow\">")
-    print("<div class=\"conflictresolutionradiobutton\">")
-    print("<input type=\"radio\" name=\"conflictstrategy\" id=\"conflictstrategyfillblanks\" value=\"%d\" onchange=\"update_conflict_resolution_example(this.value)\" %s />" % (CONFLICT_STRATEGY_ONLY_FILL_BLANKS, "checked" if existing_strategy == CONFLICT_STRATEGY_ONLY_FILL_BLANKS else ""))
-    print("</div>")
-    print("<div class=\"conflictresolutionlabel\">")
-    print("<label for=\"conflictstrategyfillblanks\">If a game currently has no result but my submission provides one, fill in that game's result with my submission. Discard any other changes.</label>")
-    print("</div>")
-    print("</div>")
+    cgicommon.writeln("<div class=\"conflictresolutionchoicerow\">")
+    cgicommon.writeln("<div class=\"conflictresolutionradiobutton\">")
+    cgicommon.writeln("<input type=\"radio\" name=\"conflictstrategy\" id=\"conflictstrategyfillblanks\" value=\"%d\" onchange=\"update_conflict_resolution_example(this.value)\" %s />" % (CONFLICT_STRATEGY_ONLY_FILL_BLANKS, "checked" if existing_strategy == CONFLICT_STRATEGY_ONLY_FILL_BLANKS else ""))
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("<div class=\"conflictresolutionlabel\">")
+    cgicommon.writeln("<label for=\"conflictstrategyfillblanks\">If a game currently has no result but my submission provides one, fill in that game's result with my submission. Discard any other changes.</label>")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>")
 
-    print("<div class=\"conflictresolutionchoicerow\">")
-    print("<div class=\"conflictresolutionradiobutton\">")
-    print("<input type=\"radio\" name=\"conflictstrategy\" id=\"conflictstrategydonotemblankify\" value=\"%d\" onchange=\"update_conflict_resolution_example(this.value);\" %s />" % (CONFLICT_STRATEGY_DO_NOT_EMBLANKIFY, "checked" if existing_strategy == CONFLICT_STRATEGY_DO_NOT_EMBLANKIFY else ""))
-    print("</div>")
-    print("<div class=\"conflictresolutionlabel\">")
-    print("<label for=\"conflictstrategydonotemblankify\">If my submission has a result for a game, overwrite the existing result with my submission, but do not overwrite an existing result with a blank one.</label>")
-    print("</div>")
-    print("</div>")
+    cgicommon.writeln("<div class=\"conflictresolutionchoicerow\">")
+    cgicommon.writeln("<div class=\"conflictresolutionradiobutton\">")
+    cgicommon.writeln("<input type=\"radio\" name=\"conflictstrategy\" id=\"conflictstrategydonotemblankify\" value=\"%d\" onchange=\"update_conflict_resolution_example(this.value);\" %s />" % (CONFLICT_STRATEGY_DO_NOT_EMBLANKIFY, "checked" if existing_strategy == CONFLICT_STRATEGY_DO_NOT_EMBLANKIFY else ""))
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("<div class=\"conflictresolutionlabel\">")
+    cgicommon.writeln("<label for=\"conflictstrategydonotemblankify\">If my submission has a result for a game, overwrite the existing result with my submission, but do not overwrite an existing result with a blank one.</label>")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>")
 
-    print("<div class=\"conflictresolutionchoicerow\">")
-    print("<div class=\"conflictresolutionradiobutton\">")
-    print("<input type=\"radio\" name=\"conflictstrategy\" id=\"conflictstrategyforce\" value=\"%d\" onchange=\"update_conflict_resolution_example(this.value);\" %s />" % (CONFLICT_STRATEGY_FORCE, "checked" if existing_strategy == CONFLICT_STRATEGY_FORCE else ""))
-    print("</div>")
-    print("<div class=\"conflictresolutionlabel\">")
-    print("<label for=\"conflictstrategyforce\">Overwrite everything with my submission, even if that means overwriting existing results with blank results.</label>")
-    print("</div>")
-    print("</div>")
+    cgicommon.writeln("<div class=\"conflictresolutionchoicerow\">")
+    cgicommon.writeln("<div class=\"conflictresolutionradiobutton\">")
+    cgicommon.writeln("<input type=\"radio\" name=\"conflictstrategy\" id=\"conflictstrategyforce\" value=\"%d\" onchange=\"update_conflict_resolution_example(this.value);\" %s />" % (CONFLICT_STRATEGY_FORCE, "checked" if existing_strategy == CONFLICT_STRATEGY_FORCE else ""))
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("<div class=\"conflictresolutionlabel\">")
+    cgicommon.writeln("<label for=\"conflictstrategyforce\">Overwrite everything with my submission, even if that means overwriting existing results with blank results.</label>")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>")
 
     show_conflict_resolution_example(existing_strategy)
 
-    print("<div class=\"conflictresolutionbottomrow\">")
-    print("<div class=\"conflictresolutionsubmit\">")
-    print("<input type=\"submit\" name=\"save\" value=\"Resolve Conflicts\" />")
-    print("</div>")
-    print("</div>")
+    cgicommon.writeln("<div class=\"conflictresolutionbottomrow\">")
+    cgicommon.writeln("<div class=\"conflictresolutionsubmit\">")
+    cgicommon.writeln("<input type=\"submit\" name=\"save\" value=\"Resolve Conflicts\" />")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>")
 
-    print("</form>")
-    print("</div>")
+    cgicommon.writeln("</form>")
+    cgicommon.writeln("</div>")
 
 def show_conflict_resolution_example(existing_strategy):
-    print("<div class=\"conflictresolutionexample\">")
-    print("<div class=\"conflictresolutionexampletitle\">Example:</div>")
-    print("<table class=\"conflictresolutionexampletable\">")
-    print("<tr>")
-    print("<th>Current result</th><th>Your submission</th><th>New result</th>")
-    print("</tr>")
-    print("<tr>")
-    print("<td>-</td><td>88-88</td><td class=\"cr_newresultcol\" id=\"cr_blanktononblank\">%s</td>" % ("88-88" if existing_strategy != CONFLICT_STRATEGY_DISCARD else "-"))
-    print("</tr>")
-    print("<tr>")
-    print("<td>77-77</td><td>88-88</td><td class=\"cr_newresultcol\" id=\"cr_nonblanktononblank\">%s</td>" % ("88-88" if existing_strategy in (CONFLICT_STRATEGY_FORCE, CONFLICT_STRATEGY_DO_NOT_EMBLANKIFY) else "77-77"))
-    print("</tr>")
-    print("<tr>")
-    print("<td>77-77</td><td>-</td><td class=\"cr_newresultcol\" id=\"cr_nonblanktoblank\">%s</td>" % ("-" if existing_strategy == CONFLICT_STRATEGY_FORCE else "77-77"))
-    print("</tr>")
-    print("</table>")
-    print("</div>")
+    cgicommon.writeln("<div class=\"conflictresolutionexample\">")
+    cgicommon.writeln("<div class=\"conflictresolutionexampletitle\">Example:</div>")
+    cgicommon.writeln("<table class=\"conflictresolutionexampletable\">")
+    cgicommon.writeln("<tr>")
+    cgicommon.writeln("<th>Current result</th><th>Your submission</th><th>New result</th>")
+    cgicommon.writeln("</tr>")
+    cgicommon.writeln("<tr>")
+    cgicommon.writeln("<td>-</td><td>88-88</td><td class=\"cr_newresultcol\" id=\"cr_blanktononblank\">%s</td>" % ("88-88" if existing_strategy != CONFLICT_STRATEGY_DISCARD else "-"))
+    cgicommon.writeln("</tr>")
+    cgicommon.writeln("<tr>")
+    cgicommon.writeln("<td>77-77</td><td>88-88</td><td class=\"cr_newresultcol\" id=\"cr_nonblanktononblank\">%s</td>" % ("88-88" if existing_strategy in (CONFLICT_STRATEGY_FORCE, CONFLICT_STRATEGY_DO_NOT_EMBLANKIFY) else "77-77"))
+    cgicommon.writeln("</tr>")
+    cgicommon.writeln("<tr>")
+    cgicommon.writeln("<td>77-77</td><td>-</td><td class=\"cr_newresultcol\" id=\"cr_nonblanktoblank\">%s</td>" % ("-" if existing_strategy == CONFLICT_STRATEGY_FORCE else "77-77"))
+    cgicommon.writeln("</tr>")
+    cgicommon.writeln("</table>")
+    cgicommon.writeln("</div>")
 
 cgitb.enable();
 
-print("Content-Type: text/html; charset=utf-8");
-print("");
+cgicommon.writeln("Content-Type: text/html; charset=utf-8");
+cgicommon.writeln("");
 
 baseurl = "/cgi-bin/gameslist.py";
 form = cgi.FieldStorage();
@@ -248,14 +248,14 @@ import countdowntourney;
 
 cgicommon.print_html_head("Games: " + str(tourney_name));
 
-print("<body>");
+cgicommon.writeln("<body>");
 
 cgicommon.assert_client_from_localhost()
 
 if tourney_name is None:
-    print("<h1>No tourney specified</h1>");
-    print("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
-    print("</body></html>");
+    cgicommon.writeln("<h1>No tourney specified</h1>");
+    cgicommon.writeln("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
+    cgicommon.writeln("</body></html>");
     sys.exit(0);
 
 try:
@@ -263,7 +263,7 @@ try:
 
     cgicommon.show_sidebar(tourney);
 
-    print("<div class=\"mainpane\">");
+    cgicommon.writeln("<div class=\"mainpane\">");
 
     # If a round is selected, show the scores for that round, in editable
     # boxes so they can be changed.
@@ -272,8 +272,8 @@ try:
         try:
             round_no = int(form.getfirst("round"));
         except ValueError:
-            print("<h1>Invalid round number</h1>");
-            print("<p>\"%s\" is not a valid round number.</p>");
+            cgicommon.writeln("<h1>Invalid round number</h1>");
+            cgicommon.writeln("<p>\"%s\" is not a valid round number.</p>");
     
     if round_no is not None:
         games = tourney.get_games(round_no=round_no);
@@ -289,14 +289,14 @@ try:
 
         remarks = dict();
 
-        print("<h1>Score editor: %s</h1>" % cgi.escape(round_name));
+        cgicommon.writeln("<h1>Score editor: %s</h1>" % cgicommon.escape(round_name));
 
-        print("<p>");
-        print("<a href=\"/cgi-bin/fixtureedit.py?tourney=%s&amp;round=%d\">Edit fixtures</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
-        print("</p>");
+        cgicommon.writeln("<p>");
+        cgicommon.writeln("<a href=\"/cgi-bin/fixtureedit.py?tourney=%s&amp;round=%d\">Edit fixtures</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+        cgicommon.writeln("</p>");
 
-        print("<script>")
-        print("""function set_unsaved_data_warning() {
+        cgicommon.writeln("<script>")
+        cgicommon.writeln("""function set_unsaved_data_warning() {
     if (window.onbeforeunload == null) {
         window.onbeforeunload = function() {
             return 'You have modified scores on this page and not saved them.';
@@ -315,7 +315,7 @@ function score_modified(control_name) {
 }
 """);
 
-        print("</script>")
+        cgicommon.writeln("</script>")
 
         conflict_resolution = False
         conflict_strategy = int_or_none(form.getfirst("conflictstrategy"))
@@ -374,7 +374,7 @@ function score_modified(control_name) {
         stored_revision_no = tourney.get_game_table_revision_no(round_no)
         num_divisions = tourney.get_num_divisions()
 
-        print("<div class=\"scorestable\">");
+        cgicommon.writeln("<div class=\"scorestable\">");
 
         # If we've put up the conflict resolution form, then what we print here
         # isn't a form but an ordinary table showing the current results and
@@ -383,19 +383,19 @@ function score_modified(control_name) {
         # form here.
 
         if not conflict_resolution:
-            print("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no));
-            print("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgi.escape(tourney_name, True));
-            print("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
-            print("<input type=\"hidden\" id=\"lastmodified\" name=\"lastmodified\" value=\"\" />");
-            print("<input type=\"hidden\" name=\"revision\" value=\"%d\" />" % (stored_revision_no))
+            cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no));
+            cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgicommon.escape(tourney_name, True));
+            cgicommon.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
+            cgicommon.writeln("<input type=\"hidden\" id=\"lastmodified\" name=\"lastmodified\" value=\"\" />");
+            cgicommon.writeln("<input type=\"hidden\" name=\"revision\" value=\"%d\" />" % (stored_revision_no))
         for div_index in range(num_divisions):
             if num_divisions > 1:
-                print("<h2>%s</h2>" % (cgi.escape(tourney.get_division_name(div_index))))
+                cgicommon.writeln("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index))))
 
             if tourney.are_players_assigned_teams():
                 team_scores = tourney.get_team_scores()
                 cgicommon.show_team_score_table(team_scores)
-                print('<br />')
+                cgicommon.writeln('<br />')
 
             div_games = tourney.get_games(round_no=round_no, only_players_known=False, division=div_index);
 
@@ -434,15 +434,15 @@ function score_modified(control_name) {
                         player_to_link=lambda x : cgicommon.player_to_link(x, tourney.get_name(), False, True))
 
         if not conflict_resolution:
-            print("<p><input type=\"submit\" name=\"save\" value=\"Save\" onclick=\"unset_unsaved_data_warning();\" /></p>");
+            cgicommon.writeln("<p><input type=\"submit\" name=\"save\" value=\"Save\" onclick=\"unset_unsaved_data_warning();\" /></p>");
 
             if form.getfirst("showrandomresultsbutton"):
-                print("<p><input type=\"submit\" name=\"randomresults\" value=\"Random Results\" /></p>");
+                cgicommon.writeln("<p><input type=\"submit\" name=\"randomresults\" value=\"Random Results\" /></p>");
             elif form.getfirst("showscrabbleresultsbutton"):
-                print("<p><input type=\"submit\" name=\"randomresults\" value=\"Random Scrabble-ish Results\" /></p>");
-                print("<p><input type=\"hidden\" name=\"scrabbleresults\" value=\"1\" /></p>");
+                cgicommon.writeln("<p><input type=\"submit\" name=\"randomresults\" value=\"Random Scrabble-ish Results\" /></p>");
+                cgicommon.writeln("<p><input type=\"hidden\" name=\"scrabbleresults\" value=\"1\" /></p>");
 
-            print("</form>")
+            cgicommon.writeln("</form>")
 
             focus = None;
             if last_modified_element:
@@ -467,18 +467,18 @@ function score_modified(control_name) {
                     focus = (games[0].round_no, games[0].seq);
 
                 control_with_focus = "gamescore_%d_%d" % (focus[0], focus[1]);
-                print("<script>")
-                print("document.getElementById('" + control_with_focus + "').focus();")
-                print("</script>")
+                cgicommon.writeln("<script>")
+                cgicommon.writeln("document.getElementById('" + control_with_focus + "').focus();")
+                cgicommon.writeln("</script>")
 
-        print("</div>"); #scorestable
+        cgicommon.writeln("</div>"); #scorestable
 
-    print("</div>"); #mainpane
+    cgicommon.writeln("</div>"); #mainpane
 
 except countdowntourney.TourneyException as e:
     cgicommon.show_tourney_exception(e);
 
-print("</body>");
-print("</html>");
+cgicommon.writeln("</body>");
+cgicommon.writeln("</html>");
 
 sys.exit(0);

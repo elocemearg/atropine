@@ -393,8 +393,8 @@ def get_info_required_by_mode(tourney, form):
 
 cgitb.enable()
 
-print("Content-Type: application/json; charset=utf-8")
-print("")
+cgicommon.writeln("Content-Type: application/json; charset=utf-8")
+cgicommon.writeln("")
 
 form = cgi.FieldStorage()
 tourney_name = form.getfirst("tourney")

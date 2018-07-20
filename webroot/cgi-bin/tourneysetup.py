@@ -7,6 +7,7 @@ import sys;
 import csv;
 import os;
 import json
+import io
 import urllib.request, urllib.parse, urllib.error;
 
 def int_or_none(s):
@@ -26,11 +27,11 @@ def float_or_none(s):
         return None;
 
 def show_player_drop_down_box(players, control_name):
-    print("<select name=\"%s\">" % (control_name))
-    print("<option value=\"\">-- select player --</option>")
+    cgicommon.writeln("<select name=\"%s\">" % (control_name))
+    cgicommon.writeln("<option value=\"\">-- select player --</option>")
     for p in players:
-        print("<option value=\"%s\">%s (%g)</option>" % (cgi.escape(p.name, True), cgi.escape(p.name), p.rating));
-    print("</select>")
+        cgicommon.writeln("<option value=\"%s\">%s (%g)</option>" % (cgicommon.escape(p.name, True), cgicommon.escape(p.name), p.rating));
+    cgicommon.writeln("</select>")
 
 def make_double_quoted_string(s):
     new_string = ['\"']
@@ -76,8 +77,8 @@ cgitb.enable();
 cgicommon.set_module_path();
 import countdowntourney;
 
-print("Content-Type: text/html; charset=utf-8");
-print("");
+cgicommon.writeln("Content-Type: text/html; charset=utf-8");
+cgicommon.writeln("");
 
 baseurl = "/cgi-bin/tourneysetup.py";
 form = cgi.FieldStorage();
@@ -98,8 +99,8 @@ request_method = os.environ.get("REQUEST_METHOD", "");
 
 cgicommon.print_html_head("Tourney Setup: " + str(tourneyname));
 
-print ("<script>")
-print ("""
+cgicommon.writeln("<script>")
+cgicommon.writeln("""
 function set_player_list_example(which) {
     var element = document.getElementById("playerlistexamplepre");
     if (element == null)
@@ -112,19 +113,19 @@ for (num, text) in [
         (countdowntourney.RATINGS_UNIFORM, player_list_example_uniform),
         (countdowntourney.RATINGS_GRADUATED, player_list_example_graduated),
         (countdowntourney.RATINGS_MANUAL, player_list_example_manual)]:
-    print ("""
+    cgicommon.writeln("""
         case %d:
             element.innerText = %s;
             break;
     """ % (num, json.dumps(text)))
 
-print ("""
+cgicommon.writeln("""
     }
 }
 </script>
 """)
 
-print("<body>");
+cgicommon.writeln("<body>");
 
 cgicommon.assert_client_from_localhost()
 
@@ -133,20 +134,20 @@ if tourneyname is not None:
         tourney = countdowntourney.tourney_open(tourneyname, cgicommon.dbdir);
     except countdowntourney.TourneyException as e:
         cgicommon.show_tourney_exception(e);
-        print("<p><a href=\"/cgi-bin/home.py\">Home</a></p>")
-        print("</body></html>")
+        cgicommon.writeln("<p><a href=\"/cgi-bin/home.py\">Home</a></p>")
+        cgicommon.writeln("</body></html>")
         sys.exit(1)
 
 cgicommon.show_sidebar(tourney);
 
-print("<div class=\"mainpane\">");
-print("<h1>Tourney Setup</h1>");
+cgicommon.writeln("<div class=\"mainpane\">");
+cgicommon.writeln("<h1>Tourney Setup</h1>");
 
 if tourneyname is None:
-    print("<h1>Sloblock</h1>");
-    print("<p>No tourney name specified. <a href=\"/cgi-bin/home.py\">Home</a></p>");
+    cgicommon.writeln("<h1>Sloblock</h1>");
+    cgicommon.writeln("<p>No tourney name specified. <a href=\"/cgi-bin/home.py\">Home</a></p>");
 elif not tourney:
-    print("<p>No valid tourney name specified</p>");
+    cgicommon.writeln("<p>No valid tourney name specified</p>");
 else:
     if request_method == "POST" and player_list_submit:
         div_index = 0
@@ -171,7 +172,7 @@ else:
             prev_player_name = row[0].strip()
         try:
             tourney.set_players(player_rating_list, auto_rating_behaviour);
-            print("<p><strong>Player list updated successfully.</strong></p>");
+            cgicommon.writeln("<p><strong>Player list updated successfully.</strong></p>");
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
 
@@ -197,26 +198,26 @@ else:
                         if value < 0:
                             value = 0
                     tourney.set_attribute(name, value)
-            print("<p><strong>Rules updated successfully.</strong></p>");
+            cgicommon.writeln("<p><strong>Rules updated successfully.</strong></p>");
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
 
     players = tourney.get_players();
     players = sorted(players, key=lambda x : x.name);
 
-    print("<p>")
+    cgicommon.writeln("<p>")
     if tourney.get_num_games() > 0:
-        print("The tournament has started.")
+        cgicommon.writeln("The tournament has started.")
     if len(players) == 0:
-        print("There are no players in the tourney yet.")
+        cgicommon.writeln("There are no players in the tourney yet.")
     else:
-        print("There are <a href=\"player.py?tourney=%s\">%d players</a>," % (urllib.parse.quote_plus(tourney.get_name()), len(players)))
+        cgicommon.writeln("There are <a href=\"player.py?tourney=%s\">%d players</a>," % (urllib.parse.quote_plus(tourney.get_name()), len(players)))
         num_active = len([x for x in players if not x.is_withdrawn()])
         if num_active != len(players):
-            print("of whom %d %s active and %d %s withdrawn." % (num_active, "is" if num_active == 1 else "are", len(players) - num_active, "has" if len(players) - num_active == 1 else "have"))
+            cgicommon.writeln("of whom %d %s active and %d %s withdrawn." % (num_active, "is" if num_active == 1 else "are", len(players) - num_active, "has" if len(players) - num_active == 1 else "have"))
         else:
-            print("none withdrawn.")
-    print("</p>")
+            cgicommon.writeln("none withdrawn.")
+    cgicommon.writeln("</p>")
 
     if tourney.get_num_games() == 0:
         if players:
@@ -232,57 +233,58 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
 
 
     if num_divisions > 1:
-        print("<p>The players are distributed into <a href=\"divsetup.py?tourney=%s\">%d divisions</a>.</p>" % (urllib.parse.quote_plus(tourney.get_name()), num_divisions))
-        print("<blockquote>")
+        cgicommon.writeln("<p>The players are distributed into <a href=\"divsetup.py?tourney=%s\">%d divisions</a>.</p>" % (urllib.parse.quote_plus(tourney.get_name()), num_divisions))
+        cgicommon.writeln("<blockquote>")
         for div_index in range(num_divisions):
-            print("<li>%s: %d active players.</li>" % (tourney.get_division_name(div_index), tourney.get_num_active_players(div_index)))
-        print("</blockquote>")
+            cgicommon.writeln("<li>%s: %d active players.</li>" % (tourney.get_division_name(div_index), tourney.get_num_active_players(div_index)))
+        cgicommon.writeln("</blockquote>")
 
     if tourney.get_num_games() == 0:
         players = sorted(tourney.get_players(), key=lambda x : (x.get_division(), x.get_id()))
-        print("<hr />")
-        print("<h2>Player list setup</h2>");
+        cgicommon.writeln("<hr />")
+        cgicommon.writeln("<h2>Player list setup</h2>");
 
-        print(("<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourneyname))))
+        cgicommon.writeln(("<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourneyname))))
 
-        print("<p>")
-        print("How do you want to assign ratings to players? Ratings are used by the Overachievers table and some fixture generators. If you don't know what ratings are, or you don't care, select \"This tournament is not seeded\".")
-        print("</p>")
-        print("<blockquote>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("How do you want to assign ratings to players? Ratings are used by the Overachievers table and some fixture generators. If you don't know what ratings are, or you don't care, select \"This tournament is not seeded\".")
+        cgicommon.writeln("</p>")
+        cgicommon.writeln("<blockquote>")
         auto_rating_behaviour = tourney.get_auto_rating_behaviour()
-        print(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_MANUAL, countdowntourney.RATINGS_MANUAL, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_MANUAL else "")))
-        print("<strong>Ratings are specified manually in the player list below.</strong> If you select this option, it is an error if you try to submit a player without a rating.")
-        print("<br />")
-        print(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_GRADUATED, countdowntourney.RATINGS_GRADUATED, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_GRADUATED else "")))
-        print("<strong>The player list above is in rating order with the highest-rated player at the top</strong>. Ratings will be assigned automatically, with the player at the top of the list receiving a rating of 2000, and the player at the bottom 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a prune.")
-        print("<br />")
-        print(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_UNIFORM, countdowntourney.RATINGS_UNIFORM, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_UNIFORM else "")))
-        print("<strong>This tournament is not seeded.</strong> Assign every non-prune player a rating of 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a prune. If unsure, select this option.")
-        print("</blockquote>")
+        cgicommon.writeln(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_MANUAL, countdowntourney.RATINGS_MANUAL, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_MANUAL else "")))
+        cgicommon.writeln("<strong>Ratings are specified manually in the player list below.</strong> If you select this option, it is an error if you try to submit a player without a rating.")
+        cgicommon.writeln("<br />")
+        cgicommon.writeln(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_GRADUATED, countdowntourney.RATINGS_GRADUATED, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_GRADUATED else "")))
+        cgicommon.writeln("<strong>The player list above is in rating order with the highest-rated player at the top</strong>. Ratings will be assigned automatically, with the player at the top of the list receiving a rating of 2000, and the player at the bottom 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a prune.")
+        cgicommon.writeln("<br />")
+        cgicommon.writeln(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_UNIFORM, countdowntourney.RATINGS_UNIFORM, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_UNIFORM else "")))
+        cgicommon.writeln("<strong>This tournament is not seeded.</strong> Assign every non-prune player a rating of 1000. If you select this option, it is an error to specify any ratings manually in the player list above except a rating of zero to indicate a prune. If unsure, select this option.")
+        cgicommon.writeln("</blockquote>")
 
-        print("<p>")
-        print("A player's rating may still be changed after the tournament has started.")
-        print("</p>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("A player's rating may still be changed after the tournament has started.")
+        cgicommon.writeln("</p>")
 
-        print("<h2>Player list</h2>");
-        print("<p>")
-        print("Enter player names in this box, one player per line, then click <em>Save Player List</em>.")
-        print("</p>")
+        cgicommon.writeln("<h2>Player list</h2>");
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("Enter player names in this box, one player per line, then click <em>Save Player List</em>.")
+        cgicommon.writeln("</p>")
 
-        print("<div class=\"playerlist\">")
-        print("<div class=\"playerlistpane\">")
-        print("<p>")
-        print('<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname));
-        print('<textarea rows="28" cols="40" name="playerlist">');
+        cgicommon.writeln("<div class=\"playerlist\">")
+        cgicommon.writeln("<div class=\"playerlistpane\">")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname));
+        cgicommon.writeln('<textarea rows="28" cols="40" name="playerlist">');
         if request_method == "POST" and playerlist:
             # If the user has submitted something, display what the user
             # submitted rather than what's in the database - this gives them
             # a chance to correct any errors without typing in the whole
             # change again.
-            sys.stdout.write(cgi.escape(playerlist).strip() + '\n')
+            cgicommon.write(cgicommon.escape(playerlist).strip())
         else:
+            string_stream = io.StringIO()
             auto_rating = tourney.get_auto_rating_behaviour()
-            writer = csv.writer(sys.stdout);
+            writer = csv.writer(string_stream);
             prev_div_index = 0
             # Write player names, or player names and ratings if the user
             # specified the players' ratings.
@@ -291,67 +293,68 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
                 if div_index != prev_div_index:
                     writer.writerow(("-",))
                 if auto_rating != countdowntourney.RATINGS_MANUAL and rating != 0:
-                    writer.writerow((cgi.escape(name),));
+                    writer.writerow((cgicommon.escape(name),));
                 else:
-                    writer.writerow((cgi.escape(name), "%g" % (rating)));
+                    writer.writerow((cgicommon.escape(name), "%g" % (rating)));
                 prev_div_index = div_index
-        print("</textarea>");
-        print("</p>")
+            cgicommon.write(string_stream.getvalue())
+        cgicommon.writeln("</textarea>");
+        cgicommon.writeln("</p>")
 
-        print("<p>")
-        print('<input type="submit" name="playerlistsubmit" value="Save Player List" />')
-        print("</p>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln('<input type="submit" name="playerlistsubmit" value="Save Player List" />')
+        cgicommon.writeln("</p>")
 
-        print("</div>")
+        cgicommon.writeln("</div>")
 
-        print("<div class=\"playerlisthelp\">")
-        print("<h3>Example</h3>")
-        print("<p id=\"playerlistexample\">")
-        print("<pre id=\"playerlistexamplepre\">")
+        cgicommon.writeln("<div class=\"playerlisthelp\">")
+        cgicommon.writeln("<h3>Example</h3>")
+        cgicommon.writeln("<p id=\"playerlistexample\">")
+        cgicommon.writeln("<pre id=\"playerlistexamplepre\">")
         if auto_rating_behaviour == countdowntourney.RATINGS_UNIFORM:
-            print(player_list_example_uniform)
+            cgicommon.writeln(player_list_example_uniform)
         elif auto_rating_behaviour == countdowntourney.RATINGS_GRADUATED:
-            print(player_list_example_graduated)
+            cgicommon.writeln(player_list_example_graduated)
         else:
-            print(player_list_example_manual)
-        print("</pre>")
-        print("</p>")
-        print("<p id=\"playerlistratinghelp\">")
+            cgicommon.writeln(player_list_example_manual)
+        cgicommon.writeln("</pre>")
+        cgicommon.writeln("</p>")
+        cgicommon.writeln("<p id=\"playerlistratinghelp\">")
         if auto_rating_behaviour == countdowntourney.RATINGS_MANUAL:
-            print(player_list_rating_help);
-        print("</p>")
+            cgicommon.writeln(player_list_rating_help);
+        cgicommon.writeln("</p>")
 
-        print("<p>")
-        print("To indicate that a player is a prune or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <tt>Apterous Prune,0</tt>")
-        print("</p>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("To indicate that a player is a prune or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <tt>Apterous Prune,0</tt>")
+        cgicommon.writeln("</p>")
 
-        print("<p>")
-        print("To divide the players into divisions, put a line containing only a dash (<tt>-</tt>) between the desired divisions.")
-        print("</p>")
-        print("</div>")
-        print("</div>")
-        print("</form>")
-        print("<div class=\"playerlistclear\"></div>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("To divide the players into divisions, put a line containing only a dash (<tt>-</tt>) between the desired divisions.")
+        cgicommon.writeln("</p>")
+        cgicommon.writeln("</div>")
+        cgicommon.writeln("</div>")
+        cgicommon.writeln("</form>")
+        cgicommon.writeln("<div class=\"playerlistclear\"></div>")
 
     if tourney.get_players():
         # We'll only show these controls when the user has entered some player
         # names.
-        print("<hr />")
-        print("<a name=\"tourneyrules\">")
-        print("<h2>Tourney rules</h2>");
+        cgicommon.writeln("<hr />")
+        cgicommon.writeln("<a name=\"tourneyrules\">")
+        cgicommon.writeln("<h2>Tourney rules</h2>");
         rank = tourney.get_rank_method();
-        print(('<form action="%s?tourney=%s" method="post" />' % (baseurl, urllib.parse.quote_plus(tourneyname))));
-        print(('<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True)));
-        print("<h3>Ranking order</h3>");
-        print("<p>How do you want to rank players in the standings table?</p>");
-        print(('<input type="radio" name="rank" value="%d" %s /> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "")));
-        print(('<input type="radio" name="rank" value="%d" %s /> Wins, then cumulative winning margin (spread). Draws are worth half a win.<br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")))
-        print(('<input type="radio" name="rank" value="%d" %s /> Points only.' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "")));
-        print('</p>');
+        cgicommon.writeln(('<form action="%s?tourney=%s" method="post" />' % (baseurl, urllib.parse.quote_plus(tourneyname))));
+        cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
+        cgicommon.writeln("<h3>Ranking order</h3>");
+        cgicommon.writeln("<p>How do you want to rank players in the standings table?</p>");
+        cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "")));
+        cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Wins, then cumulative winning margin (spread). Draws are worth half a win.<br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")))
+        cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Points only.' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "")));
+        cgicommon.writeln('</p>');
 
-        print("<h3>Draws</h3>")
-        print("<p>")
-        print("""
+        cgicommon.writeln("<h3>Draws</h3>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("""
         Tick this box if draws are possible in your tournament.
         Leaving it unticked won't stop you recording a drawn game - it only
         affects analysis of whether a player is guaranteed to finish in the
@@ -359,20 +362,20 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         HTML or text results.
         The <a href=\"/cgi-bin/standings.py?tourney=%s\">standings page</a>
         will always show a draws column regardless.""" % (urllib.parse.quote_plus(tourney.get_name())))
-        print("</p><p>")
-        print(("<input type=\"checkbox\" name=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")))
-        print("Expect that draws might happen")
-        print("</p>")
+        cgicommon.writeln("</p><p>")
+        cgicommon.writeln(("<input type=\"checkbox\" name=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")))
+        cgicommon.writeln("Expect that draws might happen")
+        cgicommon.writeln("</p>")
 
-        print("<h3>Intended number of rounds, and qualification</h3>")
-        print("<p>")
-        print("If you fill in these values, Atropine will automatically work out when a player is guaranteed to finish in the qualification zone, and highlight them in green the standings table.")
-        print("If you don't fill these in, or if you set them to zero, Atropine won't do that.")
-        print("</p>")
+        cgicommon.writeln("<h3>Intended number of rounds, and qualification</h3>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("If you fill in these values, Atropine will automatically work out when a player is guaranteed to finish in the qualification zone, and highlight them in green the standings table.")
+        cgicommon.writeln("If you don't fill these in, or if you set them to zero, Atropine won't do that.")
+        cgicommon.writeln("</p>")
 
         for div_index in range(num_divisions):
             if num_divisions > 1:
-                print("<h4>%s</h4>" % (cgi.escape(tourney.get_division_name(div_index))))
+                cgicommon.writeln("<h4>%s</h4>" % (cgicommon.escape(tourney.get_division_name(div_index))))
             div_prefix = "div%d_" % (div_index)
             
             last_round = str(tourney.get_attribute(div_prefix + "lastround", ""))
@@ -387,31 +390,31 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
             if qual_places == "0":
                 qual_places = ""
 
-            print("<div class=\"tourneyqualifyingcontrols\">")
-            print("The last round is expected to be round number <input class=\"tourneysetupnumber\" type=\"number\" name=\"%slastround\" value=\"%s\" />" % (div_prefix, cgi.escape(last_round, True)))
-            print("</div>")
-            print("<div class=\"tourneyqualifyingcontrols\">")
-            print("Each player is expected to play <input class=\"tourneysetupnumber\" type=\"number\" name=\"%snumgamesperplayer\" value=\"%s\" /> games" % (div_prefix, cgi.escape(num_games_per_player, True)))
-            print("</div>")
-            print("<div class=\"tourneyqualifyingcontrols\">")
-            print("The qualification zone is the top <input class=\"tourneysetupnumber\" type=\"number\" name=\"%squalplaces\" value=\"%s\" /> places in the standings table" % (div_prefix, cgi.escape(qual_places, True)))
-            print("</div>")
+            cgicommon.writeln("<div class=\"tourneyqualifyingcontrols\">")
+            cgicommon.writeln("The last round is expected to be round number <input class=\"tourneysetupnumber\" type=\"number\" name=\"%slastround\" value=\"%s\" />" % (div_prefix, cgicommon.escape(last_round, True)))
+            cgicommon.writeln("</div>")
+            cgicommon.writeln("<div class=\"tourneyqualifyingcontrols\">")
+            cgicommon.writeln("Each player is expected to play <input class=\"tourneysetupnumber\" type=\"number\" name=\"%snumgamesperplayer\" value=\"%s\" /> games" % (div_prefix, cgicommon.escape(num_games_per_player, True)))
+            cgicommon.writeln("</div>")
+            cgicommon.writeln("<div class=\"tourneyqualifyingcontrols\">")
+            cgicommon.writeln("The qualification zone is the top <input class=\"tourneysetupnumber\" type=\"number\" name=\"%squalplaces\" value=\"%s\" /> places in the standings table" % (div_prefix, cgicommon.escape(qual_places, True)))
+            cgicommon.writeln("</div>")
 
-        print('<p><input type="submit" name="rulessubmit" value="Save Rules" /></p>')
-        print("</form>");
+        cgicommon.writeln('<p><input type="submit" name="rulessubmit" value="Save Rules" /></p>')
+        cgicommon.writeln("</form>");
 
         if tourney.get_num_games() > 0:
-            print("<hr />")
-            print('<h2>Delete rounds</h2>')
-            print('<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>')
-            print("<p>")
-            print('<form action="/cgi-bin/delround.py" method="get" />')
-            print(('<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname)))
-            print('<input type="submit" name="delroundsetupsubmit" value="Delete most recent round" />')
-            print('</form>')
-            print("</p>")
+            cgicommon.writeln("<hr />")
+            cgicommon.writeln('<h2>Delete rounds</h2>')
+            cgicommon.writeln('<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>')
+            cgicommon.writeln("<p>")
+            cgicommon.writeln('<form action="/cgi-bin/delround.py" method="get" />')
+            cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname)))
+            cgicommon.writeln('<input type="submit" name="delroundsetupsubmit" value="Delete most recent round" />')
+            cgicommon.writeln('</form>')
+            cgicommon.writeln("</p>")
 
-print("</div>");
+cgicommon.writeln("</div>");
 
-print("</body>");
-print("</html>");
+cgicommon.writeln("</body>");
+cgicommon.writeln("</html>");

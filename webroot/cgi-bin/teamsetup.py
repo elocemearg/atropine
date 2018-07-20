@@ -82,8 +82,8 @@ def random_team_assignment(tourney, group_size):
     return player_teams
 
 
-print("Content-Type: text/html; charset=utf-8");
-print("");
+cgicommon.writeln("Content-Type: text/html; charset=utf-8");
+cgicommon.writeln("");
 
 baseurl = "/cgi-bin/teamsetup.py";
 form = cgi.FieldStorage();
@@ -103,7 +103,7 @@ request_method = os.environ.get("REQUEST_METHOD", "")
 
 cgicommon.print_html_head("Hangover Team Setup: " + str(tourneyname))
 
-print("<body>")
+cgicommon.writeln("<body>")
 
 cgicommon.assert_client_from_localhost()
 
@@ -149,19 +149,19 @@ if tourneyname and tourney:
             except countdowntourney.TourneyException as e:
                 tourney_exception = e
 
-print("<div class=\"mainpane\">");
-print("<h1>Hangover Team Setup</h1>");
+cgicommon.writeln("<div class=\"mainpane\">");
+cgicommon.writeln("<h1>Hangover Team Setup</h1>");
 
 if tourneyname is None:
-    print("<h1>Sloblock</h1>");
-    print("<p>No tourney name specified. <a href=\"/cgi-bin/home.py\">Home</a></p>");
+    cgicommon.writeln("<h1>Sloblock</h1>");
+    cgicommon.writeln("<p>No tourney name specified. <a href=\"/cgi-bin/home.py\">Home</a></p>");
 elif not tourney:
-    print("<p>No valid tourney name specified</p>");
+    cgicommon.writeln("<p>No valid tourney name specified</p>");
 else:
     num_players = len(tourney.get_players())
 
     if player_teams_set:
-        print("<p><strong>Teams set successfully.</strong></p>")
+        cgicommon.writeln("<p><strong>Teams set successfully.</strong></p>")
     elif tourney_exception:
         cgicommon.show_tourney_exception(e)
 
@@ -171,76 +171,76 @@ else:
     player_teams = sorted(tourney.get_player_teams(), key=lambda x : x[0].get_rating(), reverse=True)
 
     if num_players == 0:
-        print("<p>This tourney doesn't have any players, so you can't specify teams yet.</p>")
-        print('<p><a href="/cgi-bin/tourneysetup.py?tourney=%s">Back to Tourney Setup</a></p>' % (urllib.parse.quote_plus(tourneyname)));
+        cgicommon.writeln("<p>This tourney doesn't have any players, so you can't specify teams yet.</p>")
+        cgicommon.writeln('<p><a href="/cgi-bin/tourneysetup.py?tourney=%s">Back to Tourney Setup</a></p>' % (urllib.parse.quote_plus(tourneyname)));
     else:
         #print '<p><a href="/cgi-bin/tourneysetup.py?tourney=%s">Back to tourney setup</a></p>' % (urllib.quote_plus(tourneyname));
-        print('<h2>Teams</h2>')
+        cgicommon.writeln('<h2>Teams</h2>')
         for team in teams:
-            print('<p>')
-            print('<font color="#%s">&bull;</font> %s' % (team.get_hex_colour(), team.get_name()))
-            player_name_list = [ cgi.escape(p.get_name()) for (p, pt) in player_teams if pt is not None and pt.get_id() == team.get_id() ]
+            cgicommon.writeln('<p>')
+            cgicommon.writeln('<font color="#%s">&bull;</font> %s' % (team.get_hex_colour(), team.get_name()))
+            player_name_list = [ cgicommon.escape(p.get_name()) for (p, pt) in player_teams if pt is not None and pt.get_id() == team.get_id() ]
 
             if player_name_list:
-                print(" (%d): %s" % (len(player_name_list), ", ".join(player_name_list)));
+                cgicommon.writeln(" (%d): %s" % (len(player_name_list), ", ".join(player_name_list)));
             else:
-                print(" (no players)")
-            print('</p>')
+                cgicommon.writeln(" (no players)")
+            cgicommon.writeln('</p>')
 
-        print('<h2>Players</h2>')
-        print('<form action="%s?tourney=%s" method="POST">' % (cgi.escape(baseurl, True), urllib.parse.quote_plus(tourneyname)))
-        print('<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True))
-        print('<table border="1">')
-        print('<tr><th>Player</th>')
-        print('<th>No team</th>')
+        cgicommon.writeln('<h2>Players</h2>')
+        cgicommon.writeln('<form action="%s?tourney=%s" method="POST">' % (cgicommon.escape(baseurl, True), urllib.parse.quote_plus(tourneyname)))
+        cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True))
+        cgicommon.writeln('<table border="1">')
+        cgicommon.writeln('<tr><th>Player</th>')
+        cgicommon.writeln('<th>No team</th>')
         for team in teams:
-            print('<th>%s</th>' % (cgi.escape(team.get_name())))
-        print('</tr>')
+            cgicommon.writeln('<th>%s</th>' % (cgicommon.escape(team.get_name())))
+        cgicommon.writeln('</tr>')
 
         index = 0
         for player_team in player_teams:
             player = player_team[0]
             team = player_team[1]
 
-            print('<tr>')
-            print('<td align="left">%s<input type="hidden" name="player%d" value="%s" /></td>' % (cgi.escape(player.get_name()), index, cgi.escape(player.get_name())))
+            cgicommon.writeln('<tr>')
+            cgicommon.writeln('<td align="left">%s<input type="hidden" name="player%d" value="%s" /></td>' % (cgicommon.escape(player.get_name()), index, cgicommon.escape(player.get_name())))
 
             # Radio button for "no team"
-            print('<td align="center"><input type="radio" name="team%d" value="%d" %s /></td>' % (index, -1, "checked" if team is None else ""))
+            cgicommon.writeln('<td align="center"><input type="radio" name="team%d" value="%d" %s /></td>' % (index, -1, "checked" if team is None else ""))
             for t in teams:
-                print('<td align="center" bgcolor="#%s"><input type="radio" name="team%d" value="%d" %s /></td>' % (t.get_hex_colour(), index, t.get_id(), "checked" if team is not None and team.get_id() == t.get_id() else ""))
-            print('</tr>')
+                cgicommon.writeln('<td align="center" bgcolor="#%s"><input type="radio" name="team%d" value="%d" %s /></td>' % (t.get_hex_colour(), index, t.get_id(), "checked" if team is not None and team.get_id() == t.get_id() else ""))
+            cgicommon.writeln('</tr>')
             index += 1
-        print('</table>')
+        cgicommon.writeln('</table>')
 
-        print('<p>')
-        print('<input type="submit" name="playerteamsubmit" value="Set Teams" />')
-        print('</p>')
-        print('</form>')
+        cgicommon.writeln('<p>')
+        cgicommon.writeln('<input type="submit" name="playerteamsubmit" value="Set Teams" />')
+        cgicommon.writeln('</p>')
+        cgicommon.writeln('</form>')
 
-        print('<h2>Automatic random team assignment</h2>')
-        print('<form action="%s?tourney=%s" method="POST">' % (cgi.escape(baseurl, True), urllib.parse.quote_plus(tourneyname)))
-        print('<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True))
-        print('<p>')
-        print('Divide players by rating into groups of <input type="text" name="randomgroupsize" value="%d" size="5"> and randomly distribute each group as evenly as possible among the teams. Set to 0 to divide the whole player list randomly into teams, ignoring rating.' % random_group_size)
-        print('</p>')
-        print('<p>')
-        print('<input type="submit" name="randomassignmentsubmit" value="Randomly assign players to teams" />')
-        print('</p>')
-        print('</form>')
+        cgicommon.writeln('<h2>Automatic random team assignment</h2>')
+        cgicommon.writeln('<form action="%s?tourney=%s" method="POST">' % (cgicommon.escape(baseurl, True), urllib.parse.quote_plus(tourneyname)))
+        cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True))
+        cgicommon.writeln('<p>')
+        cgicommon.writeln('Divide players by rating into groups of <input type="text" name="randomgroupsize" value="%d" size="5"> and randomly distribute each group as evenly as possible among the teams. Set to 0 to divide the whole player list randomly into teams, ignoring rating.' % random_group_size)
+        cgicommon.writeln('</p>')
+        cgicommon.writeln('<p>')
+        cgicommon.writeln('<input type="submit" name="randomassignmentsubmit" value="Randomly assign players to teams" />')
+        cgicommon.writeln('</p>')
+        cgicommon.writeln('</form>')
 
-        print('<h2>Clear teams</h2>')
-        print('<form action="%s?tourney=%s" method="POST">' % (cgi.escape(baseurl, True), urllib.parse.quote_plus(tourneyname)))
-        print('<input type="hidden" name="tourney" value="%s" />' % cgi.escape(tourneyname, True))
-        print('<p>')
-        print('Remove all players from their teams.')
-        print('</p>')
-        print('<p>')
-        print('<input type="submit" name="clearteams" value="Clear team assignments"/>')
-        print('</p>')
-        print('</form>')
+        cgicommon.writeln('<h2>Clear teams</h2>')
+        cgicommon.writeln('<form action="%s?tourney=%s" method="POST">' % (cgicommon.escape(baseurl, True), urllib.parse.quote_plus(tourneyname)))
+        cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True))
+        cgicommon.writeln('<p>')
+        cgicommon.writeln('Remove all players from their teams.')
+        cgicommon.writeln('</p>')
+        cgicommon.writeln('<p>')
+        cgicommon.writeln('<input type="submit" name="clearteams" value="Clear team assignments"/>')
+        cgicommon.writeln('</p>')
+        cgicommon.writeln('</form>')
     #print '</p>'
 
-print('</div>')
-print('</body>')
-print('</html>')
+cgicommon.writeln('</div>')
+cgicommon.writeln('</body>')
+cgicommon.writeln('</html>')

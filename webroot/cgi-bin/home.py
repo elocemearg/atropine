@@ -26,49 +26,49 @@ def get_tourney_modified_time(name):
     return st.st_mtime
 
 def print_tourney_table(tourney_list, destination_page, show_last_modified, show_export_html_link=False, show_display_link=False):
-    print("<table class=\"tourneylist\">");
-    print("<tr>")
-    print("<th><a href=\"/cgi-bin/home.py?orderby=%s\">Name</a></th>" % ("name_d" if order_by == "name_a" else "name_a"))
+    cgicommon.writeln("<table class=\"tourneylist\">");
+    cgicommon.writeln("<tr>")
+    cgicommon.writeln("<th><a href=\"/cgi-bin/home.py?orderby=%s\">Name</a></th>" % ("name_d" if order_by == "name_a" else "name_a"))
 
     if show_last_modified:
-        print("<th><a href=\"/cgi-bin/home.py?orderby=%s\">Last modified</a></th>" % ("mtime_a" if order_by == "mtime_d" else "mtime_d"))
+        cgicommon.writeln("<th><a href=\"/cgi-bin/home.py?orderby=%s\">Last modified</a></th>" % ("mtime_a" if order_by == "mtime_d" else "mtime_d"))
 
     if show_display_link or show_export_html_link:
-        print("<th colspan=\"%d\">Useful links</th>" % ( 2 if show_display_link and show_export_html_link else 1 ))
+        cgicommon.writeln("<th colspan=\"%d\">Useful links</th>" % ( 2 if show_display_link and show_export_html_link else 1 ))
 
-    print("</tr>")
+    cgicommon.writeln("</tr>")
     for tourney_basename in tourney_list:
         name = tourney_basename[:-3];
         filename = os.path.join(cgicommon.dbdir, tourney_basename)
         st = os.stat(filename)
         modified_time = time.localtime(st.st_mtime)
-        print("<tr>")
-        print('<td class=\"tourneylistname\">')
+        cgicommon.writeln("<tr>")
+        cgicommon.writeln('<td class=\"tourneylistname\">')
         if destination_page:
-            print('<a href="%s?tourney=%s">%s</a>' % (cgi.escape(destination_page, True), urllib.parse.quote_plus(name), cgi.escape(name)));
+            cgicommon.writeln('<a href="%s?tourney=%s">%s</a>' % (cgicommon.escape(destination_page, True), urllib.parse.quote_plus(name), cgicommon.escape(name)));
         else:
-            print(cgi.escape(name))
-        print('</td>')
+            cgicommon.writeln(cgicommon.escape(name))
+        cgicommon.writeln('</td>')
         
         if show_last_modified:
-            print("<td class=\"tourneylistmtime\">%s</td>" % (time.strftime("%d %b %Y %H:%M", modified_time)))
+            cgicommon.writeln("<td class=\"tourneylistmtime\">%s</td>" % (time.strftime("%d %b %Y %H:%M", modified_time)))
 
         if show_export_html_link:
-            print("<td class=\"tourneylistlink\">")
-            print("<a href=\"/cgi-bin/export.py?tourney=%s&format=html\">Tourney report</a>" % (urllib.parse.quote_plus(name)))
-            print("</td>")
+            cgicommon.writeln("<td class=\"tourneylistlink\">")
+            cgicommon.writeln("<a href=\"/cgi-bin/export.py?tourney=%s&format=html\">Tourney report</a>" % (urllib.parse.quote_plus(name)))
+            cgicommon.writeln("</td>")
         if show_display_link:
-            print("<td class=\"tourneylistlink\">")
-            print("<a href=\"/cgi-bin/display.py?tourney=%s\">Full screen display</a>" % (urllib.parse.quote_plus(name)))
-            print("</td>")
+            cgicommon.writeln("<td class=\"tourneylistlink\">")
+            cgicommon.writeln("<a href=\"/cgi-bin/display.py?tourney=%s\">Full screen display</a>" % (urllib.parse.quote_plus(name)))
+            cgicommon.writeln("</td>")
 
-        print("</tr>")
-    print("</table>");
+        cgicommon.writeln("</tr>")
+    cgicommon.writeln("</table>");
 
 baseurl = "/cgi-bin/home.py";
 
-print("Content-Type: text/html; charset=utf-8");
-print("");
+cgicommon.writeln("Content-Type: text/html; charset=utf-8");
+cgicommon.writeln("");
 
 cgicommon.print_html_head("Create Tourney" if cgicommon.is_client_from_localhost() else "Atropine");
 
@@ -78,8 +78,8 @@ tourneyname = form.getfirst("name", "");
 order_by = form.getfirst("orderby", "mtime_d")
 request_method = os.environ.get("REQUEST_METHOD", "GET");
 
-print("<body>");
-print("<h1>Welcome to Atropine</h1>");
+cgicommon.writeln("<body>");
+cgicommon.writeln("<h1>Welcome to Atropine</h1>");
 
 tourney_list = os.listdir(cgicommon.dbdir);
 tourney_list = [x for x in tourney_list if (len(x) > 3 and x[-3:] == ".db")];
@@ -98,10 +98,10 @@ if cgicommon.is_client_from_localhost():
         try:
             tourney = countdowntourney.tourney_create(tourneyname, cgicommon.dbdir);
             tourney.close();
-            print("<p>Tourney \"%s\" was created successfully.</p>" % tourneyname);
-            print("<p>");
-            print('<a href="/cgi-bin/tourneysetup.py?tourney=%s">Click here to continue</a>' % urllib.parse.quote_plus(tourneyname));
-            print("</p>");
+            cgicommon.writeln("<p>Tourney \"%s\" was created successfully.</p>" % tourneyname);
+            cgicommon.writeln("<p>");
+            cgicommon.writeln('<a href="/cgi-bin/tourneysetup.py?tourney=%s">Click here to continue</a>' % urllib.parse.quote_plus(tourneyname));
+            cgicommon.writeln("</p>");
             tourney_created = True;
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
@@ -109,44 +109,44 @@ if cgicommon.is_client_from_localhost():
     if not tourney_created:
         # If name has been filled in, attempt to create tourney
 
-        print("<h2>Create new tourney</h2>");
-        print('<form action="%s" method="POST">' % cgi.escape(baseurl, True));
-        print("<p>");
-        print('Tourney name: <input type="text" name="name" value="%s" /> <br />' % cgi.escape(tourneyname, True));
-        print("</p>");
-        print("<p>");
-        print('<input type="submit" name="submit" value="Create Tourney" />');
-        print("</p>");
-        print("</form>");
+        cgicommon.writeln("<h2>Create new tourney</h2>");
+        cgicommon.writeln('<form action="%s" method="POST">' % cgicommon.escape(baseurl, True));
+        cgicommon.writeln("<p>");
+        cgicommon.writeln('Tourney name: <input type="text" name="name" value="%s" /> <br />' % cgicommon.escape(tourneyname, True));
+        cgicommon.writeln("</p>");
+        cgicommon.writeln("<p>");
+        cgicommon.writeln('<input type="submit" name="submit" value="Create Tourney" />');
+        cgicommon.writeln("</p>");
+        cgicommon.writeln("</form>");
 
-    print("<hr />")
+    cgicommon.writeln("<hr />")
 
     if tourney_list:
-        print("<h2>Open existing tourney</h2>");
+        cgicommon.writeln("<h2>Open existing tourney</h2>");
         print_tourney_table(tourney_list, "/cgi-bin/tourneysetup.py", True, False, False)
     else:
-        print("<p>")
-        print("No tourneys exist yet.");
-        print("</p>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("No tourneys exist yet.");
+        cgicommon.writeln("</p>")
 
-    print("<hr>")
+    cgicommon.writeln("<hr>")
 
     try:
-        print("<p>")
-        print("Tournament database directory: <tt>%s</tt>" % (cgi.escape(os.path.realpath(cgicommon.dbdir))))
-        print("</p>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("Tournament database directory: <tt>%s</tt>" % (cgicommon.escape(os.path.realpath(cgicommon.dbdir))))
+        cgicommon.writeln("</p>")
     except:
-        print("<p>Failed to expand tournament database directory name</p>")
+        cgicommon.writeln("<p>Failed to expand tournament database directory name</p>")
 else:
     # Client is not from localhost, so display a menu of tournaments. Each
     # link goes to the Teleost display for that tournament, which is the only
     # thing non-localhost clients are allowed to access.
-    print("<h2>Select tourney</h2>")
+    cgicommon.writeln("<h2>Select tourney</h2>")
     print_tourney_table(tourney_list, None, False, True, True)
 
-print("<p>atropine version %s</p>" % (countdowntourney.SW_VERSION))
+cgicommon.writeln("<p>atropine version %s</p>" % (countdowntourney.SW_VERSION))
 
-print("</body>");
-print("</html>");
+cgicommon.writeln("</body>");
+cgicommon.writeln("</html>");
 
 sys.exit(0);

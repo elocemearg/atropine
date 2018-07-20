@@ -14,19 +14,19 @@ def show_view_preview(tourney, form, selected_view):
         alt_text = info["name"]
     else:
         alt_text = ""
-    print("<iframe src=\"/cgi-bin/display.py?tourney=%s&mode=%d\" height=\"300\" width=\"400\"></iframe>" % (urllib.parse.quote_plus(tourney.get_name()), selected_view))
+    cgicommon.writeln("<iframe src=\"/cgi-bin/display.py?tourney=%s&mode=%d\" height=\"300\" width=\"400\"></iframe>" % (urllib.parse.quote_plus(tourney.get_name()), selected_view))
 
 def show_view_option_controls(tourney, form, selected_view):
     options = tourney.get_teleost_options(mode=selected_view)
     if options:
-        print("<div class=\"teleostoptionheading\">Options for this screen mode</div>")
+        cgicommon.writeln("<div class=\"teleostoptionheading\">Options for this screen mode</div>")
     for o in options:
-        print("<div class=\"teleostoption\">")
-        name_escaped = "teleost_option_" + cgi.escape(o.name, True)
+        cgicommon.writeln("<div class=\"teleostoption\">")
+        name_escaped = "teleost_option_" + cgicommon.escape(o.name, True)
         if o.value is None:
             value_escaped = ""
         else:
-            value_escaped = cgi.escape(str(o.value), True)
+            value_escaped = cgicommon.escape(str(o.value), True)
 
         m = re.search("\\$CONTROL\\b", o.desc)
         if m:
@@ -36,27 +36,27 @@ def show_view_option_controls(tourney, form, selected_view):
             before_control = o.desc
             after_control = ""
 
-        print(cgi.escape(before_control))
+        cgicommon.writeln(cgicommon.escape(before_control))
         
         if o.control_type == countdowntourney.CONTROL_NUMBER:
-            print("<input type=\"text\" size=\"6\" name=\"%s\" value=\"%s\" />" % (name_escaped, value_escaped))
+            cgicommon.writeln("<input type=\"text\" size=\"6\" name=\"%s\" value=\"%s\" />" % (name_escaped, value_escaped))
         elif o.control_type == countdowntourney.CONTROL_CHECKBOX:
             if o.value is not None and int(o.value):
                 checked_str = "checked"
             else:
                 checked_str = ""
-            print("<input type=\"checkbox\" name=\"%s\" value=\"1\" %s />" % (name_escaped, checked_str))
-            print("<input type=\"hidden\" name=\"%s\" value=\"1\" />" % ("exists_checkbox_" + name_escaped))
+            cgicommon.writeln("<input type=\"checkbox\" name=\"%s\" value=\"1\" %s />" % (name_escaped, checked_str))
+            cgicommon.writeln("<input type=\"hidden\" name=\"%s\" value=\"1\" />" % ("exists_checkbox_" + name_escaped))
 
-        print(cgi.escape(after_control))
+        cgicommon.writeln(cgicommon.escape(after_control))
 
-        print("</div>")
+        cgicommon.writeln("</div>")
 
 
 cgitb.enable();
 
-print("Content-Type: text/html; charset=utf-8");
-print("");
+cgicommon.writeln("Content-Type: text/html; charset=utf-8");
+cgicommon.writeln("");
 
 baseurl = "/cgi-bin/displayoptions.py";
 form = cgi.FieldStorage();
@@ -71,23 +71,23 @@ import countdowntourney;
 
 cgicommon.print_html_head("Display setup: " + str(tourney_name), "style.css");
 
-print("<script type=\"text/javascript\">")
-print("""
+cgicommon.writeln("<script type=\"text/javascript\">")
+cgicommon.writeln("""
 function clearBannerEditBox() {
     document.getElementById("bannereditbox").value = "";
 }
 """)
-print("</script>")
+cgicommon.writeln("</script>")
 
-print("<body>");
+cgicommon.writeln("<body>");
 
 cgicommon.assert_client_from_localhost()
 
 if tourney_name is None:
-    print("<h1>No tourney specified</h1>");
-    print("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
-    print("</body>")
-    print("</html>")
+    cgicommon.writeln("<h1>No tourney specified</h1>");
+    cgicommon.writeln("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
+    cgicommon.writeln("</body>")
+    cgicommon.writeln("</html>")
     sys.exit(0)
 
 try:
@@ -137,12 +137,12 @@ try:
 
     cgicommon.show_sidebar(tourney);
 
-    print("<div class=\"mainpane\">")
+    cgicommon.writeln("<div class=\"mainpane\">")
 
-    print("<h1>Display Setup</h1>");
+    cgicommon.writeln("<h1>Display Setup</h1>");
 
-    print("<div class=\"opendisplaylink\">")
-    print("""
+    cgicommon.writeln("<div class=\"opendisplaylink\">")
+    cgicommon.writeln("""
     <a href="/cgi-bin/display.py?tourney=%s"
        target=\"_blank\">
        Open Display Window
@@ -150,67 +150,67 @@ try:
             alt=\"Opens in new window\"
             title=\"Opens in new window\" />
         </a>""" % (urllib.parse.quote_plus(tourney.name)));
-    print("</div>")
+    cgicommon.writeln("</div>")
 
-    print("<div class=\"viewselection\">")
-    print("<div class=\"viewdetails\">")
-    print("<div class=\"viewdetailstext\">")
-    print("<h2>")
-    print(cgi.escape(mode_info["name"]))
-    print("</h2>")
-    print("<p>")
-    print(cgi.escape(mode_info["desc"]))
-    print("</p>")
-    print("</div>") # viewdetailstext
+    cgicommon.writeln("<div class=\"viewselection\">")
+    cgicommon.writeln("<div class=\"viewdetails\">")
+    cgicommon.writeln("<div class=\"viewdetailstext\">")
+    cgicommon.writeln("<h2>")
+    cgicommon.writeln(cgicommon.escape(mode_info["name"]))
+    cgicommon.writeln("</h2>")
+    cgicommon.writeln("<p>")
+    cgicommon.writeln(cgicommon.escape(mode_info["desc"]))
+    cgicommon.writeln("</p>")
+    cgicommon.writeln("</div>") # viewdetailstext
 
-    print("</div>") # viewdetails
+    cgicommon.writeln("</div>") # viewdetails
 
-    print("<div style=\"clear: both;\"></div>")
+    cgicommon.writeln("<div style=\"clear: both;\"></div>")
 
-    print("<div class=\"viewpreviewandoptions\">")
-    print("<div class=\"viewpreview\" id=\"viewpreview\">")
+    cgicommon.writeln("<div class=\"viewpreviewandoptions\">")
+    cgicommon.writeln("<div class=\"viewpreview\" id=\"viewpreview\">")
     show_view_preview(tourney, form, selected_view)
     if teleost_modes[selected_view].get("selected", False):
-        print("<div class=\"viewpreviewcurrent\">")
-        print("Currently showing")
-        print("</div>")
+        cgicommon.writeln("<div class=\"viewpreviewcurrent\">")
+        cgicommon.writeln("Currently showing")
+        cgicommon.writeln("</div>")
     else:
-        print("<div class=\"viewpreviewswitch\">")
-        print("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
-        print("<input class=\"switchviewbutton\" type=\"submit\" name=\"switchview\" value=\"Switch to this screen mode\" />")
-        print("</form>")
-        print("</div>")
-    print("</div>")
+        cgicommon.writeln("<div class=\"viewpreviewswitch\">")
+        cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
+        cgicommon.writeln("<input class=\"switchviewbutton\" type=\"submit\" name=\"switchview\" value=\"Switch to this screen mode\" />")
+        cgicommon.writeln("</form>")
+        cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>")
 
-    print("<div class=\"viewcontrols\">")
-    print("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
+    cgicommon.writeln("<div class=\"viewcontrols\">")
+    cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
 
-    print("<div class=\"viewoptions\" id=\"viewoptions\">")
-    print("<div class=\"teleostoptionheading\">Banner text</div>")
-    print("<div class=\"teleostoptionblock\">")
-    print("<input type=\"text\" name=\"bannertext\" id=\"bannereditbox\" value=\"%s\" size=\"40\" onclick=\"this.select();\" />" % (cgi.escape(banner_text, True)))
-    print("<button type=\"button\" onclick=\"clearBannerEditBox();\">Clear</button>");
-    print("</div>")
+    cgicommon.writeln("<div class=\"viewoptions\" id=\"viewoptions\">")
+    cgicommon.writeln("<div class=\"teleostoptionheading\">Banner text</div>")
+    cgicommon.writeln("<div class=\"teleostoptionblock\">")
+    cgicommon.writeln("<input type=\"text\" name=\"bannertext\" id=\"bannereditbox\" value=\"%s\" size=\"40\" onclick=\"this.select();\" />" % (cgicommon.escape(banner_text, True)))
+    cgicommon.writeln("<button type=\"button\" onclick=\"clearBannerEditBox();\">Clear</button>");
+    cgicommon.writeln("</div>")
     show_view_option_controls(tourney, form, selected_view)
-    print("</div>")
+    cgicommon.writeln("</div>")
 
-    print("<div class=\"viewsubmitbuttons\">")
-    print("<div class=\"viewoptionssave\">")
-    print("<input type=\"submit\" class=\"setdisplayoptionsbutton\" name=\"setoptions\" value=\"Save options\" />")
-    print("</div>")
-    print("</div>") # viewsubmitbuttons
+    cgicommon.writeln("<div class=\"viewsubmitbuttons\">")
+    cgicommon.writeln("<div class=\"viewoptionssave\">")
+    cgicommon.writeln("<input type=\"submit\" class=\"setdisplayoptionsbutton\" name=\"setoptions\" value=\"Save options\" />")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>") # viewsubmitbuttons
 
-    print("</form>")
-    print("</div>") # viewcontrols
-    print("</div>") # viewpreviewandoptions
+    cgicommon.writeln("</form>")
+    cgicommon.writeln("</div>") # viewcontrols
+    cgicommon.writeln("</div>") # viewpreviewandoptions
 
-    print("<div style=\"clear: both;\"></div>")
+    cgicommon.writeln("<div style=\"clear: both;\"></div>")
 
-    print("</div>") # viewselection
+    cgicommon.writeln("</div>") # viewselection
 
-    print("<div class=\"viewmenu\">")
+    cgicommon.writeln("<div class=\"viewmenu\">")
 
-    print("<div class=\"viewmenuheading\">Available screen modes</div>")
+    cgicommon.writeln("<div class=\"viewmenuheading\">Available screen modes</div>")
 
     menu_row_size = 5
     teleost_modes_sorted = sorted(teleost_modes, key=lambda x : (x.get("menuorder", 100000), x["num"], x["name"]))
@@ -219,8 +219,8 @@ try:
         mode = teleost_modes_sorted[idx]
         if idx % menu_row_size == 0:
             if idx > 0:
-                print("</div>")
-            print("<div class=\"viewmenurow\">")
+                cgicommon.writeln("</div>")
+            cgicommon.writeln("<div class=\"viewmenurow\">")
         classes = ["viewmenucell"]
         if mode.get("selected", False):
             # This is the view currently showing on the public display
@@ -231,29 +231,29 @@ try:
         else:
             # This is neither showing nor selected
             classes.append("viewmenucellbystander")
-        print("<div class=\"%s\">" % (" ".join(classes)))
-        print("<a href=\"%s?tourney=%s&selectedview=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), mode["num"]))
+        cgicommon.writeln("<div class=\"%s\">" % (" ".join(classes)))
+        cgicommon.writeln("<a href=\"%s?tourney=%s&selectedview=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), mode["num"]))
         img_src = mode.get("image", None)
         if img_src:
-            print("<img src=\"%s\" alt=\"%s\" title=\"%s\" />" % (
-                    cgi.escape(img_src, True), cgi.escape(mode["name"], True),
-                    cgi.escape(mode["name"], True)))
+            cgicommon.writeln("<img src=\"%s\" alt=\"%s\" title=\"%s\" />" % (
+                    cgicommon.escape(img_src, True), cgicommon.escape(mode["name"], True),
+                    cgicommon.escape(mode["name"], True)))
         else:
-            print(cgi.escape(mode["name"]))
-        print("</a>")
-        print("</div>")
+            cgicommon.writeln(cgicommon.escape(mode["name"]))
+        cgicommon.writeln("</a>")
+        cgicommon.writeln("</div>")
 
     if len(teleost_modes) > 0:
-        print("</div>")
+        cgicommon.writeln("</div>")
 
-    print("</div>") #viewmenu
+    cgicommon.writeln("</div>") #viewmenu
 
-    print("</div>") # mainpane
+    cgicommon.writeln("</div>") # mainpane
 
 except countdowntourney.TourneyException as e:
     cgicommon.show_tourney_exception(e);
 
-print("</body></html>");
+cgicommon.writeln("</body></html>");
 
 sys.exit(0);
 

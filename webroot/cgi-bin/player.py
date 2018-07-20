@@ -30,43 +30,43 @@ import countdowntourney;
 
 def show_division_drop_down_box(control_name, tourney, player):
     num_divisions = tourney.get_num_divisions()
-    print("<select name=\"%s\">" % (cgi.escape(control_name, True)))
+    cgicommon.writeln("<select name=\"%s\">" % (cgicommon.escape(control_name, True)))
     for div in range(num_divisions):
-        print("<option value=\"%d\" %s >%s (%d active players)</option>" % (div,
+        cgicommon.writeln("<option value=\"%d\" %s >%s (%d active players)</option>" % (div,
                 "selected" if (player is not None and div == player.get_division()) or (player is None and div == 0) else "",
-                cgi.escape(tourney.get_division_name(div)),
+                cgicommon.escape(tourney.get_division_name(div)),
                 tourney.get_num_active_players(div)))
-    print("</select>")
+    cgicommon.writeln("</select>")
 
 def show_player_search_form(tourney):
-    print("<form method=\"GET\" action=\"%s\">" % (cgi.escape(baseurl, True)))
-    print("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourney.get_name())))
-    print("<p>")
-    print("Search player name: <input type=\"text\" name=\"searchname\" value=\"\" /> ")
-    print("<input type=\"submit\" name=\"searchsubmit\" value=\"Search\" />")
-    print("</p>")
-    print("</form>")
+    cgicommon.writeln("<form method=\"GET\" action=\"%s\">" % (cgicommon.escape(baseurl, True)))
+    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney.get_name())))
+    cgicommon.writeln("<p>")
+    cgicommon.writeln("Search player name: <input type=\"text\" name=\"searchname\" value=\"\" /> ")
+    cgicommon.writeln("<input type=\"submit\" name=\"searchsubmit\" value=\"Search\" />")
+    cgicommon.writeln("</p>")
+    cgicommon.writeln("</form>")
 
 def fatal_error(text):
     cgicommon.print_html_head("Player View")
-    print("<body>")
-    print("<p>%s</p>" % (cgi.escape(text)))
-    print("</body></html>")
+    cgicommon.writeln("<body>")
+    cgicommon.writeln("<p>%s</p>" % (cgicommon.escape(text)))
+    cgicommon.writeln("</body></html>")
     sys.exit(1)
 
 def fatal_exception(exc, tourney=None):
     cgicommon.print_html_head("Player View")
-    print("<body>")
+    cgicommon.writeln("<body>")
     if tourney:
         cgicommon.show_sidebar(tourney)
-    print("<div class=\"mainpane\">")
+    cgicommon.writeln("<div class=\"mainpane\">")
     cgicommon.show_tourney_exception(exc)
-    print("</div>")
-    print("</body></html>")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</body></html>")
     sys.exit(1)
 
-print("Content-Type: text/html; charset=utf-8");
-print("");
+cgicommon.writeln("Content-Type: text/html; charset=utf-8");
+cgicommon.writeln("");
 
 baseurl = "/cgi-bin/player.py";
 form = cgi.FieldStorage();
@@ -181,7 +181,7 @@ elif cgicommon.is_client_from_localhost() and request_method == "POST" and form.
         try:
             tourney.add_player(new_player_name, new_player_rating, new_player_division)
         except countdowntourney.TourneyException as e:
-            exceptions_to_show.append(("<p>Failed to add new player %s...</p>" % (cgi.escape(new_player_name)), e))
+            exceptions_to_show.append(("<p>Failed to add new player %s...</p>" % (cgicommon.escape(new_player_name)), e))
 
 elif request_method == "GET" and form.getfirst("searchsubmit"):
     player_name = form.getfirst("searchname")
@@ -200,46 +200,46 @@ if player:
 else:
     cgicommon.print_html_head("Player View")
 
-print("<body>")
+cgicommon.writeln("<body>")
 
 cgicommon.assert_client_from_localhost()
 
 cgicommon.show_sidebar(tourney)
 
-print("<div class=\"mainpane\">")
+cgicommon.writeln("<div class=\"mainpane\">")
 
 if player:
-    print("<h1>%s%s</h1>" % (cgi.escape(player_name), " (withdrawn)" if player.is_withdrawn() else ""))
+    cgicommon.writeln("<h1>%s%s</h1>" % (cgicommon.escape(player_name), " (withdrawn)" if player.is_withdrawn() else ""))
 
 for (html, exc) in exceptions_to_show:
-    print(html)
+    cgicommon.writeln(html)
     if exc is not None:
         cgicommon.show_tourney_exception(exc)
 
 if edit_notifications:
-    print("<h2>Player details changed</h2>")
-    print("<blockquote>")
+    cgicommon.writeln("<h2>Player details changed</h2>")
+    cgicommon.writeln("<blockquote>")
 
 for item in edit_notifications:
-    print("<li>%s</li>" % (cgi.escape(item)))
+    cgicommon.writeln("<li>%s</li>" % (cgicommon.escape(item)))
 
 if edit_notifications:
-    print("</blockquote>")
-    print("<blockquote>")
+    cgicommon.writeln("</blockquote>")
+    cgicommon.writeln("<blockquote>")
     if player:
-        print("<a href=\"%s?tourney=%s&id=%d\">OK</a>" % (cgi.escape(baseurl, True), urllib.parse.quote_plus(tourney.get_name()), player.get_id()))
+        cgicommon.writeln("<a href=\"%s?tourney=%s&id=%d\">OK</a>" % (cgicommon.escape(baseurl, True), urllib.parse.quote_plus(tourney.get_name()), player.get_id()))
     else:
-        print("<a href=\"%s?tourney=%s\">OK</a>" % (cgi.escape(baseurl, True), urllib.parse.quote_plus(tourney.get_name())))
-    print("</blockquote>")
+        cgicommon.writeln("<a href=\"%s?tourney=%s\">OK</a>" % (cgicommon.escape(baseurl, True), urllib.parse.quote_plus(tourney.get_name())))
+    cgicommon.writeln("</blockquote>")
 
 if player:
-    print("<hr />")
+    cgicommon.writeln("<hr />")
     def player_to_link(p):
         return cgicommon.player_to_link(p, tourneyname, p == player)
 
     num_divisions = tourney.get_num_divisions()
 
-    print("<h2>Stats Corner</h2>")
+    cgicommon.writeln("<h2>Stats Corner</h2>")
     standings = tourney.get_standings(player.get_division())
     standing = None
     for s in standings:
@@ -247,7 +247,7 @@ if player:
             standing = s
             break
     else:
-        print("<p>%s isn't in the standings table for %s. This is... odd.</p>" % (cgi.escape(player.get_name()), cgi.escape(tourney.get_division_name(player.get_division()))))
+        cgicommon.writeln("<p>%s isn't in the standings table for %s. This is... odd.</p>" % (cgicommon.escape(player.get_name()), cgicommon.escape(tourney.get_division_name(player.get_division()))))
 
     games = tourney.get_games()
     games = [x for x in games if x.contains_player(player)]
@@ -287,182 +287,182 @@ if player:
         else:
             indiv_string = ""
 
-        print("<table class=\"statscorner\">")
-        print("<tr class=\"statsrow\"><th colspan=\"2\">%s</th></tr>" % (cgi.escape(player.get_name())))
-        print("<tr class=\"statsrow\"><td class=\"statsname\">Rating</td>")
-        print("<td class=\"statsnumvalue\">%g</td></tr>" % (player.get_rating()))
-        print("<tr class=\"statsrow\"><td class=\"statsname\">Tournament rating</td>")
+        cgicommon.writeln("<table class=\"statscorner\">")
+        cgicommon.writeln("<tr class=\"statsrow\"><th colspan=\"2\">%s</th></tr>" % (cgicommon.escape(player.get_name())))
+        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Rating</td>")
+        cgicommon.writeln("<td class=\"statsnumvalue\">%g</td></tr>" % (player.get_rating()))
+        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Tournament rating</td>")
         if standing.tournament_rating is not None:
-            print("<td class=\"statsnumvalue\">%.2f</td></tr>" % (standing.tournament_rating))
+            cgicommon.writeln("<td class=\"statsnumvalue\">%.2f</td></tr>" % (standing.tournament_rating))
         else:
-            print("<td class=\"statsnumvalue\"></td></tr>")
-        print("<tr class=\"statsrow\"><td class=\"statsname\">Position%s</td>" % (indiv_string))
-        print("<td class=\"statsnumvalue\">%s</td></tr>" % (cgicommon.ordinal_number(standing.position)))
+            cgicommon.writeln("<td class=\"statsnumvalue\"></td></tr>")
+        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Position%s</td>" % (indiv_string))
+        cgicommon.writeln("<td class=\"statsnumvalue\">%s</td></tr>" % (cgicommon.ordinal_number(standing.position)))
         if seed is not None:
-            print("<tr class=\"statsrow\"><td class=\"statsname\">Rating rank%s</td>" % (indiv_string))
-            print("<td class=\"statsnumvalue\">%s</td></tr>" % (cgicommon.ordinal_number(seed)))
+            cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Rating rank%s</td>" % (indiv_string))
+            cgicommon.writeln("<td class=\"statsnumvalue\">%s</td></tr>" % (cgicommon.ordinal_number(seed)))
 
-        print("<tr class=\"statsrow\"><td class=\"statsname\">Games played</td>")
-        print("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.played))
-        print("<tr class=\"statsrow\"><td class=\"statsname\">Wins</td>")
-        print("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.wins))
-        print("<tr class=\"statsrow\"><td class=\"statsname\">Draws</td>")
-        print("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.draws))
+        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Games played</td>")
+        cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.played))
+        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Wins</td>")
+        cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.wins))
+        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Draws</td>")
+        cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.draws))
         if highest_score is not None:
-            print("<tr class=\"statsrow\"><td class=\"statsname\">Highest score</td>")
-            print("<td class=\"statsnumvalue\">%d</td></tr>" % (highest_score))
+            cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Highest score</td>")
+            cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (highest_score))
         if lowest_score is not None:
-            print("<tr class=\"statsrow\"><td class=\"statsname\">Lowest score</td>")
-            print("<td class=\"statsnumvalue\">%d</td></tr>" % (lowest_score))
-        print("<tr class=\"statsrow\"><td class=\"statsname\">Points scored</td>")
-        print("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.points))
-        print("<tr class=\"statsrow\"><td class=\"statsname\">Points against</td>")
-        print("<td class=\"statsnumvalue\">%d</td></tr>" % (-(standing.spread - standing.points)))
-        print("<tr class=\"statsrow\"><td class=\"statsname\">Spread</td>")
-        print("<td class=\"statsnumvalue\">%+d</td></tr>" % (standing.spread))
-        print("<tr class=\"statsrow\"><td class=\"statsname\">Played 1st/2nd</td>")
-        print("<td class=\"statsnumvalue\">%d/%d</td></tr>" % (standing.played_first, standing.played - standing.played_first))
+            cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Lowest score</td>")
+            cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (lowest_score))
+        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Points scored</td>")
+        cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.points))
+        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Points against</td>")
+        cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (-(standing.spread - standing.points)))
+        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Spread</td>")
+        cgicommon.writeln("<td class=\"statsnumvalue\">%+d</td></tr>" % (standing.spread))
+        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Played 1st/2nd</td>")
+        cgicommon.writeln("<td class=\"statsnumvalue\">%d/%d</td></tr>" % (standing.played_first, standing.played - standing.played_first))
 
-        print("</table>")
-    print("<hr />")
+        cgicommon.writeln("</table>")
+    cgicommon.writeln("<hr />")
 
-    print("<h2>Games</h2>")
+    cgicommon.writeln("<h2>Games</h2>")
     if not games:
-        print("<p>None.</p>")
+        cgicommon.writeln("<p>None.</p>")
     else:
         cgicommon.show_games_as_html_table(games, False, None, True, lambda x : tourney.get_short_round_name(x), player_to_link)
 
-    print("<hr />")
+    cgicommon.writeln("<hr />")
 
-    print("<h2>Edit player</h2>")
-    print("<form method=\"POST\" action=\"%s?tourney=%s&id=%d\">" % (cgi.escape(baseurl), urllib.parse.quote_plus(tourneyname), player_id))
-    print("<table>")
-    print("<tr><td>Name</td><td><input type=\"text\" name=\"setname\" value=\"%s\" /></td></tr>" % (cgi.escape(player.get_name(), True)))
-    print("<tr><td>Rating</td><td><input type=\"text\" name=\"setrating\" value=\"%g\"/></td></tr>" % (player.get_rating()))
+    cgicommon.writeln("<h2>Edit player</h2>")
+    cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&id=%d\">" % (cgicommon.escape(baseurl), urllib.parse.quote_plus(tourneyname), player_id))
+    cgicommon.writeln("<table>")
+    cgicommon.writeln("<tr><td>Name</td><td><input type=\"text\" name=\"setname\" value=\"%s\" /></td></tr>" % (cgicommon.escape(player.get_name(), True)))
+    cgicommon.writeln("<tr><td>Rating</td><td><input type=\"text\" name=\"setrating\" value=\"%g\"/></td></tr>" % (player.get_rating()))
     if num_divisions > 1:
-        print("<tr><td>Division</td>")
-        print("<td>")
+        cgicommon.writeln("<tr><td>Division</td>")
+        cgicommon.writeln("<td>")
         show_division_drop_down_box("setdivision", tourney, player)
-        print("</td></tr>")
-    print("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <em>(if ticked, the fixture generator will not include this player)</em></td></tr>" % ("checked" if player.is_withdrawn() else ""))
-    print("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <em>(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</em></td></tr>" % ("checked" if player.is_avoiding_prune() else ""))
-    print("</table>")
-    print("<p>")
-    print("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourneyname, True)))
-    print("<input type=\"hidden\" name=\"id\" value=\"%d\" />" % (player_id))
-    print("<input type=\"submit\" name=\"editplayer\" value=\"Save Changes\" />")
-    print("</p>")
-    print("</form>")
-    print("<hr />")
+        cgicommon.writeln("</td></tr>")
+    cgicommon.writeln("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <em>(if ticked, the fixture generator will not include this player)</em></td></tr>" % ("checked" if player.is_withdrawn() else ""))
+    cgicommon.writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <em>(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</em></td></tr>" % ("checked" if player.is_avoiding_prune() else ""))
+    cgicommon.writeln("</table>")
+    cgicommon.writeln("<p>")
+    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname, True)))
+    cgicommon.writeln("<input type=\"hidden\" name=\"id\" value=\"%d\" />" % (player_id))
+    cgicommon.writeln("<input type=\"submit\" name=\"editplayer\" value=\"Save Changes\" />")
+    cgicommon.writeln("</p>")
+    cgicommon.writeln("</form>")
+    cgicommon.writeln("<hr />")
 else:
-    print("<h1>Players</h1>")
+    cgicommon.writeln("<h1>Players</h1>")
     players = tourney.get_players()
     active_players = tourney.get_active_players()
     num_divisions = tourney.get_num_divisions()
     num_withdrawn = len(players) - len(active_players)
 
     if len(players):
-        sys.stdout.write("<p>Your tourney has %d players" % (len(players)))
+        cgicommon.write("<p>Your tourney has %d players" % (len(players)))
         if num_divisions > 1:
-            sys.stdout.write(" in %d divisions" % (num_divisions))
+            cgicommon.write(" in %d divisions" % (num_divisions))
         if len(active_players) != len(players):
-            print(". %d of these players %s withdrawn." % (num_withdrawn, "has" if num_withdrawn == 1 else "have"))
+            cgicommon.writeln(". %d of these players %s withdrawn." % (num_withdrawn, "has" if num_withdrawn == 1 else "have"))
         else:
-            print(".")
-        print("</p>")
-        print("<p>Click on a player's name to view or edit information about them.</p>")
+            cgicommon.writeln(".")
+        cgicommon.writeln("</p>")
+        cgicommon.writeln("<p>Click on a player's name to view or edit information about them.</p>")
     else:
-        print("<p>")
-        print("Your tourney doesn't have any players yet.")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("Your tourney doesn't have any players yet.")
         if tourney.get_num_games() == 0:
-            print("You can add players below or you can paste a list of players on the <a href=\"tourneysetup.py?tourney=%s\">Tourney Setup</a> page." % (urllib.parse.quote_plus(tourney.get_name())))
+            cgicommon.writeln("You can add players below or you can paste a list of players on the <a href=\"tourneysetup.py?tourney=%s\">Tourney Setup</a> page." % (urllib.parse.quote_plus(tourney.get_name())))
         else:
-            print("Yet somehow you've managed to create fixtures. I'm not quite sure how you've managed that, but meh. You can add players using the form below.")
-        print("</p>")
+            cgicommon.writeln("Yet somehow you've managed to create fixtures. I'm not quite sure how you've managed that, but meh. You can add players using the form below.")
+        cgicommon.writeln("</p>")
 
     for div in range(num_divisions):
         div_players = [x for x in players if x.get_division() == div]
         div_players = sorted(div_players, key=lambda x : x.get_name())
 
         if num_divisions > 1:
-            print("<h2>%s (%d active players)</h2>" % (tourney.get_division_name(div), len([x for x in div_players if not x.is_withdrawn()])))
+            cgicommon.writeln("<h2>%s (%d active players)</h2>" % (tourney.get_division_name(div), len([x for x in div_players if not x.is_withdrawn()])))
 
-        print("<ul>")
+        cgicommon.writeln("<ul>")
         for p in div_players:
-            print("<li>%s%s%s</li>" % (
+            cgicommon.writeln("<li>%s%s%s</li>" % (
                     cgicommon.player_to_link(p, tourney.get_name()),
                     " (withdrawn)" if p.is_withdrawn() else "",
                     " (avoiding Prune)" if p.is_avoiding_prune() else ""))
-        print("</ul>")
+        cgicommon.writeln("</ul>")
 
 show_player_search_form(tourney)
 
 if player is None:
-    print("<hr />")
+    cgicommon.writeln("<hr />")
 
-    print("<h2>Add player</h2>")
+    cgicommon.writeln("<h2>Add player</h2>")
     if tourney.get_num_games() > 0:
-        print("<p>The tournament has already started. You may add new players, but these new players will not be added to any rounds whose fixtures have already been generated.</p>")
-        print("<p>Note that <strong>you cannot delete a player</strong> once the tournament has started, although you can <em>withdraw</em> them, which prevents them from being included in the fixture list for future rounds. You can withdraw a player or edit their details by clicking their name.</p>")
+        cgicommon.writeln("<p>The tournament has already started. You may add new players, but these new players will not be added to any rounds whose fixtures have already been generated.</p>")
+        cgicommon.writeln("<p>Note that <strong>you cannot delete a player</strong> once the tournament has started, although you can <em>withdraw</em> them, which prevents them from being included in the fixture list for future rounds. You can withdraw a player or edit their details by clicking their name.</p>")
 
-    print("<form method=\"POST\" action=\"%s?tourney=%s\">" % (cgi.escape(baseurl), urllib.parse.quote_plus(tourney.get_name())))
-    print("<table>")
-    print("<tr><td>New player name</td>")
-    print("<td><input type=\"text\" name=\"newplayername\" value=\"\" /></td></tr>")
-    print("<tr><td>New player rating</td>")
-    print("<td><input type=\"text\" name=\"newplayerrating\" value=\"\" /> <em>(leave blank for the default rating 1000; enter 0 if this is a prune or bye)</em></td></tr>")
+    cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s\">" % (cgicommon.escape(baseurl), urllib.parse.quote_plus(tourney.get_name())))
+    cgicommon.writeln("<table>")
+    cgicommon.writeln("<tr><td>New player name</td>")
+    cgicommon.writeln("<td><input type=\"text\" name=\"newplayername\" value=\"\" /></td></tr>")
+    cgicommon.writeln("<tr><td>New player rating</td>")
+    cgicommon.writeln("<td><input type=\"text\" name=\"newplayerrating\" value=\"\" /> <em>(leave blank for the default rating 1000; enter 0 if this is a prune or bye)</em></td></tr>")
     if tourney.get_num_divisions() > 1:
-        print("<tr><td>Division</td><td>")
+        cgicommon.writeln("<tr><td>Division</td><td>")
         show_division_drop_down_box("newplayerdivision", tourney, None)
-        print("</td></tr>")
-    print("</table>")
-    print("<p>")
-    print("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourney.get_name(), True)))
-    print("<input type=\"submit\" name=\"newplayersubmit\" value=\"Add New Player\" />")
-    print("</p>")
-    print("</form>")
+        cgicommon.writeln("</td></tr>")
+    cgicommon.writeln("</table>")
+    cgicommon.writeln("<p>")
+    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney.get_name(), True)))
+    cgicommon.writeln("<input type=\"submit\" name=\"newplayersubmit\" value=\"Add New Player\" />")
+    cgicommon.writeln("</p>")
+    cgicommon.writeln("</form>")
 
     if tourney.get_num_games() > 0:
-        print("<hr />")
-        print("<h2>Rerate players by player ID</h2>")
-        print("<p>")
-        print("""
+        cgicommon.writeln("<hr />")
+        cgicommon.writeln("<h2>Rerate players by player ID</h2>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("""
         Set the ratings of players in order, by player ID, which corresponds
         to the order in which they appeared in the list you put into the text
         box at the start of the tournament. The player at the top of the list
         (the lowest player ID) gets the highest rating, and the player at the
         bottom of the list (the highest player ID) gets the lowest rating. Any
         player with a rating of zero remains unchanged.""")
-        print("</p>")
-        print("<p>")
-        print("""
+        cgicommon.writeln("</p>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("""
         This is useful if when you pasted in the player list you forgot to
         select the option which tells Atropine that they're in rating order,
         and now the Overachievers page thinks they're all seeded the same.
         """)
-        print("</p>")
+        cgicommon.writeln("</p>")
 
-        print("<p>")
-        print("""
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("""
         If you press this button, it will overwrite all other non-zero ratings
         you may have given the players. That's why you need to tick the box as
         well.
         """)
-        print("</p>")
+        cgicommon.writeln("</p>")
 
-        print("<p>")
-        print("<form method=\"POST\" action=\"%s?tourney=%s\">" % (cgi.escape(baseurl), urllib.parse.quote_plus(tourneyname)))
-        print("<input type=\"submit\" name=\"reratebyplayerid\" value=\"Rerate players by player ID\" />")
-        print("<input type=\"checkbox\" name=\"reratebyplayeridconfirm\" id=\"reratebyplayeridconfirm\" style=\"margin-left: 20px\" />")
-        print("<label for=\"reratebyplayeridconfirm\">Yes, I'm sure</label>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s\">" % (cgicommon.escape(baseurl), urllib.parse.quote_plus(tourneyname)))
+        cgicommon.writeln("<input type=\"submit\" name=\"reratebyplayerid\" value=\"Rerate players by player ID\" />")
+        cgicommon.writeln("<input type=\"checkbox\" name=\"reratebyplayeridconfirm\" id=\"reratebyplayeridconfirm\" style=\"margin-left: 20px\" />")
+        cgicommon.writeln("<label for=\"reratebyplayeridconfirm\">Yes, I'm sure</label>")
 
-        print("</form>")
-        print("</p>")
+        cgicommon.writeln("</form>")
+        cgicommon.writeln("</p>")
 
-print("<hr />")
+cgicommon.writeln("<hr />")
 
-print("</div>")
-print("</body>")
-print("</html>")
+cgicommon.writeln("</div>")
+cgicommon.writeln("</body>")
+cgicommon.writeln("</html>")
 
 sys.exit(0)

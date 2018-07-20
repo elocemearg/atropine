@@ -5,6 +5,7 @@ import os;
 import cgi;
 import urllib.request, urllib.parse, urllib.error;
 import sqlite3;
+import html
 
 dbdir = os.path.join("..", "tourneys");
 globaldbfile = os.path.join("..", "prefs.db");
@@ -16,77 +17,84 @@ def int_or_none(s):
     except:
         return None
 
+def writeln(string=""):
+    sys.stdout.buffer.write(string.encode("utf-8"))
+    sys.stdout.buffer.write(b'\n')
+
+def write(string):
+    sys.stdout.buffer.write(string.encode("utf-8"))
+
+def escape(string, quote=True):
+    return html.escape(string, quote)
+
 def print_html_head(title, cssfile="style.css", othercssfiles=[]):
-    #print """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-#<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB" xml:lang="en-GB">
-#""";
-    print("<!DOCTYPE html>")
-    print("<html>")
-    print("<head>");
-    print("<title>%s</title>" % (cgi.escape(title)));
-    print("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />");
-    print("<link rel=\"stylesheet\" type=\"text/css\" href=\"/%s\" />" % (cgi.escape(cssfile, True)));
+    writeln("<!DOCTYPE html>")
+    writeln("<html>")
+    writeln("<head>");
+    writeln("<title>%s</title>" % (escape(title)));
+    writeln("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />");
+    writeln("<link rel=\"stylesheet\" type=\"text/css\" href=\"/%s\" />" % (escape(cssfile, True)));
     for f in othercssfiles:
-        print("<link rel=\"stylesheet\" type=\"text/css\" href=\"/%s\" />" % (cgi.escape(f, True)));
-    print("<link rel=\"shortcut icon\" href=\"/favicon.ico\" type=\"image/x-icon\" />")
-    print("<link rel=\"shortcut icon\" href=\"/favicon.png\" type=\"image/png\" />")
-    print("</head>");
+        writeln("<link rel=\"stylesheet\" type=\"text/css\" href=\"/%s\" />" % (escape(f, True)));
+    writeln("<link rel=\"shortcut icon\" href=\"/favicon.ico\" type=\"image/x-icon\" />")
+    writeln("<link rel=\"shortcut icon\" href=\"/favicon.png\" type=\"image/png\" />")
+    writeln("</head>");
 
 def print_html_head_local(title):
-    print("<!DOCTYPE html>")
-    print("<head>")
-    print("<title>%s</title>" % (cgi.escape(title)))
-    print("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />")
-    print("<style>")
+    writeln("<!DOCTYPE html>")
+    writeln("<head>")
+    writeln("<title>%s</title>" % (escape(title)))
+    writeln("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />")
+    writeln("<style>")
 
     # Current directory should already be webroot
     try:
         f = open("style.css")
         for line in f:
-            sys.stdout.write(line)
+            write(line)
         f.close()
     except IOError:
-        print("<!-- Failed to load style.css -->")
+        writeln("<!-- Failed to load style.css -->")
         pass
 
-    print("</style>")
-    print("</head>")
+    writeln("</style>")
+    writeln("</head>")
 
 def show_tourney_exception(exc):
-    print("<div class=\"tourneyexception\">")
-    print("<div class=\"tourneyexceptionimage\">")
-    print("<img src=\"/images/facepalm.png\" alt=\"Facepalm\" />")
-    print("</div>")
-    print("<div class=\"tourneyexceptionmessagecontainer\">")
-    print("<div class=\"tourneyexceptionmessage\">")
-    print(cgi.escape(exc.description))
-    print("</div>")
-    print("</div>")
-    print("</div>")
+    writeln("<div class=\"tourneyexception\">")
+    writeln("<div class=\"tourneyexceptionimage\">")
+    writeln("<img src=\"/images/facepalm.png\" alt=\"Facepalm\" />")
+    writeln("</div>")
+    writeln("<div class=\"tourneyexceptionmessagecontainer\">")
+    writeln("<div class=\"tourneyexceptionmessage\">")
+    writeln(escape(exc.description))
+    writeln("</div>")
+    writeln("</div>")
+    writeln("</div>")
 
 def show_warning_box(html):
-    print("<div class=\"warningbox\">")
-    print("<div class=\"warningboximage\">")
-    print("<img src=\"/images/warning.png\" alt=\"Warning\" />")
-    print("</div>")
-    print("<div class=\"warningboxmessagecontainer\">")
-    print("<div class=\"warningboxmessage\">")
-    print(html)
-    print("</div>")
-    print("</div>")
-    print("</div>")
+    writeln("<div class=\"warningbox\">")
+    writeln("<div class=\"warningboximage\">")
+    writeln("<img src=\"/images/warning.png\" alt=\"Warning\" />")
+    writeln("</div>")
+    writeln("<div class=\"warningboxmessagecontainer\">")
+    writeln("<div class=\"warningboxmessage\">")
+    writeln(html)
+    writeln("</div>")
+    writeln("</div>")
+    writeln("</div>")
 
 def show_info_box(html):
-    print("<div class=\"infoboxcontainer\">")
-    print("<div class=\"infoboximage\">")
-    print("<img src=\"/images/info.png\" alt=\"Info\" />")
-    print("</div>")
-    print("<div class=\"infoboxmessagecontainer\">")
-    print("<div class=\"infoboxmessage\">")
-    print(html)
-    print("</div>")
-    print("</div>")
-    print("</div>")
+    writeln("<div class=\"infoboxcontainer\">")
+    writeln("<div class=\"infoboximage\">")
+    writeln("<img src=\"/images/info.png\" alt=\"Info\" />")
+    writeln("</div>")
+    writeln("<div class=\"infoboxmessagecontainer\">")
+    writeln("<div class=\"infoboxmessage\">")
+    writeln(html)
+    writeln("</div>")
+    writeln("</div>")
+    writeln("</div>")
 
 def set_module_path():
     generator_dir = os.environ.get("GENERATORPATH", ".");
@@ -97,98 +105,98 @@ def set_module_path():
 
 def show_sidebar(tourney):
     new_window_html = "<img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Opens in new window\" />"
-    print("<div class=\"sidebar\">");
+    writeln("<div class=\"sidebar\">");
 
-    print("<a href=\"/cgi-bin/home.py\"><img src=\"/images/robin128.png\" alt=\"Robin\" /></a><br />");
+    writeln("<a href=\"/cgi-bin/home.py\"><img src=\"/images/robin128.png\" alt=\"Robin\" /></a><br />");
     if tourney:
-        print("<p><strong>%s</strong></p>" % cgi.escape(tourney.name));
-        print(("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\"><strong>General Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
-        print("<div class=\"sidebarlinklist\">")
-        print("<div>")
-        print(("<a href=\"/cgi-bin/player.py?tourney=%s\">Players...</a>" % (urllib.parse.quote_plus(tourney.name))))
-        print("</div>")
-        print("<div>")
-        print(("<a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions...</a>" % (urllib.parse.quote_plus(tourney.name))))
-        print("</div>")
-        print("<div>")
-        print(("<a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Teams...</a>" % (urllib.parse.quote_plus(tourney.name))))
-        print("</div>")
-        print("<div>")
-        print(("<a href=\"/cgi-bin/tourneysetupadvanced.py?tourney=%s\">Advanced...</a>" % (urllib.parse.quote_plus(tourney.name))))
-        print("</div>")
-        print("</div>")
+        writeln("<p><strong>%s</strong></p>" % escape(tourney.name));
+        writeln(("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\"><strong>General Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
+        writeln("<div class=\"sidebarlinklist\">")
+        writeln("<div>")
+        writeln(("<a href=\"/cgi-bin/player.py?tourney=%s\">Players...</a>" % (urllib.parse.quote_plus(tourney.name))))
+        writeln("</div>")
+        writeln("<div>")
+        writeln(("<a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions...</a>" % (urllib.parse.quote_plus(tourney.name))))
+        writeln("</div>")
+        writeln("<div>")
+        writeln(("<a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Teams...</a>" % (urllib.parse.quote_plus(tourney.name))))
+        writeln("</div>")
+        writeln("<div>")
+        writeln(("<a href=\"/cgi-bin/tourneysetupadvanced.py?tourney=%s\">Advanced...</a>" % (urllib.parse.quote_plus(tourney.name))))
+        writeln("</div>")
+        writeln("</div>")
 
-        print("<br />")
+        writeln("<br />")
 
-        print("<div>")
-        print(("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\"><strong>Display Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
-        print("</div>")
+        writeln("<div>")
+        writeln(("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\"><strong>Display Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
+        writeln("</div>")
 
         banner_text = tourney.get_banner_text()
         if banner_text:
-            print(("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\">" % (urllib.parse.quote_plus(tourney.name))))
-            print("<div class=\"sidebarbanner\" title=\"Banner is active\">")
-            print((cgi.escape(banner_text)))
-            print("</div>")
-            print("</a>")
+            writeln(("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\">" % (urllib.parse.quote_plus(tourney.name))))
+            writeln("<div class=\"sidebarbanner\" title=\"Banner is active\">")
+            writeln((escape(banner_text)))
+            writeln("</div>")
+            writeln("</a>")
 
-        print("<br />")
+        writeln("<br />")
 
         rounds = tourney.get_rounds();
         current_round = tourney.get_current_round()
         if rounds:
             if current_round:
-                print(("<div><a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\"><strong>Results entry</strong></a></div>" % (urllib.parse.quote_plus(tourney.name), urllib.parse.quote_plus(str(current_round["num"])))))
+                writeln(("<div><a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\"><strong>Results entry</strong></a></div>" % (urllib.parse.quote_plus(tourney.name), urllib.parse.quote_plus(str(current_round["num"])))))
             else:
-                print("<div><strong>Games</strong></div>")
-        print("<div class=\"roundlinks\">")
+                writeln("<div><strong>Games</strong></div>")
+        writeln("<div class=\"roundlinks\">")
         for r in rounds:
             round_no = r["num"];
             round_name = r.get("name", None);
             if not round_name:
                 round_name = "Round " + str(round_no);
 
-            print("<div class=\"roundlink\">");
-            print("<a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\">%s</a>" % (urllib.parse.quote_plus(tourney.name), urllib.parse.quote_plus(str(round_no)), cgi.escape(round_name)));
-            print("</div>");
-        print("</div>")
-        print("<br />");
-        print("<div class=\"genroundlink\">");
-        print("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Generate fixtures...</a>" % (urllib.parse.quote_plus(tourney.name)));
-        print("</div>");
+            writeln("<div class=\"roundlink\">");
+            writeln("<a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\">%s</a>" % (urllib.parse.quote_plus(tourney.name), urllib.parse.quote_plus(str(round_no)), escape(round_name)));
+            writeln("</div>");
+        writeln("</div>")
+        writeln("<br />");
+        writeln("<div class=\"genroundlink\">");
+        writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Generate fixtures...</a>" % (urllib.parse.quote_plus(tourney.name)));
+        writeln("</div>");
 
-        print("<br />")
-        print("<div class=\"misclinks\">")
-        print(("<a href=\"/cgi-bin/tableindex.py?tourney=%s\">Name-to-table index</a>" % (urllib.parse.quote_plus(tourney.name))))
-        print("<br />")
+        writeln("<br />")
+        writeln("<div class=\"misclinks\">")
+        writeln(("<a href=\"/cgi-bin/tableindex.py?tourney=%s\">Name-to-table index</a>" % (urllib.parse.quote_plus(tourney.name))))
+        writeln("<br />")
 
-        print("<a href=\"/cgi-bin/standings.py?tourney=%s\">Standings</a>" % (urllib.parse.quote_plus(tourney.name)));
-        print("<br />")
-        print("<a href=\"/cgi-bin/tuffluck.py?tourney=%s\">Tuff Luck</a>" % (urllib.parse.quote_plus(tourney.name)))
-        print("<br />")
-        print("<a href=\"/cgi-bin/overachievers.py?tourney=%s\">Overachievers</a>" % (urllib.parse.quote_plus(tourney.name)))
-        print("</div>")
+        writeln("<a href=\"/cgi-bin/standings.py?tourney=%s\">Standings</a>" % (urllib.parse.quote_plus(tourney.name)));
+        writeln("<br />")
+        writeln("<a href=\"/cgi-bin/tuffluck.py?tourney=%s\">Tuff Luck</a>" % (urllib.parse.quote_plus(tourney.name)))
+        writeln("<br />")
+        writeln("<a href=\"/cgi-bin/overachievers.py?tourney=%s\">Overachievers</a>" % (urllib.parse.quote_plus(tourney.name)))
+        writeln("</div>")
 
-        print("<br />")
+        writeln("<br />")
 
-        print("Tournament report")
-        print("<div class=\"sidebarlinklist\">")
-        print("<div class=\"exportlink\">")
-        print("<a href=\"/cgi-bin/export.py?tourney=%s&format=html\" target=\"_blank\">HTML %s</a>" % (urllib.parse.quote_plus(tourney.name), new_window_html))
-        print("</div>")
-        print("<div class=\"exportlink\">")
-        print("<a href=\"/cgi-bin/export.py?tourney=%s&format=text\" target=\"_blank\">Text %s</a>" % (urllib.parse.quote_plus(tourney.name), new_window_html))
-        print("</div>")
-        print("<div class=\"exportlink\">")
-        print("<a href=\"/cgi-bin/export.py?tourney=%s&format=wikitext\" target=\"_blank\">Wikitext %s</a>" % (urllib.parse.quote_plus(tourney.name), new_window_html))
-        print("</div>")
-        print("</div>")
-    print("<br />")
-    print("<div class=\"globalprefslink\">")
-    print("<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" ")
-    print("onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=450,height=500'); return false;\" >Preferences... " + new_window_html + "</a>")
-    print("</div>")
-    print("</div>");
+        writeln("Tournament report")
+        writeln("<div class=\"sidebarlinklist\">")
+        writeln("<div class=\"exportlink\">")
+        writeln("<a href=\"/cgi-bin/export.py?tourney=%s&format=html\" target=\"_blank\">HTML %s</a>" % (urllib.parse.quote_plus(tourney.name), new_window_html))
+        writeln("</div>")
+        writeln("<div class=\"exportlink\">")
+        writeln("<a href=\"/cgi-bin/export.py?tourney=%s&format=text\" target=\"_blank\">Text %s</a>" % (urllib.parse.quote_plus(tourney.name), new_window_html))
+        writeln("</div>")
+        writeln("<div class=\"exportlink\">")
+        writeln("<a href=\"/cgi-bin/export.py?tourney=%s&format=wikitext\" target=\"_blank\">Wikitext %s</a>" % (urllib.parse.quote_plus(tourney.name), new_window_html))
+        writeln("</div>")
+        writeln("</div>")
+    writeln("<br />")
+    writeln("<div class=\"globalprefslink\">")
+    writeln("<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" ")
+    writeln("onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=450,height=500'); return false;\" >Preferences... " + new_window_html + "</a>")
+    writeln("</div>")
+    writeln("</div>");
 
 def make_team_dot_html(team):
     if team:
@@ -201,14 +209,14 @@ def make_player_dot_html(player):
     return make_team_dot_html(player.get_team())
 
 def show_team_score_table(team_scores):
-    print("<table class=\"teamscorestable\">")
-    print('<th colspan="2">Team score</th>')
+    writeln("<table class=\"teamscorestable\">")
+    writeln('<th colspan="2">Team score</th>')
     for (team, score) in team_scores:
-        print('<tr>')
-        print('<td class="teamscorestablename">%s %s</td>' % (make_team_dot_html(team), cgi.escape(team.get_name())))
-        print('<td class="teamscorestablescore">%d</td>' % score)
-        print('</tr>')
-    print('</table>')
+        writeln('<tr>')
+        writeln('<td class="teamscorestablename">%s %s</td>' % (make_team_dot_html(team), escape(team.get_name())))
+        writeln('<td class="teamscorestablescore">%d</td>' % score)
+        writeln('</tr>')
+    writeln('</table>')
 
 def show_games_as_html_table(games, editable=True, remarks=None, include_round_column=False, round_namer=None, player_to_link=None, remarks_heading=""):
     if remarks is None:
@@ -218,15 +226,15 @@ def show_games_as_html_table(games, editable=True, remarks=None, include_round_c
         round_namer = lambda x : ("Round %d" % (x))
 
     if player_to_link is None:
-        player_to_link = lambda x : cgi.escape(x.get_name())
+        player_to_link = lambda x : escape(x.get_name())
 
-    print("<table class=\"scorestable\">");
-    print("<tr>");
+    writeln("<table class=\"scorestable\">");
+    writeln("<tr>");
     if include_round_column:
-        print("<th>Round</th>")
-    print("<th>Table</th><th>Type</th>");
-    print("<th>Player 1</th><th>Score</th><th>Player 2</th><th>%s</th>" % (cgi.escape(remarks_heading)));
-    print("</tr>")
+        writeln("<th>Round</th>")
+    writeln("<th>Table</th><th>Type</th>");
+    writeln("<th>Player 1</th><th>Score</th><th>Player 2</th><th>%s</th>" % (escape(remarks_heading)));
+    writeln("</tr>")
     last_table_no = None;
     last_round_no = None
     game_seq = 0
@@ -259,12 +267,12 @@ def show_games_as_html_table(games, editable=True, remarks=None, include_round_c
         else:
             tr_classes.append("unplayedgame");
 
-        print("<tr class=\"%s\">" % " ".join(tr_classes));
+        writeln("<tr class=\"%s\">" % " ".join(tr_classes));
         if first_game_in_round and include_round_column:
-            print("<td class=\"roundno\" rowspan=\"%d\">%s</td>" % (num_games_in_round, round_namer(g.round_no)))
+            writeln("<td class=\"roundno\" rowspan=\"%d\">%s</td>" % (num_games_in_round, round_namer(g.round_no)))
         if first_game_in_table:
-            print("<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, g.table_no));
-        print("<td class=\"gametype\">%s</td>" % cgi.escape(g.game_type));
+            writeln("<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, g.table_no));
+        writeln("<td class=\"gametype\">%s</td>" % escape(g.game_type));
 
         p1_classes = ["gameplayer1"];
         p2_classes = ["gameplayer2"];
@@ -284,35 +292,35 @@ def show_games_as_html_table(games, editable=True, remarks=None, include_round_c
         
         team_string = make_player_dot_html(g.p1)
 
-        print("<td class=\"%s\" align=\"right\">%s %s</td>" % (" ".join(p1_classes), player_html_strings[0], team_string));
+        writeln("<td class=\"%s\" align=\"right\">%s %s</td>" % (" ".join(p1_classes), player_html_strings[0], team_string));
         if g.is_double_loss():
             edit_box_score = "0 - 0*"
             html_score = "&#10006; - &#10006;"
         else:
             edit_box_score = g.format_score()
-            html_score = cgi.escape(g.format_score())
+            html_score = escape(g.format_score())
 
-        print("<td class=\"gamescore\" align=\"center\">");
+        writeln("<td class=\"gamescore\" align=\"center\">");
 
         if g.are_players_known():
             if editable:
-                print("""
+                writeln("""
 <input class="gamescore" id="gamescore_%d_%d" type="text" size="10"
 name="gamescore_%d_%d" value="%s"
-onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.round_no, g.seq, cgi.escape(edit_box_score, True), g.round_no, g.seq));
+onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.round_no, g.seq, escape(edit_box_score, True), g.round_no, g.seq));
             else:
-                print(html_score);
+                writeln(html_score);
 
-        print("</td>");
+        writeln("</td>");
         team_string = make_player_dot_html(g.p2)
-        print("<td class=\"%s\" align=\"left\">%s %s</td>" % (" ".join(p2_classes), team_string, player_html_strings[1]));
-        print("<td class=\"gameremarks\">%s</td>" % cgi.escape(remarks.get((g.round_no, g.seq), "")));
-        print("</tr>");
+        writeln("<td class=\"%s\" align=\"left\">%s %s</td>" % (" ".join(p2_classes), team_string, player_html_strings[1]));
+        writeln("<td class=\"gameremarks\">%s</td>" % escape(remarks.get((g.round_no, g.seq), "")));
+        writeln("</tr>");
         last_round_no = g.round_no
         last_table_no = g.table_no;
         game_seq += 1
     
-    print("</table>");
+    writeln("</table>");
 
 def show_standings_table(tourney, show_draws_column, show_points_column,
         show_spread_column, show_first_second_column=False,
@@ -324,9 +332,9 @@ def show_standings_table(tourney, show_draws_column, show_points_column,
     if linkify_players:
         linkfn = lambda x : player_to_link(x, tourney.get_name())
     else:
-        linkfn = lambda x : cgi.escape(x.get_name())
+        linkfn = lambda x : escape(x.get_name())
 
-    print("<table class=\"standingstable\">");
+    writeln("<table class=\"standingstable\">");
     for div_index in range(num_divisions):
         standings = tourney.get_standings(div_index)
         if num_divisions > 1:
@@ -334,9 +342,9 @@ def show_standings_table(tourney, show_draws_column, show_points_column,
         else:
             div_string = ""
         if div_index > 0:
-            print("<tr class=\"standingstabledivspacer\"><td></td></tr>")
-        print("<tr><th colspan=\"2\">%s</th><th>Played</th><th>Wins</th>%s%s%s%s%s</tr>" % (
-                cgi.escape(div_string),
+            writeln("<tr class=\"standingstabledivspacer\"><td></td></tr>")
+        writeln("<tr><th colspan=\"2\">%s</th><th>Played</th><th>Wins</th>%s%s%s%s%s</tr>" % (
+                escape(div_string),
                 "<th>Draws</th>" if show_draws_column else "",
                 "<th>Points</th>" if show_points_column else "",
                 "<th>Spread</th>" if show_spread_column else "",
@@ -370,7 +378,7 @@ def show_standings_table(tourney, show_draws_column, show_points_column,
                 else:
                     bgcolour = "#ffdd66"
 
-            print("<tr class=\"standingsrow\" style=\"background-color: %s\">" % (bgcolour));
+            writeln("<tr class=\"standingsrow\" style=\"background-color: %s\">" % (bgcolour));
 
             bold_style = "style=\"font-weight: bold;\""
             if ranking_by_wins:
@@ -387,25 +395,25 @@ def show_standings_table(tourney, show_draws_column, show_points_column,
                 spread_style = bold_style
             else:
                 spread_style = ""
-            print("<td class=\"standingspos\">%d</td>" % pos);
-            print("<td class=\"standingsname\">%s</td>" % (linkfn(player)));
-            print("<td class=\"standingsplayed\">%d</td>" % played);
-            print("<td class=\"standingswins\" %s >%d</td>" % (wins_style, wins));
+            writeln("<td class=\"standingspos\">%d</td>" % pos);
+            writeln("<td class=\"standingsname\">%s</td>" % (linkfn(player)));
+            writeln("<td class=\"standingsplayed\">%d</td>" % played);
+            writeln("<td class=\"standingswins\" %s >%d</td>" % (wins_style, wins));
             if show_draws_column:
-                print("<td class=\"standingsdraws\" %s >%d</td>" % (draws_style, draws));
+                writeln("<td class=\"standingsdraws\" %s >%d</td>" % (draws_style, draws));
             if show_points_column:
-                print("<td class=\"standingspoints\" %s >%d</td>" % (points_style, points));
+                writeln("<td class=\"standingspoints\" %s >%d</td>" % (points_style, points));
             if show_spread_column:
-                print("<td class=\"standingsspread\" %s >%+d</td>" % (spread_style, spread));
+                writeln("<td class=\"standingsspread\" %s >%+d</td>" % (spread_style, spread));
             if show_first_second_column:
-                print("<td class=\"standingsfirstsecond\">%d/%d</td>" % (num_first, played - num_first))
+                writeln("<td class=\"standingsfirstsecond\">%d/%d</td>" % (num_first, played - num_first))
             if show_tournament_rating_column:
-                print("<td class=\"standingstournamentrating\">")
+                writeln("<td class=\"standingstournamentrating\">")
                 if tournament_rating is not None:
-                    print("%.2f" % (tournament_rating))
-                print("</td>")
-            print("</tr>");
-    print("</table>");
+                    writeln("%.2f" % (tournament_rating))
+                writeln("</td>")
+            writeln("</tr>");
+    writeln("</table>");
 
 def player_to_link(player, tourney_name, emboldenise=False, disable_tab_order=False, open_in_new_window=False, custom_text=None):
     return "<a class=\"playerlink%s\" href=\"player.py?tourney=%s&id=%d\" %s%s>%s</a>" % (
@@ -413,7 +421,7 @@ def player_to_link(player, tourney_name, emboldenise=False, disable_tab_order=Fa
             urllib.parse.quote_plus(tourney_name), player.get_id(),
             "tabindex=\"-1\" " if disable_tab_order else "",
             "target=\"_blank\"" if open_in_new_window else "",
-            cgi.escape(custom_text) if custom_text is not None else cgi.escape(player.get_name())
+            escape(custom_text) if custom_text is not None else escape(player.get_name())
     )
 
 def ordinal_number(n):
@@ -502,6 +510,6 @@ def assert_client_from_localhost():
             "as the one on which atropine is running. Your address is " + 
             os.environ.get("REMOTE_ADDR", "(unknown)") + " and I'll only " +
             "serve you this page if you're from localhost."))
-        print("</body></html>")
+        writeln("</body></html>")
         sys.exit(1)
 
