@@ -1111,7 +1111,7 @@ try:
     if round_no is not None:
         print "<div style=\"font-size: 10pt; margin-top: 20px;\">";
         print "<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Show old interface: all the games in this round as a list</a>" % (urllib.quote_plus(tourney_name), round_no);
-        print "</p>";
+        print "</div>";
 
     print "</div>"; #mainpane
 
