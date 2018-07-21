@@ -24,15 +24,19 @@ def check_ready(tourney, div_rounds):
     players = tourney.get_active_players()
     for div in div_rounds:
         div_players = [x for x in players if x.get_division() == div]
-        if len(div_players) % 2 != 0:
+        if len(div_players) < 2:
             if num_divisions == 1:
                 div_name = "The tournament"
             else:
                 div_name = tourney.get_division_name(div)
-            return (False, "%s does not have an even number of active players (it has %d). The Round Robin generator only works with two players to a table." % (div_name, len(div_players)))
+            return (False, "%s does not have at least two players (it has %d). The Round Robin generator needs at least two players." % (div_name, len(div_players)))
 
     # It's not necessary that the games in the previous round have all been
-    # completed
+    # completed.
+
+    # It's also not necessary that there's an even number of players in a
+    # division. If a division has an odd number of players, then one player
+    # will sit out each round.
     return (True, None)
 
 def generate(tourney, settings, div_rounds):
@@ -47,6 +51,14 @@ def generate(tourney, settings, div_rounds):
 
     for div in div_rounds:
         div_players = sorted([x for x in players if x.get_division() == div], key=lambda x : x.get_rating(), reverse=True)
+
+        # If there are an odd number of players, then add an imaginary dummy
+        # player. If a player is drawn to play the dummy then no fixture is
+        # generated for the player for that round, and they sit out that
+        # round.
+        if len(div_players) % 2 != 0:
+            div_players.append(None)
+
         num_rounds = len(div_players) - 1
 
         if num_rounds <= 0:
@@ -93,7 +105,8 @@ def generate(tourney, settings, div_rounds):
                     tables.append((bottom_line[i], top_line[i]))
             groups = []
             for (i1, i2) in tables:
-                groups.append((div_players[i1], div_players[i2]))
+                if div_players[i1] is not None and div_players[i2] is not None:
+                    groups.append((div_players[i1], div_players[i2]))
 
             if start_round_no + round_offset not in round_numbers_generated:
                 round_numbers_generated.append(start_round_no + round_offset)
