@@ -99,13 +99,12 @@ else:
             cgicommon.writeln('<input type="hidden" name="confirm" value="1" />')
             cgicommon.writeln('<p>')
             cgicommon.writeln('<input type="submit" name="delroundsubmit" value="Yes, I\'m sure. Delete the round and all its games." />')
-            cgicommon.writeln('</p><p>')
+            cgicommon.writeln('</p>')
             cgicommon.writeln('</form>')
             cgicommon.writeln('<form action="/cgi-bin/tourneysetup.py" method="post">')
             cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname))
             cgicommon.writeln('<input type="submit" name="arrghgetmeoutofhere" value="Um, wait, actually no. Take me back to the tourney setup page." />')
             cgicommon.writeln('</form>')
-            cgicommon.writeln('</p>')
 
 cgicommon.writeln("</div>")
 

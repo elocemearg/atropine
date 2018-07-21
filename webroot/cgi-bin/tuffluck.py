@@ -46,7 +46,7 @@ try:
     cgicommon.writeln("<form action=\"/cgi-bin/tuffluck.py\" method=\"GET\">")
     cgicommon.writeln("<p>")
     cgicommon.writeln("A player's Tuff Luck is their aggregate losing margin over their")
-    cgicommon.writeln("<input type=\"number\" name=\"numlosinggames\" value=\"%d\" min=\"1\" max=\"999\" size=\"3\" maxlength=\"3\" />" % (num_losing_games))
+    cgicommon.writeln("<input type=\"number\" name=\"numlosinggames\" value=\"%d\" min=\"1\" max=\"999\" size=\"3\" />" % (num_losing_games))
     cgicommon.writeln("closest losing games, for players who have lost at least that many games.")
     cgicommon.writeln("</p>")
     cgicommon.writeln("<p>")

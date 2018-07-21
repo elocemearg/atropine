@@ -80,7 +80,7 @@ try:
 
     # Javascript function to tick/untick all heat game boxes for a division
     cgicommon.writeln("""
-<script type="text/javascript">
+<script>
 //<![CDATA[
 // Set all drop-down boxes in this division to have the value of the first one
 function div_type_select(div) {
@@ -184,7 +184,9 @@ function div_type_select(div) {
         cgicommon.writeln("<tr>");
         cgicommon.writeln("<th colspan=\"5\"></th>")
         cgicommon.writeln("<th>Game type</th>")
+        cgicommon.writeln("<th></th>")
         cgicommon.writeln("</tr>")
+        cgicommon.writeln("<tr>")
         cgicommon.writeln("<th>Table</th><th></th>");
         cgicommon.writeln("<th>Player 1</th><th>Score</th><th>Player 2</th>")
         cgicommon.writeln("<th>")
@@ -215,7 +217,7 @@ function div_type_select(div) {
             cgicommon.writeln("<td class=\"gameseq\">%d</td>" % g.seq);
             #print "<td class=\"gametype\">%s</td>" % cgicommon.escape(g.game_type);
 
-            cgicommon.writeln("<td class=\"gameplayer1\" align=\"right\">")
+            cgicommon.writeln("<td class=\"gameplayer1\">")
             show_player_selection(players, "gamep1_%d_%d" % (g.round_no, g.seq), game_player_names[0]);
             cgicommon.writeln("</td>");
 
@@ -223,9 +225,9 @@ function div_type_select(div) {
                 score_str = g.format_score();
             else:
                 score_str = "-";
-            cgicommon.writeln("<td class=\"gamescore\" align=\"center\">%s</td>" % cgicommon.escape(score_str));
+            cgicommon.writeln("<td class=\"gamescore\">%s</td>" % cgicommon.escape(score_str));
 
-            cgicommon.writeln("<td class=\"gameplayer2\" align=\"right\">")
+            cgicommon.writeln("<td class=\"gameplayer2\">")
             show_player_selection(players, "gamep2_%d_%d" % (g.round_no, g.seq), game_player_names[1]);
             cgicommon.writeln("</td>");
 

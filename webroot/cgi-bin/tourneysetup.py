@@ -70,7 +70,7 @@ Plungemaster Thompson,1640
 Flopsbourne McJumble,1559
 Apterous Prune,0"""
 
-player_list_rating_help = "To give a player a rating, put a comma after the player's name and put the rating number after that, e.g. <tt>Harry Peters,1860</tt>"
+player_list_rating_help = "To give a player a rating, put a comma after the player's name and put the rating number after that, e.g. <span class=\"fixedwidth\">Harry Peters,1860</span>"
 
 cgitb.enable();
 
@@ -99,6 +99,8 @@ request_method = os.environ.get("REQUEST_METHOD", "");
 
 cgicommon.print_html_head("Tourney Setup: " + str(tourneyname));
 
+cgicommon.writeln("<body>");
+
 cgicommon.writeln("<script>")
 cgicommon.writeln("""
 function set_player_list_example(which) {
@@ -124,8 +126,6 @@ cgicommon.writeln("""
 }
 </script>
 """)
-
-cgicommon.writeln("<body>");
 
 cgicommon.assert_client_from_localhost()
 
@@ -222,8 +222,7 @@ else:
     if tourney.get_num_games() == 0:
         if players:
             cgicommon.show_info_box("""<p>
-When you're happy with the player list and the
-<a href="#tourneyrules">tourney rules</a> below, head to
+When you're happy with the player list and the tourney rules below, head to
 <a href="/cgi-bin/fixturegen.py?tourney=%s">Generate fixtures</a> to generate
 the first games. Once you've generated the first games, you won't be able to
 delete players, but you can always withdraw them, edit names and ratings, or
@@ -309,7 +308,6 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
 
         cgicommon.writeln("<div class=\"playerlisthelp\">")
         cgicommon.writeln("<h3>Example</h3>")
-        cgicommon.writeln("<p id=\"playerlistexample\">")
         cgicommon.writeln("<pre id=\"playerlistexamplepre\">")
         if auto_rating_behaviour == countdowntourney.RATINGS_UNIFORM:
             cgicommon.writeln(player_list_example_uniform)
@@ -318,18 +316,17 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         else:
             cgicommon.writeln(player_list_example_manual)
         cgicommon.writeln("</pre>")
-        cgicommon.writeln("</p>")
         cgicommon.writeln("<p id=\"playerlistratinghelp\">")
         if auto_rating_behaviour == countdowntourney.RATINGS_MANUAL:
             cgicommon.writeln(player_list_rating_help);
         cgicommon.writeln("</p>")
 
         cgicommon.writeln("<p>")
-        cgicommon.writeln("To indicate that a player is a prune or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <tt>Apterous Prune,0</tt>")
+        cgicommon.writeln("To indicate that a player is a prune or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <span class=\"fixedwidth\">Apterous Prune,0</span>")
         cgicommon.writeln("</p>")
 
         cgicommon.writeln("<p>")
-        cgicommon.writeln("To divide the players into divisions, put a line containing only a dash (<tt>-</tt>) between the desired divisions.")
+        cgicommon.writeln("To divide the players into divisions, put a line containing only a dash (<span class=\"fixedwidth\">-</span>) between the desired divisions.")
         cgicommon.writeln("</p>")
         cgicommon.writeln("</div>")
         cgicommon.writeln("</div>")
@@ -340,17 +337,15 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         # We'll only show these controls when the user has entered some player
         # names.
         cgicommon.writeln("<hr />")
-        cgicommon.writeln("<a name=\"tourneyrules\">")
         cgicommon.writeln("<h2>Tourney rules</h2>");
         rank = tourney.get_rank_method();
-        cgicommon.writeln(('<form action="%s?tourney=%s" method="post" />' % (baseurl, urllib.parse.quote_plus(tourneyname))));
+        cgicommon.writeln(('<form action="%s?tourney=%s" method="post">' % (baseurl, urllib.parse.quote_plus(tourneyname))));
         cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
         cgicommon.writeln("<h3>Ranking order</h3>");
         cgicommon.writeln("<p>How do you want to rank players in the standings table?</p>");
         cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "")));
         cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Wins, then cumulative winning margin (spread). Draws are worth half a win.<br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")))
         cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Points only.' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "")));
-        cgicommon.writeln('</p>');
 
         cgicommon.writeln("<h3>Draws</h3>")
         cgicommon.writeln("<p>")
@@ -407,12 +402,10 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
             cgicommon.writeln("<hr />")
             cgicommon.writeln('<h2>Delete rounds</h2>')
             cgicommon.writeln('<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>')
-            cgicommon.writeln("<p>")
-            cgicommon.writeln('<form action="/cgi-bin/delround.py" method="get" />')
+            cgicommon.writeln('<form action="/cgi-bin/delround.py" method="get">')
             cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname)))
             cgicommon.writeln('<input type="submit" name="delroundsetupsubmit" value="Delete most recent round" />')
             cgicommon.writeln('</form>')
-            cgicommon.writeln("</p>")
 
 cgicommon.writeln("</div>");
 

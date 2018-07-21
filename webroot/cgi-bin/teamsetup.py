@@ -178,7 +178,7 @@ else:
         cgicommon.writeln('<h2>Teams</h2>')
         for team in teams:
             cgicommon.writeln('<p>')
-            cgicommon.writeln('<font color="#%s">&bull;</font> %s' % (team.get_hex_colour(), team.get_name()))
+            cgicommon.writeln('<span style=\"color: #%s\">&bull;</span> %s' % (team.get_hex_colour(), team.get_name()))
             player_name_list = [ cgicommon.escape(p.get_name()) for (p, pt) in player_teams if pt is not None and pt.get_id() == team.get_id() ]
 
             if player_name_list:
@@ -190,7 +190,7 @@ else:
         cgicommon.writeln('<h2>Players</h2>')
         cgicommon.writeln('<form action="%s?tourney=%s" method="POST">' % (cgicommon.escape(baseurl, True), urllib.parse.quote_plus(tourneyname)))
         cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True))
-        cgicommon.writeln('<table border="1">')
+        cgicommon.writeln('<table class="teamtable">')
         cgicommon.writeln('<tr><th>Player</th>')
         cgicommon.writeln('<th>No team</th>')
         for team in teams:
@@ -203,12 +203,12 @@ else:
             team = player_team[1]
 
             cgicommon.writeln('<tr>')
-            cgicommon.writeln('<td align="left">%s<input type="hidden" name="player%d" value="%s" /></td>' % (cgicommon.escape(player.get_name()), index, cgicommon.escape(player.get_name())))
+            cgicommon.writeln('<td class="teamtableplayername">%s<input type="hidden" name="player%d" value="%s" /></td>' % (cgicommon.escape(player.get_name()), index, cgicommon.escape(player.get_name())))
 
             # Radio button for "no team"
-            cgicommon.writeln('<td align="center"><input type="radio" name="team%d" value="%d" %s /></td>' % (index, -1, "checked" if team is None else ""))
+            cgicommon.writeln('<td class="teamtablebuttoncell"><input type="radio" name="team%d" value="%d" %s /></td>' % (index, -1, "checked" if team is None else ""))
             for t in teams:
-                cgicommon.writeln('<td align="center" bgcolor="#%s"><input type="radio" name="team%d" value="%d" %s /></td>' % (t.get_hex_colour(), index, t.get_id(), "checked" if team is not None and team.get_id() == t.get_id() else ""))
+                cgicommon.writeln('<td class="teamtablebuttoncell" style="background-color: #%s;"><input type="radio" name="team%d" value="%d" %s /></td>' % (t.get_hex_colour(), index, t.get_id(), "checked" if team is not None and team.get_id() == t.get_id() else ""))
             cgicommon.writeln('</tr>')
             index += 1
         cgicommon.writeln('</table>')

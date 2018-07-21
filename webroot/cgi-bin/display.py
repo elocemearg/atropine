@@ -16,7 +16,7 @@ def include_scripts(dir_name, url_path):
             include_scripts(dir_name + "/" + filename, url_path + "/" + filename)
         elif filename[-3:] == ".js":
             base_filename = os.path.basename(filename)
-            cgicommon.writeln("<script type=\"text/javascript\" src=\"%s/%s\"></script>" % (cgicommon.escape(url_path, True), cgicommon.escape(base_filename, True)))
+            cgicommon.writeln("<script src=\"%s/%s\"></script>" % (cgicommon.escape(url_path, True), cgicommon.escape(base_filename, True)))
 
 cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")
@@ -48,7 +48,9 @@ except countdowntourney.TourneyException as e:
 
 teleost_modes = tourney.get_teleost_modes()
 
-cgicommon.writeln("<script type=\"text/javascript\">")
+cgicommon.writeln("<body class=\"display\" onload=\"displaySetup();\">")
+
+cgicommon.writeln("<script>")
 cgicommon.writeln("var tourneyName = \"%s\";" % (tourney_name));
 
 if mode is None:
@@ -62,7 +64,7 @@ for mode in teleost_modes:
 cgicommon.writeln("</script>")
 
 # Load main.js first
-cgicommon.writeln("<script type=\"text/javascript\" src=\"/teleost/main.js\"></script>")
+cgicommon.writeln("<script src=\"/teleost/main.js\"></script>")
 
 # Now load everything under teleost/views, loading the files and contents of
 # directories in alphabetical order. The order is important, because some files
@@ -70,9 +72,8 @@ cgicommon.writeln("<script type=\"text/javascript\" src=\"/teleost/main.js\"></s
 include_scripts("./teleost/views", "/teleost/views")
 
 # Finally, load main_post.js
-cgicommon.writeln("<script type=\"text/javascript\" src=\"/teleost/main_post.js\"></script>")
+cgicommon.writeln("<script src=\"/teleost/main_post.js\"></script>")
 
-cgicommon.writeln("<body class=\"display\" onload=\"displaySetup();\">")
 
 if tourney_name is None:
     cgicommon.show_tourney_exception(countdowntourney.TourneyException("No tourney name specified."))

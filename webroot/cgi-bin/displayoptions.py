@@ -71,15 +71,15 @@ import countdowntourney;
 
 cgicommon.print_html_head("Display setup: " + str(tourney_name), "style.css");
 
-cgicommon.writeln("<script type=\"text/javascript\">")
+cgicommon.writeln("<body>");
+
+cgicommon.writeln("<script>")
 cgicommon.writeln("""
 function clearBannerEditBox() {
     document.getElementById("bannereditbox").value = "";
 }
 """)
 cgicommon.writeln("</script>")
-
-cgicommon.writeln("<body>");
 
 cgicommon.assert_client_from_localhost()
 

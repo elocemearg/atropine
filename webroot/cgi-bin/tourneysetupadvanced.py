@@ -79,7 +79,7 @@ else:
             cgicommon.show_tourney_exception(e);
 
     cgicommon.writeln("<hr />")
-    cgicommon.writeln(('<form action="%s?tourney=%s" method="post" />' % (baseurl, urllib.parse.quote_plus(tourneyname))));
+    cgicommon.writeln(('<form action="%s?tourney=%s" method="post">' % (baseurl, urllib.parse.quote_plus(tourneyname))));
     cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
     cgicommon.writeln("<h2>Tournament Ratings</h2>")
     cgicommon.writeln("<p>If you don't know what tournament ratings are, you can safely leave these as the defaults and they won't affect anything.</p>")
@@ -96,10 +96,10 @@ else:
     cgicommon.writeln("<li>If you lose, your opponent's <em>effective rating</em> minus the <em>win value</em>.</li>")
     cgicommon.writeln("</ul>")
     cgicommon.writeln("<p>")
-    cgicommon.writeln(("The <em>win value</em> is <input type=\"number\" name=\"tournamentratingbonus\" value=\"%g\" maxlength=\"5\" />" % (tourney.get_tournament_rating_bonus_value())))
+    cgicommon.writeln(("The <em>win value</em> is <input type=\"number\" name=\"tournamentratingbonus\" value=\"%g\" />" % (tourney.get_tournament_rating_bonus_value())))
     cgicommon.writeln("</p><p>")
     cgicommon.writeln("Your opponent's <em>effective rating</em> for a game is their rating at the start of the tournament, capped to within")
-    cgicommon.writeln(("<input type=\"number\" name=\"tournamentratingdiffcap\" value=\"%g\" maxlength=\"5\" />" % (tourney.get_tournament_rating_diff_cap())))
+    cgicommon.writeln(("<input type=\"number\" name=\"tournamentratingdiffcap\" value=\"%g\" />" % (tourney.get_tournament_rating_diff_cap())))
     cgicommon.writeln("of your own.")
     cgicommon.writeln("</p>")
     cgicommon.writeln("<p>")

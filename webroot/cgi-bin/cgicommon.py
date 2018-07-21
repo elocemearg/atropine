@@ -29,7 +29,7 @@ def escape(string, quote=True):
 
 def print_html_head(title, cssfile="style.css", othercssfiles=[]):
     writeln("<!DOCTYPE html>")
-    writeln("<html>")
+    writeln("<html lang=\"en\">")
     writeln("<head>");
     writeln("<title>%s</title>" % (escape(title)));
     writeln("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />");
@@ -42,6 +42,7 @@ def print_html_head(title, cssfile="style.css", othercssfiles=[]):
 
 def print_html_head_local(title):
     writeln("<!DOCTYPE html>")
+    writeln("<html lang=\"en\">")
     writeln("<head>")
     writeln("<title>%s</title>" % (escape(title)))
     writeln("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />")
@@ -309,7 +310,7 @@ def show_games_as_html_table(games, editable=True, remarks=None,
         
         team_string = make_player_dot_html(g.p1)
 
-        writeln("<td class=\"%s\" align=\"right\">%s %s</td>" % (" ".join(p1_classes), player_html_strings[0], team_string));
+        writeln("<td class=\"%s\">%s %s</td>" % (" ".join(p1_classes), player_html_strings[0], team_string));
         if g.is_double_loss():
             edit_box_score = "0 - 0*"
             html_score = "&#10006; - &#10006;"
@@ -318,9 +319,9 @@ def show_games_as_html_table(games, editable=True, remarks=None,
             html_score = escape(g.format_score())
 
         if score_id_prefix:
-            writeln("<td class=\"gamescore\" align=\"center\" id=\"%s_%d_%d\">" % (escape(score_id_prefix), g.round_no, g.seq));
+            writeln("<td class=\"gamescore\" id=\"%s_%d_%d\">" % (escape(score_id_prefix), g.round_no, g.seq));
         else:
-            writeln("<td class=\"gamescore\" align=\"center\">");
+            writeln("<td class=\"gamescore\">");
 
         if g.are_players_known():
             if editable:
@@ -333,7 +334,7 @@ onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.roun
 
         writeln("</td>");
         team_string = make_player_dot_html(g.p2)
-        writeln("<td class=\"%s\" align=\"left\">%s %s</td>" % (" ".join(p2_classes), team_string, player_html_strings[1]));
+        writeln("<td class=\"%s\">%s %s</td>" % (" ".join(p2_classes), team_string, player_html_strings[1]));
         if remarks is not None:
             writeln("<td class=\"gameremarks\">%s</td>" % escape(remarks.get((g.round_no, g.seq), "")));
         writeln("</tr>");

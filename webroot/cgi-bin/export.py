@@ -83,6 +83,7 @@ if export_format == "wikitext":
         cgicommon.print_html_head("Tournament report - Wikitext")
 
         tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir)
+        cgicommon.writeln("<body>")
         cgicommon.show_sidebar(tourney)
 
         # Default value for date is today, default value for game prefix is the
@@ -101,7 +102,6 @@ if export_format == "wikitext":
             if wikitext_game_prefix[-1].isdigit():
                 wikitext_game_prefix += "."
 
-        cgicommon.writeln("<body>")
         cgicommon.writeln("<div class=\"mainpane\">")
         cgicommon.writeln("<h1>Tournament report - Wikitext</h1>")
         if errors:
@@ -118,14 +118,14 @@ if export_format == "wikitext":
         cgicommon.writeln("<table>")
         cgicommon.writeln("<tr><td>Day</td><td>Month</td><td>Year</td></tr>")
         cgicommon.writeln("<tr>")
-        cgicommon.writeln("<td><input type=\"number\" name=\"wikitextday\" value=\"%d\" min=\"1\" max=\"31\" size=\"2\" maxlength=\"2\" /></td>" % (wikitext_date_d))
+        cgicommon.writeln("<td><input type=\"number\" name=\"wikitextday\" value=\"%d\" min=\"1\" max=\"31\" size=\"2\" /></td>" % (wikitext_date_d))
         cgicommon.writeln("<td>")
         cgicommon.writeln("<select name=\"wikitextmonth\">")
         for m in range(1, 13):
             cgicommon.writeln("<option value=\"%d\" %s>%s</option>" % (m, "selected " if m == wikitext_date_m else "", cgicommon.escape(calendar.month_name[m])))
         cgicommon.writeln("</select>")
         cgicommon.writeln("</td>")
-        cgicommon.writeln("<td><input type=\"number\" name=\"wikitextyear\" value=\"%d\" min=\"0\" max=\"9999\" size=\"4\" maxlength=\"4\" /></td>" % (wikitext_date_y))
+        cgicommon.writeln("<td><input type=\"number\" name=\"wikitextyear\" value=\"%d\" min=\"0\" max=\"9999\" size=\"4\" /></td>" % (wikitext_date_y))
         cgicommon.writeln("</tr></table>")
         cgicommon.writeln("<p>")
         cgicommon.writeln("Game ID prefix: <input type=\"text\" name=\"wikitextgameprefix\" value=\"%s\" />" % (cgicommon.escape(wikitext_game_prefix, True)))

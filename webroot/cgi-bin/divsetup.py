@@ -45,8 +45,10 @@ request_method = os.environ.get("REQUEST_METHOD", "");
 
 cgicommon.print_html_head("Division Setup: " + str(tourneyname));
 
+cgicommon.writeln("<body onload=\"hide_div_renames();\">");
+
 cgicommon.writeln("""
-<script type="text/javascript">
+<script>
 function show_div_rename(div) {
     buttondiv = document.getElementById("divrenamebutton" + div.toString());
     renamediv = document.getElementById("divrenamecontrols" + div.toString());
@@ -81,8 +83,6 @@ function hide_div_renames() {
 }
 </script>
 """)
-
-cgicommon.writeln("<body onload=\"hide_div_renames();\">");
 
 cgicommon.assert_client_from_localhost()
 
@@ -235,10 +235,10 @@ else:
 
             cgicommon.writeln("<h2>Divide players into divisions</h2>")
             cgicommon.writeln("<p>")
-            cgicommon.writeln("Number of divisions: <input type=\"number\" min=\"1\" size=\"4\" maxlength=\"4\" name=\"numdivisions\" value=\"%d\" />" % (num_divisions))
+            cgicommon.writeln("Number of divisions: <input type=\"number\" min=\"1\" size=\"4\" name=\"numdivisions\" value=\"%d\" />" % (num_divisions))
             cgicommon.writeln("</p><p>")
             cgicommon.writeln("When assigning divisions, ensure the number of active players in a division is a multiple of ")
-            cgicommon.writeln("<input type=\"number\" name=\"divsizemultiple\" min=\"1\" size=\"4\" maxlength=\"4\" value=\"%d\" />" % (division_size_multiple))
+            cgicommon.writeln("<input type=\"number\" name=\"divsizemultiple\" min=\"1\" size=\"4\" value=\"%d\" />" % (division_size_multiple))
             cgicommon.writeln("</p>")
 
             cgicommon.writeln("<p>")

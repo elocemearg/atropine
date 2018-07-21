@@ -133,7 +133,7 @@ if cgicommon.is_client_from_localhost():
 
     try:
         cgicommon.writeln("<p>")
-        cgicommon.writeln("Tournament database directory: <tt>%s</tt>" % (cgicommon.escape(os.path.realpath(cgicommon.dbdir))))
+        cgicommon.writeln("Tournament database directory: <span class=\"fixedwidth\">%s</span>" % (cgicommon.escape(os.path.realpath(cgicommon.dbdir))))
         cgicommon.writeln("</p>")
     except:
         cgicommon.writeln("<p>Failed to expand tournament database directory name</p>")

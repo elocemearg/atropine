@@ -65,14 +65,17 @@ table.fixturetable th {
 
 table.fixturetable td.gameplayer1 {
 	background-color: #ffffcc;
+    text-align: right;
 }
 
 table.scorestable td.gamescore {
     min-width: 6ex;
+    text-align: center;
 }
 
 table.fixturetable td.gamescore {
 	background-color: #ffffcc;
+    text-align: left;
 }
 
 table.fixturetable td.gameplayer2 {
@@ -137,10 +140,12 @@ table.scorestable th {
 
 tr.unplayedgame td.gameplayer1 {
 	background-color: #dddddd;
+    text-align: right;
 }
 
 tr.unplayedgame td.gameplayer2 {
 	background-color: #dddddd;
+    text-align: left;
 }
 
 td.winningplayer {
@@ -749,7 +754,7 @@ div.scoreentryplayerinfo {
     vertical-align: middle;
     float: left;
     font-size: 10pt;
-    font-color: navy;
+    color: navy;
     padding-left: 10px;
 }
 
@@ -1409,4 +1414,28 @@ div.tourneyqualifyingcontrols {
 
 .handcursor {
     cursor: pointer;
+}
+
+.fixedwidth {
+    font-family: monospace;
+}
+
+
+table.teamtable {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+
+table.teamtable th {
+    border: 1px solid black;
+}
+
+td.teamtableplayername {
+    text-align: left;
+    border: 1px solid gray;
+}
+
+td.teamtablebuttoncell {
+    text-align: center;
+    border: 1px solid gray;
 }
