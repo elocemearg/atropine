@@ -218,10 +218,10 @@ def show_team_score_table(team_scores):
         writeln('</tr>')
     writeln('</table>')
 
-def show_games_as_html_table(games, editable=True, remarks=None, include_round_column=False, round_namer=None, player_to_link=None, remarks_heading=""):
-    if remarks is None:
-        remarks = dict()
-     
+def show_games_as_html_table(games, editable=True, remarks=None,
+        include_round_column=False, round_namer=None, player_to_link=None,
+        remarks_heading="", show_game_type=True, game_onclick_fn=None,
+        colour_win_loss=True, score_id_prefix=None, show_heading_row=True):
     if round_namer is None:
         round_namer = lambda x : ("Round %d" % (x))
 
@@ -229,12 +229,22 @@ def show_games_as_html_table(games, editable=True, remarks=None, include_round_c
         player_to_link = lambda x : escape(x.get_name())
 
     writeln("<table class=\"scorestable\">");
-    writeln("<tr>");
-    if include_round_column:
-        writeln("<th>Round</th>")
-    writeln("<th>Table</th><th>Type</th>");
-    writeln("<th>Player 1</th><th>Score</th><th>Player 2</th><th>%s</th>" % (escape(remarks_heading)));
-    writeln("</tr>")
+
+    if show_heading_row:
+        writeln("<tr>");
+        if include_round_column:
+            writeln("<th>Round</th>")
+
+        writeln("<th>Table</th>");
+
+        if show_game_type:
+            writeln("<th>Type</th>");
+
+        writeln("<th>Player 1</th><th>Score</th><th>Player 2</th>");
+        if remarks is not None:
+            writeln("<th>%s</th>" % (escape(remarks_heading)));
+        writeln("</tr>")
+
     last_table_no = None;
     last_round_no = None
     game_seq = 0
@@ -267,16 +277,23 @@ def show_games_as_html_table(games, editable=True, remarks=None, include_round_c
         else:
             tr_classes.append("unplayedgame");
 
-        writeln("<tr class=\"%s\">" % " ".join(tr_classes));
+        if game_onclick_fn:
+            onclick_attr = "onclick=\"" + escape(game_onclick_fn(g.round_no, g.seq)) + "\""
+            tr_classes.append("handcursor")
+        else:
+            onclick_attr = "";
+        writeln("<tr class=\"%s\" %s>" % (" ".join(tr_classes), onclick_attr));
         if first_game_in_round and include_round_column:
             writeln("<td class=\"roundno\" rowspan=\"%d\">%s</td>" % (num_games_in_round, round_namer(g.round_no)))
         if first_game_in_table:
             writeln("<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, g.table_no));
-        writeln("<td class=\"gametype\">%s</td>" % escape(g.game_type));
+
+        if show_game_type:
+            writeln("<td class=\"gametype\">%s</td>" % escape(g.game_type));
 
         p1_classes = ["gameplayer1"];
         p2_classes = ["gameplayer2"];
-        if g.is_complete():
+        if g.is_complete() and colour_win_loss:
             if g.is_double_loss():
                 p1_classes.append("losingplayer")
                 p2_classes.append("losingplayer")
@@ -300,7 +317,10 @@ def show_games_as_html_table(games, editable=True, remarks=None, include_round_c
             edit_box_score = g.format_score()
             html_score = escape(g.format_score())
 
-        writeln("<td class=\"gamescore\" align=\"center\">");
+        if score_id_prefix:
+            writeln("<td class=\"gamescore\" align=\"center\" id=\"%s_%d_%d\">" % (escape(score_id_prefix), g.round_no, g.seq));
+        else:
+            writeln("<td class=\"gamescore\" align=\"center\">");
 
         if g.are_players_known():
             if editable:
@@ -314,7 +334,8 @@ onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.roun
         writeln("</td>");
         team_string = make_player_dot_html(g.p2)
         writeln("<td class=\"%s\" align=\"left\">%s %s</td>" % (" ".join(p2_classes), team_string, player_html_strings[1]));
-        writeln("<td class=\"gameremarks\">%s</td>" % escape(remarks.get((g.round_no, g.seq), "")));
+        if remarks is not None:
+            writeln("<td class=\"gameremarks\">%s</td>" % escape(remarks.get((g.round_no, g.seq), "")));
         writeln("</tr>");
         last_round_no = g.round_no
         last_table_no = g.table_no;

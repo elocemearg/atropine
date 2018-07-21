@@ -51,6 +51,7 @@ table.fixturetable td {
 }
 
 tr.gamerow td {
+    border-bottom: 1px dashed gray;
 }
 
 tr.firstgameintable td {
@@ -64,6 +65,10 @@ table.fixturetable th {
 
 table.fixturetable td.gameplayer1 {
 	background-color: #ffffcc;
+}
+
+table.scorestable td.gamescore {
+    min-width: 6ex;
 }
 
 table.fixturetable td.gamescore {
@@ -99,6 +104,7 @@ table.scorestable td.roundno {
 	font-weight: bold;
 	vertical-align: middle;
 	text-align: center;
+    min-width: 2em;
 }
 
 table.fixturetable td.tableno {
@@ -109,10 +115,11 @@ table.fixturetable td.tableno {
 }
 
 table.scorestable td.tableno {
-	font-size: 1.5em;
+	font-size: 20pt;
 	font-weight: bold;
 	vertical-align: middle;
 	text-align: center;
+    min-width: 2em;
 }
 
 table.scorestable td.gamedivision {
@@ -129,11 +136,11 @@ table.scorestable th {
 }
 
 tr.unplayedgame td.gameplayer1 {
-	background-color: #eeeeee;
+	background-color: #dddddd;
 }
 
 tr.unplayedgame td.gameplayer2 {
-	background-color: #eeeeee;
+	background-color: #dddddd;
 }
 
 td.winningplayer {
@@ -906,6 +913,27 @@ div.lastentry {
     background-color: gray;
 }
 
+div.entrymainpane {
+    float: left;
+    margin-right: 20px;
+}
+
+div.gamelistpane {
+    float: left;
+    border: 2px solid navy;
+}
+
+div.gamelistpanebody {
+    margin-top: 5px;
+}
+
+div.gamelistdivisionheading {
+    font-size: 16pt;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding-left: 10px;
+}
+
 /* Videprinter on result entry page */
 div.videprinter {
     width: 600px;
@@ -1046,13 +1074,16 @@ div.blinkenlightsfooter {
     background-color: black;
     height: 12pt;
     padding: 5px;
+    max-width: 592px;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 div.blinkenlightsmouseovertext {
     float: right;
     color: silver;
     font-style: italic;
-    font-size: 12pt;
+    font-size: 10pt;
 }
 
 /* Conflict resolution form */
@@ -1374,4 +1405,8 @@ div.tourneyqualifyingcontrols {
     margin-top: 5px;
     margin-bottom: 5px;
     margin-left: 10px;
+}
+
+.handcursor {
+    cursor: pointer;
 }

@@ -658,6 +658,8 @@ def write_blinkenlights(tourney, round_no):
     cgicommon.writeln(json.dumps(link_dict, indent=4))
     cgicommon.writeln(";")
 
+    cgicommon.writeln("var round_no = %d;" % (round_no))
+
     cgicommon.writeln("""
 function get_link_html(name) {
     if (name == null) {
@@ -682,6 +684,11 @@ function unhighlight_game_button() {
         if (element != null) {
             element.style = "";
         }
+
+        element = document.getElementById("gamelistscore_" + round_no.toString() + "_" + selected_game_seq.toString());
+        if (element != null) {
+            element.style.backgroundColor = null;
+        }
     }
 }
 
@@ -698,6 +705,11 @@ function highlight_game_button(game_seq) {
     unhighlight_game_button();
     selected_game_button.style = "border: 2px solid yellow;";
     selected_game_seq = game_seq;
+
+    element = document.getElementById("gamelistscore_" + round_no.toString() + "_" + selected_game_seq.toString());
+    if (element != null) {
+        element.style.backgroundColor = "#ffff66";
+    }
 }
 
 function select_game(game_seq, from_videprinter) {
@@ -886,6 +898,8 @@ try:
     cgicommon.show_sidebar(tourney);
 
     cgicommon.writeln("<div class=\"mainpane\">");
+
+    cgicommon.writeln("<div class=\"entrymainpane\">");
 
     # If a round is selected, show the scores for that round, in editable
     # boxes so they can be changed.
@@ -1109,9 +1123,45 @@ try:
 
 
     if round_no is not None:
-        cgicommon.writeln("<div style=\"font-size: 10pt; margin-top: 20px;\">");
+        cgicommon.writeln("<div style=\"font-size: 10pt; margin-top: 20px; margin-bottom: 20px\">");
         cgicommon.writeln("<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Show old interface: all the games in this round as a list</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
-        cgicommon.writeln("</p>");
+        cgicommon.writeln("</div>");
+
+    cgicommon.writeln("</div>"); #entrymainpane
+
+
+    if round_no is not None:
+        # Show games as a list, to the right of the entry controls, or, if
+        # it won't fit there, below the entry controls.
+
+        cgicommon.writeln("<div class=\"gamelistpane boxshadow\">")
+        cgicommon.writeln("<div class=\"resultsentrytitle\">Games</div>")
+        cgicommon.writeln("<div class=\"gamelistpanebody\">")
+
+        games_by_division = dict()
+        num_divisions = tourney.get_num_divisions()
+        for g in games:
+            if g.division in games_by_division:
+                games_by_division[g.division].append(g)
+            else:
+                games_by_division[g.division] = [g]
+
+        for div in sorted(games_by_division):
+            div_games = games_by_division[div]
+            if num_divisions > 1:
+                cgicommon.writeln("<div class=\"gamelistdivisionheading\">")
+                cgicommon.writeln(cgi.escape(tourney.get_division_name(div)))
+                cgicommon.writeln("</div>")
+            cgicommon.show_games_as_html_table(div_games, editable=False,
+                    remarks=None, include_round_column=False, round_namer=None,
+                    player_to_link=None, remarks_heading="",
+                    show_game_type=False,
+                    game_onclick_fn=lambda rnd, seq : "select_game(%d, false);" % (seq),
+                    colour_win_loss=False, score_id_prefix="gamelistscore",
+                    show_heading_row=False)
+
+        cgicommon.writeln("</div>") #gamelistpanebody
+        cgicommon.writeln("</div>") #gamelistpane
 
     cgicommon.writeln("</div>"); #mainpane
 
