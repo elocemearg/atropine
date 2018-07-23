@@ -111,24 +111,32 @@ var gerunds = ["Reticulating", "Exaggerating", "Refrigerating",
             "Justifying", "Hacking", "Redrawing", "Reimagining",
             "Reinterpreting", "Reasoning with", "Impersonating",
             "Abbreviating", "Underestimating", "Misappropriating",
-            "Constructing", "Preparing", "Redelivering", "Arguing over" ];
+            "Constructing", "Preparing", "Redelivering", "Arguing over",
+            "Grilling", "Baking", "Poaching", "Washing", "Stealing",
+            "Emulsifying", "Discombobulating", "Correcting", "Extracting",
+            "Unspooling", "Descaling", "Duplicating", "Overwriting" ];
+
 var nouns = ["seeding list", "rule book", "hypergrid",
             "network services", "timestamps", "multidimensional array",
             "decision tree", "player list", "weighting matrix",
             "instrument panel", "database", "videprinter",
-            "standings table", "preclusion rules", "event handler",
+            "standings table", "preclusion rules", "event handlers",
             "dynamic modules", "hypertext", "fixture generator",
             "linked lists", "hash tables", "system clock", "file descriptors",
             "syntax tree", "binary tree", "dictionary", "homework",
             "breakfast", "contextualiser", "splines", "supercluster",
-            "record books", "sandwiches", "grouping strategy", "reality" ];
+            "record books", "sandwiches", "grouping strategy", "reality",
+            "spatula", "Eyebergine", "scripts", "blockchain", "phone charger",
+            "fixtures", "associative arrays", "browser window", "subfolders"
+            ];
 
 var endings = [
     "Bribing officials", "Talking bollocks", "Feeding cat",
     "Rewinding tape", "Invading privacy", "Falling off cliff",
     "Kicking tyres", "Tapping barometer", "Serving hot",
     "Deploying parachute", "Cleaning up mess", "Straightening tie",
-    "Seasoning to taste", "Stealing towels", "Reversing polarity"
+    "Seasoning to taste", "Stealing towels", "Reversing polarity",
+    "Untangling headphones", "Compounding misery"
 ];
 
 function spam_progress_label() {
