@@ -108,7 +108,7 @@ def show_sidebar(tourney):
     new_window_html = "<img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Opens in new window\" />"
     writeln("<div class=\"sidebar\">");
 
-    writeln("<a href=\"/cgi-bin/home.py\"><img src=\"/images/robin128.png\" alt=\"Robin\" /></a><br />");
+    writeln("<a href=\"/cgi-bin/home.py\"><img src=\"/images/eyebergine128.png\" alt=\"Eyebergine\" /></a><br />");
     if tourney:
         writeln("<p><strong>%s</strong></p>" % escape(tourney.name));
         writeln(("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\"><strong>General Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
