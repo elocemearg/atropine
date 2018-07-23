@@ -4,7 +4,7 @@ import countdowntourney
 import htmlform
 import cgi
 
-def check_ready_existing_games_and_table_size(tourney, div_rounds):
+def check_ready_existing_games_and_table_size(tourney, div_rounds, include_5and3=True):
     num_divisions = tourney.get_num_divisions()
     for div_index in div_rounds:
         round_no = div_rounds[div_index]
@@ -18,11 +18,11 @@ def check_ready_existing_games_and_table_size(tourney, div_rounds):
             if len(players) % size == 0:
                 break
         else:
-            if len(players) < 8:
+            if len(players) < 8 or not include_5and3:
                 return (False, "%s: Number of players (%d) not compatible with any supported table configuration" % (tourney.get_division_name(div_index), len(players)))
     return (True, None)
 
-def get_user_form_div_table_size(tourney, settings, div_rounds):
+def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=True):
     prev_settings = settings.get_previous_settings()
     for key in prev_settings:
         if key not in settings and key != "submit":
@@ -41,7 +41,7 @@ def get_user_form_div_table_size(tourney, settings, div_rounds):
                 table_size = None
 
         if table_size is not None:
-            if table_size == -5 and len(players) >= 8:
+            if table_size == -5 and len(players) >= 8 and include_5and3:
                 valid_table_size_submitted = True
             elif len(players) % table_size == 0:
                 valid_table_size_submitted = True
@@ -53,7 +53,7 @@ def get_user_form_div_table_size(tourney, settings, div_rounds):
                 table_size = 2
             elif len(players) % 5 == 0:
                 table_size = 5
-            elif len(players) < 8:
+            elif len(players) < 8 and include_5and3:
                 table_size = -5
             elif len(players) % 4 == 0:
                 table_size = 4
@@ -62,7 +62,7 @@ def get_user_form_div_table_size(tourney, settings, div_rounds):
         for size in (2,3,4,5):
             if len(players) % size == 0:
                 table_size_choices.append(htmlform.HTMLFormChoice(str(size), str(size), table_size == size))
-        if len(players) >= 8:
+        if len(players) >= 8 and include_5and3:
             table_size_choices.append(htmlform.HTMLFormChoice("-5", "5&3", table_size == -5))
 
         elements.append(htmlform.HTMLFragment("<h3>%s (%d players)</h3>" % (cgi.escape(tourney.get_division_name(div_index)), tourney.get_num_active_players(div_index))))
