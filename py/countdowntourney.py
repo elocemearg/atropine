@@ -6,8 +6,8 @@ import re;
 import os;
 import qualification
 
-SW_VERSION = "1.0.1"
-SW_VERSION_SPLIT = (1, 0, 1)
+SW_VERSION = "1.0.2"
+SW_VERSION_SPLIT = (1, 0, 2)
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
 RANK_WINS_POINTS = 0;
