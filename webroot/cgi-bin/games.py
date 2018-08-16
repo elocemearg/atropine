@@ -1123,8 +1123,13 @@ try:
 
 
     if round_no is not None:
-        cgicommon.writeln("<div style=\"font-size: 10pt; margin-top: 20px; margin-bottom: 20px\">");
-        cgicommon.writeln("<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Show old interface: all the games in this round as a list</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+        cgicommon.writeln("<div style=\"margin-top: 10px\">")
+        cgicommon.writeln("<span style=\"font-size: 10pt; margin-right: 20px;\">");
+        cgicommon.writeln("<a href=\"/cgi-bin/fixtureedit.py?tourney=%s&amp;round=%d\">Edit fixture list</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+        cgicommon.writeln("</span>");
+        cgicommon.writeln("<span style=\"font-size: 10pt; margin-right: 20px;\">");
+        cgicommon.writeln("<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Old results interface</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+        cgicommon.writeln("</span>");
         cgicommon.writeln("</div>");
 
     cgicommon.writeln("</div>"); #entrymainpane

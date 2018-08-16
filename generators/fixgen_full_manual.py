@@ -23,6 +23,87 @@ def lookup_player(players, name):
             return p;
     return None
 
+def make_past_form_strings(tourney, div_index, players, games, this_round_number):
+    standings = tourney.get_standings(div_index)
+    name_to_position = {}
+    name_to_form = {}
+    name_to_results = {}
+
+    # If nobody has played a game yet, use seedings
+    found_game = False
+    for s in standings:
+        if s.played > 0:
+            found_game = True
+            break
+    
+    if found_game:
+        for s in standings:
+            name_to_position[s.name] = "P%d" % (s.position)
+    else:
+        seedings = sorted(standings, key=lambda x : x.rating, reverse=True)
+        # If everyone has the same rating, not including 0, then there are no
+        # seedings.
+        seen_rating = None
+        players_are_rated = False
+        for s in seedings:
+            if s.rating != 0:
+                if seen_rating:
+                    if s.rating != seen_rating:
+                        players_are_rated = True
+                        break
+
+                seen_rating = s.rating
+
+        if players_are_rated:
+            seed = 0
+            joint = 0
+            prev_rating = None
+            for s in seedings:
+                if prev_rating is not None and s.rating == prev_rating:
+                    joint += 1
+                else:
+                    seed += joint + 1
+                    joint = 0
+                name_to_position[s.name] = "S%d" % (seed)
+                prev_rating = s.rating
+
+    for g in games:
+        if g.is_complete() and g.are_players_known() and g.get_round_no() < this_round_number:
+            for p in g.get_players():
+                score = g.get_player_score(p)
+                opp_score = g.get_opponent_score(p)
+
+                score_string = "%d%s-%d%s" % (score,
+                        "*" if g.is_tiebreak() and score > opp_score else "",
+                        opp_score,
+                        "*" if g.is_tiebreak() and opp_score >= score else "")
+                
+                if score > opp_score:
+                    form = "W"
+                elif score < opp_score:
+                    form = "L"
+                else:
+                    form = "D"
+
+                name = p.get_name()
+                name_to_form[name] = name_to_form.get(name, "") + form
+                if name in name_to_results:
+                    name_to_results[name] = name_to_results[name] + " " + score_string
+                else:
+                    name_to_results[name] = score_string
+
+    past_form_strings = {}
+    for p in players:
+        name = p.get_name()
+        form_str_list = []
+        for d in (name_to_position, name_to_form, name_to_results):
+            if name in d:
+                form_str_list.append(d[name])
+        past_form_strings[name] = " ".join(form_str_list)
+
+    return past_form_strings
+
+
 def get_user_form(tourney, settings, div_rounds):
     num_divisions = tourney.get_num_divisions()
     div_num_games = dict()
@@ -223,6 +304,9 @@ function unset_unsaved_data_warning() {
         game_types = div_game_types[div_index]
         num_games = div_num_games[div_index]
 
+        div_games = tourney.get_games(division=div_index)
+        past_form_strings = make_past_form_strings(tourney, div_index, div_players, div_games, latest_round_no + 1)
+
         elements.append(htmlform.HTMLFormHiddenInput("d%d_numgames" % (div_index), str(div_num_games[div_index])))
         elements.append(htmlform.HTMLFormHiddenInput("d%d_defaultgametype" % (div_index), str(div_default_game_types[div_index])))
 
@@ -231,6 +315,7 @@ function unset_unsaved_data_warning() {
 
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))))
+        elements.append(htmlform.HTMLFragment("<p>%d game%s of type %s</p>" % (num_games, "" if num_games == 1 else "s", cgi.escape(default_game_type))))
 
         #elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
         #elements.append(htmlform.HTMLFormCheckBox("d%d_heats" % (div_index), "Count the results of these matches in the standings table", div_count_in_standings[div_index]))
@@ -270,7 +355,12 @@ function unset_unsaved_data_warning() {
                         name_list = unselected_names
 
                 for q in name_list:
-                    opt = htmlform.HTMLFormDropDownOption(q, q)
+                    past_form = past_form_strings.get(q, "")
+                    label = q;
+                    if past_form:
+                        label += " (" + past_form + ")"
+
+                    opt = htmlform.HTMLFormDropDownOption(q, label)
                     if p is not None and q == p.get_name():
                         selected_name = p.get_name()
                     player_option_list.append(opt)

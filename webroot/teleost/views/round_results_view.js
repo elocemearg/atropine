@@ -51,12 +51,17 @@ class RoundResultsView extends PagedTableView {
 
             /* For each division, find the latest round which has at least
              * one game completed, and call that the "current" round for the
-             * purpose of this view */
+             * purpose of this view. If no round is complete, show round 1,
+             * and if there is no round 1, don't show anything. */
             for (var divIndex = 0; divIndex < divisions.length; ++divIndex) {
                 var divGames = divisions[divIndex].games;
+                var earliestRoundSeen = null;
                 for (var gameIndex = 0; gameIndex < divGames.length; ++gameIndex) {
+                    var rnd = divGames[gameIndex].round;
+                    if (earliestRoundSeen == null || rnd < earliestRoundSeen)
+                        earliestRoundSeen = rnd;
+
                     if (divGames[gameIndex].complete) {
-                        var rnd = divGames[gameIndex].round;
                         if (divIndex in divisionToCurrentRound) {
                             if (rnd > divisionToCurrentRound[divIndex])
                                 divisionToCurrentRound[divIndex] = rnd;
@@ -65,6 +70,10 @@ class RoundResultsView extends PagedTableView {
                             divisionToCurrentRound[divIndex] = rnd;
                         }
                     }
+                }
+
+                if (earliestRoundSeen != null && !(divIndex in divisionToCurrentRound)) {
+                    divisionToCurrentRound[divIndex] = earliestRoundSeen;
                 }
             }
 

@@ -134,6 +134,8 @@ teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_standings_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_lines", CONTROL_NUMBER, "Players per standings page", 8),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_scroll", CONTROL_NUMBER, "Standings scroll interval $CONTROL seconds", 10),
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_results_lines", CONTROL_NUMBER, "Number of results per page", 3),
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_results_scroll", CONTROL_NUMBER, "Results scroll interval $CONTROL seconds", 5),
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_lines", CONTROL_NUMBER, "Lines per page", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_rows", CONTROL_NUMBER, "Rows per page $CONTROL", 12),
@@ -729,6 +731,9 @@ class Game(object):
             return True;
         else:
             return False;
+
+    def is_tiebreak(self):
+        return self.tb
     
     def __str__(self):
         if self.is_complete():
@@ -775,6 +780,9 @@ class Game(object):
             return True;
         else:
             return False;
+
+    def get_players(self):
+        return [ self.p1, self.p2 ]
     
     def get_player_names(self):
         return [self.p1.get_name(), self.p2.get_name()];
@@ -823,6 +831,9 @@ class Game(object):
         self.s1 = s1;
         self.s2 = s2;
         self.tb = tb;
+    
+    def get_round_no(self):
+        return self.round_no
 
     def get_division(self):
         return self.division

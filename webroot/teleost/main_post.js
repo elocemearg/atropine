@@ -18,11 +18,22 @@ function createVideprinterScreen(tourneyName, options) {
 }
 
 function createStandingsAndRoundResultsScreen(tourneyName, options) {
+    var roundResultsLines = dictGet(options, "standings_results_results_lines", 3);
+    if (roundResultsLines < 1)
+        roundResultsLines = 1;
+
+    /* The round results heading is about 4/3 the size of each result line.
+     * Three result lines and a heading should take up 30%. So this is made
+     * up of 4x/3 + 3x = 30, so x=90/13, and 4x/3 = 120/13. */
+    var standingsVerticalPc = 100 - Math.round(120.0/13 + (roundResultsLines * 90.0 / 13));
+
     return new MultipleView(tourneyName, 0, 0, 100, 100, [
-            new StandingsView(tourneyName, 0, 0, 100, 70,
+            new StandingsView(tourneyName, 0, 0, 100, standingsVerticalPc,
                 dictGet(options, "standings_results_standings_lines", 8),
                 dictGet(options, "standings_results_standings_scroll", 10) * 1000),
-            new RoundResultsView(tourneyName, 0, 70, 100, 30, 3, 5000)
+            new RoundResultsView(tourneyName, 0, standingsVerticalPc,
+                100, 100 - standingsVerticalPc, roundResultsLines,
+                dictGet(options, "standings_results_results_scroll", 5) * 1000)
     ]);
 }
 
