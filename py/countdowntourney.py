@@ -481,6 +481,10 @@ class InvalidEntryException(TourneyException):
     description = "Result entry is not valid."
     pass
 
+class QualificationTimeoutException(TourneyException):
+    description = "In calculating the standings table, we took too long to work out which players, if any, have qualified for the final. This may be due to an unusually large number of players, or an unusual tournament setup. In this case it is strongly recommended go to General Setup and disable qualification analysis by setting the number of places in the qualification zone to zero."
+    pass
+
 def get_teleost_mode_services_to_fetch(mode):
     if mode < 0 or mode >= len(teleost_modes):
         return [ "all" ]
@@ -2226,11 +2230,14 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                     if row["pos"] <= qual_places and method == RANK_WINS_POINTS:
                         # This player is in the qualification zone - work out if
                         # they are guaranteed to stay there
-                        qualified = qualification.player_has_qualified(
-                                qualification_standings, row["name"],
-                                unplayed_games, qual_places,
-                                all_games_generated, num_games_per_player,
-                                draws_expected)
+                        try:
+                            qualified = qualification.player_has_qualified(
+                                    qualification_standings, row["name"],
+                                    unplayed_games, qual_places,
+                                    all_games_generated, num_games_per_player,
+                                    draws_expected)
+                        except qualification.QualificationTimeoutException:
+                            raise QualificationTimeoutException()
                         if qualified:
                             for standings_row in standings:
                                 if standings_row.name == row["name"]:

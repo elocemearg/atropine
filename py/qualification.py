@@ -1,9 +1,15 @@
 #!/usr/bin/python3
 
 import sys
+import time
 
 # Code to determine, given a standings table and a list of games yet to play,
 # whether a player is guaranteed to finish at or above a certain position.
+
+
+class QualificationTimeoutException(Exception):
+    pass
+
 
 print_logging = False
 def log(s):
@@ -22,7 +28,9 @@ def count_games_remaining(standings_row, unplayed_games, all_games_generated, nu
     else:
         return num_games_per_player - standings_row["played"]
 
-def get_connected_group(node, edges, visited_nodes=None):
+def get_connected_group(node, edges, start_time, time_limit_sec, visited_nodes=None):
+    if time.time() > start_time + time_limit_sec:
+        raise QualificationTimeoutException();
     if visited_nodes is None:
         visited_nodes = set()
     this_visited_nodes = set(visited_nodes)
@@ -36,17 +44,17 @@ def get_connected_group(node, edges, visited_nodes=None):
         elif e[1] == node:
             partner = e[0]
         if partner is not None and partner not in this_visited_nodes:
-            group |= get_connected_group(partner, edges, this_visited_nodes)
+            group |= get_connected_group(partner, edges, start_time, time_limit_sec, this_visited_nodes)
     return group
 
 
-def make_connected_subgraph_groups(nodes, edges):
+def make_connected_subgraph_groups(nodes, edges, start_time, time_limit_sec):
     groups = []
     nodes_done = set()
     for n in nodes:
         if n in nodes_done:
             continue
-        group = get_connected_group(n, edges)
+        group = get_connected_group(n, edges, start_time, time_limit_sec)
         for nn in group:
             nodes_done.add(nn)
         groups.append(group)
@@ -62,7 +70,7 @@ def get_combinations(possible_results, num_games):
                 yield [result] + remainder
 
 
-def get_max_potential_overtakers(player_start_win_points, player_row, group, group_relevant_games, draws_allowed, limit=None):
+def get_max_potential_overtakers(player_start_win_points, player_row, group, group_relevant_games, draws_allowed, start_time, time_limit_sec, limit=None):
     # Try every combination of results for the games in group_relevant_games,
     # and work out, for each scenario, how many of those players end up
     # overtaking or matching the player in player_row. Return the highest
@@ -75,6 +83,8 @@ def get_max_potential_overtakers(player_start_win_points, player_row, group, gro
 
     max_overtakers = None
     for win_combination in get_combinations(possible_results, len(group_relevant_games)):
+        if time.time() > start_time + time_limit_sec:
+            raise QualificationTimeoutException()
         player_end_win_points = player_start_win_points.copy()
         for idx in range(len(win_combination)):
             name1 = group_relevant_games[idx][0]
@@ -114,6 +124,9 @@ def get_max_potential_overtakers(player_start_win_points, player_row, group, gro
 def player_has_qualified(standings, player_of_interest, unplayed_games,
         qual_threshold, all_games_generated, num_games_per_player,
         draws_allowed):
+    start_time = time.time()
+    time_limit_sec = 5.0
+
     player_row = None
     for row in standings:
         if row["name"] == player_of_interest:
@@ -175,7 +188,7 @@ def player_has_qualified(standings, player_of_interest, unplayed_games,
     # Potential overtakers who don't have to play any other potential overtakers
     # are isolated nodes on the graph.
 
-    groups = make_connected_subgraph_groups(potential_overtakers, relevant_games)
+    groups = make_connected_subgraph_groups(potential_overtakers, relevant_games, start_time, time_limit_sec)
 
     standings_dict = dict()
     for row in standings:
@@ -206,6 +219,7 @@ def player_has_qualified(standings, player_of_interest, unplayed_games,
         max_potential_overtakers += get_max_potential_overtakers(
                 player_start_win_points, player_row, group,
                 group_relevant_games, draws_allowed,
+                start_time, time_limit_sec,
                 overtakers_needed_for_non_qual - max_potential_overtakers)
         log("group " + str(group) + (", max_potential_overtakers %d" % (max_potential_overtakers)))
 
