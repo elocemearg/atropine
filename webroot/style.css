@@ -1333,6 +1333,7 @@ div.viewcontrols {
     top: 0px;
     height: 360px;
     min-width: 360px;
+    max-width: 360px;
     margin-left: 10px;
     float: left;
 }

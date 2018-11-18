@@ -128,6 +128,7 @@ for idx in range(len(teleost_modes)):
 
 teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindex", CONTROL_CHECKBOX, "$CONTROL Show name-to-table index at start of round", 0),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autocurrentroundmusthavegamesinalldivisions", CONTROL_CHECKBOX, "$CONTROL Only switch to Fixtures display after fixtures are generated for all divisions", 1),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_lines", CONTROL_NUMBER, "Players per page", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_standings_lines", CONTROL_NUMBER, "Players per page", 8),
@@ -1747,7 +1748,21 @@ where round_no = ? and seq = ?""", alterations_reordered);
         cur.close()
         return (num_games > 0 and num_games == num_completed_games)
 
-    def get_current_round(self):
+    def round_contains_games_in_all_divisions(self, round_no):
+        ret = True
+        cur = self.db.cursor()
+        cur.execute("select d.division, count(g.round_no) from (select distinct(division) from player p) d left outer join game g on g.division = d.division and g.round_no = ? group by d.division", (round_no,))
+        for row in cur:
+            if row[1] == 0:
+                # There's at least one division that doesn't have
+                # games generated for it in this round, so don't
+                # consider this round to exist yet.
+                ret = False
+                break
+        cur.close()
+        return ret
+
+    def get_current_round(self, round_exists_when_all_divisions_have_games=False):
         # Return the latest started round, or if that round is finished and
         # there's a next round, the next round.
         r = self.get_latest_started_round()
@@ -1758,9 +1773,28 @@ where round_no = ? and seq = ?""", alterations_reordered);
             cur.execute("select min(id) from rounds where id > ?", (r["num"],))
             row = cur.fetchone()
             if row is not None and row[0] is not None:
-                # There is a next round
-                r = self.get_round(row[0])
+                next_round_no = row[0]
+            else:
+                next_round_no = None
             cur.close()
+
+            if next_round_no is not None:
+                # There is a next round
+                if round_exists_when_all_divisions_have_games:
+                    # Check that this round has at least one game in every
+                    # division, otherwise we won't count it as a valid round
+                    # because it hasn't been fully generated yet
+                    if not self.round_contains_games_in_all_divisions(next_round_no):
+                        next_round_no = None
+
+            if next_round_no is not None:
+                # The next round has been generated, so use that one
+                r = self.get_round(next_round_no)
+        else:
+            if round_exists_when_all_divisions_have_games:
+                if not self.round_contains_games_in_all_divisions(r["num"]):
+                    r = None
+
         return r
     
     def get_latest_round_no(self):
@@ -2039,6 +2073,12 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
     def get_auto_use_table_index(self):
         return self.get_int_attribute("autousetableindex", 0) != 0
+
+    def set_auto_current_round_must_have_games_in_all_divisions(self, value):
+        self.set_attribute("autocurrentroundmusthavegamesinalldivisions", str(int(value)))
+
+    def get_auto_current_round_must_have_games_in_all_divisions(self):
+        return self.get_int_attribute("autocurrentroundmusthavegamesinalldivisions", 1) != 0
     
     def get_rank_method(self):
         return self.get_int_attribute("rankmethod", RANK_WINS_POINTS);
@@ -2276,9 +2316,9 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         if row is None:
             return teleost_mode_id_to_num.get("TELEOST_MODE_AUTO", 0)
         return row[0];
-    
+
     def get_auto_effective_teleost_mode(self):
-        current_round = self.get_current_round()
+        current_round = self.get_current_round(self.get_auto_current_round_must_have_games_in_all_divisions())
         mode_name = None
 
         if not current_round:
