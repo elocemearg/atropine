@@ -344,7 +344,7 @@ function score_modified(control_name) {
             else:
                 for g in games:
                     if "randomresults" in form and not g.is_complete():
-                        set_random_score(g, 15 if int_or_none(form.getfirst("scrabbleresults")) else 9, int_or_none(form.getfirst("scrabbleresults")) > 0);
+                        set_random_score(g, 15 if int_or_none(form.getfirst("scrabbleresults")) else 9, int_or_none(form.getfirst("scrabbleresults")));
                     else:
                         score = form.getfirst("gamescore_%d_%d" % (g.round_no, g.seq));
                         parsed_score = parse_score(score)
