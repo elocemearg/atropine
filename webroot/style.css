@@ -1440,3 +1440,11 @@ td.teamtablebuttoncell {
     text-align: center;
     border: 1px solid gray;
 }
+
+input[type="checkbox"] {
+    transform: scale(1.5);
+}
+
+input[type="radio"] {
+    transform: scale(1.25);
+}
