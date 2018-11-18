@@ -190,11 +190,12 @@ span.withdrawn {
 
 div.videprintercontainer {
     position: absolute;
-    /*background-color: #002000;*/
+    background-color: #000040;
     left: 0%;
     width: 100%;
+    height: 100%;
     /*border-bottom: 2px solid #004000;*/
-    border-top: 1vh groove blue;
+    border-top: 0.75vh ridge silver;
 }
 
 table.teleostvideprinter {
