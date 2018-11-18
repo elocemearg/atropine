@@ -22,7 +22,7 @@ def check_ready_existing_games_and_table_size(tourney, div_rounds, include_5and3
                 return (False, "%s: Number of players (%d) not compatible with any supported table configuration" % (tourney.get_division_name(div_index), len(players)))
     return (True, None)
 
-def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=True):
+def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=True, additional_elements=[]):
     prev_settings = settings.get_previous_settings()
     for key in prev_settings:
         if key not in settings and key != "submit":
@@ -71,10 +71,29 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
 
     if False not in valid_table_sizes_submitted and "submit" in settings:
         return None
+    
+    for element in additional_elements:
+        elements.append(element)
 
     elements.append(htmlform.HTMLFragment("<p>"))
     elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures"));
     elements.append(htmlform.HTMLFragment("</p>"))
     form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py", elements)
     return form;
+
+
+def get_table_sizes(num_players, table_size):
+    if table_size == -5:
+        sizes = []
+        if num_players < 8:
+            raise countdowntourney.FixtureGeneratorException("Number of players (%d) not compatible with selected table configuration (5&3)." % (num_players))
+        while num_players > 0 and num_players % 5 != 0:
+            sizes.append(3)
+            num_players -= 3
+        sizes += [ 5 for x in range(num_players // 5) ]
+    else:
+        if num_players % table_size != 0:
+            raise countdowntourney.FixtureGeneratorException("Number of players (%d) not compatible with selected table configuration (%d)." % (num_players, table_size))
+        sizes = [ table_size for x in range(num_players // table_size) ]
+    return sizes
 
