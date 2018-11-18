@@ -364,7 +364,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
 
         cgicommon.writeln("<h3>Intended number of rounds, and qualification</h3>")
         cgicommon.writeln("<p>")
-        cgicommon.writeln("If you fill in these values, Atropine will automatically work out when a player is guaranteed to finish in the qualification zone, and highlight them in green the standings table.")
+        cgicommon.writeln("If you fill in these values, Atropine will automatically work out when a player is guaranteed to finish in the qualification zone, and highlight them in green in the standings table.")
         cgicommon.writeln("If you don't fill these in, or if you set them to zero, Atropine won't do that.")
         cgicommon.writeln("</p>")
 
