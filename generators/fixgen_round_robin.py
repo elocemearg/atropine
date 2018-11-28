@@ -4,6 +4,7 @@ import countdowntourney
 import htmlform
 import urllib.request, urllib.parse, urllib.error
 import cgi
+import fixgen
 
 name = "Round Robin"
 description = "Pairs only. We generate N-1 rounds, where N is the number of players in the largest selected division. Smaller selected divisions will sit out later rounds. Every player plays every other player in their division once."
@@ -46,8 +47,8 @@ def generate(tourney, settings, div_rounds):
 
     num_divisions = tourney.get_num_divisions()
     players = tourney.get_active_players()
-    fixtures = []
-    round_numbers_generated = []
+
+    generated_groups = fixgen.GeneratedGroups()
 
     for div in div_rounds:
         div_players = sorted([x for x in players if x.get_division() == div], key=lambda x : x.get_rating(), reverse=True)
@@ -106,13 +107,13 @@ def generate(tourney, settings, div_rounds):
             groups = []
             for (i1, i2) in tables:
                 if div_players[i1] is not None and div_players[i2] is not None:
-                    groups.append((div_players[i1], div_players[i2]))
+                    generated_groups.add_group(start_round_no + round_offset, div, (div_players[i1], div_players[i2]))
 
-            if start_round_no + round_offset not in round_numbers_generated:
-                round_numbers_generated.append(start_round_no + round_offset)
+            #if start_round_no + round_offset not in round_numbers_generated:
+            #    round_numbers_generated.append(start_round_no + round_offset)
 
-            fixtures += tourney.make_fixtures_from_groups(groups, fixtures,
-                    start_round_no + round_offset, False, division=div)
+            #fixtures += tourney.make_fixtures_from_groups(groups, fixtures,
+            #        start_round_no + round_offset, False, division=div)
             
             # Take the last element from top_line and put it on the end of
             # bottom_line, and take the first element of bottom_line and put
@@ -121,16 +122,8 @@ def generate(tourney, settings, div_rounds):
             top_line = [top_line[0]] + [bottom_line[0]] + top_line[1:-1]
             bottom_line = bottom_line[1:]
 
-    fixtures = sorted(fixtures, key=lambda x : (x.round_no, x.division, x.seq))
-
-    rounds = []
-    for round_no in round_numbers_generated:
-        rounds.append({"round" : round_no, "name" : "Round %d" % (round_no)})
-
-    d = dict()
-    d["rounds"] = rounds
-    d["fixtures"] = fixtures
-    return d
+    
+    return generated_groups
 
 def save_form_on_submit():
     return False

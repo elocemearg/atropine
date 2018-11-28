@@ -4,6 +4,7 @@ import countdowntourney
 import htmlform
 import cgi
 import gencommon
+import fixgen
 
 name = "Random Pairings/Groups"
 description = """Randomly assign players to tables, avoiding rematches if
@@ -134,9 +135,9 @@ def generate(tourney, settings, div_rounds):
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
 
-    fixtures = [];
-    round_numbers_generated = []
     avoid_rematches = bool(settings.get("avoidrematches", False))
+
+    generated_groups = fixgen.GeneratedGroups()
 
     for div_index in div_rounds:
         round_no = div_rounds[div_index]
@@ -203,17 +204,12 @@ def generate(tourney, settings, div_rounds):
                 # Reverse the table list so the 5-tables are first
                 tables.reverse()
 
-        fixtures += tourney.make_fixtures_from_groups(tables, fixtures, round_no, table_size == -5, division=div_index)
-        if round_no not in round_numbers_generated:
-            round_numbers_generated.append(round_no)
-    
-    d = dict();
-    d["fixtures"] = fixtures;
-    d["rounds"] = [{
-        "round": round_no,
-        "name": "Round %d" % round_no
-    } for round_no in round_numbers_generated ];
-    return d;
+        for tab in tables:
+            generated_groups.add_group(round_no, div_index, tab)
+
+        generated_groups.set_repeat_threes(round_no, div_index, table_size == -5)
+
+    return generated_groups
 
 def save_form_on_submit():
     return False

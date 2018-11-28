@@ -4,6 +4,7 @@ import countdowntourney;
 import htmlform;
 import swissN;
 import cgi
+import fixgen
 
 name = "Swiss Army Blunderbuss";
 description = "Players are matched against opponents who have performed similarly to them so far in the tourney, but repeats of previous fixtures are avoided.";
@@ -344,7 +345,7 @@ def generate(tourney, settings, div_rounds):
             default_group_size = None
 
     num_divisions = tourney.get_num_divisions()
-    fixtures = []
+    generated_groups = fixgen.GeneratedGroups()
     for div_index in sorted(div_rounds):
         players = tourney.get_active_players()
         players = [x for x in players if x.division == div_index]
@@ -402,16 +403,11 @@ def generate(tourney, settings, div_rounds):
         if groups is None:
             raise countdowntourney.FixtureGeneratorException("%s: Unable to generate any permissible groupings in the given time limit." % (tourney.get_division_name(div_index)))
 
-        fixtures += tourney.make_fixtures_from_groups(groups, fixtures, round_no, group_size == -5, division=div_index)
+        for g in groups:
+            generated_groups.add_group(round_no, div_index, g)
+        generated_groups.set_repeat_threes(round_no, div_index, group_size == -5)
     
-    d = dict();
-    d["fixtures"] = fixtures;
-    d["rounds"] = [ {
-            "round": round_no,
-            "name": "Round %d" % round_no
-    } ];
-    
-    return d;
+    return generated_groups
 
 def save_form_on_submit():
     return False

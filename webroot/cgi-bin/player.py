@@ -15,6 +15,14 @@ def int_or_none(s):
     except ValueError:
         return None;
 
+def int_or_zero(s):
+    if s is None:
+        return 0
+    try:
+        return int(s)
+    except ValueError:
+        return 0
+
 def float_or_none(s):
     if s is None:
         return None;
@@ -112,9 +120,10 @@ if cgicommon.is_client_from_localhost() and request_method == "POST" and form.ge
 if cgicommon.is_client_from_localhost() and request_method == "POST" and form.getfirst("editplayer"):
     new_rating = float_or_none(form.getfirst("setrating"))
     new_name = form.getfirst("setname")
-    new_withdrawn = int_or_none(form.getfirst("setwithdrawn"))
-    new_avoid_prune = int_or_none(form.getfirst("setavoidprune"))
+    new_withdrawn = int_or_zero(form.getfirst("setwithdrawn"))
+    new_avoid_prune = int_or_zero(form.getfirst("setavoidprune"))
     new_division = int_or_none(form.getfirst("setdivision"))
+    new_requires_accessible_table = int_or_zero(form.getfirst("setrequiresaccessibletable"))
 
     if new_rating is not None and player.get_rating() != new_rating:
         try:
@@ -123,7 +132,7 @@ if cgicommon.is_client_from_localhost() and request_method == "POST" and form.ge
         except countdowntourney.TourneyException as e:
             exceptions_to_show.append(("<p>Failed to set player rating...</p>", e))
 
-    if player.is_withdrawn() != (new_withdrawn is not None and new_withdrawn != 0):
+    if player.is_withdrawn() != (new_withdrawn != 0):
         try:
             if new_withdrawn:
                 tourney.withdraw_player(player.get_name())
@@ -134,7 +143,17 @@ if cgicommon.is_client_from_localhost() and request_method == "POST" and form.ge
         except countdowntourney.TourneyException as e:
             exceptions_to_show.append(("<p>Failed to change player withdrawn status...</p>", e))
 
-    if player.is_avoiding_prune() != (new_avoid_prune is not None and new_avoid_prune != 0):
+    if player.is_requiring_accessible_table != (new_requires_accessible_table != 0):
+        try:
+            tourney.set_player_requires_accessible_table(player.get_name(), new_requires_accessible_table != 0)
+            if new_requires_accessible_table != 0:
+                edit_notifications.append("%s now requires an accessible table" % player.get_name())
+            else:
+                edit_notifications.append("%s no longer requires an accessible table" % player.get_name())
+        except countdowntourney.TourneyException as e:
+            exceptions_to_show.append(("<p>Failed to change player accessibility status...</p>", e))
+
+    if player.is_avoiding_prune() != (new_avoid_prune != 0):
         try:
             tourney.set_player_avoid_prune(player.get_name(), new_avoid_prune)
             edit_notifications.append("%s is now %savoiding Prune" % (player.get_name(), "not " if not new_avoid_prune else ""))
@@ -345,6 +364,10 @@ if player:
         show_division_drop_down_box("setdivision", tourney, player)
         cgicommon.writeln("</td></tr>")
     cgicommon.writeln("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <em>(if ticked, the fixture generator will not include this player)</em></td></tr>" % ("checked" if player.is_withdrawn() else ""))
+    cgicommon.writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <em>(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>)</em></td></tr>" % (
+        "checked" if player.is_requiring_accessible_table() else "",
+        urllib.parse.quote_plus(tourneyname)
+    ))
     cgicommon.writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <em>(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</em></td></tr>" % ("checked" if player.is_avoiding_prune() else ""))
     cgicommon.writeln("</table>")
     cgicommon.writeln("<p>")
@@ -389,10 +412,12 @@ else:
 
         cgicommon.writeln("<ul>")
         for p in div_players:
-            cgicommon.writeln("<li>%s%s%s</li>" % (
+            cgicommon.writeln("<li>%s%s%s%s</li>" % (
                     cgicommon.player_to_link(p, tourney.get_name()),
+                    " &#9855;" if p.is_requiring_accessible_table() else "",
                     " (withdrawn)" if p.is_withdrawn() else "",
-                    " (avoiding Prune)" if p.is_avoiding_prune() else ""))
+                    " (avoiding Prune)" if p.is_avoiding_prune() else ""
+                    ))
         cgicommon.writeln("</ul>")
 
 show_player_search_form(tourney)

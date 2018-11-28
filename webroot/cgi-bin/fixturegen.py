@@ -104,6 +104,19 @@ try:
         cgicommon.writeln("<h1>Fixture Generator</h1>");
         cgicommon.writeln("<p>You can't generate fixtures because the tournament doesn't have any active players.</p>")
     elif generator_name is None:
+        num_players_requiring_accessible_table = tourney.get_num_active_players_requiring_accessible_table()
+        num_accessible_tables = tourney.get_num_accessible_tables()
+        if num_accessible_tables is not None and num_players_requiring_accessible_table > num_accessible_tables:
+            cgicommon.show_warning_box("You have %d active player%s who %s, but %s. This means the fixture generator cannot ensure %s. You can define accessible tables in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>." % (
+                num_players_requiring_accessible_table,
+                "s" if num_players_requiring_accessible_table != 1 else "",
+                "requires an accessible table" if num_players_requiring_accessible_table == 1 else "require accessible tables",
+                "you haven't defined any accessible tables" if num_accessible_tables == 0 else ("you have only defined %d accessible table%s" % (num_accessible_tables, "" if num_accessible_tables == 1 else "s")),
+                "this player is given an accessible table" if num_players_requiring_accessible_table == 1 else "these players are given accessible tables",
+                urllib.parse.quote_plus(tourney.get_name())
+            )
+            )
+
         cgicommon.writeln("<h1>Fixture Generator</h1>");
         cgicommon.writeln("<p>The following fixture generators are available.</p>");
 
@@ -172,20 +185,20 @@ try:
             if settings_form is None and "accept" not in form:
                 # We don't require any more information from the user, so
                 # generate the fixtures.
-                fixture_plan = fixturegen.generate(tourney, fixgen_settings, div_rounds);
-                fixtures = fixture_plan["fixtures"];
-                rounds = fixture_plan["rounds"];
+                generated_groups = fixturegen.generate(tourney, fixgen_settings, div_rounds);
                 
                 # Persist the settings used to generate these fixtures,
                 # in case the fixture generator wants to refer to them
                 # when we call it later on
                 tourney.store_fixgen_settings(generator_name, fixgen_settings)
 
+                fixtures = tourney.make_fixtures_from_groups(generated_groups)
+
                 cgicommon.writeln("<p>I've generated the following fixtures. Click <em>Accept Fixtures</em> below to commit them to the database. The fixtures won't be saved until you do.</p>");
                 num_divisions = tourney.get_num_divisions()
-                for r in rounds:
-                    round_no = int(r["round"]);
-                    cgicommon.writeln("<h2>%s</h2>" % r.get("name", "Round %d" % round_no));
+                for r in generated_groups.get_rounds():
+                    round_no = r.get_round_no()
+                    cgicommon.writeln("<h2>%s</h2>" % cgicommon.escape(r.get_round_name()))
 
                     for div_index in range(num_divisions):
                         round_fixtures = [x for x in fixtures if x.round_no == round_no and x.division == div_index];
@@ -251,14 +264,17 @@ try:
                     if name[0:4] == "_div":
                         cgicommon.writeln("<input type=\"hidden\" name=\"%s\" value=\"%s\" />" % (cgicommon.escape(name, True), cgicommon.escape(fixgen_settings[name], True)))
 
-                dict_fixtures = [];
-                for f in fixtures:
-                    dict_fixtures.append(f.make_dict());
-
                 fixture_plan = {
-                        "fixtures" : dict_fixtures,
-                        "rounds" : rounds
-                };
+                        "fixtures" : [
+                            x.make_dict() for x in fixtures
+                        ],
+                        "rounds" : [
+                            {
+                                "round" : x.get_round_no(),
+                                "name" : x.get_round_name()
+                            } for x in generated_groups.get_rounds()
+                        ]
+                }
                 json_fixture_plan = json.dumps(fixture_plan);
                 cgicommon.writeln("<input type=\"hidden\" name=\"jsonfixtureplan\" value=\"%s\" />" % cgicommon.escape(json_fixture_plan, True));
                 cgicommon.writeln("<p>")

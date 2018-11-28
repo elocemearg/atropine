@@ -3,6 +3,7 @@ import countdowntourney
 import htmlform
 import cgi
 import gencommon
+import fixgen
 
 # Who is "Random", and where is "Seeded Pots"?
 name = "Random from Seeded Pots"
@@ -20,8 +21,7 @@ def generate(tourney, settings, div_rounds):
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse)
 
-    fixtures = []
-    round_numbers_generated = []
+    generated_groups = fixgen.GeneratedGroups()
     for div_index in div_rounds:
         round_no = div_rounds[div_index]
         players = [ x for x in tourney.get_active_players() if x.get_division() == div_index ]
@@ -55,18 +55,10 @@ def generate(tourney, settings, div_rounds):
             # Each table contains one player from each pot
             tables.append([ pots[pot_num][table_index] for pot_num in range(table_size) ])
 
-        fixtures += tourney.make_fixtures_from_groups(tables, fixtures, round_no, False, division=div_index)
-        if round_no not in round_numbers_generated:
-            round_numbers_generated.append(round_no)
+        for tab in tables:
+            generated_groups.add_group(round_no, div_index, tab)
 
-    d = dict()
-    d["fixtures"] = fixtures
-    d["rounds"] = [{
-        "round" : round_no,
-        "name" : "Round %d" % (round_no)
-    } for round_no in round_numbers_generated ]
-
-    return d
+    return generated_groups
 
 def save_form_on_submit():
     return False

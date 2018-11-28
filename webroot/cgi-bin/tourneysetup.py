@@ -92,6 +92,10 @@ modify_player_submit = form.getfirst("modifyplayersubmit");
 rank = form.getfirst("rank");
 rank = int_or_none(rank);
 show_draws_column = int_or_none(form.getfirst("showdrawscolumn"))
+accessible_tables_default = int_or_none(form.getfirst("accessibletablesdefault"))
+accessible_tables_string = form.getfirst("accessibletables")
+if not accessible_tables_string:
+    accessible_tables_string = ""
 rules_submit = form.getfirst("rulessubmit");
 
 tourney = None;
@@ -180,8 +184,28 @@ else:
 
     if request_method == "POST" and rules_submit:
         try:
+            # User submitted new tourney rules, so set them
+
+            # Accessible tables
+            try:
+                if not accessible_tables_string:
+                    accessible_tables = []
+                else:
+                    accessible_tables = [ int(x) for x in accessible_tables_string.split(",") ]
+                    for x in accessible_tables:
+                        if x <= 0:
+                            raise countdowntourney.TourneyException("Accessible table list, if set, must be a comma-separated list of positive integers.")
+                tourney.set_accessible_tables(accessible_tables, accessible_tables_default != 0)
+            except ValueError:
+                raise countdowntourney.TourneyException("Accessible table list, if set, must be a comma-separated list of positive integers.")
+
+            # Rank method
             tourney.set_rank_method(rank);
+            
+            # Whether draws are a thing
             tourney.set_show_draws_column(show_draws_column);
+
+            # Qualification analysis
             for div_index in range(num_divisions):
                 div_prefix = "div%d_" % (div_index)
                 suffixes = [ "lastround", "numgamesperplayer", "qualplaces" ]
@@ -346,6 +370,20 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "")));
         cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Wins, then cumulative winning margin (spread). Draws are worth half a win.<br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")))
         cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Points only.' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "")));
+
+        (table_list, accessible_default) = tourney.get_accessible_tables()
+        cgicommon.writeln("<h3>Accessibility</h3>")
+        cgicommon.writeln("<p>If a player requires an accessible table, you can set this on the <a href=\"/cgi-bin/player.py?tourney=%s\">configuration page for that player</a>." % (urllib.parse.quote_plus(tourney.get_name())))
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("<input type=\"radio\" name=\"accessibletablesdefault\" value=\"0\" %s /> The following table numbers are the accessible tables." % ("" if accessible_default else "checked"))
+        cgicommon.writeln("<br />")
+        cgicommon.writeln("<input type=\"radio\" name=\"accessibletablesdefault\" value=\"1\" %s /> All tables are accessible <em>except</em> for the following table numbers." % ("checked" if accessible_default else ""))
+        cgicommon.writeln("</p>")
+        cgicommon.writeln("<p style=\"margin-left: 30px\">")
+        cgicommon.writeln("<input type=\"text\" name=\"accessibletables\" value=\"%s\" />" % (", ".join([ str(x) for x in table_list ])))
+        cgicommon.writeln(" <span style=\"color: #808080; font-size: 10pt\">(Enter table numbers separated by commas, e.g. <em>1, 2, 5</em>)</span>")
+        cgicommon.writeln("</p>")
+
 
         cgicommon.writeln("<h3>Draws</h3>")
         cgicommon.writeln("<p>")

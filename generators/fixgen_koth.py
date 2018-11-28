@@ -6,6 +6,7 @@ import htmlform;
 import cgi;
 import urllib.request, urllib.parse, urllib.error;
 import gencommon
+import fixgen
 
 name = "King of the Hill"
 description = "Players are grouped based on their current position in the standings. If the group size is N, the top N players go on the first table, the next N players go on the second table, and so on. No attempt is made to avoid rematches, but prunes are kept apart.";
@@ -28,10 +29,8 @@ def generate(tourney, settings, div_rounds):
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
 
-    table_no = 1;
-    fixtures = [];
-    round_numbers_added = []
-    rounds = []
+    generated_groups = fixgen.GeneratedGroups()
+
     for div_index in sorted(div_rounds):
         players = [x for x in tourney.get_active_players() if x.get_division() == div_index];
         group_size = int(settings.get("d%d_groupsize" % (div_index)))
@@ -80,16 +79,11 @@ def generate(tourney, settings, div_rounds):
                 break
             groups[current_group].append(p)
 
-        fixtures += tourney.make_fixtures_from_groups(groups, fixtures, round_no, group_size == -5, division=div_index)
-        if round_no not in round_numbers_added:
-            rounds.append({"round": round_no, "name" : "Round %d" % (round_no)})
-            round_numbers_added.append(round_no)
+        for g in groups:
+            generated_groups.add_group(round_no, div_index, g)
+        generated_groups.set_repeat_threes(round_no, div_index, group_size == -5)
 
-    d = dict();
-    d["fixtures"] = fixtures;
-    d["rounds"] = rounds;
-
-    return d;
+    return generated_groups
 
 def save_form_on_submit():
     return False

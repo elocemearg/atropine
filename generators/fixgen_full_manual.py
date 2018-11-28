@@ -6,6 +6,7 @@ import htmlform;
 import cgi;
 import urllib.request, urllib.parse, urllib.error;
 import re
+import fixgen
 
 name = "Fully Manual Fixtures"
 description = "Organiser has full control over how many matches are in the round and who plays whom. There are no table groups, and there is no requirement that all players play."
@@ -414,8 +415,8 @@ def generate(tourney, settings, div_rounds):
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
 
-    fixtures = []
-    round_numbers_generated = []
+    generated_groups = fixgen.GeneratedGroups()
+
     for div_index in div_rounds:
         round_no = div_rounds[div_index]
         groups = [];
@@ -442,20 +443,11 @@ def generate(tourney, settings, div_rounds):
         for game_index in range(num_games):
             groups.append([ selected_players[game_index * 2], selected_players[game_index * 2 + 1] ])
 
-        if round_no not in round_numbers_generated:
-            round_numbers_generated.append(round_no)
+        for g in groups:
+            generated_groups.add_group(round_no, div_index, g)
+        generated_groups.set_game_type(round_no, div_index, default_game_type)
 
-        fixtures += tourney.make_fixtures_from_groups(groups, fixtures, round_no, False, division=div_index, game_type=default_game_type)
-
-    d = dict();
-    d["fixtures"] = fixtures;
-    d["rounds"] = [
-            {
-                "round" : round_no
-            } for round_no in round_numbers_generated
-    ];
-
-    return d;
+    return generated_groups
 
 def save_form_on_submit():
     return True
