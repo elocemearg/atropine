@@ -10,7 +10,7 @@ class TableNumberIndexView extends PagedTableView {
         var html = "";
 
         html += "<div class=\"headingbar viewheading\">";
-        html += "<div class=\"viewheadingtext\">";
+        html += "<div class=\"viewheadingtext\" id=\"tablenumberindexheading\">";
         html += "Table numbers";
         html += "</div>";
         html += "</div>";
@@ -61,13 +61,32 @@ class TableNumberIndexView extends PagedTableView {
             var selectedRoundsPerDiv = findSelectedRoundsPerDivision(gameState.games, -3);
             var namesToTables = {};
             var games = gameState.games;
+            var selectedRound = 0;
+            var roundName = null;
+
+            /* If the divisions don't all want to display the same round, show
+             * the table numbers for the latest round. */
+            for (var divIndex = 0; divIndex < games.divisions.length; ++divIndex) {
+                var roundList = selectedRoundsPerDiv[divIndex];
+                for (var i = 0; i < roundList.length; ++i) {
+                    if (roundList[i] > selectedRound) {
+                        selectedRound = roundList[i];
+                    }
+                }
+            }
+
+            if (gameState.structure.rounds) {
+                for (var roundIndex = 0; roundIndex < gameState.structure.rounds.length; ++roundIndex) {
+                    if (gameState.structure.rounds[roundIndex].num == selectedRound) {
+                        roundName = gameState.structure.rounds[roundIndex].name;
+                        if (gameState.structure.rounds[roundIndex].name) {
+                            roundName = gameState.structure.rounds[roundIndex].name;
+                        }
+                    }
+                }
+            }
 
             for (var divIndex = 0; divIndex < games.divisions.length; ++divIndex) {
-                var selectedRounds = selectedRoundsPerDiv[divIndex];
-                var selectedRound = null;
-                if (selectedRounds)
-                    selectedRound = selectedRounds[0];
-
                 var divGames = games.divisions[divIndex].games;
                 for (var gameIndex = 0; gameIndex < divGames.length; ++gameIndex) {
                     var game = divGames[gameIndex];
@@ -118,7 +137,7 @@ class TableNumberIndexView extends PagedTableView {
                     pages.push(page);
                     page = [];
                 }
-                page.push( { "name" : name, "tables" : tableList } );
+                page.push( { "name" : name, "tables" : tableList, "roundname" : roundName } );
             }
 
             if (page.length > 0) {
@@ -166,6 +185,18 @@ class TableNumberIndexView extends PagedTableView {
     }
 
     redrawHeadings(page) {
+        if (page != null && page.length != 0 && "roundname" in page[0]) {
+            var roundName = page[0].roundname;
+            var element = document.getElementById("tablenumberindexheading");
+            if (element) {
+                if (roundName) {
+                    element.innerText = roundName + " - Table Numbers";
+                }
+                else {
+                    element.innerText = "Table Numbers";
+                }
+            }
+        }
     }
 
     redrawError(page) {
