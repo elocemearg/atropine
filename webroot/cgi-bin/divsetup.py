@@ -196,6 +196,7 @@ else:
 
             cgicommon.writeln("<hr />")
 
+            cgicommon.writeln("<h2>Division assignment by rating or standings position</h2>")
             cgicommon.writeln("<p><strong>N.B.</strong> To change the division assignment of an individual player, use the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page. The form below will overwrite, and lose, any previous assignments of players to divisions, whether made from this page or in Player Setup.</p>" % (urllib.parse.quote_plus(tourneyname)))
             if num_games > 0:
                 cgicommon.show_warning_box("The tourney has already started. Reassigning player divisions will only take effect for rounds whose fixtures have yet to be generated. Existing games will not be changed.")
@@ -207,7 +208,7 @@ else:
             player_seq = 0
             for div_index in range(0, num_divisions):
                 div_name = tourney.get_division_name(div_index)
-                cgicommon.writeln("<h2>%s</h2>" % (cgicommon.escape(div_name)))
+                cgicommon.writeln("<h3>%s</h3>" % (cgicommon.escape(div_name)))
                 cgicommon.writeln("<table class=\"divtable\">")
                 cgicommon.writeln("<tr>")
                 cgicommon.writeln("<th rowspan=\"2\">Name</th>")
@@ -231,9 +232,7 @@ else:
                     player_seq += 1
                 cgicommon.writeln("</table>")
 
-            cgicommon.writeln("<hr />")
-
-            cgicommon.writeln("<h2>Divide players into equal-sized divisions</h2>")
+            cgicommon.writeln("<h3>Assign divisions</h3>")
             cgicommon.writeln("<p>")
             cgicommon.writeln("Number of divisions: <input type=\"number\" min=\"1\" size=\"4\" name=\"numdivisions\" value=\"%d\" />" % (num_divisions))
             cgicommon.writeln("</p><p>")
