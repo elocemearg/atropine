@@ -1256,8 +1256,15 @@ div.prefstaborderfooter {
 }
 
 
+/* Display setup */
+
+div.bannercontrol {
+    margin-top: 20px;
+}
+
 div.viewselection {
     position: relative;
+    margin-top: 20px;
 }
 
 div.viewdetails {
@@ -1265,6 +1272,7 @@ div.viewdetails {
 }
 
 div.viewdetailstext {
+    padding: 10px;
     float: left;
     width: 100%;
 }
@@ -1285,7 +1293,6 @@ input.switchviewbutton {
 
 div.viewpreviewandoptions {
     position: relative;
-    background-color: red;
 }
 
 div.teleostoptionheading {
@@ -1304,53 +1311,58 @@ div.teleostoption {
     padding-top: 5px;
 }
 
-div.viewpreview {
+div.displaysetupview {
     position: relative;
-    background-color: green;
     top: 0px;
     left: 0px;
     width: 400px;
-    min-height: 360px;
-    padding: 10px;
-    left: 0;
+    min-height: 345px;
+    padding: 5px;
     float: left;
 }
 
+div.viewnowshowing {
+    background-color: orange;
+    border: 2px solid orange;
+}
+
+iframe.displaypreviewframe {
+    border: none;
+}
+
+
+div.viewpreview {
+    border: 2px solid orange;
+}
+
 div.viewpreviewswitch {
-    background-color: #66aaff;
     text-align: center;
     width: 100%;
-    padding-top: 15px;
-    padding-bottom: 15px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 16pt;
 }
 
 div.viewpreviewcurrent {
     width: 100%;
     text-align: center;
-    background-color: pink;
-    padding-top: 20px;
-    padding-bottom: 20px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 16pt;
 }
 
 div.viewcontrols {
-    border: 1px solid gray;
-    padding: 10px;
+    margin-top: 20px;
+    margin-bottom: 50px;
     top: 0px;
-    height: 360px;
-    min-width: 360px;
-    max-width: 360px;
-    margin-left: 10px;
-    float: left;
 }
 
 div.viewoptions {
-    height: 320px;
-    overflow-y: auto;
+    /*overflow-y: auto;*/
 }
 
 div.viewsubmitbuttons {
-    width: 360px;
-    text-align: center;
+    margin: 10px;
 }
 
 input.setdisplayoptionsbutton {
@@ -1382,23 +1394,25 @@ div.viewmenucell {
     width: 133px;
     height: 100px;
     float: left;
-    padding: 5px;
+    margin: 1px;
+    padding: 1px;
 }
 
 div.viewmenucellbystander {
-    border: 5px solid transparent;
+    border: 8px solid transparent;
 }
 
 div.viewmenucellselected {
-    border: 5px solid blue;
+    border: 8px solid blue;
 }
 
 div.viewmenucellshowing {
-    border: 5px solid red;
+    border: 8px solid red;
 }
 
 div.opendisplaylink {
     font-weight: bold;
+    margin-bottom: 10px;
 }
 
 div.opendisplaylink a {
