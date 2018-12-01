@@ -233,7 +233,7 @@ else:
 
             cgicommon.writeln("<hr />")
 
-            cgicommon.writeln("<h2>Divide players into divisions</h2>")
+            cgicommon.writeln("<h2>Divide players into equal-sized divisions</h2>")
             cgicommon.writeln("<p>")
             cgicommon.writeln("Number of divisions: <input type=\"number\" min=\"1\" size=\"4\" name=\"numdivisions\" value=\"%d\" />" % (num_divisions))
             cgicommon.writeln("</p><p>")
@@ -252,9 +252,6 @@ else:
             cgicommon.writeln("<input type=\"submit\" name=\"setdivs\" value=\"Distribute players into divisions\" />")
             cgicommon.writeln("</p>")
 
-            #print "<p>"
-            #print "<input type=\"submit\" name=\"setdivs\" value=\"Distribute players into divisions\" />"
-            #print "</p>"
             cgicommon.writeln("</form>")
 
 cgicommon.writeln("</div>")

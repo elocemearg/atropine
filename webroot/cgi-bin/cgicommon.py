@@ -437,8 +437,9 @@ def show_standings_table(tourney, show_draws_column, show_points_column,
             writeln("</tr>");
     writeln("</table>");
 
-def player_to_link(player, tourney_name, emboldenise=False, disable_tab_order=False, open_in_new_window=False, custom_text=None):
-    return "<a class=\"playerlink%s\" href=\"player.py?tourney=%s&id=%d\" %s%s>%s</a>" % (
+def player_to_link(player, tourney_name, emboldenise=False, disable_tab_order=False, open_in_new_window=False, custom_text=None, withdrawn=False):
+    return "<a class=\"playerlink%s%s\" href=\"player.py?tourney=%s&id=%d\" %s%s>%s</a>" % (
+            "withdrawn" if withdrawn else " ",
             " thisplayerlink" if emboldenise else "",
             urllib.parse.quote_plus(tourney_name), player.get_id(),
             "tabindex=\"-1\" " if disable_tab_order else "",

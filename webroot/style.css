@@ -118,7 +118,7 @@ table.fixturetable td.tableno {
 }
 
 table.scorestable td.tableno {
-	font-size: 20pt;
+	font-size: 1.5em;
 	font-weight: bold;
 	vertical-align: middle;
 	text-align: center;
@@ -452,6 +452,11 @@ div.infoboxmessagecontainer {
 a.playerlink {
 	text-decoration: none;
 	color: #000044;
+}
+
+a.playerlinkwithdrawn {
+    /*text-decoration: line-through;*/
+    color: #777777;
 }
 
 a.thisplayerlink {
@@ -1439,6 +1444,53 @@ td.teamtableplayername {
 td.teamtablebuttoncell {
     text-align: center;
     border: 1px solid gray;
+}
+
+div.playersetupcontainer {
+    position: relative;
+}
+
+div.playersetuplistpanecontainer {
+    min-width: 15%;
+    max-width: 25%;
+    float: left;
+}
+
+div.playersetuplistpane {
+    padding-right: 10px;
+}
+
+div.playersetupformpanecontainer {
+    width: 75%;
+    float: left;
+}
+
+div.playersetupformpane {
+    border-left: 1px solid gray;
+    padding-left: 10px;
+}
+
+table.playerlisttable {
+    border-collapse: collapse;
+    width: 95%;
+}
+
+td.playerlistdivision {
+    padding-top: 1.5ex;
+    border-bottom: 1px solid silver;
+}
+
+tr.playerlistrow td {
+    border-top: 1px solid silver;
+    border-bottom: 1px solid silver;
+}
+
+tr.playerlistrowselected {
+    background-color: #ffff88;
+}
+
+td.playerlistflags {
+    text-align: right;
 }
 
 input[type="checkbox"] {
