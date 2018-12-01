@@ -756,6 +756,9 @@ class Game(object):
 
     def is_tiebreak(self):
         return self.tb
+
+    def get_score(self):
+        return (self.s1, self.s2)
     
     def __str__(self):
         if self.is_complete():
@@ -859,6 +862,15 @@ class Game(object):
 
     def get_division(self):
         return self.division
+
+    def get_table_no(self):
+        return self.table_no
+    
+    def get_round_seq(self):
+        return self.seq
+    
+    def get_game_type(self):
+        return self.game_type
     
     def format_score(self):
         if self.s1 is None and self.s2 is None:

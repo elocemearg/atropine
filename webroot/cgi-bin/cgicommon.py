@@ -182,15 +182,23 @@ def show_sidebar(tourney):
 
         writeln("Tournament report")
         writeln("<div class=\"sidebarlinklist\">")
+        
         writeln("<div class=\"exportlink\">")
         writeln("<a href=\"/cgi-bin/export.py?tourney=%s&format=html\" target=\"_blank\">HTML %s</a>" % (urllib.parse.quote_plus(tourney.name), new_window_html))
         writeln("</div>")
+        
         writeln("<div class=\"exportlink\">")
         writeln("<a href=\"/cgi-bin/export.py?tourney=%s&format=text\" target=\"_blank\">Text %s</a>" % (urllib.parse.quote_plus(tourney.name), new_window_html))
         writeln("</div>")
+
+        writeln("<div class=\"exportlink\">")
+        writeln("<a href=\"/cgi-bin/export.py?tourney=%s&format=csv\" target=\"_blank\">CSV %s</a>" % (urllib.parse.quote_plus(tourney.name), new_window_html))
+        writeln("</div>")
+
         writeln("<div class=\"exportlink\">")
         writeln("<a href=\"/cgi-bin/export.py?tourney=%s&format=wikitext\" target=\"_blank\">Wikitext %s</a>" % (urllib.parse.quote_plus(tourney.name), new_window_html))
         writeln("</div>")
+
         writeln("</div>")
     writeln("<br />")
     writeln("<div class=\"globalprefslink\">")

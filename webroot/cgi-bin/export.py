@@ -7,6 +7,7 @@ import cgi
 import cgitb
 import datetime
 import calendar
+import csv
 
 def int_or_none(s):
     try:
@@ -49,8 +50,18 @@ wikitext_date_y = form.getfirst("wikitextyear");
 wikitext_game_prefix = form.getfirst("wikitextgameprefix")
 wikitext_submit = form.getfirst("wikitextsubmit")
 
+csv_submit_download = form.getfirst("csvsubmitdownload")
+csv_submit_view = form.getfirst("csvsubmitview")
+csv_event_code = form.getfirst("csveventcode")
+csv_game_format = form.getfirst("csvgameformat")
+
 if export_format is None:
     export_format = "text"
+
+if csv_event_code is None:
+    csv_event_code = ""
+if csv_game_format is None:
+    csv_game_format = ""
 
 tourney = None;
 
@@ -139,6 +150,55 @@ if export_format == "wikitext":
         cgicommon.writeln("</div>")
         cgicommon.writeln("</body>")
         cgicommon.writeln("</html>")
+        sys.exit(0)
+elif export_format == "csv":
+    if not csv_submit_download and not csv_submit_view:
+        # Ask the user what event code and format code they want to use.
+        # Everything else is stuff we already have in the tourney db.
+        cgicommon.writeln("Content-Type: text/html; charset=utf-8")
+        cgicommon.writeln("")
+        started_html = True
+
+        cgicommon.print_html_head("Tournament report - CSV")
+
+        tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir)
+        cgicommon.writeln("<body>")
+        cgicommon.show_sidebar(tourney)
+
+        cgicommon.writeln("<div class=\"mainpane\">")
+
+        cgicommon.writeln("<h1>Tournament report - CSV</h1>")
+
+        cgicommon.writeln("<form method=\"GET\" action=\"/cgi-bin/export.py\">")
+
+        cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
+        cgicommon.writeln("<input type=\"hidden\" name=\"format\" value=\"csv\" />")
+        cgicommon.writeln("<p>Event code: <input type=\"text\" name=\"csveventcode\" value=\"%s\" /> (e.g. COLIN2019)</p>" % (cgicommon.escape(csv_event_code, True)))
+        cgicommon.writeln("<p>Game format: <input type=\"text\" name=\"csvgameformat\" value=\"%s\" />" % (cgicommon.escape(csv_game_format, True)))
+        cgicommon.writeln("(e.g. 9R, 15R, ...)</p>");
+
+        num_divisions = tourney.get_num_divisions()
+        if num_divisions > 1:
+            cgicommon.writeln("<p>")
+            cgicommon.writeln("Which division(s)?<br />")
+            for div in range(num_divisions):
+                cgicommon.writeln("<input type=\"checkbox\" name=\"csvdiv%d\" id=\"csvdiv%d\" value=\"1\" checked /> <label for=\"csvdiv%d\">%s</label><br />" % (
+                    div, div, div, cgicommon.escape(tourney.get_division_name(div))
+                ))
+            cgicommon.writeln("</p>")
+
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("<input type=\"submit\" name=\"csvsubmitview\" value=\"View CSV in browser\" />")
+        cgicommon.writeln("<input type=\"submit\" name=\"csvsubmitdownload\" value=\"Download CSV\" />")
+        cgicommon.writeln("</p>")
+        
+        cgicommon.writeln("</form>")
+        
+        cgicommon.writeln("</div>")
+
+        cgicommon.writeln("</body>")
+        cgicommon.writeln("</html>")
+
         sys.exit(0)
 
 
@@ -407,7 +467,59 @@ try:
 
         if num_tiebreaks > 0:
             cgicommon.writeln("<center>* includes 10 points from a tie-break conundrum</center>")
+    elif export_format == "csv":
+        selected_divisions = set()
+        num_divisions = tourney.get_num_divisions()
 
+        for div_index in range(num_divisions):
+            if ("csvdiv%d" % (div_index)) in form:
+                selected_divisions.add(div_index)
+
+        if csv_submit_download:
+            filename = csv_event_code
+            if not filename:
+                filename = "event"
+            else:
+                filename = "".join([ x for x in filename if x not in "\\\"\':/"])
+            cgicommon.writeln("Content-Type: text/csv; charset=utf-8")
+            cgicommon.writeln("Content-Disposition: attachment; filename=\"%s.csv\"" % (filename))
+        else:
+            cgicommon.writeln("Content-Type: text/plain; charset=utf-8")
+
+        cgicommon.writeln("")
+        games = tourney.get_games()
+        games = sorted(games, key=lambda x : (x.get_round_no(), x.get_division(), x.get_table_no(), x.get_round_seq()))
+
+        writer = csv.writer(sys.stdout, delimiter=',', quotechar='\"', quoting=csv.QUOTE_MINIMAL)
+
+        # Write header row
+        writer.writerow(("Event code", "Player 1", "Player 1's score", "Player 2's score", "Player 2", "Round", "Format", "Tiebreak?"))
+        for g in games:
+            # If there's more than one division, then don't output a game from
+            # a division that wasn't ticked when we submitted the form
+            div = g.get_division()
+            if num_divisions > 1 and div not in selected_divisions:
+                continue
+
+            player_names = g.get_player_names()
+            game_type = g.get_game_type()
+            if game_type in ('P', 'N'):
+                round_text = str(g.get_round_no())
+            else:
+                # If it's QF, SF etc, use that rather than the round number
+                round_text = game_type
+
+            if len(selected_divisions) > 1:
+                if div > 26:
+                    round_text = tourney.get_short_division_name(div) + "." + round_text
+                else:
+                    round_text = tourney.get_short_division_name(div) + round_text
+
+            # Write one row for each game
+            score = g.get_score()
+            writer.writerow((csv_event_code,
+                player_names[0], score[0], score[1], player_names[1],
+                round_text, csv_game_format, 1 if g.is_tiebreak() else None))
     else:
         show_error("Unknown export format: %s" % export_format);
 except countdowntourney.TourneyException as e:
