@@ -205,6 +205,18 @@ def show_sidebar(tourney):
     writeln("<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" ")
     writeln("onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=450,height=500'); return false;\" >Preferences... " + new_window_html + "</a>")
     writeln("</div>")
+
+    writeln("<br />")
+
+    writeln("<div class=\"sidebarversioninfo\" title=\"This is the version number of the Atropine installation you're using, and the version which created the database for this tourney.\">");
+    writeln("<div class=\"sidebarversionline\">")
+    writeln("Atropine version: %s" % (tourney.get_software_version()))
+    writeln("</div>")
+    writeln("<div class=\"sidebarversionline\">")
+    writeln("This tourney version: %s" % (tourney.get_db_version()))
+    writeln("</div>")
+    writeln("</div>")
+
     writeln("</div>");
 
 def make_team_dot_html(team):

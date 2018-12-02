@@ -998,6 +998,12 @@ class Tourney(object):
     def get_name(self):
         return self.name
     
+    def get_db_version(self):
+        return ".".join([str(x) for x in self.db_version])
+
+    def get_software_version(self):
+        return get_software_version()
+    
     # Number of games in the GAME table - that is, number of games played
     # or in progress.
     def get_num_games(self):
@@ -3363,3 +3369,6 @@ def tourney_create(dbname, directory="."):
     tourney.db.execute("insert into options values ('atropineversion', ?)", (SW_VERSION,)) 
     tourney.db.commit();
     return tourney;
+
+def get_software_version():
+    return SW_VERSION

@@ -31,6 +31,10 @@ div.roundlink {
        padding-left: 20px;
 }
 
+div.sidebarversioninfo {
+    font-size: 8pt;
+    color: #444444;
+}
 
 .mainpane {
 	margin-left: 200px;
@@ -1268,7 +1272,7 @@ div.viewselection {
 }
 
 div.viewdetails {
-    max-width: 800px;
+    max-width: 780px;
 }
 
 div.viewdetailstext {
@@ -1375,7 +1379,7 @@ div.viewmenu {
     border: 1px solid gray;
     background-color: silver;
     padding: 5px;
-    width: 800px;
+    width: 780px;
 }
 
 div.viewmenuheading {
