@@ -1263,6 +1263,7 @@ class Tourney(object):
                     rating = max_rating
                 else:
                     rating = float(max_rating - num_players_given_auto_rating * (max_rating - min_rating) / (num_unrated_players - 1))
+                    rating = round(rating, 2)
                 if p[1] is None:
                     new_players.append((p[0], rating, p[2], p[3]));
                     num_players_given_auto_rating += 1
@@ -3217,6 +3218,7 @@ and g.game_type = 'P'
                 new_rating = max_rating
             else:
                 new_rating = max_rating - float(idx * (max_rating - min_rating)) / (len(player_ids) - 1)
+                new_rating = round(new_rating, 2)
             player_ids_new_ratings.append((new_rating, pid))
 
         cur.executemany("update player set rating = ? where id = ?", player_ids_new_ratings)
