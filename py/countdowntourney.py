@@ -2746,12 +2746,11 @@ and g.game_type = 'P'
         return divs
 
     def get_num_active_accessible_players_in_divisions(self, div_set):
-        if len(div_set) == 0:
+        if self.db_version < (1, 0, 4) or len(div_set) == 0:
             return 0
-        else:
-            condition = "and division in (%s)" % (",".join([str(x) for x in div_set]))
+
         cur = self.db.cursor()
-        cur.execute("select count(*) from player where require_accessible_table != 0 and withdrawn = 0 " + condition) 
+        cur.execute("select count(*) from player where require_accessible_table != 0 and withdrawn = 0 and division in (%s)" % (",".join([str(x) for x in div_set])))
         row = cur.fetchone()
         if row is None or row[0] is None:
             count = 0
