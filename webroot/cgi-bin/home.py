@@ -81,14 +81,6 @@ request_method = os.environ.get("REQUEST_METHOD", "GET");
 cgicommon.writeln("<body>");
 cgicommon.writeln("<h1>Welcome to Atropine</h1>");
 
-tourney_list = os.listdir(cgicommon.dbdir);
-tourney_list = [x for x in tourney_list if (len(x) > 3 and x[-3:] == ".db")];
-if order_by in ("mtime_a", "mtime_d"):
-    tourney_list = sorted(tourney_list, key=get_tourney_modified_time, reverse=(order_by == "mtime_d"));
-else:
-    tourney_list = sorted(tourney_list, key=lambda x : x.lower(), reverse=(order_by == "name_d"));
-
-
 if cgicommon.is_client_from_localhost():
     # Client is from localhost, so serve the administrator's front page, which
     # produces a menu of tournaments and the ability to create a new one.
@@ -121,6 +113,14 @@ if cgicommon.is_client_from_localhost():
 
     cgicommon.writeln("<hr />")
 
+tourney_list = os.listdir(cgicommon.dbdir);
+tourney_list = [x for x in tourney_list if (len(x) > 3 and x[-3:] == ".db")];
+if order_by in ("mtime_a", "mtime_d"):
+    tourney_list = sorted(tourney_list, key=get_tourney_modified_time, reverse=(order_by == "mtime_d"));
+else:
+    tourney_list = sorted(tourney_list, key=lambda x : x.lower(), reverse=(order_by == "name_d"));
+
+if cgicommon.is_client_from_localhost():
     if tourney_list:
         cgicommon.writeln("<h2>Open existing tourney</h2>");
         print_tourney_table(tourney_list, "/cgi-bin/tourneysetup.py", True, False, False)
