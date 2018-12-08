@@ -578,6 +578,12 @@ class Player(object):
     def get_team(self):
         return self.team
 
+    def get_team_id(self):
+        if self.team:
+            return self.team.get_id()
+        else:
+            return None
+
     def get_short_name(self):
         return self.short_name
 
@@ -603,21 +609,66 @@ def get_first_name_and_last_initial(name):
     else:
         return names[0] + " " + names[1][0]
 
-def get_short_name(name, players):
+def get_short_name(name, player_names):
     short_name = get_first_name(name)
-    for op in players:
-        if name != op[0] and short_name == get_first_name(op[0]):
+    for op in player_names:
+        if name != op and short_name == get_first_name(op):
             break
     else:
         return short_name
     
     short_name = get_first_name_and_last_initial(name)
-    for op in players:
-        if name != op[0] and short_name == get_first_name_and_last_initial(op[0]):
+    for op in player_names:
+        if name != op and short_name == get_first_name_and_last_initial(op):
             break
     else:
         return short_name
     return name
+
+# When we submit a player list to a new tournament, set_players() takes a list
+# of these objects.
+class EnteredPlayer(object):
+    def __init__(self, name, rating, division=0, team_id=None,
+            avoid_prune=False, withdrawn=False,
+            requires_accessible_table=False):
+        self.name = name.strip()
+        self.short_name = self.name
+        self.rating = rating
+        self.division = division
+        self.team_id = team_id
+        self.avoid_prune = avoid_prune
+        self.withdrawn = withdrawn
+        self.requires_accessible_table = requires_accessible_table
+
+    def get_name(self):
+        return self.name
+
+    def get_rating(self):
+        return self.rating
+
+    def set_rating(self, rating):
+        self.rating = rating
+
+    def set_short_name(self, short_name):
+        self.short_name = short_name
+
+    def get_short_name(self):
+        return self.short_name
+    
+    def get_division(self):
+        return self.division
+
+    def get_team_id(self):
+        return self.team_id
+    
+    def get_avoid_prune(self):
+        return self.avoid_prune
+
+    def get_withdrawn(self):
+        return self.withdrawn
+    
+    def get_requires_accessible_table(self):
+        return self.requires_accessible_table
 
 # This object can be on one side and/or other of a Game, just like a Player.
 # However, it does not represent a player. It represents the winner or loser
@@ -1171,17 +1222,11 @@ class Tourney(object):
         cur = self.db.cursor()
         players = self.get_players()
         for p in players:
-            short_name = get_short_name(p.get_name(), players)
+            short_name = get_short_name(p.get_name(), [ x.get_name() for x in players ])
             cur.execute("update player set short_name = ? where (lower(name) = ? or name = ?)", (short_name, p.get_name().lower(), p.get_name()))
         self.db.commit()
 
-    # players must be a list of 2-tuples or 3-tuples. Each tuple is (name,
-    # rating) or (name, rating, division).
-    # Alternatively they can be Player objects, which pretend to be 2-tuples.
-    # Rating should be a number. The rating may be None for all players,
-    # in which case the first player is given a rating of 2000 and subsequent
-    # players are rated progressively lower. It is an error to specify a
-    # rating for some players and not others.
+    # players must be a list of EnteredPlayer objects.
     # This function removes any players currently registered.
     def set_players(self, players, auto_rating_behaviour=RATINGS_UNIFORM):
         # If there are any games, in this tournament, it's too late to
@@ -1190,57 +1235,48 @@ class Tourney(object):
         if self.get_num_games() > 0:
             raise TourneyInProgressException("Replacing the player list is not permitted once the tournament has started.");
 
-        # Strip leading and trailing whitespace from player names
-        new_player_list = [ (x[0].strip(), x[1], x[2]) for x in players ]
-        players = new_player_list
-
         # Make sure no player names are blank
         for p in players:
-            if p[0] == "":
+            if not p.get_name():
                 raise InvalidPlayerNameException()
 
         # Make sure all the player names are case-insensitively unique
         for pi in range(len(players)):
             for opi in range(pi + 1, len(players)):
-                if players[pi][0].lower() == players[opi][0].lower():
-                    raise DuplicatePlayerException("No two players are allowed to have the same name, and you've got more than one %s." % (players[pi][0]))
+                if players[pi].get_name().lower() == players[opi].get_name().lower():
+                    raise DuplicatePlayerException("No two players are allowed to have the same name, and you've got more than one %s." % (players[pi].get_name()))
+
+        teams = self.get_teams()
+        team_ids = [t.get_id() for t in teams]
+        # Make sure for each player that if they're on a team, that team
+        # exists
+        for p in players:
+            team = p.get_team_id()
+            if team is not None and team not in team_ids:
+                raise InvalidTeamException("Player \"%s\" is being assigned to a team with an invalid or nonexistent number.\n" % (p.get_name()))
 
         # For each player, work out a "short name", which will be the first
         # of their first name, first name and last initial, and full name,
         # which is unique for that player.
-        new_players = []
         for p in players:
-            short_name = get_short_name(p[0], players)
-            new_players.append((p[0], p[1], short_name, p[2]))
+            p.set_short_name(get_short_name(p.get_name(), [ x.get_name() for x in players]))
 
-        players = new_players
-
-        # Check the ratings, if given, are sane, and convert them to integers
+        # Check the ratings, if given, are sane
         new_players = [];
         for p in players:
-            try:
-                if p[3] < 0:
-                    raise InvalidDivisionNumberException("Player \"%s\" has been given a division number of %d. It's not allowed to be negative." % (p[0], p[3]))
-                if p[1] is not None:
-                    rating = float(p[1]);
-                    if rating != 0 and auto_rating_behaviour != RATINGS_MANUAL:
-                        # Can't specify any non-zero ratings if automatic
-                        # rating is enabled.
-                        raise InvalidRatingException("Player \"%s\" has been given a rating (%g) but you have not selected manual rating. If manual rating is not used, players may not be given manual ratings in the initial player list except a rating of 0 to indicate a prune or bye." % (p[0], rating))
-                else:
-                    if auto_rating_behaviour == RATINGS_MANUAL:
-                        # Can't have unrated players if automatic rating
-                        # has been disabled.
-                        raise InvalidRatingException("Player \"%s\" does not have a rating. If manual rating is selected, all players must be given a rating." % (p[0]))
-                    rating = None;
-                new_players.append((p[0], rating, p[2], p[3]));
-            except ValueError:
-                raise InvalidRatingException("Player \"%s\" has an invalid rating \"%s\". A player's rating must be a number." % (p[0], p[1]));
-        players = new_players;
-
-        #ratings = map(lambda x : x[1], filter(lambda x : x[1] is not None, players));
-        #if len(ratings) != 0 and len(ratings) != len(players):
-        #    raise IncompleteRatingsException("Either every player must be given a rating, or no players may be given ratings in which case ratings will be automatically assigned.");
+            if p.get_division() < 0:
+                raise InvalidDivisionNumberException("Player \"%s\" has been given a division number of %d. It's not allowed to be negative." % (p[0], p[3]))
+            if p.get_rating() is not None:
+                rating = p.get_rating()
+                if rating != 0 and auto_rating_behaviour != RATINGS_MANUAL:
+                    # Can't specify any non-zero ratings if automatic
+                    # rating is enabled.
+                    raise InvalidRatingException("Player \"%s\" has been given a rating (%g) but you have not selected manual rating. If manual rating is not used, players may not be given manual ratings in the initial player list except a rating of 0 to indicate a prune or bye." % (p.get_name(), rating))
+            else:
+                if auto_rating_behaviour == RATINGS_MANUAL:
+                    # Can't have unrated players if automatic rating
+                    # has been disabled.
+                    raise InvalidRatingException("Player \"%s\" does not have a rating. If manual rating is selected, all players must be given a rating." % (p.get_name()))
 
         if auto_rating_behaviour != RATINGS_MANUAL:
             if auto_rating_behaviour == RATINGS_GRADUATED:
@@ -1252,7 +1288,7 @@ class Tourney(object):
 
             new_players = [];
             rating = max_rating;
-            num_unrated_players = len([x for x in players if x[1] is None])
+            num_unrated_players = len([x for x in players if x.get_rating() is None])
             num_players_given_auto_rating = 0
 
             if max_rating != min_rating and num_unrated_players > max_rating - min_rating:
@@ -1264,18 +1300,19 @@ class Tourney(object):
                 else:
                     rating = float(max_rating - num_players_given_auto_rating * (max_rating - min_rating) / (num_unrated_players - 1))
                     rating = round(rating, 2)
-                if p[1] is None:
-                    new_players.append((p[0], rating, p[2], p[3]));
+                if p.get_rating() is None:
+                    p.set_rating(rating)
                     num_players_given_auto_rating += 1
-                else:
-                    new_players.append((p[0], p[1], p[2], p[3]));
-            players = new_players;
 
         self.set_attribute("autoratingbehaviour", auto_rating_behaviour);
 
         self.db.execute("delete from player");
 
-        self.db.executemany("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed) values (?, ?, null, ?, 0, ?, 0)", players);
+        self.db.executemany("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed, avoid_prune, require_accessible_table) values (?, ?, ?, ?, ?, ?, 0, ?, ?)",
+                [ (p.get_name(), p.get_rating(), p.get_team_id(),
+                    p.get_short_name(), int(p.get_withdrawn()),
+                    p.get_division(), int(p.get_avoid_prune()),
+                    int(p.get_requires_accessible_table())) for p in players ]);
         self.db.commit();
 
     def get_auto_rating_behaviour(self):
@@ -1351,7 +1388,7 @@ class Tourney(object):
         cur = self.db.cursor()
         players = self.get_players()
         for p in players:
-            short_name = get_short_name(p.get_name(), players)
+            short_name = get_short_name(p.get_name(), [ x.get_name() for x in players() ])
             cur.execute("update player set short_name = ? where (lower(name) = ? or name = ?)", (short_name, p.get_name().lower(), p.get_name()))
 
         cur.close()

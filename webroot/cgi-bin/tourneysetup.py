@@ -160,22 +160,55 @@ else:
         lines = playerlist.split("\n");
         lines = [x for x in [x.rstrip() for x in lines] if len(x) > 0];
         reader = csv.reader(lines);
-        player_rating_list = [];
+        player_list = [];
         prev_player_name = "-"
         for row in reader:
-            if len(row) == 1:
-                if row[0].strip() == "-":
-                    if prev_player_name != "-":
-                        # This is a division separator - it tells us that the
-                        # players after this point go in the next division down.
-                        div_index += 1
-                else:
-                    player_rating_list.append((row[0].lstrip().rstrip(), None, div_index));
+            player_name = row[0].strip()
+            player_rating = None
+            player_avoid_prune = False
+            player_withdrawn = False
+            player_requires_accessible_table = False
+            player_team_id = None
+
+            if player_name == "-":
+                # This is a division separator, not a player name. It tells us
+                # that the players listed after this point go in the next
+                # division down.
+                if prev_player_name != "-":
+                    div_index += 1
             else:
-                player_rating_list.append((row[0].lstrip().rstrip(), row[1], div_index));
-            prev_player_name = row[0].strip()
+                # For each field after the name:
+                # * If it parses as a number, it is the player's rating.
+                # * If it's "A", it indicates the player requires an accessible
+                #   table.
+                # * If it's "NP", it indicates the player shouldn't play Prune.
+                # * If it's "W", it indicates the player is withdrawn.
+                # * If it's "T" followed immediately by an integer, then the
+                #   player is on a team: 1 or 2.
+                # * Otherwise, it is ignored.
+                for field in row[1:]:
+                    try:
+                        player_rating = float(field)
+                    except ValueError:
+                        field = field.upper()
+                        if field == "A":
+                            player_requires_accessible_table = True
+                        elif field == "NP":
+                            player_avoid_prune = True
+                        elif field == "W":
+                            player_withdrawn = True
+                        elif field[0] == "T":
+                            try:
+                                player_team_id = int(field[1:])
+                            except ValueError:
+                                player_team_id = None
+
+            player_list.append(countdowntourney.EnteredPlayer(player_name,
+                player_rating, div_index, player_team_id, player_avoid_prune,
+                player_withdrawn, player_requires_accessible_table))
+            prev_player_name = player_name
         try:
-            tourney.set_players(player_rating_list, auto_rating_behaviour);
+            tourney.set_players(player_list, auto_rating_behaviour);
             cgicommon.writeln("<p><strong>Player list updated successfully.</strong></p>");
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
@@ -312,13 +345,22 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
             # Write player names, or player names and ratings if the user
             # specified the players' ratings.
             for p in players:
-                (name, rating, div_index) = p;
+                div_index = p.get_division()
                 if div_index != prev_div_index:
                     writer.writerow(("-",))
-                if auto_rating != countdowntourney.RATINGS_MANUAL and rating != 0:
-                    writer.writerow((cgicommon.escape(name),));
-                else:
-                    writer.writerow((cgicommon.escape(name), "%g" % (rating)));
+                row = []
+                row.append(cgicommon.escape(p.get_name()))
+                if auto_rating == countdowntourney.RATINGS_MANUAL or p.get_rating() == 0:
+                    row.append("%g" % (p.get_rating()))
+                if p.get_team_id() is not None:
+                    row.append("T%d" % (p.get_team_id()))
+                if p.is_requiring_accessible_table():
+                    row.append("A")
+                if p.is_withdrawn():
+                    row.append("W")
+                if p.is_avoiding_prune():
+                    row.append("NP")
+                writer.writerow(tuple(row))
                 prev_div_index = div_index
             cgicommon.write(string_stream.getvalue())
         cgicommon.writeln("</textarea>");
