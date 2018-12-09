@@ -38,7 +38,7 @@ def get_standings(tourney, form):
     div_standings_list = []
     for div in range(num_divs):
         standings = []
-        div_standings = tourney.get_standings(div)
+        div_standings = tourney.get_standings(div, True)
         for s in div_standings:
             team_colour = player_to_team_colour.get(s.name, None)
             if team_colour is not None:

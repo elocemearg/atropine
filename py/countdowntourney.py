@@ -2299,7 +2299,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def get_short_division_name(self, num):
         return get_general_short_division_name(num)
 
-    def get_standings(self, division=None):
+    def get_standings(self, division=None, exclude_withdrawn_with_no_games=False):
         method = self.get_rank_method();
         if method == RANK_WINS_POINTS:
             orderby = "order by s.wins * 2 + s.draws desc, s.points desc, p.name";
@@ -2313,12 +2313,19 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         else:
             raise UnknownRankMethodException("This tourney's standings are ranked by method %d, which I don't recognise." % method);
 
-        if division is not None:
-            condition = "where s.division = %d " % (division)
-        else:
-            condition = ""
+        conditions = []
 
-        results = self.ranked_query("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws, p.withdrawn from player_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id " + condition + orderby, rankcols);
+        if division is not None:
+            conditions.append("s.division = %d " % (division))
+        if exclude_withdrawn_with_no_games:
+            conditions.append("(p.withdrawn = 0 or s.played > 0)")
+
+        if conditions:
+            where_clause = "where " + " and ".join(conditions)
+        else:
+            where_clause = ""
+
+        results = self.ranked_query("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws, p.withdrawn from player_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id " + where_clause + orderby, rankcols);
 
         standings = [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], bool(x[11])) for x in results ]
 

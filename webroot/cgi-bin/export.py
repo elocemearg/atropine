@@ -325,14 +325,14 @@ try:
         # First, work out how much room we need for the longest name
         max_name_len = 0
         for div_index in range(num_divisions):
-            standings = tourney.get_standings(div_index)
+            standings = tourney.get_standings(div_index, True)
             if len(standings) > 0:
                 m = max([len(x[1]) for x in standings]);
                 if m > max_name_len:
                     max_name_len = m
 
         for div_index in range(num_divisions):
-            standings = tourney.get_standings(div_index)
+            standings = tourney.get_standings(div_index, True)
             if num_divisions > 1:
                 cgicommon.writeln(tourney.get_division_name(div_index))
             header_format_string = "%%-%ds  P   W%s%s%s%s" % (
@@ -413,7 +413,7 @@ try:
         for div_index in range(num_divisions):
             if num_divisions > 1:
                 cgicommon.writeln("===%s===" % (tourney.get_division_name(div_index)))
-            standings = tourney.get_standings(div_index)
+            standings = tourney.get_standings(div_index, True)
             cgicommon.writeln("{|")
             cgicommon.write("! Rank !! Name !! Games !! Wins")
             if show_draws_column:
