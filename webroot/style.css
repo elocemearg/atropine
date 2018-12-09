@@ -706,13 +706,37 @@ div.playerlistpane {
 div.playerlisthelp {
        float: left;
        width: 350px;
-       margin: 20px;
+       margin-left: 10px;
        padding: 10px;
        background-color: #cccccc;
+       font-size: 10pt;
+}
+
+#playerlistextrahelpshow {
+    color: blue;
+    cursor: pointer;
 }
 
 div.playerlistclear {
        clear: both;
+}
+
+#playerlistsummary {
+    font-size: 10pt;
+}
+
+div.playerlistsubmitdiv {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    float: left;
+}
+
+div.playerlistsummarydiv {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    float: right;
+    max-width: 200px;
+    color: gray;
 }
 
 div.sidebarbannerheading {

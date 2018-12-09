@@ -54,21 +54,21 @@ Cymbelina Spatchcock
 Compton Spongeworthy
 Plungemaster Thompson
 Flopsbourne McJumble
-Apterous Prune,0"""
+Prune,0"""
 
 player_list_example_graduated = """Lavinia Splatterbury
 Cymbelina Spatchcock
 Compton Spongeworthy
 Plungemaster Thompson
 Flopsbourne McJumble
-Apterous Prune,0"""
+Prune,0"""
 
 player_list_example_manual = """Lavinia Splatterbury,1953
 Cymbelina Spatchcock,1901
 Compton Spongeworthy,1874
 Plungemaster Thompson,1640
 Flopsbourne McJumble,1559
-Apterous Prune,0"""
+Prune,0"""
 
 player_list_rating_help = "To give a player a rating, put a comma after the player's name and put the rating number after that, e.g. <span class=\"fixedwidth\">Harry Peters,1860</span>"
 
@@ -103,7 +103,7 @@ request_method = os.environ.get("REQUEST_METHOD", "");
 
 cgicommon.print_html_head("Tourney Setup: " + str(tourneyname));
 
-cgicommon.writeln("<body>");
+cgicommon.writeln("<body onload=\"textAreaChange(); playerListExtraHelpShow();\">");
 
 cgicommon.writeln("<script>")
 cgicommon.writeln("""
@@ -128,6 +128,159 @@ for (num, text) in [
 cgicommon.writeln("""
     }
 }
+
+function splitCSVRecord(line) {
+    var inQuote = false;
+    var fields = [];
+    var currentField = "";
+
+    for (var i = 0; i < line.length; ++i) {
+        var c = line[i];
+        var out = null;
+        if (inQuote) {
+            if (c == '\\"') {
+                if (i + 1 < line.length && line[i+1] == '\\"') {
+                    // escaped quote
+                    out = c;
+                }
+                else {
+                    inQuote = false;
+                }
+            }
+            else {
+                out = c;
+            }
+        }
+        else {
+            if (c == '\\"') {
+                inQuote = true;
+            }
+            else if (c == ',') {
+                fields.push(currentField);
+                currentField = "";
+            }
+            else if (c != '\\r' && c != '\\n') {
+                out = c;
+            }
+        }
+        if (out != null) {
+            currentField += out;
+        }
+    }
+    fields.push(currentField);
+    return fields;
+}
+
+/* Called when the textarea of player names changes. We parse the list and
+   count the number of active players in each division, and in total, and
+   update the label below the textarea. */
+function textAreaChange() {
+    var element = document.getElementById("playerlist");
+    if (element == null)
+        return;
+
+    var text = element.value;
+    var textPos = 0;
+    var numDivisions = 1;
+    var totalPlayers = 0;
+    var totalWithdrawnPlayers = 0;
+    var playersThisDivision = 0;
+    var withdrawnPlayersThisDivision = 0;
+    var divisionPlayerCounts = [];
+    var divisionWithdrawnPlayerCounts = [];
+
+    var lastRecord = false;
+    var prevName = "-";
+    do {
+        var recordEndPos = text.indexOf("\\n", textPos);
+        if (recordEndPos == -1) {
+            recordEndPos = text.length;
+            lastRecord = true;
+        }
+        var record = text.substring(textPos, recordEndPos).trim();
+        if (record.length > 0) {
+            var fields = splitCSVRecord(record);
+            if (fields[0].trim() == "-") {
+                if (prevName != "-") {
+                    if (playersThisDivision > 0) {
+                        divisionPlayerCounts.push(playersThisDivision);
+                        divisionWithdrawnPlayerCounts.push(withdrawnPlayersThisDivision);
+                        playersThisDivision = 0;
+                        withdrawnPlayersThisDivision = 0;
+                    }
+                    numDivisions++;
+                }
+            }
+            else {
+                var isWithdrawn = false;
+                for (var i = 0; i < fields.length; ++i) {
+                    if (fields[i].trim().toUpperCase() == "W") {
+                        isWithdrawn = true;
+                        break;
+                    }
+                }
+                if (isWithdrawn) {
+                    withdrawnPlayersThisDivision++;
+                    totalWithdrawnPlayers++;
+                }
+                playersThisDivision++;
+                totalPlayers++;
+            }
+            prevName = fields[0].trim();
+        }
+        textPos = recordEndPos + 1;
+    } while (!lastRecord);
+
+    if (prevName == "-") {
+        /* If the list ends with "-", that doesn't mean there's an empty
+           division on the end. */
+        numDivisions--;
+    }
+
+    if (playersThisDivision > 0) {
+        divisionPlayerCounts.push(playersThisDivision);
+        divisionWithdrawnPlayerCounts.push(withdrawnPlayersThisDivision);
+        playersThisDivision = 0;
+        withdrawnPlayersThisDivision = 0;
+    }
+
+    var summary = (totalPlayers - totalWithdrawnPlayers).toString() + " active players";
+    if (numDivisions > 1) {
+        summary += "<br />" + numDivisions.toString() + " divisions (";
+        for (var div = 0; div < numDivisions; ++div) {
+            if (div > 0) {
+                summary += ", ";
+            }
+            summary += (divisionPlayerCounts[div] - divisionWithdrawnPlayerCounts[div]).toString();
+        }
+        summary += ")";
+    }
+
+    var summaryElement = document.getElementById("playerlistsummary");
+    if (summaryElement != null) {
+        summaryElement.innerHTML = summary;
+    }
+}
+
+var extraHelpShowing = true;
+
+/* Called when the user clicks the "show more" or "show less" link on the
+   player list help box. */
+function playerListExtraHelpShow() {
+    var linkElement = document.getElementById("playerlistextrahelpshow");
+    var extraHelpElement = document.getElementById("playerlistextrahelp");
+
+    if (extraHelpElement != null) {
+        extraHelpElement.style.display = (extraHelpShowing ? "none" : null);
+    }
+
+    extraHelpShowing = !extraHelpShowing;
+
+    if (linkElement != null) {
+        linkElement.innerText = (extraHelpShowing ? "Show less" : "Show more");
+    }
+}
+
 </script>
 """)
 
@@ -190,22 +343,23 @@ else:
                     try:
                         player_rating = float(field)
                     except ValueError:
-                        field = field.upper()
+                        field = field.upper().strip()
                         if field == "A":
                             player_requires_accessible_table = True
                         elif field == "NP":
                             player_avoid_prune = True
                         elif field == "W":
                             player_withdrawn = True
-                        elif field[0] == "T":
+                        elif field and field[0] == "T":
                             try:
                                 player_team_id = int(field[1:])
                             except ValueError:
                                 player_team_id = None
 
-            player_list.append(countdowntourney.EnteredPlayer(player_name,
-                player_rating, div_index, player_team_id, player_avoid_prune,
-                player_withdrawn, player_requires_accessible_table))
+                player_list.append(countdowntourney.EnteredPlayer(player_name,
+                    player_rating, div_index, player_team_id,
+                    player_avoid_prune, player_withdrawn,
+                    player_requires_accessible_table))
             prev_player_name = player_name
         try:
             tourney.set_players(player_list, auto_rating_behaviour);
@@ -328,9 +482,8 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
 
         cgicommon.writeln("<div class=\"playerlist\">")
         cgicommon.writeln("<div class=\"playerlistpane\">")
-        cgicommon.writeln("<p>")
         cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname));
-        cgicommon.writeln('<textarea rows="28" cols="40" name="playerlist">');
+        cgicommon.writeln('<textarea rows="30" cols="40" name="playerlist" id="playerlist" oninput="textAreaChange();">');
         if request_method == "POST" and playerlist:
             # If the user has submitted something, display what the user
             # submitted rather than what's in the database - this gives them
@@ -364,11 +517,14 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
                 prev_div_index = div_index
             cgicommon.write(string_stream.getvalue())
         cgicommon.writeln("</textarea>");
-        cgicommon.writeln("</p>")
 
-        cgicommon.writeln("<p>")
-        cgicommon.writeln('<input type="submit" name="playerlistsubmit" value="Save Player List" />')
-        cgicommon.writeln("</p>")
+        cgicommon.writeln("<div class=\"playerlistclear\"></div>")
+        cgicommon.writeln("<div class=\"playerlistsubmitdiv\">")
+        cgicommon.writeln('<input type="submit" name="playerlistsubmit" id="playerlistsubmit" value="Save Player List" />')
+        cgicommon.writeln("</div>")
+        cgicommon.writeln("<div class=\"playerlistsummarydiv\" id=\"playerlistsummary\">")
+        cgicommon.writeln("</div>")
+
 
         cgicommon.writeln("</div>")
 
@@ -388,12 +544,40 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("</p>")
 
         cgicommon.writeln("<p>")
-        cgicommon.writeln("To indicate that a player is a prune or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <span class=\"fixedwidth\">Apterous Prune,0</span>")
+        cgicommon.writeln("To indicate that a player is a prune or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <span class=\"fixedwidth\">Prune,0</span>")
         cgicommon.writeln("</p>")
 
         cgicommon.writeln("<p>")
         cgicommon.writeln("To divide the players into divisions, put a line containing only a dash (<span class=\"fixedwidth\">-</span>) between the desired divisions.")
         cgicommon.writeln("</p>")
+
+        cgicommon.writeln("<div id=\"playerlistextrahelp\">")
+        cgicommon.writeln("<h3>Help</h3>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("You can add extra fields after the player's name, separated by commas, to specify more information about the player, as follows:")
+        cgicommon.writeln("</p>")
+        cgicommon.writeln("<table>")
+        cgicommon.writeln("<tr><td><em>(number)</em></td><td>The player's rating.</td></tr>")
+        cgicommon.writeln("<tr><td><span class=\"fixedwidth\">A</span></td><td>Player requires an accessible table.</td></tr>")
+        cgicommon.writeln("<tr><td><span class=\"fixedwidth\">NP</span></td><td>Player will avoid playing Prune.</td></tr>")
+        cgicommon.writeln("<tr><td><span class=\"fixedwidth\">W</span></td><td>Player is withdrawn.</td></tr>")
+        cgicommon.writeln("</table>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("For example, the line:")
+        cgicommon.writeln("</p>")
+        cgicommon.writeln("<pre>")
+        cgicommon.writeln("Spangly Fizzbox,A,NP")
+        cgicommon.writeln("</pre>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("means that Spangly Fizzbox requires an accessible table and is to avoid playing Prune.")
+        cgicommon.writeln("</p>")
+        cgicommon.writeln("<p>")
+        cgicommon.writeln("You can always change these settings later on the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page." % (urllib.parse.quote_plus(tourney.get_name())));
+        cgicommon.writeln("</p>")
+        cgicommon.writeln("</div>") #playerlistextrahelp
+
+        cgicommon.writeln("<a id=\"playerlistextrahelpshow\" onclick=\"playerListExtraHelpShow();\">Show less</a>");
+
         cgicommon.writeln("</div>")
         cgicommon.writeln("</div>")
         cgicommon.writeln("</form>")
