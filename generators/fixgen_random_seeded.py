@@ -14,6 +14,28 @@ def get_user_form(tourney, settings, div_rounds):
     return gencommon.get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=False)
 
 def check_ready(tourney, div_rounds):
+    players = tourney.get_active_players()
+    num_divs = tourney.get_num_divisions()
+    for div_index in div_rounds:
+        div_players = [ p for p in players if p.get_division() == div_index ]
+        prev_rating = None
+        for p in div_players:
+            rating = p.get_rating()
+            if rating != 0:
+                if prev_rating is None:
+                    prev_rating = rating
+                elif rating != prev_rating:
+                    # We've found two non-Pruney players with different
+                    # ratings, so we know we're not in the unfortunate
+                    # situation where the user has selected the Random from
+                    # Seeded Pots generator but forgotten to set any ratings
+                    break
+        else:
+            reason = ""
+            if num_divs > 1:
+                reason += tourney.get_division_name(div_index) + ": "
+            reason += "All players have the same rating, so the Random from Seeded Pots generator isn't much use to you. Try the Random fixture generator instead, or give the players ratings. Perhaps you need to select the option labelled \"<strong>This player list is in rating order</strong>\" on the General Setup page?"
+            return (False, reason)
     return gencommon.check_ready_existing_games_and_table_size(tourney, div_rounds, include_5and3=False)
 
 def generate(tourney, settings, div_rounds):
