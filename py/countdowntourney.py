@@ -1388,7 +1388,7 @@ class Tourney(object):
         cur = self.db.cursor()
         players = self.get_players()
         for p in players:
-            short_name = get_short_name(p.get_name(), [ x.get_name() for x in players() ])
+            short_name = get_short_name(p.get_name(), [ x.get_name() for x in players ])
             cur.execute("update player set short_name = ? where (lower(name) = ? or name = ?)", (short_name, p.get_name().lower(), p.get_name()))
 
         cur.close()
