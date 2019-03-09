@@ -625,33 +625,49 @@ table.miscranktable {
 table.miscranktable th {
 	border-bottom: 1px solid black;
 	background-color: #dddddd;
-	padding-left: 0.3em;
-	padding-right: 0.3em;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
 }
 
 table.miscranktable td {
 	border-bottom: 1px dashed gray;
 	background-color: #ffdd66;
-	padding-left: 0.3em;
-	padding-right: 0.3em;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
 }
 
 table.miscranktable tr {
 	background-color: #ffdd66;
 }
 
-table.miscranktable td.tuffluckpos,td.overachieverspos {
+table.miscranktable td.tuffluckpos,td.overachieverspos,td.miscrankpos {
 	text-align: right;
 	vertical-align: middle;
 }
 
-table.miscranktable td.tuffluckname,td.overachieversname {
+table.miscranktable td.tuffluckname,td.overachieversname,td.miscrankname {
 	text-align: left;
 	border-right: 1px solid gray;
 }
 
 table.miscranktable td.tuffluckmargins {
 	text-align: center;
+	border-right: 1px solid gray;
+}
+
+table.miscranktable td.miscranklist {
+    text-align: left;
+	border-right: 1px solid gray;
+}
+
+table.miscranktable td.miscranknumber {
+    text-align: right;
+	border-right: 1px solid gray;
+}
+
+table.miscranktable td.miscranknumbersorted {
+    text-align: right;
+    font-weight: bold;
 	border-right: 1px solid gray;
 }
 

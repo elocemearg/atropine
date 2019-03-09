@@ -176,6 +176,8 @@ def show_sidebar(tourney):
         writeln("<a href=\"/cgi-bin/tuffluck.py?tourney=%s\">Tuff Luck</a>" % (urllib.parse.quote_plus(tourney.name)))
         writeln("<br />")
         writeln("<a href=\"/cgi-bin/overachievers.py?tourney=%s\">Overachievers</a>" % (urllib.parse.quote_plus(tourney.name)))
+        writeln("<br />")
+        writeln("<a href=\"/cgi-bin/timdownaward.py?tourney=%s\">Tim Down Award</a>" % (urllib.parse.quote_plus(tourney.name)))
         writeln("</div>")
 
         writeln("<br />")

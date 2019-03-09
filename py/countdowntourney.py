@@ -1564,7 +1564,7 @@ class Tourney(object):
  
     def get_player_name(self, player_id):
         cur = self.db.cursor();
-        cur.execute("select name from player where id = ?", (player_id));
+        cur.execute("select name from player where id = ?", (player_id,));
         rows = cur.fetchall();
         if len(rows) < 1:
             raise PlayerDoesNotExistException();
@@ -2299,7 +2299,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def get_short_division_name(self, num):
         return get_general_short_division_name(num)
 
-    def get_standings(self, division=None, exclude_withdrawn_with_no_games=False):
+    def get_standings(self, division=None, exclude_withdrawn_with_no_games=False, calculate_qualification=True):
         method = self.get_rank_method();
         if method == RANK_WINS_POINTS:
             orderby = "order by s.wins * 2 + s.draws desc, s.points desc, p.name";
@@ -2329,7 +2329,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         standings = [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], bool(x[11])) for x in results ]
 
-        if division is not None:
+        if division is not None and calculate_qualification:
             # If we can, mark already-qualified players as such
             qual_places = self.get_int_attribute("div%d_qualplaces" % (division), 0)
             last_round = self.get_int_attribute("div%d_lastround" % (division), 0)
@@ -3051,6 +3051,64 @@ and g.game_type = 'P'
                     group_fixtures.append(fixture)
                     round_seq += 1
         return group_fixtures
+
+    def get_tim_down_award_standings(self, division, num_losing_games):
+        cur = self.db.cursor()
+
+        # Get the set of all players who have lost at least num_losing_games
+        # games of type P
+        rows = cur.execute("select p.id, sum(case when (p.id = g.p1 and g.p1_score < g.p2_score) or (p.id = g.p2 and g.p2_score < g.p1_score) then 1 else 0 end) losses from player p, game g where g.game_type = 'P' and p.division = ? and (g.p1 = p.id or g.p2 = p.id) group by p.id", (division,))
+        eligible_player_ids = set()
+        for row in rows:
+            if row[1] >= num_losing_games:
+                eligible_player_ids.add(row[0])
+
+        cur.close()
+
+        # Get the list of opponents of these players
+        p_id_to_opp_list = {}
+        cur = self.db.cursor()
+        rows = cur.execute("select p_id, opp_id from heat_game_divided where p_id in (%s) order by p_id, opp_id" % (", ".join([ str(x) for x in eligible_player_ids ])))
+        for row in rows:
+            p_id = row[0]
+            opp_id = row[1]
+            p_id_to_opp_list[p_id] = p_id_to_opp_list.get(p_id, []) + [opp_id]
+
+        cur.close()
+
+        # Get the standings table, and for each eligible player, work out the
+        # average current standings position of their opponents
+        standings = self.get_standings(division, False, False)
+
+        player_name_to_id = {}
+        for p in self.get_players():
+            player_name_to_id[p.get_name()] = p.get_id()
+
+        p_id_to_standings_pos = {}
+        for s in standings:
+            p_id = player_name_to_id.get(s.name)
+            if p_id is not None:
+                p_id_to_standings_pos[p_id] = s.position
+
+        # For each eligible player, return a tuple containing
+        # (player object, list of opponent ranks, average opponent ranks)
+        results = []
+
+        for p_id in p_id_to_opp_list:
+            total_opp_rank = 0
+            num_opps = 0
+            rank_list = []
+            for opp_id in p_id_to_opp_list[p_id]:
+                pos = p_id_to_standings_pos.get(opp_id)
+                if pos is not None:
+                    # We only count opponents which are in the current
+                    # division
+                    num_opps += 1
+                    total_opp_rank += pos
+                    rank_list.append(pos)
+            results.append((self.get_player_from_id(p_id), sorted(rank_list), float(total_opp_rank) / num_opps))
+
+        return sorted(results, key=lambda x : x[2])
 
     def get_players_tuff_luck(self, num_losing_games):
         p_id_to_losing_margins = dict()
