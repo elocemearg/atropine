@@ -73,12 +73,12 @@ def show_tourney_exception(exc):
     writeln("</div>")
     writeln("</div>")
 
-def show_warning_box(html):
-    writeln("<div class=\"warningbox\">")
+def show_warning_box(html, wide=False):
+    writeln("<div class=\"warningbox%s\">" % (" warningboxwidthlimited" if not wide else ""))
     writeln("<div class=\"warningboximage\">")
     writeln("<img src=\"/images/warning.png\" alt=\"Warning\" />")
     writeln("</div>")
-    writeln("<div class=\"warningboxmessagecontainer\">")
+    writeln("<div class=\"warningboxmessagecontainer%s\">" % (" warningboxmessagecontainerwidthlimited" if not wide else ""))
     writeln("<div class=\"warningboxmessage\">")
     writeln(html)
     writeln("</div>")

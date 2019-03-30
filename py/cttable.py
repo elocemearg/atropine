@@ -37,13 +37,14 @@ class CandidateTable(object):
         self.table_no = table_no
 
 class TableVotingGroup(object):
-    def __init__(self, division, group, accessible_tables, acc_default, natural_table_numbers):
+    def __init__(self, division, group, accessible_tables, acc_default, natural_table_numbers, initial_order_position):
         self.division = division
         self.group = group[:]
         self.accessible_tables = accessible_tables
         self.acc_default = acc_default
         self.natural_table_numbers = natural_table_numbers[:]
         self.occupied_tables = set()
+        self.initial_order_position = initial_order_position
 
     def is_phantom_group(self):
         return False
@@ -72,6 +73,10 @@ class TableVotingGroup(object):
     def get_pref_sort_key(self):
         return (-self.get_winner_weight(), int(self.is_phantom_group()),
                 self.get_division(), self.get_player_names_by_priority())
+
+    def get_pref_sort_key_preserve_original_order(self):
+        return (int(self.is_phantom_group()), self.get_division(),
+                self.initial_order_position)
 
     def get_preferred_table_aux(self, occupied_tables):
         preferred_table = None
@@ -108,7 +113,10 @@ class TableVotingGroup(object):
         # If there are any players in this group who require an accessible
         # table, make sure they get one.
         if num_acc_players > 0:
-            pref_tables = acc_tables_pref
+            if len(acc_tables_pref) == 0:
+                pref_tables = all_tables_pref
+            else:
+                pref_tables = acc_tables_pref
         else:
             pref_tables = all_tables_pref
         
@@ -168,8 +176,8 @@ class TableVotingGroup(object):
         return self.get_preferred_table_aux(self.occupied_tables)[0]
 
 class PhantomTableVotingGroup(TableVotingGroup):
-    def __init__(self, division, group, accessible_tables, acc_default, natural_table_numbers):
-        super(PhantomTableVotingGroup, self).__init__(division, group, accessible_tables, acc_default, natural_table_numbers)
+    def __init__(self, division, group, accessible_tables, acc_default, natural_table_numbers, initial_order_position):
+        super(PhantomTableVotingGroup, self).__init__(division, group, accessible_tables, acc_default, natural_table_numbers, initial_order_position)
 
     def is_phantom_group(self):
         return True
@@ -194,6 +202,7 @@ def get_candidate_tables(generated_groups_round, players_without_games, occupied
 
     lowest_not_in_natural = None
     round_no = generated_groups_round.get_round_no()
+    initial_order_position = 0
 
     for dv in generated_groups_round.get_divisions():
         div_num = dv.get_division()
@@ -209,7 +218,8 @@ def get_candidate_tables(generated_groups_round, players_without_games, occupied
         natural_div_to_table_numbers[div_num] = table_number_list
 
         for group in dv.get_groups():
-            voting_groups.append(TableVotingGroup(div_num, group, accessible_tables, acc_default, natural_div_to_table_numbers.get(div_num, [])))
+            voting_groups.append(TableVotingGroup(div_num, group, accessible_tables, acc_default, natural_div_to_table_numbers.get(div_num, []), initial_order_position))
+            initial_order_position += 1
             for p in group:
                 if p in players_without_games:
                     players_without_games.remove(p)
@@ -227,7 +237,8 @@ def get_candidate_tables(generated_groups_round, players_without_games, occupied
         remaining_tables = range(lowest_not_in_natural, lowest_not_in_natural + len(players_without_games))
 
     for rp in players_without_games:
-        voting_groups.append(PhantomTableVotingGroup(rp.get_division(), [rp], accessible_tables, acc_default, natural_div_to_table_numbers.get(rp.get_division(), remaining_tables)))
+        voting_groups.append(PhantomTableVotingGroup(rp.get_division(), [rp], accessible_tables, acc_default, natural_div_to_table_numbers.get(rp.get_division(), remaining_tables), initial_order_position))
+        initial_order_position += 1
 
     for vg in voting_groups:
         vg.set_occupied_tables(occupied_tables)
@@ -280,10 +291,24 @@ def get_candidate_tables(generated_groups_round, players_without_games, occupied
             # Recalculate the order of the remaining preference voting groups,
             # taking into account that a previously unoccupied table is now
             # occupied.
+            new_preference_voting_groups = []
+            new_ordinary_voting_groups = []
             for vg in preference_voting_groups:
                 vg.set_occupied_tables(occupied_tables)
-            preference_voting_groups = sorted(preference_voting_groups[1:], key=lambda x : x.get_pref_sort_key())
+            for vg in preference_voting_groups[1:]:
+                if vg.get_winner_weight() == 0:
+                    # A preference group has become an ordinary group
+                    # because all its preferences have been occupied.
+                    new_ordinary_voting_groups.append(vg)
+                else:
+                    new_preference_voting_groups.append(vg)
+
+            preference_voting_groups = sorted(new_preference_voting_groups, key=lambda x : x.get_pref_sort_key())
+            if new_ordinary_voting_groups:
+                ordinary_voting_groups = sorted(ordinary_voting_groups + new_ordinary_voting_groups, key=lambda x : x.get_pref_sort_key_preserve_original_order())
         else:
+            # We picked an ordinary voting group from the front of that list,
+            # so remove it.
             ordinary_voting_groups = ordinary_voting_groups[1:]
 
     # Sort the list of candidate tables by round, division and table

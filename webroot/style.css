@@ -375,10 +375,13 @@ div.warningbox {
 	background-color: #ffff88;
 	border: 5px solid orange;
 	height: 130px;
-	max-width: 600px;
 	display: table;
     margin-top: 20px;
     margin-bottom: 20px;
+}
+
+div.warningboxwidthlimited {
+    max-width: 600px;
 }
 
 div.warningboximage {
@@ -388,10 +391,13 @@ div.warningboximage {
 }
 
 div.warningboxmessagecontainer {
-	max-width: 450px;
 	vertical-align: middle;
 	display: table-cell;
 	padding: 5px;
+}
+
+div.warningboxmessagecontainerwidthlimited {
+	max-width: 450px;
 }
 
 div.warningboxmessage {
@@ -1549,6 +1555,14 @@ tr.playerlistrowselected {
 
 td.playerlistflags {
     text-align: right;
+}
+
+span.playercontrolhelp {
+    font-style: italic;
+    color: gray;
+    font-size: 10pt;
+    line-height: 12pt;
+    vertical-align: middle;
 }
 
 input[type="checkbox"] {

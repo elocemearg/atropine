@@ -93,8 +93,8 @@ def show_player_form(tourney, player):
         cgicommon.writeln("<td>")
         show_division_drop_down_box("setdivision", tourney, player)
         cgicommon.writeln("</td></tr>")
-    cgicommon.writeln("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <em>(if ticked, fixture generators will not include this player)</em></td></tr>" % ("checked" if player and player.is_withdrawn() else ""))
-    cgicommon.writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <em>(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>)</em></td></tr>" % (
+    cgicommon.writeln("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will not include this player)</span></td></tr>" % ("checked" if player and player.is_withdrawn() else ""))
+    cgicommon.writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>)</span></td></tr>" % (
         "checked" if player and player.is_requiring_accessible_table() else "",
         urllib.parse.quote_plus(tourneyname)
     ))
@@ -103,9 +103,9 @@ def show_player_form(tourney, player):
         pref = None
     else:
         pref = player.get_preferred_table()
-    cgicommon.writeln("<tr><td>Preferred table</td><td><input type=\"text\" name=\"setpreferredtable\" value=\"%s\" /></td></tr>" % (cgicommon.escape(str(pref)) if pref is not None else ""))
+    cgicommon.writeln("<tr><td>Preferred table number</td><td><input type=\"text\" name=\"setpreferredtable\" value=\"%s\" /> <span class=\"playercontrolhelp\">(player will be assigned this table number if possible - if blank, player has no specific table preference)</span></td></tr>" % (cgicommon.escape(str(pref)) if pref is not None else ""))
 
-    cgicommon.writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <em>(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</em></td></tr>" % ("checked" if player and player.is_avoiding_prune() else ""))
+    cgicommon.writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</span></td></tr>" % ("checked" if player and player.is_avoiding_prune() else ""))
     cgicommon.writeln("</table>")
     cgicommon.writeln("<p>")
     cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname, True)))
@@ -176,6 +176,8 @@ if cgicommon.is_client_from_localhost() and request_method == "POST" and form.ge
     new_division = int_or_none(form.getfirst("setdivision"))
     new_requires_accessible_table = int_or_zero(form.getfirst("setrequiresaccessibletable"))
     new_preferred_table = int_or_none(form.getfirst("setpreferredtable"))
+    if new_preferred_table is not None and new_preferred_table <= 0:
+        new_preferred_table = None
 
     if new_rating is not None and player.get_rating() != new_rating:
         try:
@@ -405,6 +407,25 @@ if player:
         return cgicommon.player_to_link(p, tourneyname, p == player)
 
     num_divisions = tourney.get_num_divisions()
+
+    pref_table = player.get_preferred_table()
+    if pref_table is not None and player.is_requiring_accessible_table() and not tourney.is_table_accessible(pref_table):
+        (table_list, acc_default) = tourney.get_accessible_tables()
+        if acc_default:
+            acc_list_preamble = "all except "
+            acc_list = ", ".join([str(x) for x in table_list])
+        else:
+            acc_list_preamble = ""
+            if not table_list:
+                acc_list = "None"
+            else:
+                acc_list = ", ".join([str(x) for x in table_list])
+
+        cgicommon.show_warning_box("<p>%s requires an accessible table, but their preferred table is table %d, which is not an accessible table. This player's requirement for an accessible table will be given a higher priority than their specific preference for table %d.</p><p>The accessible table numbers defined in <a href=\"%s?tourney=%s\">General Setup</a> are: %s%s.</p>" % (
+            cgicommon.escape(player.get_name()), pref_table, pref_table,
+            "/cgi-bin/tourneysetup.py", urllib.parse.quote_plus(tourney.get_name()),
+            acc_list_preamble, acc_list
+            ), wide=True)
 
     cgicommon.writeln("<h2>Edit player</h2>")
     show_player_form(tourney, player)
