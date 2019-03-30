@@ -98,6 +98,13 @@ def show_player_form(tourney, player):
         "checked" if player and player.is_requiring_accessible_table() else "",
         urllib.parse.quote_plus(tourneyname)
     ))
+
+    if player is None:
+        pref = None
+    else:
+        pref = player.get_preferred_table()
+    cgicommon.writeln("<tr><td>Preferred table</td><td><input type=\"text\" name=\"setpreferredtable\" value=\"%s\" /></td></tr>" % (cgicommon.escape(str(pref)) if pref is not None else ""))
+
     cgicommon.writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <em>(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</em></td></tr>" % ("checked" if player and player.is_avoiding_prune() else ""))
     cgicommon.writeln("</table>")
     cgicommon.writeln("<p>")
@@ -168,6 +175,7 @@ if cgicommon.is_client_from_localhost() and request_method == "POST" and form.ge
     new_avoid_prune = int_or_zero(form.getfirst("setavoidprune"))
     new_division = int_or_none(form.getfirst("setdivision"))
     new_requires_accessible_table = int_or_zero(form.getfirst("setrequiresaccessibletable"))
+    new_preferred_table = int_or_none(form.getfirst("setpreferredtable"))
 
     if new_rating is not None and player.get_rating() != new_rating:
         try:
@@ -176,6 +184,7 @@ if cgicommon.is_client_from_localhost() and request_method == "POST" and form.ge
         except countdowntourney.TourneyException as e:
             exceptions_to_show.append(("<p>Failed to set player rating...</p>", e))
 
+    # Set player withdrawn status
     if player.is_withdrawn() != (new_withdrawn != 0):
         try:
             if new_withdrawn:
@@ -187,6 +196,7 @@ if cgicommon.is_client_from_localhost() and request_method == "POST" and form.ge
         except countdowntourney.TourneyException as e:
             exceptions_to_show.append(("<p>Failed to change player withdrawn status...</p>", e))
 
+    # Set player requires-accessible-table status
     if player.is_requiring_accessible_table() != (new_requires_accessible_table != 0):
         try:
             tourney.set_player_requires_accessible_table(player.get_name(), new_requires_accessible_table != 0)
@@ -197,6 +207,18 @@ if cgicommon.is_client_from_localhost() and request_method == "POST" and form.ge
         except countdowntourney.TourneyException as e:
             exceptions_to_show.append(("<p>Failed to change player accessibility status...</p>", e))
 
+    # Set player's preferred table, if any
+    if (player.get_preferred_table() is None) != (new_preferred_table is None) or (new_preferred_table is not None and player.get_preferred_table() is not None and new_preferred_table != player.get_preferred_table()):
+        try:
+            tourney.set_player_preferred_table(player.get_name(), new_preferred_table)
+            if new_preferred_table is None:
+                edit_notifications.append("%s now has no specific table preference" % (player.get_name()))
+            else:
+                edit_notifications.append("%s's preferred table is now %d" % (player.get_name(), new_preferred_table))
+        except countdowntourney.TourneyException as e:
+            exceptions_to_show.append(("<p>Failed to change player's preferred table...</p>", e))
+
+    # Set whether player should be made to avoid prune
     if player.is_avoiding_prune() != (new_avoid_prune != 0):
         try:
             tourney.set_player_avoid_prune(player.get_name(), new_avoid_prune)
@@ -204,6 +226,7 @@ if cgicommon.is_client_from_localhost() and request_method == "POST" and form.ge
         except countdowntourney.TourneyException as e:
             exceptions_to_show.append(("<p>Failed to change player avoiding-prune status...</p>", e))
         
+    # Set player's division
     if new_division is not None and player.get_division() != new_division:
         try:
             tourney.set_player_division(player.get_name(), new_division)
@@ -211,6 +234,7 @@ if cgicommon.is_client_from_localhost() and request_method == "POST" and form.ge
         except countdowntourney.TourneyException as e:
             exceptions_to_show.append(("<p>Failed to change player's division...</p>", e))
 
+    # Set player's name
     if new_name is not None and new_name != "" and player.get_name() != new_name:
         try:
             tourney.rename_player(player.get_name(), new_name)

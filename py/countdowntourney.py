@@ -6,7 +6,10 @@ import re;
 import os;
 import qualification
 
-SW_VERSION_SPLIT = (1, 0, 4)
+from cttable import CandidateTable, TableVotingGroup, PhantomTableVotingGroup
+import cttable
+
+SW_VERSION_SPLIT = (1, 0, 5)
 SW_VERSION = ".".join([str(x) for x in SW_VERSION_SPLIT])
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
@@ -160,6 +163,7 @@ create table if not exists player (
     division_fixed int not null default 0,
     avoid_prune int not null default 0,
     require_accessible_table int not null default 0,
+    preferred_table int not null default -1,
     unique(name), unique(short_name)
 );
 
@@ -505,7 +509,7 @@ def get_teleost_mode_services_to_fetch(mode):
         return teleost_modes[mode]["fetch"]
 
 class Player(object):
-    def __init__(self, name, rating=0, team=None, short_name=None, withdrawn=False, division=0, division_fixed=False, player_id=None, avoid_prune=False, require_accessible_table=False):
+    def __init__(self, name, rating=0, team=None, short_name=None, withdrawn=False, division=0, division_fixed=False, player_id=None, avoid_prune=False, require_accessible_table=False, preferred_table=None):
         self.name = name;
         self.rating = rating;
         self.team = team;
@@ -523,6 +527,7 @@ class Player(object):
         self.player_id = player_id
         self.avoid_prune = avoid_prune
         self.require_accessible_table = require_accessible_table
+        self.preferred_table = preferred_table
     
     def __eq__(self, other):
         if other is None:
@@ -599,6 +604,13 @@ class Player(object):
     def is_requiring_accessible_table(self):
         return self.require_accessible_table
 
+    def get_preferred_table(self):
+        if self.preferred_table is None or self.preferred_table < 0:
+            return None
+        else:
+            return self.preferred_table
+
+
 def get_first_name(name):
     return name.split(" ", 1)[0]
 
@@ -630,7 +642,7 @@ def get_short_name(name, player_names):
 class EnteredPlayer(object):
     def __init__(self, name, rating, division=0, team_id=None,
             avoid_prune=False, withdrawn=False,
-            requires_accessible_table=False):
+            requires_accessible_table=False, preferred_table=None):
         self.name = name.strip()
         self.short_name = self.name
         self.rating = rating
@@ -639,6 +651,7 @@ class EnteredPlayer(object):
         self.avoid_prune = avoid_prune
         self.withdrawn = withdrawn
         self.requires_accessible_table = requires_accessible_table
+        self.preferred_table = preferred_table
 
     def get_name(self):
         return self.name
@@ -669,6 +682,9 @@ class EnteredPlayer(object):
     
     def get_requires_accessible_table(self):
         return self.requires_accessible_table
+
+    def get_preferred_table(self):
+        return self.preferred_table
 
 # This object can be on one side and/or other of a Game, just like a Player.
 # However, it does not represent a player. It represents the winner or loser
@@ -984,36 +1000,6 @@ class TeleostOption(object):
         self.desc = desc
         self.value = value
 
-class CandidateTable(object):
-    def __init__(self, group, round_no, division, table_no, game_type, repeat_threes):
-        self.group = group
-        self.round_no = round_no
-        self.division = division
-        self.table_no = table_no
-        self.game_type = game_type
-        self.repeat_threes = repeat_threes
-    
-    def get_group(self):
-        return self.group
-    
-    def get_round_no(self):
-        return self.round_no
-    
-    def get_division(self):
-        return self.division
-    
-    def get_table_no(self):
-        return self.table_no
-    
-    def get_game_type(self):
-        return self.game_type
-
-    def get_repeat_threes(self):
-        return self.repeat_threes
-
-    def set_table_no(self, table_no):
-        self.table_no = table_no
-
 class Tourney(object):
     def __init__(self, filename, tourney_name, versioncheck=True):
         self.filename = filename;
@@ -1308,11 +1294,12 @@ class Tourney(object):
 
         self.db.execute("delete from player");
 
-        self.db.executemany("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed, avoid_prune, require_accessible_table) values (?, ?, ?, ?, ?, ?, 0, ?, ?)",
+        self.db.executemany("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed, avoid_prune, require_accessible_table, preferred_table) values (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)",
                 [ (p.get_name(), p.get_rating(), p.get_team_id(),
                     p.get_short_name(), int(p.get_withdrawn()),
                     p.get_division(), int(p.get_avoid_prune()),
-                    int(p.get_requires_accessible_table())) for p in players ]);
+                    int(p.get_requires_accessible_table()),
+                    int(p.get_preferred_table()) if p.get_preferred_table() is not None else -1) for p in players ]);
         self.db.commit();
 
     def get_auto_rating_behaviour(self):
@@ -1338,19 +1325,24 @@ class Tourney(object):
         else:
             accessible_value = "p.require_accessible_table"
 
+        if self.db_version < (1, 0, 5):
+            preferred_table_value = "-1"
+        else:
+            preferred_table_value = "p.preferred_table"
+
         if exclude_withdrawn:
             condition = "where p.withdrawn = 0"
         else:
             condition = ""
 
-        cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s, %s from player p left outer join team t on p.team_id = t.id %s order by p.rating desc, p.name" % (avoid_prune_value, accessible_value, condition))
+        cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s, %s, %s from player p left outer join team t on p.team_id = t.id %s order by p.rating desc, p.name" % (avoid_prune_value, accessible_value, preferred_table_value, condition))
         players = [];
         for row in cur:
             if row[2] is not None:
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
-            players.append(Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8], row[9], row[10], row[11]));
+            players.append(Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8], row[9], row[10], row[11], row[12]));
         cur.close();
         return players;
     
@@ -1562,6 +1554,28 @@ class Tourney(object):
         cur.close()
         return retval
  
+    def set_player_preferred_table(self, name, value):
+        if self.db_version < (1, 0, 5):
+            return
+        cur = self.db.cursor()
+        cur.execute("update player set preferred_table = ? where name = ?", (value if value is not None else -1, name))
+        cur.close()
+        self.db.commit()
+
+    def get_player_preferred_table(self, name):
+        if self.db_version < (1, 0, 5):
+            return None
+        cur = self.db.cursor()
+        cur.execute("select preferred_table from player where name = ?", (name,))
+        row = cur.fetchone()
+        if row is None:
+            raise PlayerDoesNotExistException()
+        retval = row[0]
+        cur.close()
+        if retval is not None and retval < 0:
+            retval = None
+        return retval
+
     def get_player_name(self, player_id):
         cur = self.db.cursor();
         cur.execute("select name from player where id = ?", (player_id,));
@@ -1822,9 +1836,10 @@ where round_no = ? and seq = ?""", alterations_reordered);
         return rows_updated;
     
     def get_player_from_name(self, name):
-        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s, %s from player p left outer join team t on p.team_id = t.id where (lower(p.name) = ? or p.name = ?)" % (
+        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s, %s, %s from player p left outer join team t on p.team_id = t.id where (lower(p.name) = ? or p.name = ?)" % (
                 "0" if self.db_version < (0, 7, 7) else "p.avoid_prune",
-                "0" if self.db_version < (1, 0, 4) else "p.require_accessible_table"
+                "0" if self.db_version < (1, 0, 4) else "p.require_accessible_table",
+                "-1" if self.db_version < (1, 0, 5) else "p.preferred_table"
                 );
         cur = self.db.cursor();
         cur.execute(sql, (name.lower(), name));
@@ -1837,12 +1852,13 @@ where round_no = ? and seq = ?""", alterations_reordered);
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
-            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], row[9], row[10], row[11]);
+            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12]);
     
     def get_player_from_id(self, player_id):
-        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, %s, %s from player p left outer join team t on p.team_id = t.id where p.id = ?" % (
+        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, %s, %s, %s from player p left outer join team t on p.team_id = t.id where p.id = ?" % (
                 "0" if self.db_version < (0, 7, 7) else "p.avoid_prune",
-                "0" if self.db_version < (1, 0, 4) else "p.require_accessible_table"
+                "0" if self.db_version < (1, 0, 4) else "p.require_accessible_table",
+                "-1" if self.db_version < (1, 0, 5) else "p.preferred_table"
                 );
         cur = self.db.cursor();
         cur.execute(sql, (player_id,));
@@ -1855,7 +1871,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
                 team = None
             else:
                 team = Team(row[2], row[3], row[4])
-            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], player_id, row[9], row[10]);
+            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], player_id, row[9], row[10], row[11]);
 
     def get_latest_started_round(self):
         cur = self.db.cursor()
@@ -2814,186 +2830,45 @@ and g.game_type = 'P'
     def make_fixtures_from_groups(self, generated_groups):
         fixtures = []
         num_divisions = self.get_num_divisions()
+        players = self.get_active_players()
+
+        (all_accessible_tables, acc_default) = self.get_accessible_tables()
 
         for rd in generated_groups.get_rounds():
-            # Groups of players, with their proposed table number and other
-            # information. We might swap over table numbers to take account of
-            # accessibility requirements before converting these into fixtures.
-            candidate_tables = []
-
-            # Candidate tables which are accessible tables, but where none of
-            # its players require an accessible table
-            acc_table_non_acc_group = []
-
-            # Candidate tables which are not accessible tables, but where at
-            # least one of the players on that table requires an accessible
-            # table
-            non_acc_table_acc_group = []
-
             round_no = rd.get_round_no()
+
+            # Find out which tables (if any) already have players on, so we
+            # can avoid giving out those table numbers
+            occupied_tables = set(self.list_occupied_tables_in_round(round_no))
+
+            # Build a list of the remaining players - that is, those players
+            # who are not in generated_groups and who have not had any games
+            # generated for them so far this round.
+            # Also, while we're at it, populate natural_div_to_table numbers
+            # based on the set of occupied table numbers and the number of
+            # groups in each division.
+            remaining_players = players[:]
+
+            # remaining_players is all the active players who aren't being
+            # assigned a game in this round right now.
+            # Also remove from remaining_players all players who have
+            # previously been assigned a table in this round. We'll be left
+            # with the players whose games are yet to be decided, but who
+            # might want to reserve their favourite table.
+            games_this_round = self.get_games(round_no=round_no)
+            for g in games_this_round:
+                for p in g.get_players():
+                    if p in remaining_players:
+                        remaining_players.remove(p)
+
             start_round_seq = self.get_max_game_seq_in_round(round_no)
             if start_round_seq is None:
                 next_round_seq = 1
             else:
                 next_round_seq = start_round_seq + 1
-            occupied_tables = set(self.list_occupied_tables_in_round(round_no))
 
-            # Keep track of which divisions have not had games generated
-            # yet for this round
-            divisions_not_generated = set(range(num_divisions))
-            for division in self.list_divisions_playing_in_round(round_no):
-                divisions_not_generated.discard(division)
-            
-            for dv in rd.get_divisions():
-                division = dv.get_division()
-                repeat_threes = dv.get_repeat_threes()
-                game_type = dv.get_game_type()
-                groups = dv.get_groups()
+            candidate_tables = cttable.get_candidate_tables(rd, remaining_players, occupied_tables, all_accessible_tables, acc_default)
 
-                # Count the number of players in divisions yet to be generated
-                # after this one, who require accessible tables.
-                num_accessible_players_ungenerated = self.get_num_active_accessible_players_in_divisions(divisions_not_generated - set([division]))
-
-                divisions_not_generated.discard(division)
-
-                div_non_acc_table_acc_group = []
-                div_acc_table_non_acc_group = []
-
-                table_no = 1
-                tables_this_div = []
-
-                accessible_groups = []
-                non_accessible_groups = []
-                for g in groups:
-                    for p in g:
-                        if p.is_requiring_accessible_table():
-                            accessible_groups.append(g)
-                            break
-                    else:
-                        non_accessible_groups.append(g)
-
-                (all_accessible_tables, acc_default) = self.get_accessible_tables()
-
-                # Get a list of unoccupied tables to use for this division.
-                num_accessible_tables_taken = 0
-                num_accessible_tables_remaining = None
-                if not acc_default:
-                    num_accessible_tables_remaining = len(set(all_accessible_tables) - occupied_tables)
-                for g in groups:
-                    # In certain circumstances we can take more accessible
-                    # tables than we need - for example, if there are an
-                    # infinite number of accessible tables ("all tables are
-                    # accessible except for table 7 which is up a tree"),
-                    # or if there are fewer accessible-table-requiring players
-                    # left than there are accessible tables.
-                    # We just make sure we don't take an accessible table
-                    # if we don't need it and it would bring the number of
-                    # accessible tables remaining down to less than the number
-                    # we might yet need.
-                    while table_no in occupied_tables or (
-                            not acc_default and
-                            table_no in all_accessible_tables and
-                            num_accessible_tables_taken >= len(accessible_groups) and
-                            num_accessible_tables_remaining <= num_accessible_players_ungenerated):
-                        # Skip over this table
-                        table_no += 1
-                    if not acc_default and table_no in all_accessible_tables:
-                        num_accessible_tables_taken += 1
-                        num_accessible_tables_remaining -= 1
-                    tables_this_div.append(table_no)
-                    table_no += 1
-
-                # tables_this_div is the list of table numbers we're going to
-                # put these groups on. We should have taken no more accessible
-                # tables than we need for these groups, unless there's a
-                # surplus according to num_accessible_players_ungenerated.
-
-                # If the number of accessible tables in tables_this_div is
-                # less than the number of groups which contain a player
-                # who requires an accessible table, then we need to modify this
-                # list and substitute in some accessible table numbers we
-                # didn't use, if possible.
-
-                accessible_tables = []
-                non_accessible_tables = []
-                for table_no in tables_this_div:
-                    if self.is_table_accessible(table_no):
-                        accessible_tables.append(table_no)
-                    else:
-                        non_accessible_tables.append(table_no)
-
-                if acc_default:
-                    all_non_accessible_tables = all_accessible_tables
-                    # All tables are accessible except those in the list, so
-                    # assuming our list doesn't have infinite length there
-                    # must be some accessible tables somewhere
-                    table_no = max(tables_this_div)
-                    if table_no is None:
-                        table_no = 0
-                    table_no += 1
-                    while len(non_accessible_tables) > 0 and len(accessible_groups) > len(accessible_tables):
-                        non_accessible_tables = non_accessible_tables[:-1]
-                        while table_no in all_non_accessible_tables and table_no not in occupied_tables:
-                            table_no += 1
-                        accessible_tables.append(table_no)
-                        table_no += 1
-                else:
-                    while len(accessible_groups) > len(accessible_tables):
-                        for t in all_accessible_tables:
-                            if t not in occupied_tables and t not in accessible_tables:
-                                # We'll have this one
-                                non_accessible_tables = non_accessible_tables[:-1]
-                                accessible_tables.append(t)
-                                break
-                        else:
-                            # There aren't any unused accessible tables left,
-                            # so give up
-                            break
-
-                # At this point we have all the accessible tables we need, or
-                # we have all the accessible tables left which might not be
-                # all we need.
-
-                # First, assign the accessible groups (groups which contain
-                # at least one player who requires an accessible table).
-                # Sort the accessible groups alphabetically by the
-                # earliest-alphabetical accessible player in the group.
-                # This means players who require an accessible table will
-                # usually be put on the same table as the previous round.
-                accessible_groups = sorted(accessible_groups, key=lambda x : self.first_acc_player(x))
-
-                table_index = 0
-                for g in accessible_groups:
-                    if table_index >= len(accessible_tables):
-                        table_no = non_accessible_tables[table_index - len(accessible_tables)]
-                    else:
-                        table_no = accessible_tables[table_index]
-                    ct = CandidateTable(g, round_no, division, table_no, game_type, repeat_threes)
-                    candidate_tables.append(ct)
-                    occupied_tables.add(table_no)
-                    table_index += 1
-
-                # Now place the groups that don't require accessible tables
-                if table_index >= len(accessible_tables):
-                    remaining_tables = non_accessible_tables[(table_index - len(accessible_tables)):]
-                else:
-                    remaining_tables = sorted(accessible_tables[table_index:] + non_accessible_tables)
-
-                table_index = 0
-                for g in non_accessible_groups:
-                    table_no = remaining_tables[table_index]
-
-                    ct = CandidateTable(g, round_no, division, table_no, game_type, repeat_threes)
-                    candidate_tables.append(ct)
-                    occupied_tables.add(table_no)
-                    table_index += 1
-
-            # We've now done all we can to get players who want accessible
-            # tables onto accessible tables.
-            # Sort the list of candidate tables by round, division and table
-            # number, then convert them into fixtures.
-
-            candidate_tables = sorted(candidate_tables, key=lambda x : (x.get_round_no(), x.get_division(), x.get_table_no()))
             for ct in candidate_tables:
                 group_fixtures = self.make_fixtures_from_group(ct.get_group(),
                         ct.get_round_no(), ct.get_division(),
@@ -3003,7 +2878,6 @@ and g.game_type = 'P'
                 fixtures += group_fixtures
 
         return fixtures
-
 
     def make_fixtures_from_group(self, group, round_no, division, table_no, next_round_seq, game_type, repeat_threes):
         group_fixtures = []
@@ -3412,6 +3286,10 @@ and g.game_type = 'P'
         # we set accessible to NULL in all existing rows, then do an
         # insert-or-replace.
         cur.execute("delete from board")
+
+        # Remove duplicate table numbers
+        table_set = set(table_list)
+        table_list = sorted(list(table_set))
 
         params = [ ( x, 0 if all_except else 1 ) for x in table_list ] + [ (-1, 1 if all_except else 0) ]
         cur.executemany("insert into board (table_no, accessible) values (?, ?)", params)

@@ -322,6 +322,7 @@ else:
             player_withdrawn = False
             player_requires_accessible_table = False
             player_team_id = None
+            player_table_pref = None
 
             if player_name == "-":
                 # This is a division separator, not a player name. It tells us
@@ -338,6 +339,8 @@ else:
                 # * If it's "W", it indicates the player is withdrawn.
                 # * If it's "T" followed immediately by an integer, then the
                 #   player is on a team: 1 or 2.
+                # * If it's "P" followed immediately by an integer, then the
+                #   player's preferred table is that number.
                 # * Otherwise, it is ignored.
                 for field in row[1:]:
                     try:
@@ -355,11 +358,18 @@ else:
                                 player_team_id = int(field[1:])
                             except ValueError:
                                 player_team_id = None
+                        elif field and field[0] == "P":
+                            try:
+                                player_table_pref = int(field[1:])
+                                if player_table_pref < 1:
+                                    player_table_pref = None
+                            except ValueError:
+                                player_table_pref = None
 
                 player_list.append(countdowntourney.EnteredPlayer(player_name,
                     player_rating, div_index, player_team_id,
                     player_avoid_prune, player_withdrawn,
-                    player_requires_accessible_table))
+                    player_requires_accessible_table, player_table_pref))
             prev_player_name = player_name
         try:
             tourney.set_players(player_list, auto_rating_behaviour);
@@ -509,6 +519,8 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
                     row.append("T%d" % (p.get_team_id()))
                 if p.is_requiring_accessible_table():
                     row.append("A")
+                if p.get_preferred_table() is not None:
+                    row.append("P%d" % (p.get_preferred_table()))
                 if p.is_withdrawn():
                     row.append("W")
                 if p.is_avoiding_prune():
@@ -560,6 +572,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("<tr><td><em>(number)</em></td><td>The player's rating.</td></tr>")
         cgicommon.writeln("<tr><td><span class=\"fixedwidth\">A</span></td><td>Player requires an accessible table.</td></tr>")
         cgicommon.writeln("<tr><td><span class=\"fixedwidth\">NP</span></td><td>Player will avoid playing Prune.</td></tr>")
+        cgicommon.writeln("<tr><td><span class=\"fixedwidth\">P</span><span style=\"font-style: italic;\">n</span></td><td>Player would prefer to be on table number <span style=\"font-style: italic;\">n</span>.</td></tr>")
         cgicommon.writeln("<tr><td><span class=\"fixedwidth\">W</span></td><td>Player is withdrawn.</td></tr>")
         cgicommon.writeln("</table>")
         cgicommon.writeln("<p>")
