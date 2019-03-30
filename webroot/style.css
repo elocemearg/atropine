@@ -1479,7 +1479,14 @@ input.tourneysetupnumber {
 div.tourneyqualifyingcontrols {
     margin-top: 5px;
     margin-bottom: 5px;
-    margin-left: 10px;
+    margin-left: 30px;
+}
+
+div.generalsetupcontrolgroup {
+    clear: both;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-left: 30px;
 }
 
 .handcursor {
@@ -1563,6 +1570,13 @@ span.playercontrolhelp {
     font-size: 10pt;
     line-height: 12pt;
     vertical-align: middle;
+}
+
+span.playerlisttablepreficon {
+    background-color: blue;
+    color: white;
+    padding: 2px 5px 2px 5px;
+    font-size: 10pt;
 }
 
 input[type="checkbox"] {

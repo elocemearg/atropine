@@ -471,14 +471,18 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("</p>")
         cgicommon.writeln("<blockquote>")
         auto_rating_behaviour = tourney.get_auto_rating_behaviour()
-        cgicommon.writeln(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_MANUAL, countdowntourney.RATINGS_MANUAL, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_MANUAL else "")))
-        cgicommon.writeln("<strong>Ratings are specified manually in the player list.</strong> If you select this option, it is an error if you try to submit a player without a rating.")
+        cgicommon.writeln(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" id=\"autoratingbehaviourmanual\" %s />" % (countdowntourney.RATINGS_MANUAL, countdowntourney.RATINGS_MANUAL, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_MANUAL else "")))
+        cgicommon.writeln("<label for=\"autoratingbehaviourmanual\"><strong>Ratings are specified manually in the player list.</strong></label> If you select this option, it is an error if you try to submit a player without a rating.")
         cgicommon.writeln("<br />")
-        cgicommon.writeln(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_GRADUATED, countdowntourney.RATINGS_GRADUATED, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_GRADUATED else "")))
-        cgicommon.writeln("<strong>The player list is in rating order with the highest-rated player at the top</strong>. Ratings will be assigned automatically, with the player at the top of the list receiving a rating of 2000, and the player at the bottom 1000. If you select this option, it is an error to specify any ratings manually in the player list except a rating of zero to indicate a prune.")
+
+        cgicommon.writeln(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" id=\"autoratingbehaviourgraduated\" %s />" % (countdowntourney.RATINGS_GRADUATED, countdowntourney.RATINGS_GRADUATED, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_GRADUATED else "")))
+        cgicommon.writeln("<label for=\"autoratingbehaviourgraduated\"><strong>The player list is in rating order with the highest-rated player at the top.</strong></label>")
+        cgicommon.writeln("Ratings will be assigned automatically, with the player at the top of the list receiving a rating of 2000, and the player at the bottom 1000. If you select this option, it is an error to specify any ratings manually in the player list except a rating of zero to indicate a prune.")
         cgicommon.writeln("<br />")
-        cgicommon.writeln(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" %s />" % (countdowntourney.RATINGS_UNIFORM, countdowntourney.RATINGS_UNIFORM, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_UNIFORM else "")))
-        cgicommon.writeln("<strong>This tournament is not seeded.</strong> Assign every non-prune player a rating of 1000. If you select this option, it is an error to specify any ratings manually in the player list except a rating of zero to indicate a prune. If unsure, select this option.")
+
+        cgicommon.writeln(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" id=\"autoratingbehaviouruniform\" %s />" % (countdowntourney.RATINGS_UNIFORM, countdowntourney.RATINGS_UNIFORM, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_UNIFORM else "")))
+        cgicommon.writeln("<label for=\"autoratingbehaviouruniform\"><strong>This tournament is not seeded.</strong></label>")
+        cgicommon.writeln("Assign every non-prune player a rating of 1000. If you select this option, it is an error to specify any ratings manually in the player list except a rating of zero to indicate a prune. If unsure, select this option.")
         cgicommon.writeln("</blockquote>")
 
         cgicommon.writeln("<p>")
@@ -606,22 +610,24 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
         cgicommon.writeln("<h3>Ranking order</h3>");
         cgicommon.writeln("<p>How do you want to rank players in the standings table?</p>");
-        cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.<br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "")));
-        cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Wins, then cumulative winning margin (spread). Draws are worth half a win.<br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")))
-        cgicommon.writeln(('<input type="radio" name="rank" value="%d" %s /> Points only.' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "")));
+        cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
+        cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankwinspoints" %s /><label for="rankwinspoints"> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.</label><br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "")));
+        cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankwinsspread" %s /><label for="rankwinsspread"> Wins, then cumulative winning margin (spread). Draws are worth half a win.</label><br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")))
+        cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankpoints" %s /><label for="rankpoints"> Points only.</label>' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "")));
+        cgicommon.writeln("</div>")
 
         (table_list, accessible_default) = tourney.get_accessible_tables()
         cgicommon.writeln("<h3>Accessibility</h3>")
-        cgicommon.writeln("<p>If a player requires an accessible table, you can set this on the <a href=\"/cgi-bin/player.py?tourney=%s\">configuration page for that player</a>." % (urllib.parse.quote_plus(tourney.get_name())))
-        cgicommon.writeln("<p>")
-        cgicommon.writeln("<input type=\"radio\" name=\"accessibletablesdefault\" value=\"0\" %s /> The following table numbers are the accessible tables." % ("" if accessible_default else "checked"))
+        cgicommon.writeln("<p>If a player requires an accessible table, you can set this on the <a href=\"/cgi-bin/player.py?tourney=%s\">configuration page for that player</a>.</p>" % (urllib.parse.quote_plus(tourney.get_name())))
+        cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
+        cgicommon.writeln("<span style=\"padding-right: 10px;\">Table numbers</span> <input type=\"text\" name=\"accessibletables\" value=\"%s\" />" % (", ".join([ str(x) for x in table_list ])))
+        cgicommon.writeln(" <span style=\"color: #808080; font-size: 10pt\">(Enter table numbers separated by commas, e.g. <span class=\"fixedwidth\">1,2,5</span>)</span>")
+        cgicommon.writeln("</div>")
+        cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
+        cgicommon.writeln("<input type=\"radio\" name=\"accessibletablesdefault\" value=\"0\" id=\"accessibletablesdefault_0\" %s /><label for=\"accessibletablesdefault_0\"> The above table numbers are the accessible tables.</label>" % ("" if accessible_default else "checked"))
         cgicommon.writeln("<br />")
-        cgicommon.writeln("<input type=\"radio\" name=\"accessibletablesdefault\" value=\"1\" %s /> All tables are accessible <em>except</em> for the following table numbers." % ("checked" if accessible_default else ""))
-        cgicommon.writeln("</p>")
-        cgicommon.writeln("<p style=\"margin-left: 30px\">")
-        cgicommon.writeln("<input type=\"text\" name=\"accessibletables\" value=\"%s\" />" % (", ".join([ str(x) for x in table_list ])))
-        cgicommon.writeln(" <span style=\"color: #808080; font-size: 10pt\">(Enter table numbers separated by commas, e.g. <em>1, 2, 5</em>)</span>")
-        cgicommon.writeln("</p>")
+        cgicommon.writeln("<input type=\"radio\" name=\"accessibletablesdefault\" value=\"1\" id=\"accessibletablesdefault_1\" %s /><label for=\"accessibletablesdefault_1\"> All tables are accessible <em>except</em> for the table numbers listed above.</label>" % ("checked" if accessible_default else ""))
+        cgicommon.writeln("</div>")
 
 
         cgicommon.writeln("<h3>Draws</h3>")
@@ -634,10 +640,11 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         HTML or text results.
         The <a href=\"/cgi-bin/standings.py?tourney=%s\">standings page</a>
         will always show a draws column regardless.""" % (urllib.parse.quote_plus(tourney.get_name())))
-        cgicommon.writeln("</p><p>")
-        cgicommon.writeln(("<input type=\"checkbox\" name=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")))
-        cgicommon.writeln("Expect that draws might happen")
         cgicommon.writeln("</p>")
+        cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
+        cgicommon.writeln(("<input type=\"checkbox\" name=\"showdrawscolumn\" id=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")))
+        cgicommon.writeln("<label for=\"showdrawscolumn\">Expect that draws might happen</label>")
+        cgicommon.writeln("</div>")
 
         cgicommon.writeln("<h3>Intended number of rounds, and qualification</h3>")
         cgicommon.writeln("<p>")
