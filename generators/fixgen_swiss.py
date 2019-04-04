@@ -191,7 +191,7 @@ function generate_fixtures_clicked() {
 </script>""";
     elements.append(htmlform.HTMLFragment(javascript));
 
-    elements.append(htmlform.HTMLFragment("<h3>Overall settings</h3>"))
+    elements.append(htmlform.HTMLFragment("<h2>Overall settings</h2>"))
 
     div_valid_table_sizes = []
     for div_index in sorted(div_rounds):
@@ -241,9 +241,9 @@ function generate_fixtures_clicked() {
         div_prefix = "d%d_" % (div_index)
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h3>%s (%d active players)</h3>" % (cgi.escape(tourney.get_division_name(div_index)), len(players))))
+            elements.append(htmlform.HTMLFragment("<h2>%s (%d active players)</h2>" % (cgi.escape(tourney.get_division_name(div_index)), len(players))))
         else:
-            elements.append(htmlform.HTMLFragment("<h3>Fixture generation (%d active players)</h3>" % (len(players))))
+            elements.append(htmlform.HTMLFragment("<h2>Fixture generation (%d active players)</h2>" % (len(players))))
 
         elements.append(htmlform.HTMLFragment("<p>"))
 
@@ -271,7 +271,7 @@ function generate_fixtures_clicked() {
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<hr />\n"))
 
-    elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures", other_attrs={"onclick": "generate_fixtures_clicked();", "id": "generatefixtures"}));
+    elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures", other_attrs={"onclick": "generate_fixtures_clicked();", "id": "generatefixtures", "class" : "bigbutton"}));
     elements.append(htmlform.HTMLFragment("<p id=\"progresslabel\">For large numbers of players or unusual formats, fixture generation is not immediate - it can take up to the specified number of seconds, or longer if no permissible configurations are found in that time.</p><hr /><p></p>"));
     elements.append(htmlform.HTMLFragment("<noscript>Your browser doesn't have Javascript enabled, which means you miss out on progress updates while fixtures are being generated.</noscript>"));
 

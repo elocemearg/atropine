@@ -161,7 +161,7 @@ else:
     num_players = len(tourney.get_players())
 
     if player_teams_set:
-        cgicommon.writeln("<p><strong>Teams set successfully.</strong></p>")
+        cgicommon.show_success_box("Teams set successfully.")
     elif tourney_exception:
         cgicommon.show_tourney_exception(e)
 

@@ -62,13 +62,16 @@ def print_html_head_local(title):
     writeln("</head>")
 
 def show_tourney_exception(exc):
+    show_error_text(exc.description)
+
+def show_error_text(text):
     writeln("<div class=\"tourneyexception\">")
     writeln("<div class=\"tourneyexceptionimage\">")
     writeln("<img src=\"/images/facepalm.png\" alt=\"Facepalm\" />")
     writeln("</div>")
     writeln("<div class=\"tourneyexceptionmessagecontainer\">")
     writeln("<div class=\"tourneyexceptionmessage\">")
-    writeln(escape(exc.description))
+    writeln(escape(text))
     writeln("</div>")
     writeln("</div>")
     writeln("</div>")
@@ -96,6 +99,19 @@ def show_info_box(html):
     writeln("</div>")
     writeln("</div>")
     writeln("</div>")
+
+def show_success_box(html):
+    writeln("<div class=\"infoboxcontainer successinfoboxcontainer\">")
+    writeln("<div class=\"infoboximage\">")
+    writeln("<img src=\"/images/success.png\" alt=\"Success\" />")
+    writeln("</div>")
+    writeln("<div class=\"infoboxmessagecontainer\">")
+    writeln("<div class=\"infoboxmessage\">")
+    writeln(html)
+    writeln("</div>")
+    writeln("</div>")
+    writeln("</div>")
+
 
 def set_module_path():
     generator_dir = os.environ.get("GENERATORPATH", ".");

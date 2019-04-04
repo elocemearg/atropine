@@ -65,7 +65,7 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
         if len(players) >= 8 and include_5and3:
             table_size_choices.append(htmlform.HTMLFormChoice("-5", "5&3", table_size == -5))
 
-        elements.append(htmlform.HTMLFragment("<h3>%s (%d players)</h3>" % (cgi.escape(tourney.get_division_name(div_index)), tourney.get_num_active_players(div_index))))
+        elements.append(htmlform.HTMLFragment("<h2>%s (%d players)</h2>" % (cgi.escape(tourney.get_division_name(div_index)), tourney.get_num_active_players(div_index))))
         elements.append(htmlform.HTMLFormRadioButton("d%d_groupsize" % (div_index), "Players per table", table_size_choices))
         valid_table_sizes_submitted.append(valid_table_size_submitted)
 
@@ -76,7 +76,7 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
         elements.append(element)
 
     elements.append(htmlform.HTMLFragment("<p>"))
-    elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures"));
+    elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures", other_attrs={"class" : "bigbutton"}));
     elements.append(htmlform.HTMLFragment("</p>"))
     form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py", elements)
     return form;

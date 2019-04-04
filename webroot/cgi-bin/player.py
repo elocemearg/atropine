@@ -113,9 +113,9 @@ def show_player_form(tourney, player):
         cgicommon.writeln("<input type=\"hidden\" name=\"id\" value=\"%d\" />" % (player_id))
     
     if player:
-        cgicommon.writeln("<input type=\"submit\" name=\"editplayer\" value=\"Save Changes\" />")
+        cgicommon.writeln("<input type=\"submit\" name=\"editplayer\" class=\"bigbutton\" value=\"Save Changes\" />")
     else:
-        cgicommon.writeln("<input type=\"submit\" name=\"newplayersubmit\" value=\"Create Player\" />")
+        cgicommon.writeln("<input type=\"submit\" name=\"newplayersubmit\" class=\"bigbutton\" value=\"Create Player\" />")
     cgicommon.writeln("</p>")
     cgicommon.writeln("</form>")
 

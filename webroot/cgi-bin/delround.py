@@ -65,7 +65,7 @@ else:
             cgicommon.show_sidebar(tourney);
             cgicommon.writeln("<div class=\"mainpane\">");
             cgicommon.writeln("<h1>Delete round</h1>");
-            cgicommon.writeln("<p>Round %d deleted successfully.</p>" % round_no)
+            cgicommon.show_success_box("Round %d deleted successfully." % (round_no))
             cgicommon.writeln('<p><a href="/cgi-bin/tourneysetup.py?tourney=%s">Back to tourney setup</a></p>' % urllib.parse.quote_plus(tourneyname))
         except countdowntourney.TourneyException as e:
             cgicommon.show_sidebar(tourney);
@@ -82,7 +82,20 @@ else:
             cgicommon.writeln('<p><a href="/cgi-bin/tourneysetup.py?tourney=%s">Back to tourney setup</a></p>' % urllib.parse.quote_plus(tourneyname))
         else:
             round_name = tourney.get_round_name(latest_round_no)
-            cgicommon.writeln('<p>The most recent round is this one:</p>')
+            cgicommon.writeln('<p>The most recent round is shown below.</p>')
+            cgicommon.show_warning_box("You are about to delete this round and all the fixtures in it. <strong>This cannot be undone.</strong> Are you sure you want to delete it?")
+            cgicommon.writeln('<form action="%s" method="post">' % (baseurl))
+            cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname))
+            cgicommon.writeln('<input type="hidden" name="round" value="%d" />' % latest_round_no)
+            cgicommon.writeln('<input type="hidden" name="confirm" value="1" />')
+            cgicommon.writeln('<p>')
+            cgicommon.writeln('<input type="submit" class="bigbutton destroybutton" name="delroundsubmit" value="Yes, I\'m sure. Delete the round and all its games." />')
+            cgicommon.writeln('</p>')
+            cgicommon.writeln('</form>')
+            cgicommon.writeln('<form action="/cgi-bin/tourneysetup.py" method="post">')
+            cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname))
+            cgicommon.writeln('<input type="submit" class="bigbutton chickenoutbutton" name="arrghgetmeoutofhere" value="Um, wait, actually no. Take me back to the tourney setup page." />')
+            cgicommon.writeln('</form>')
 
             num_divisions = tourney.get_num_divisions()
             cgicommon.writeln("<h2>%s</h2>" % (round_name))
@@ -91,20 +104,6 @@ else:
                 games = tourney.get_games(round_no=latest_round_no, division=div_index)
                 cgicommon.show_games_as_html_table(games, False, None, False, None, lambda x : cgicommon.player_to_link(x, tourneyname))
 
-            cgicommon.writeln("<br />")
-            cgicommon.show_warning_box("You are about to delete this round and all the fixtures in it. <strong>This cannot be undone.</strong> Are you sure you want to delete it?")
-            cgicommon.writeln('<form action="%s" method="post">' % (baseurl))
-            cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname))
-            cgicommon.writeln('<input type="hidden" name="round" value="%d" />' % latest_round_no)
-            cgicommon.writeln('<input type="hidden" name="confirm" value="1" />')
-            cgicommon.writeln('<p>')
-            cgicommon.writeln('<input type="submit" name="delroundsubmit" value="Yes, I\'m sure. Delete the round and all its games." />')
-            cgicommon.writeln('</p>')
-            cgicommon.writeln('</form>')
-            cgicommon.writeln('<form action="/cgi-bin/tourneysetup.py" method="post">')
-            cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname))
-            cgicommon.writeln('<input type="submit" name="arrghgetmeoutofhere" value="Um, wait, actually no. Take me back to the tourney setup page." />')
-            cgicommon.writeln('</form>')
 
 cgicommon.writeln("</div>")
 

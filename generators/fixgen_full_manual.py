@@ -11,6 +11,13 @@ import fixgen
 name = "Fully Manual Fixtures"
 description = "Organiser has full control over how many matches are in the round and who plays whom. There are no table groups, and there is no requirement that all players play."
 
+special_round_names = {
+        "QF" : "Quarter-finals",
+        "SF" : "Semi-finals",
+        "3P" : "Third-place playoff",
+        "F" : "Final"
+}
+
 def int_or_none(s):
     try:
         value = int(s)
@@ -168,7 +175,7 @@ def get_user_form(tourney, settings, div_rounds):
                 div_default_game_types[div_index] = None
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgi.escape(tourney.get_division_name(div_index)))))
 
         elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
         num_games_element = htmlform.HTMLFormTextInput("Number of games to create", num_games_name, "")
@@ -315,7 +322,7 @@ function unset_unsaved_data_warning() {
             continue
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgi.escape(tourney.get_division_name(div_index)))))
         elements.append(htmlform.HTMLFragment("<p>%d game%s of type %s</p>" % (num_games, "" if num_games == 1 else "s", cgi.escape(default_game_type))))
 
         #elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
@@ -446,6 +453,8 @@ def generate(tourney, settings, div_rounds):
         for g in groups:
             generated_groups.add_group(round_no, div_index, g)
         generated_groups.set_game_type(round_no, div_index, default_game_type)
+        if default_game_type in special_round_names:
+            generated_groups.set_round_name(round_no, special_round_names[default_game_type])
 
     return generated_groups
 

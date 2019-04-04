@@ -82,7 +82,7 @@ def get_user_form(tourney, settings, div_rounds):
         if len(div_players) >= 8:
             choices.append(htmlform.HTMLFormChoice("-5", "5&3", div_table_sizes[div_index] == -5))
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgi.escape(tourney.get_division_name(div_index)))))
         elements.append(htmlform.HTMLFragment("<p>"))
         elements.append(htmlform.HTMLFormRadioButton(table_size_name, "Players per table", choices))
         elements.append(htmlform.HTMLFragment("</p>"))
@@ -210,7 +210,7 @@ function unset_unsaved_data_warning() {
         count_in_standings = div_count_in_standings[div_index]
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h3>%s</h3>" % (cgi.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgi.escape(tourney.get_division_name(div_index)))))
 
         elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
         elements.append(htmlform.HTMLFormCheckBox("d%d_heats" % (div_index), "Count the results of these matches in the standings table", div_count_in_standings[div_index]))

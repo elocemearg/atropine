@@ -51,8 +51,8 @@ class GeneratedGroupsRound(object):
     def get_round_no(self):
         return self.round_no
 
-    def set_round_name(self):
-        return self.name
+    def set_round_name(self, name):
+        self.name = name
     
     def get_round_name(self):
         if self.name is None:

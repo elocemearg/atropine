@@ -1,6 +1,86 @@
-body {
-	font-family: sans-serif;
+/* Self-hosted font code from
+ * https://google-webfonts-helper.herokuapp.com/
+ */
+
+/* roboto-regular - latin */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/roboto-v19-latin-regular.eot'); /* IE9 Compat Modes */
+  src: localRoboto'), local('Roboto-Regular'),
+       url('/fonts/roboto-v19-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('/fonts/roboto-v19-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+       url('/fonts/roboto-v19-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('/fonts/roboto-v19-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('/fonts/roboto-v19-latin-regular.svg#Roboto') format('svg'); /* Legacy iOS */
 }
+/* roboto-700 - latin */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/fonts/roboto-v19-latin-700.eot'); /* IE9 Compat Modes */
+  src: localRoboto Bold'), local('Roboto-Bold'),
+       url('/fonts/roboto-v19-latin-700.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('/fonts/roboto-v19-latin-700.woff2') format('woff2'), /* Super Modern Browsers */
+       url('/fonts/roboto-v19-latin-700.woff') format('woff'), /* Modern Browsers */
+       url('/fonts/roboto-v19-latin-700.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('/fonts/roboto-v19-latin-700.svg#Roboto') format('svg'); /* Legacy iOS */
+}
+
+/* cabin-regular - latin */
+@font-face {
+  font-family: 'Cabin';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/cabin-v12-latin-regular.eot'); /* IE9 Compat Modes */
+  src: local('Cabin'), local('Cabin-Regular'),
+       url('/fonts/cabin-v12-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('/fonts/cabin-v12-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+       url('/fonts/cabin-v12-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('/fonts/cabin-v12-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('/fonts/cabin-v12-latin-regular.svg#Cabin') format('svg'); /* Legacy iOS */
+}
+
+
+/* Things that could apply to any page */
+
+body {
+	font-family: "Roboto", sans-serif;
+}
+
+body input {
+	font-family: "Roboto", sans-serif;
+}
+
+body button {
+	font-family: "Roboto", sans-serif;
+}
+
+body h1,h2,h3,h4 {
+    font-family: "Cabin", sans-serif;
+    font-weight: normal;
+    padding: 8px;
+    box-shadow: 4px 4px 4px silver;
+}
+
+body h1 {
+    background-color: #88bbff;
+}
+
+body h2 {
+    background-color: #aaddff;
+}
+
+body h3 {
+    background-color: #bbeeff;
+}
+
+body h4 {
+    background-color: #ccffff;
+}
+
 
 a {
 	text-decoration: none;
@@ -40,10 +120,58 @@ div.sidebarversioninfo {
 	margin-left: 200px;
 }
 
+div.sidebarbannerheading {
+       background-color: black;
+       color: white;
+       font-size: 10pt;
+       text-align: center;
+       font-weight: bold;
+       margin-right: 10px;
+       padding: 5px;
+       border: 1px solid green;
+}
+
+div.sidebarbanner {
+       background-color: #880000;
+       color: white;
+       font-size: 10pt;
+       text-align: center;
+       margin-right: 10px;
+       padding: 5px;
+       border: 2px solid blue;
+       width: 156px;
+}
+
 .groupseparator {
 	height: 4px;
 	background-color: purple;
 }
+
+input.bigbutton {
+    padding: 10px;
+    font-size: 12pt;
+}
+
+input.destroybutton {
+    background-color: pink;
+}
+
+input.chickenoutbutton {
+    background-color: #ccffcc;
+}
+
+/* Front page */
+div.createtourneynamebox {
+    margin-top: 10px;
+}
+
+div.createtourneybuttonbox {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+
+/* Fixtures and scores */
 
 .fixturetable {
 	border-collapse: collapse;
@@ -108,25 +236,25 @@ table.fixturetable td.roundno {
 
 table.scorestable td.roundno {
 	font-size: 1.5em;
-	font-weight: bold;
 	vertical-align: middle;
 	text-align: center;
     min-width: 2em;
+    font-family: "Cabin", sans-serif;
 }
 
 table.fixturetable td.tableno {
 	font-size: 1.5em;
-	font-weight: bold;
 	vertical-align: middle;
 	text-align: center;
+    font-family: "Cabin", sans-serif;
 }
 
 table.scorestable td.tableno {
 	font-size: 1.5em;
-	font-weight: bold;
 	vertical-align: middle;
 	text-align: center;
     min-width: 2em;
+    font-family: "Cabin", sans-serif;
 }
 
 table.scorestable td.gamedivision {
@@ -311,6 +439,8 @@ table.resultstable {
 	border-collapse: collapse;
 }
 
+/* Exported standings and results */
+
 td.exportleftplayer {
 	text-align: right;
 	padding-right: 1em;
@@ -355,6 +485,16 @@ th.exportdivisionnumber {
 	font-size: 14pt;
 }
 
+div.exportedstandings {
+	margin-left: 20px;
+}
+
+div.exportedresults {
+	margin-left: 20px;
+}
+
+/* Team score display */
+
 table.teamscorestable {
 	border: 2px solid grey;
 	border-collapse: collapse;
@@ -370,6 +510,8 @@ td.teamscorestablescore {
 	text-align: right;
 	font-weight: bold;
 }
+
+/* Warnings and exceptions */
 
 div.warningbox {
 	background-color: #ffff88;
@@ -453,11 +595,17 @@ div.infoboxmessage {
 
 div.infoboxmessagecontainer {
 	max-width: 600px;
-        display: table-cell;
-        vertical-align: middle;
-        padding-left: 10px;
-        padding-right: 10px;
+    display: table-cell;
+    vertical-align: middle;
+    padding-left: 10px;
+    padding-right: 10px;
 }
+
+div.successinfoboxcontainer {
+    background-color: #ccffcc;
+    border: 5px solid green;
+}
+
 
 a.playerlink {
 	text-decoration: none;
@@ -473,13 +621,8 @@ a.thisplayerlink {
 	font-weight: bold;
 }
 
-div.exportedstandings {
-	margin-left: 20px;
-}
 
-div.exportedresults {
-	margin-left: 20px;
-}
+/* Fixture generation */
 
 div.fixgenoption {
     margin-top: 10px;
@@ -520,6 +663,19 @@ td.fixgendescription {
 	border-bottom: 1px solid gray;
 	background-color: #ffffaa;
 }
+
+div.fixtureacceptbox {
+    margin-top: 20px;
+    margin-bottom: 40px;
+}
+
+a.fixturecancellink {
+    padding: 20px;
+    font-size: 12pt;
+}
+
+
+/* Divisions */
 
 table.divtable {
 	border: 1px solid black;
@@ -587,6 +743,9 @@ td.divsummarywithdrawnplayers {
 	text-align: right;
 }
 
+
+/* Front page list of available tourneys */
+
 table.tourneylist {
 	border: 1px solid black;
 	border-collapse: collapse;
@@ -623,6 +782,9 @@ table.tourneylist td.tourneylistlink {
 	border: 1px dashed grey;
 	background-color: #ffffaa;
 }
+
+
+/* Generic definitions for tables that rank things in order */
 
 table.miscranktable {
 	border-collapse: collapse;
@@ -692,6 +854,9 @@ table.miscranktable td.overachieversstandingspos {
 	border-right: 1px solid gray;
 }
 
+
+/* Table-to-name index */
+
 table.tableindex {
 }
 
@@ -716,6 +881,9 @@ td.tableindexspacer {
 	border: none;
 	width: 2em;
 }
+
+
+/* Player setup */
 
 div.playerlist {
        margin: auto;
@@ -761,27 +929,6 @@ div.playerlistsummarydiv {
     color: gray;
 }
 
-div.sidebarbannerheading {
-       background-color: black;
-       color: white;
-       font-size: 10pt;
-       text-align: center;
-       font-weight: bold;
-       margin-right: 10px;
-       padding: 5px;
-       border: 1px solid green;
-}
-
-div.sidebarbanner {
-       background-color: #880000;
-       color: white;
-       font-size: 10pt;
-       text-align: center;
-       margin-right: 10px;
-       padding: 5px;
-       border: 2px solid blue;
-       width: 156px;
-}
 
 /* Results editor data entry tool */
 
@@ -1003,7 +1150,6 @@ div.videprinter {
     border: 2px solid navy;
     color: white;
     font-size: 12pt;
-    font-family: "Helvetica", "Arial", sans-serif;
 }
 
 div.videprinterwindow {
@@ -1094,6 +1240,7 @@ div.blinkenlightstablenumber {
     vertical-align: middle;
     background-color: black;
     cursor: pointer;
+    font-family: "Cabin", sans-serif;
 }
 
 div.blinkenlightsgamesleft {
@@ -1146,7 +1293,7 @@ div.blinkenlightsmouseovertext {
     font-size: 10pt;
 }
 
-/* Conflict resolution form */
+/* Conflict resolution form for old results interface */
 div.conflictresolution {
     margin-top: 20px;
     margin-bottom: 30px;
@@ -1232,13 +1379,12 @@ div.resultsentrytitle {
 /* Round name */
 div.roundnamebox {
     display: inline-block;
-    background-color: #dddddd;
-    width: 580px;
-    font-size: 16pt;
-    font-weight: bold;
+    background-color: #aaddff;
+    width: 584px;
+    font-size: 18pt;
     text-align: center;
     padding: 10px;
-    border: 2px solid navy;
+    font-family: "Cabin", sans-serif;
 }
 
 div.boxshadow {

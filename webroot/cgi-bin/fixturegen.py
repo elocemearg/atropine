@@ -194,7 +194,15 @@ try:
 
                 fixtures = tourney.make_fixtures_from_groups(generated_groups)
 
-                cgicommon.writeln("<p>I've generated the following fixtures. Click <em>Accept Fixtures</em> below to commit them to the database. The fixtures won't be saved until you do.</p>");
+                cgicommon.writeln("<form method=\"POST\" action=\"/cgi-bin/fixturegen.py\">");
+                cgicommon.writeln("<div class=\"fixtureacceptbox\">")
+                cgicommon.writeln("<p>I've generated the following fixtures. They won't be saved until you click the <em>Accept Fixtures</em> button.</p>");
+                cgicommon.writeln("<input type=\"submit\" name=\"accept\" class=\"bigbutton\" value=\"Accept Fixtures\" />");
+                cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s&generator=%s\" class=\"fixturecancellink\">Discard and return to fixture generator</a>" % (
+                    urllib.parse.quote_plus(tourney_name),
+                    urllib.parse.quote_plus(generator_name)
+                ))
+                cgicommon.writeln("</div>")
                 num_divisions = tourney.get_num_divisions()
                 for r in generated_groups.get_rounds():
                     round_no = r.get_round_no()
@@ -254,7 +262,6 @@ try:
                             last_table_no = f.table_no;
 
                         cgicommon.writeln("</table>");
-                cgicommon.writeln("<form method=\"POST\" action=\"/cgi-bin/fixturegen.py\">");
                 cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgicommon.escape(tourney_name, True));
                 cgicommon.writeln("<input type=\"hidden\" name=\"generator\" value=\"%s\" />" % cgicommon.escape(generator_name, True));
 
@@ -277,11 +284,16 @@ try:
                 }
                 json_fixture_plan = json.dumps(fixture_plan);
                 cgicommon.writeln("<input type=\"hidden\" name=\"jsonfixtureplan\" value=\"%s\" />" % cgicommon.escape(json_fixture_plan, True));
-                cgicommon.writeln("<p>")
-                cgicommon.writeln("<input type=\"submit\" name=\"accept\" value=\"Accept Fixtures\" />");
-                cgicommon.writeln("</p>")
+                cgicommon.writeln("<div class=\"fixtureacceptbox\">")
+                cgicommon.writeln("<input type=\"submit\" name=\"accept\" value=\"Accept Fixtures\" class=\"bigbutton\" />");
+                cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s&generator=%s\" class=\"fixturecancellink\">Discard and return to fixture generator</a>" % (
+                    urllib.parse.quote_plus(tourney_name),
+                    urllib.parse.quote_plus(generator_name)
+                ))
+                cgicommon.writeln("</div>")
                 cgicommon.writeln("</form>");
             elif "accept" in form:
+                # Fixtures have been accepted - write them to the db
                 json_fixture_plan = form.getfirst("jsonfixtureplan");
                 if not json_fixture_plan:
                     raise countdowntourney.TourneyException("Accept fixtures form doesn't include the jsonfixtureplan field. This is probably a bug unless you built the HTTP request yourself rather than using the form. If you did that then you're being a smartarse.");
@@ -326,7 +338,7 @@ try:
                 if fixtures:
                     try:
                         tourney.merge_games(fixtures);
-                        cgicommon.writeln("<h2>%d fixtures added successfully</h2>" % (len(fixtures)));
+                        cgicommon.show_success_box("%d fixtures added successfully." % (len(fixtures)))
                         cgicommon.writeln("<p><a href=\"/cgi-bin/games.py?tourney=%s&round=%d\">Go to result entry page</a></p>" % (urllib.parse.quote_plus(tourney_name), earliest_round_no));
                     except countdowntourney.TourneyException as e:
                         cgicommon.writeln("<p>Failed to add new fixtures to database!</p>");
@@ -343,7 +355,7 @@ try:
                                 cgicommon.show_tourney_exception(e);
 
             else:
-                cgicommon.writeln("<h2>Information this fixture generator needs from you...</h2>");
+                #cgicommon.writeln("<h2>Information this fixture generator needs from you...</h2>");
                 settings_form.add_element(htmlform.HTMLFormHiddenInput("tourney", tourney_name));
                 settings_form.add_element(htmlform.HTMLFormHiddenInput("generator", generator_name));
                 for name in fixgen_settings:
@@ -357,8 +369,7 @@ try:
             # because the user needs to provide us information - it's
             # that there aren't the right number of players, or the
             # previous round hasn't finished, or something like that.
-            cgicommon.writeln("<h2>Cannot generate fixtures...</h2>")
-            cgicommon.writeln("<p>%s</p>" % excuse);
+            cgicommon.show_error_text("Couldn't generate fixtures: %s" % (excuse))
     cgicommon.writeln("</div>");
 
 except countdowntourney.TourneyException as e:

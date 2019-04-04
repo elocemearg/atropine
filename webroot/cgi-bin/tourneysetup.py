@@ -373,7 +373,7 @@ else:
             prev_player_name = player_name
         try:
             tourney.set_players(player_list, auto_rating_behaviour);
-            cgicommon.writeln("<p><strong>Player list updated successfully.</strong></p>");
+            cgicommon.show_success_box("Player list updated.");
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
 
@@ -391,10 +391,10 @@ else:
                     accessible_tables = [ int(x) for x in accessible_tables_string.split(",") ]
                     for x in accessible_tables:
                         if x <= 0:
-                            raise countdowntourney.TourneyException("Accessible table list, if set, must be a comma-separated list of positive integers.")
+                            raise countdowntourney.TourneyException("The accessible table list, if set, must be a comma-separated list of positive integers.")
                 tourney.set_accessible_tables(accessible_tables, accessible_tables_default != 0)
             except ValueError:
-                raise countdowntourney.TourneyException("Accessible table list, if set, must be a comma-separated list of positive integers.")
+                raise countdowntourney.TourneyException("The accessible table list, if set, must be a comma-separated list of positive integers.")
 
             # Rank method
             tourney.set_rank_method(rank);
@@ -419,7 +419,7 @@ else:
                         if value < 0:
                             value = 0
                     tourney.set_attribute(name, value)
-            cgicommon.writeln("<p><strong>Rules updated successfully.</strong></p>");
+            cgicommon.show_success_box("Rules updated.")
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
 
@@ -462,7 +462,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
     if tourney.get_num_games() == 0:
         players = sorted(tourney.get_players(), key=lambda x : (x.get_division(), x.get_id()))
         cgicommon.writeln("<hr />")
-        cgicommon.writeln("<h2>Player list setup</h2>");
+        cgicommon.writeln("<h2>Ratings setup</h2>");
 
         cgicommon.writeln(("<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourneyname))))
 
@@ -536,7 +536,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
 
         cgicommon.writeln("<div class=\"playerlistclear\"></div>")
         cgicommon.writeln("<div class=\"playerlistsubmitdiv\">")
-        cgicommon.writeln('<input type="submit" name="playerlistsubmit" id="playerlistsubmit" value="Save Player List" />')
+        cgicommon.writeln('<input type="submit" class="bigbutton" name="playerlistsubmit" id="playerlistsubmit" value="Save Player List" />')
         cgicommon.writeln("</div>")
         cgicommon.writeln("<div class=\"playerlistsummarydiv\" id=\"playerlistsummary\">")
         cgicommon.writeln("</div>")
@@ -679,7 +679,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
             cgicommon.writeln("The qualification zone is the top <input class=\"tourneysetupnumber\" type=\"number\" name=\"%squalplaces\" value=\"%s\" /> places in the standings table" % (div_prefix, cgicommon.escape(qual_places, True)))
             cgicommon.writeln("</div>")
 
-        cgicommon.writeln('<p><input type="submit" name="rulessubmit" value="Save Rules" /></p>')
+        cgicommon.writeln('<p><input type="submit" class="bigbutton" name="rulessubmit" value="Save Rules" /></p>')
         cgicommon.writeln("</form>");
 
         if tourney.get_num_games() > 0:
@@ -688,7 +688,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
             cgicommon.writeln('<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>')
             cgicommon.writeln('<form action="/cgi-bin/delround.py" method="get">')
             cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname)))
-            cgicommon.writeln('<input type="submit" name="delroundsetupsubmit" value="Delete most recent round" />')
+            cgicommon.writeln('<input type="submit" class="bigbutton destroybutton" name="delroundsetupsubmit" value="Delete most recent round" />')
             cgicommon.writeln('</form>')
 
 cgicommon.writeln("</div>");

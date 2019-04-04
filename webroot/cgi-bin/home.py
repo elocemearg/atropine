@@ -90,7 +90,7 @@ if cgicommon.is_client_from_localhost():
         try:
             tourney = countdowntourney.tourney_create(tourneyname, cgicommon.dbdir);
             tourney.close();
-            cgicommon.writeln("<p>Tourney \"%s\" was created successfully.</p>" % tourneyname);
+            cgicommon.show_success_box("Tourney \"%s\" was created successfully." % cgicommon.escape(tourneyname));
             cgicommon.writeln("<p>");
             cgicommon.writeln('<a href="/cgi-bin/tourneysetup.py?tourney=%s">Click here to continue</a>' % urllib.parse.quote_plus(tourneyname));
             cgicommon.writeln("</p>");
@@ -103,12 +103,13 @@ if cgicommon.is_client_from_localhost():
 
         cgicommon.writeln("<h2>Create new tourney</h2>");
         cgicommon.writeln('<form action="%s" method="POST">' % cgicommon.escape(baseurl, True));
-        cgicommon.writeln("<p>");
-        cgicommon.writeln('Tourney name: <input type="text" name="name" value="%s" /> <br />' % cgicommon.escape(tourneyname, True));
-        cgicommon.writeln("</p>");
-        cgicommon.writeln("<p>");
-        cgicommon.writeln('<input type="submit" name="submit" value="Create Tourney" />');
-        cgicommon.writeln("</p>");
+        cgicommon.writeln("<div>Enter the name for your new tourney.</div>")
+        cgicommon.writeln("<div class=\"createtourneynamebox\">")
+        cgicommon.writeln('<input style=\"font-size: 12pt;\" type="text" name="name" value="%s" /> <br />' % cgicommon.escape(tourneyname, True));
+        cgicommon.writeln("</div>");
+        cgicommon.writeln("<div class=\"createtourneybuttonbox\">");
+        cgicommon.writeln('<input type="submit" name="submit" value="Create Tourney" class=\"bigbutton\" />');
+        cgicommon.writeln("</div>");
         cgicommon.writeln("</form>");
 
     cgicommon.writeln("<hr />")

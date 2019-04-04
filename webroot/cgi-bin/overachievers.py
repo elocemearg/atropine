@@ -85,7 +85,7 @@ try:
     if request_method == "POST" and "reratebyplayerid" in form and "reratebyplayeridconfirm" in form:
         try:
             tourney.rerate_players_by_id()
-            cgicommon.writeln("<p><strong>Players successfully rerated by player ID.</strong></p>")
+            cgicommon.show_success_box("Players successfully rerated by player ID.")
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e)
 

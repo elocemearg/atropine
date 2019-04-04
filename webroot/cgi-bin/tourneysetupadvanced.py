@@ -73,8 +73,7 @@ else:
         try:
             tourney.set_show_tournament_rating_column(show_tournament_rating)
             tourney.set_tournament_rating_config(tr_bonus, tr_diff_cap)
-            #tourney.set_table_size(players_per_table);
-            cgicommon.writeln("<p><strong>Options updated successfully.</strong></p>");
+            cgicommon.show_success_box("Options updated.");
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
 
@@ -84,8 +83,8 @@ else:
     cgicommon.writeln("<h2>Tournament Ratings</h2>")
     cgicommon.writeln("<p>If you don't know what tournament ratings are, you can safely leave these as the defaults and they won't affect anything.</p>")
     cgicommon.writeln("<p>")
-    cgicommon.writeln(("<input type=\"checkbox\" name=\"showtournamentratingcolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_tournament_rating_column() else "")))
-    cgicommon.writeln("Show tournament ratings in exported results standings table")
+    cgicommon.writeln(("<input type=\"checkbox\" name=\"showtournamentratingcolumn\" id=\"showtournamentratingcolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_tournament_rating_column() else "")))
+    cgicommon.writeln("<label for=\"showtournamentratingcolumn\">Show tournament ratings in exported results standings table</label>")
     cgicommon.writeln("</p>")
     cgicommon.writeln("<p>")
     cgicommon.writeln("For each game you play, your tournament rating is calculated as follows.")
@@ -105,7 +104,7 @@ else:
     cgicommon.writeln("<p>")
     cgicommon.writeln("Your overall tournament rating is the mean average from all your games.")
     cgicommon.writeln("</p>")
-    cgicommon.writeln('<p><input type="submit" name="submit" value="Save Advanced Setup" /></p>')
+    cgicommon.writeln('<p><input type="submit" name="submit" value="Save Advanced Setup" class="bigbutton" /></p>')
     cgicommon.writeln("</form>");
 
 cgicommon.writeln("</div>");
