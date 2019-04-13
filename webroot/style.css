@@ -61,24 +61,26 @@ body button {
 body h1,h2,h3,h4 {
     font-family: "Cabin", sans-serif;
     font-weight: normal;
-    padding: 8px;
-    box-shadow: 4px 4px 4px silver;
+    padding-top: 0.2em;
+    padding-bottom: 0.2em;
+    padding-left: 0.5em;
+    box-shadow: 2px 2px 4px silver;
 }
 
 body h1 {
-    background-color: #88bbff;
+    background-color: #ffcc66;
 }
 
 body h2 {
-    background-color: #aaddff;
+    background-color: #ffdd88;
 }
 
 body h3 {
-    background-color: #bbeeff;
+    background-color: #ffeeaa;
 }
 
 body h4 {
-    background-color: #ccffff;
+    background-color: #ffffcc;
 }
 
 
