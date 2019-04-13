@@ -2,7 +2,8 @@ function createStandingsAndVideprinterScreen(tourneyName, options) {
     return new MultipleView(tourneyName, 0, 0, 100, 100, [
         new StandingsView(tourneyName, 0, 0, 100, 70,
             dictGet(options, "standings_videprinter_standings_lines", 8),
-            dictGet(options, "standings_videprinter_standings_scroll", 10) * 1000),
+            dictGet(options, "standings_videprinter_standings_scroll", 10) * 1000,
+            dictGet(options, "standings_alternate_row_colours", false)),
         new VideprinterView(tourneyName, 0, 70, 100, 30, 4)
     ]);
 }
@@ -10,7 +11,8 @@ function createStandingsAndVideprinterScreen(tourneyName, options) {
 function createStandingsScreen(tourneyName, options) {
     return new StandingsView(tourneyName, 0, 0, 100, 100,
             dictGet(options, "standings_only_lines", 12),
-            dictGet(options, "standings_only_scroll", 12) * 1000);
+            dictGet(options, "standings_only_scroll", 12) * 1000,
+            dictGet(options, "standings_alternate_row_colours", false));
 }
 
 function createVideprinterScreen(tourneyName, options) {
@@ -30,7 +32,9 @@ function createStandingsAndRoundResultsScreen(tourneyName, options) {
     return new MultipleView(tourneyName, 0, 0, 100, 100, [
             new StandingsView(tourneyName, 0, 0, 100, standingsVerticalPc,
                 dictGet(options, "standings_results_standings_lines", 8),
-                dictGet(options, "standings_results_standings_scroll", 10) * 1000),
+                dictGet(options, "standings_results_standings_scroll", 10) * 1000,
+                dictGet(options, "standings_alternate_row_colours", false)
+            ),
             new RoundResultsView(tourneyName, 0, standingsVerticalPc,
                 100, 100 - standingsVerticalPc, roundResultsLines,
                 dictGet(options, "standings_results_results_scroll", 5) * 1000)

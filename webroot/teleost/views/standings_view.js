@@ -1,6 +1,7 @@
 class StandingsView extends PagedTableView {
-    constructor (tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod) {
+    constructor (tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod, alternateColourRows) {
         super(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod);
+        this.alternateColourRows = alternateColourRows;
     }
 
     setup(container) {
@@ -24,7 +25,13 @@ class StandingsView extends PagedTableView {
         html += "</tr>";
         for (var i = 0; i < this.rowsPerPage; ++i) {
             var rowName = "standingsrow" + i.toString();
-            html += "<tr id=\"" + rowName + "\">";
+            var rowClassAttr;
+            if (this.alternateColourRows)
+                rowClassAttr = (i % 2 == 0 ? "class=\"teleoststandingsevenrow\"" : "class=\"teleoststandingsoddrow\"");
+            else
+                rowClassAttr = "";
+            
+            html += "<tr id=\"" + rowName + "\" " + rowClassAttr + ">";
             html += "<td class=\"teleoststandingspos teleostnumber\" id=\"" + rowName + "_pos\"></td>";
             html += "<td id=\"" + rowName + "_name\"></td>";
             html += "<td class=\"teleoststandingsnumbercol teleostnumber\" id=\"" + rowName + "_played\"></td>";
