@@ -91,11 +91,15 @@ class HTMLFormCheckBox(HTMLFormElement):
         self.checked = checked;
     
     def html(self):
-        s = "<input type=\"checkbox\" name=\"%s\" value=\"1\" %s" % (html.escape(self.name, True), self.other_attrs_to_html());
+        s = "<input type=\"checkbox\" name=\"%s\" id=\"%s\" value=\"1\" %s" % (
+                html.escape(self.name, True), html.escape(self.name, True),
+                self.other_attrs_to_html());
         if self.checked:
             s += " checked";
-        s += " /> ";
+        s += " />";
+        s += "<label for=\"%s\"> " % (html.escape(self.name, True))
         s += html.escape(self.label);
+        s += "</label>"
         return s;
 
 class HTMLFormHiddenInput(HTMLFormElement):
@@ -144,13 +148,21 @@ class HTMLFormRadioButton(HTMLFormElement):
     def html(self):
         s = self.label;
         s += "<br />";
+        num = 0
         for c in self.choices:
             if c.selected:
                 checked = "checked";
             else:
                 checked = "";
-            s += "<input type=\"radio\" name=\"%s\" value=\"%s\" %s /> %s" % (html.escape(self.name, True), html.escape(c.value, True), checked, html.escape(c.label));
+            s += "<input type=\"radio\" name=\"%s\" id=\"%s_%d\" value=\"%s\" %s /><label for=\"%s_%d\"> %s</label>" % (
+                    html.escape(self.name, True),
+                    html.escape(self.name, True), num,
+                    html.escape(c.value, True),
+                    checked,
+                    html.escape(self.name, True), num,
+                    html.escape(c.label));
             s += "<br />\n";
+            num += 1
         return s;
 
 class HTMLFormSubmitButton(HTMLFormElement):
