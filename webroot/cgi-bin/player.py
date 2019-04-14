@@ -87,7 +87,9 @@ def show_player_form(tourney, player):
         cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s\">" % (cgicommon.escape(baseurl), urllib.parse.quote_plus(tourneyname)))
     cgicommon.writeln("<table>")
     cgicommon.writeln("<tr><td>Name</td><td><input type=\"text\" name=\"setname\" value=\"%s\" /></td></tr>" % ("" if not player else cgicommon.escape(player.get_name(), True)))
-    cgicommon.writeln("<tr><td>Rating</td><td><input type=\"text\" name=\"setrating\" value=\"%g\"/></td></tr>" % (1000 if not player else player.get_rating()))
+    cgicommon.writeln("<tr><td>Rating</td><td><input style=\"width: 5em;\" type=\"text\" name=\"setrating\" value=\"%g\"/>" % (1000 if not player else player.get_rating()))
+    cgicommon.writeln("<span class=\"playercontrolhelp\">(1000 is the default; use 0 to indicate this player is a Prune)</span>")
+    cgicommon.writeln("</td></tr>")
     if num_divisions > 1:
         cgicommon.writeln("<tr><td>Division</td>")
         cgicommon.writeln("<td>")
@@ -103,7 +105,7 @@ def show_player_form(tourney, player):
         pref = None
     else:
         pref = player.get_preferred_table()
-    cgicommon.writeln("<tr><td>Preferred table number</td><td><input type=\"text\" name=\"setpreferredtable\" value=\"%s\" /> <span class=\"playercontrolhelp\">(player will be assigned this table number if possible - if blank, player has no specific table preference)</span></td></tr>" % (cgicommon.escape(str(pref)) if pref is not None else ""))
+    cgicommon.writeln("<tr><td>Preferred table number</td><td><input type=\"text\" name=\"setpreferredtable\" style=\"width: 5em;\" value=\"%s\" /> <span class=\"playercontrolhelp\">(player will be assigned this table number if possible - if blank, player has no specific table preference)</span></td></tr>" % (cgicommon.escape(str(pref)) if pref is not None else ""))
 
     cgicommon.writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</span></td></tr>" % ("checked" if player and player.is_avoiding_prune() else ""))
     cgicommon.writeln("</table>")

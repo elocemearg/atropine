@@ -1360,14 +1360,12 @@ class Tourney(object):
         self.db.commit();
     
     def rename_player(self, oldname, newname):
-        players = self.get_players();
         newname = newname.strip();
         if newname == "":
             raise InvalidPlayerNameException()
 
-        for p in players:
-            if p.name == newname:
-                raise PlayerExistsException("Cannot rename player \"%s\" to \"%s\" because there's already another player called %s." % (oldname, newname, newname));
+        if self.player_name_exists(newname):
+            raise PlayerExistsException("Cannot rename player \"%s\" to \"%s\" because there's already another player with that name." % (oldname, newname));
         cur = self.db.cursor();
         cur.execute("update player set name = ? where (lower(name) = ? or name = ?)", (newname, oldname.lower(), oldname));
         if cur.rowcount < 1:
