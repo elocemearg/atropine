@@ -688,7 +688,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
             cgicommon.writeln('<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>')
             cgicommon.writeln('<form action="/cgi-bin/delround.py" method="get">')
             cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname)))
-            cgicommon.writeln('<input type="submit" class="bigbutton destroybutton" name="delroundsetupsubmit" value="Delete most recent round" />')
+            cgicommon.writeln('<input type="submit" class="bigbutton" name="delroundsetupsubmit" value="Delete most recent round" />')
             cgicommon.writeln('</form>')
 
 cgicommon.writeln("</div>");

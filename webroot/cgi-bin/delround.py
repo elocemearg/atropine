@@ -94,7 +94,7 @@ else:
             cgicommon.writeln('</form>')
             cgicommon.writeln('<form action="/cgi-bin/tourneysetup.py" method="post">')
             cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname))
-            cgicommon.writeln('<input type="submit" class="bigbutton chickenoutbutton" name="arrghgetmeoutofhere" value="Um, wait, actually no. Take me back to the tourney setup page." />')
+            cgicommon.writeln('<input type="submit" class="bigbutton chickenoutbutton" name="arrghgetmeoutofhere" value="No. Cancel this and take me back to the tourney setup page." />')
             cgicommon.writeln('</form>')
 
             num_divisions = tourney.get_num_divisions()

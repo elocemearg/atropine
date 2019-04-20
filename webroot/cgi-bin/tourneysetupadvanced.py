@@ -107,6 +107,10 @@ else:
     cgicommon.writeln('<p><input type="submit" name="submit" value="Save Advanced Setup" class="bigbutton" /></p>')
     cgicommon.writeln("</form>");
 
+    cgicommon.writeln("<h2>Raw database access</h2>")
+    cgicommon.writeln("<p>This gives you direct SQL access to the tourney database. You shouldn't normally need to use this feature. If you don't know what you're doing, you can mess up your entire tournament. Don't say you weren't warned!</p>")
+    cgicommon.writeln("<p><a href=\"/cgi-bin/sql.py?tourney=%s\">I understand. Take me to the raw database access page, and on my own head be it.</a></p>" % (urllib.parse.quote_plus(tourneyname)))
+
 cgicommon.writeln("</div>");
 
 cgicommon.writeln("</body>");
