@@ -48,7 +48,7 @@ try:
 
     cgicommon.writeln("<form action=\"%s\" method=\"GET\">" % (baseurl))
     cgicommon.writeln("<p>")
-    cgicommon.writeln("The Tim Down award goes to the player whose opponents have the highest average standings position, and who lost ")
+    cgicommon.writeln("The Tim Down Award goes to the player whose opponents have the highest average standings position, and who lost ")
     cgicommon.writeln("<input type=\"number\" name=\"numlosinggames\" value=\"%d\" min=\"0\" max=\"999\" size=\"3\" />" % (num_losing_games))
     cgicommon.writeln("or more games.")
     cgicommon.writeln("</p>")
