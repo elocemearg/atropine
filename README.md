@@ -9,8 +9,8 @@ You use Atropine through your web browser, but it does **not** need access to th
 # Instructions for getting started
  * If Python 3 is not already installed on your computer, or if you're not sure whether it's installed, download and install Python 3.
  * Get Atropine. You can either:
-   * Clone the git repository, or, if you don't have git or don't know what it is,
-   * Download the latest Atropine zip file from [this page](http://greem.co.uk/atropine/). Unzip the zip file into a new folder of your choosing. Don't move any of Atropine's files out of that folder - the location of `atropine.py` in relation to the subfolders must be maintained as it is. It's okay to make a shortcut (or symlink, on Linux) to atropine.py and put the shortcut anywhere you want.
+   * Clone the git repository, or,
+   * If you don't use git but have somehow found this on github, download the latest Atropine zip file from [this page](http://greem.co.uk/atropine/). Unzip the zip file into a new folder of your choosing. Don't move any of Atropine's files out of that folder - the location of `atropine.py` in relation to the subfolders must be maintained as it is. It's okay to make a shortcut (or symlink, on Linux) to atropine.py and put the shortcut anywhere you want.
  * Run `atropine.py`.
  * Atropine will open a small web server on your computer, and give you a link to paste into your browser, like this: `http://localhost:3960/cgi-bin/home.py`
  * Go to that link in your web browser. You are now using the web interface, and you can create and administer your tournament from there.
