@@ -1,10 +1,21 @@
+function getVideprinterScoreBracketThreshold(options) {
+    if (dictGet(options, "standings_videprinter_spell_big_scores", 0) == 0) {
+        return null;
+    }
+    else {
+        return dictGet(options, "standings_videprinter_big_score_min", 90)
+    }
+}
+
 function createStandingsAndVideprinterScreen(tourneyName, options) {
     return new MultipleView(tourneyName, 0, 0, 100, 100, [
         new StandingsView(tourneyName, 0, 0, 100, 70,
             dictGet(options, "standings_videprinter_standings_lines", 8),
             dictGet(options, "standings_videprinter_standings_scroll", 10) * 1000,
             dictGet(options, "standings_alternate_row_colours", false)),
-        new VideprinterView(tourneyName, 0, 70, 100, 30, 4)
+        new VideprinterView(tourneyName, 0, 70, 100, 30, 4,
+            getVideprinterScoreBracketThreshold(options)
+        )
     ]);
 }
 
@@ -16,7 +27,9 @@ function createStandingsScreen(tourneyName, options) {
 }
 
 function createVideprinterScreen(tourneyName, options) {
-    return new VideprinterView(tourneyName, 0, 0, 100, 100, 16);
+    return new VideprinterView(tourneyName, 0, 0, 100, 100, 16,
+            getVideprinterScoreBracketThreshold(options)
+    );
 }
 
 function createStandingsAndRoundResultsScreen(tourneyName, options) {

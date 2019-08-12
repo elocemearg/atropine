@@ -136,6 +136,8 @@ teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_standings_lines", CONTROL_NUMBER, "Players per page", 8),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_standings_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_spell_big_scores", CONTROL_CHECKBOX, "$CONTROL Videprinter: repeat unbelievably high scores in words", 0),
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_big_score_min", CONTROL_NUMBER, "$INDENT An unbelievably high score is $CONTROL or more", 90),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_lines", CONTROL_NUMBER, "Players per standings page", 8),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_scroll", CONTROL_NUMBER, "Standings scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_results_lines", CONTROL_NUMBER, "Number of results per page", 3),

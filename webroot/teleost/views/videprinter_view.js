@@ -1,9 +1,70 @@
+var zero_to_nineteen = ["zero", "one", "two", "three", "four", "five", "six",
+    "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen",
+    "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"]
+var decades = [ "zero", "ten", "twenty", "thirty", "forty", "fifty", "sixty",
+    "seventy", "eighty", "ninety" ];
+
+/* It's just possible this is slightly overengineered */
+var thousand_powers = [ "thousand", "million", "billion", "trillion",
+    "quadrillion", "quintillion", "sextillion", "septillion", "octillion",
+    "nonillion", "decillion" ];
+
+function number_to_words(number) {
+    if (number < 0) {
+        return "minus " + number_to_words(-number);
+    }
+    else if (number < 20) {
+        return zero_to_nineteen[number]
+    }
+    else if (number < 100) {
+        var ret = decades[Math.floor(number / 10)];
+        if (number % 10 > 0)
+            ret += "-" + zero_to_nineteen[number % 10];
+        return ret;
+    }
+    else {
+        var thousands = Math.floor(number / 1000);
+        var hundreds = Math.floor(number / 100) % 10;
+        var units = number % 100;
+        var kpow = 0;
+        var ret = "";
+
+        while (kpow <= thousand_powers.length && thousands > 0) {
+            var term = thousands % 1000;
+            if (term > 0) {
+                if (kpow >= thousand_powers.length) {
+                    return "I'm going to call that infinity";
+                }
+                var prefix = number_to_words(term) + " " + thousand_powers[kpow];
+                if (ret.length > 0) {
+                    ret = prefix + " " + ret;
+                }
+                else {
+                    ret = prefix;
+                }
+            }
+            kpow++;
+            thousands = Math.floor(thousands / 1000);
+        }
+        if (hundreds > 0) {
+            if (ret.length > 0)
+                ret += " ";
+            ret += number_to_words(hundreds) + " hundred";
+        }
+        if (units > 0) {
+            ret += " and " + number_to_words(units);
+        }
+        return ret;
+    }
+}
+
 class VideprinterView extends View {
-    constructor (tourneyName, leftPc, topPc, widthPc, heightPc, numRows) {
+    constructor (tourneyName, leftPc, topPc, widthPc, heightPc, numRows, scoreBracketThreshold) {
         super(tourneyName, leftPc, topPc, widthPc, heightPc);
         this.numRows = numRows;
         this.latestGameRevisionSeen = null;
         this.latestLogSeqShown = null;
+        this.scoreBracketThreshold = scoreBracketThreshold;
     }
 
     setup(container) {
@@ -63,10 +124,14 @@ class VideprinterView extends View {
         else {
             html += " ";
             html += entry.s1.toString();
+            if (this.scoreBracketThreshold != null && entry.s1 >= this.scoreBracketThreshold)
+                html += " (" + number_to_words(entry.s1) + ")";
             if (entry.tb && entry.s1 > entry.s2)
                 html += "*";
             html += " - ";
             html += entry.s2.toString();
+            if (this.scoreBracketThreshold != null && entry.s2 >= this.scoreBracketThreshold)
+                html += " (" + number_to_words(entry.s2) + ")";
             if (entry.tb && entry.s2 >= entry.s1)
                 html += "*";
             html += " ";

@@ -14,6 +14,14 @@ def show_now_showing_frame(tourney):
 def show_view_preview(tourney, form, selected_view):
     cgicommon.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s&mode=%d\" height=\"300\" width=\"400\"></iframe>" % (urllib.parse.quote_plus(tourney.get_name()), selected_view))
 
+checkbox_to_assoc_field = {
+        "standings_videprinter_spell_big_scores" : "standings_videprinter_big_score_min"
+}
+
+assoc_field_to_checkbox = {
+        "standings_videprinter_big_score_min" : "standings_videprinter_spell_big_scores"
+}
+
 def show_view_option_controls(tourney, form, options):
     if not options:
         return
@@ -26,27 +34,57 @@ def show_view_option_controls(tourney, form, options):
         else:
             value_escaped = cgicommon.escape(str(o.value), True)
 
-        m = re.search("\\$CONTROL\\b", o.desc)
+        desc_escaped = cgicommon.escape(o.desc)
+
+        # If $INDENT exists, replace it with a checkbox-width of empty space
+        desc_escaped = re.sub("\\$INDENT\\b", "<span style=\"visibility: hidden;\"><input type=\"checkbox\" name=\"_placeholder_%s\" /></span>" % (name_escaped), desc_escaped, 0)
+
+        m = re.search("\\$CONTROL\\b", desc_escaped)
         if m:
-            before_control = o.desc[0:m.start()]
-            after_control = o.desc[m.end():]
+            before_control = desc_escaped[0:m.start()]
+            after_control = desc_escaped[m.end():]
         else:
-            before_control = o.desc
+            before_control = desc_escaped
             after_control = ""
 
-        cgicommon.writeln(cgicommon.escape(before_control))
+        cgicommon.writeln(before_control)
+        
+        if o.name in checkbox_to_assoc_field:
+            onclick_value = "var numberField = document.getElementById('%s'); var checkboxField = document.getElementById('%s'); numberField.disabled = !checkboxField.checked;" % ("teleost_option_" + checkbox_to_assoc_field[o.name], name_escaped)
+        else:
+            onclick_value = None
+
+        disabled_attr = ""
+        if o.name in assoc_field_to_checkbox:
+            for oo in options:
+                if oo.name == assoc_field_to_checkbox[o.name]:
+                    try:
+                        value = int(oo.value)
+                    except ValueError:
+                        value = 0
+
+                    if value:
+                        disabled_attr = ""
+                    else:
+                        disabled_attr = "disabled"
+                    break
         
         if o.control_type == countdowntourney.CONTROL_NUMBER:
-            cgicommon.writeln("<input type=\"number\" style=\"width: 5em;\" name=\"%s\" value=\"%s\" />" % (name_escaped, value_escaped))
+            cgicommon.writeln("<input type=\"number\" style=\"width: 5em;\" name=\"%s\" id=\"%s\" value=\"%s\" %s />" % (name_escaped, name_escaped, value_escaped, disabled_attr))
         elif o.control_type == countdowntourney.CONTROL_CHECKBOX:
             if o.value is not None and int(o.value):
                 checked_str = "checked"
             else:
                 checked_str = ""
-            cgicommon.writeln("<input type=\"checkbox\" name=\"%s\" value=\"1\" %s />" % (name_escaped, checked_str))
+            cgicommon.writeln("<input type=\"checkbox\" name=\"%s\" id=\"%s\" value=\"1\" %s %s />" % (
+                name_escaped,
+                name_escaped,
+                checked_str,
+                "" if not onclick_value
+                   else "onclick=\"" + re.sub("\"", "\\\"", onclick_value, 0) + "\""))
             cgicommon.writeln("<input type=\"hidden\" name=\"%s\" value=\"1\" />" % ("exists_checkbox_" + name_escaped))
 
-        cgicommon.writeln(cgicommon.escape(after_control))
+        cgicommon.writeln(after_control)
 
         cgicommon.writeln("</div>")
 
