@@ -7,7 +7,7 @@ To run Atropine (versions 1.0.0 and later) you need to have [Python 3](https://w
 You use Atropine through your web browser, but it does **not** need access to the internet to run. Atropine is its own web server which runs on your own computer, and your browser connects to that.
 
 # Instructions for getting started
- * If Python 3 is not already installed on your computer, or if you're not sure whether it's installed, download and install Python 3.
+ * If Python 3 is not already installed on your computer, or if you're not sure whether it's installed, [download and install Python 3](https://www.python.org/downloads/).
  * Get Atropine. You can either:
    * Clone the git repository, or,
    * If you don't use git but have somehow found this on github, download the latest Atropine zip file from [this page](http://greem.co.uk/atropine/). Unzip the zip file into a new folder of your choosing. Don't move any of Atropine's files out of that folder - the location of `atropine.py` in relation to the subfolders must be maintained as it is. It's okay to make a shortcut (or symlink, on Linux) to atropine.py and put the shortcut anywhere you want.
