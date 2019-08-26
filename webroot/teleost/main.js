@@ -51,7 +51,7 @@ function formatScore(s1, s2, tb) {
     }
     else if (s1 == 0 && s2 == 0 && tb) {
         /* Double-loss, for when we eventually support this: X - X */
-        text = "&#10006 &ndash; &#10006;";
+        text = "&#10006; &ndash; &#10006;";
     }
     else {
         /* Game is complete */
