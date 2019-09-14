@@ -6,6 +6,7 @@ import cgi;
 import urllib.request, urllib.parse, urllib.error;
 import sqlite3;
 import html
+import re
 
 dbdir = os.path.join("..", "tourneys");
 globaldbfile = os.path.join("..", "prefs.db");
@@ -120,6 +121,276 @@ def set_module_path():
     sys.path.append(code_dir);
 
 
+# Write out the uploader widget for the sidebar, and write the necessary
+# Javascript so that it's updated automatically.
+def write_live_upload_widget(tourney_name):
+    writeln("<div class=\"uploaderwidget\">")
+
+    writeln("<div class=\"uploaderwidgeticon\" id=\"uploaderwidgeticondiv\">")
+    writeln("<img id=\"uploaderwidgeticon\" />")
+    writeln("</div>")
+
+    writeln("<div class=\"uploaderwidgetstatus\" id=\"uploaderwidgetstatus\">")
+    writeln("</div>")
+
+    writeln("</div>")
+
+    upload_widget_script_text = """<script>
+<!--
+var uploadStatusRequest = null;
+
+var uploadWidgetExtraCallback = null;
+var uploadWidgetSecondsOfFailure = null;
+var uploadWidgetBroadcastingEnabled = false;
+var uploadWidgetSuccess = false;
+var uploadWidgetErrorMessage = null;
+var uploadWidgetUploaderThreadFailed = false;
+var uploadWidgetFailureIsHTTP = false;
+
+function makeDurationString(seconds) {
+    if (seconds < 60) {
+        return seconds.toString() + "s";
+    }
+    else if (seconds < 3600) {
+        return Math.floor(seconds / 60).toString() + "m";
+    }
+    else if (seconds < 86400) {
+        return Math.floor(seconds / 3600).toString() + "h " + (Math.floor(seconds / 60) % 60).toString() + "m";
+    }
+    else {
+        return "> 24h";
+    }
+}
+
+/* If lightFlashInterval is set, then every half second we will alternate the
+   image between uploadoff.png and lightFlashImgSrc */
+var lightFlashInterval = null;
+var lightFlashImgSrc = null;
+var lightFlashState = false;
+
+function lightFlashUpdate() {
+    var img = document.getElementById("uploaderwidgeticon");
+    if (img != null) {
+        if (lightFlashState) {
+            lightFlashState = false;
+            img.src = "/images/uploadoff.png";
+        }
+        else {
+            lightFlashState = true;
+            img.src = lightFlashImgSrc;
+        }
+    }
+}
+
+function updateUploadWidgetWithStatus(response) {
+    var img = document.getElementById("uploaderwidgeticon");
+    var statusElement = document.getElementById("uploaderwidgetstatus");
+    var imgFile = null;
+    var flash = false;
+    var titleText = null;
+
+    if (response != null && response.success) {
+        var status = response.uploader_state;
+        var isUploading = status.publishing;
+        var lastSuccessfulUploadTime = status.last_successful_upload_time;
+        var lastFailedUpload = status.last_failed_upload;
+        var lastFailedUploadTime = null;
+        var uploadButtonPressedTime = status.upload_button_pressed_time;
+        var now = status.now;
+        var secondsOfFailure = null;
+        var statusText = null;
+        var successful = false;
+        var errorMessage = null;
+        var lastAttemptFailed = false;
+
+        if (lastFailedUpload != null) {
+            lastFailedUploadTime = lastFailedUpload.ts;
+        }
+
+        if (!isUploading) {
+            imgFile = "uploadoff.png";
+            titleText = "Not broadcasting";
+        }
+        else if (lastSuccessfulUploadTime == null && lastFailedUploadTime == null) {
+            imgFile = "uploadnoidea.png";
+            statusText = "Please wait...";
+            titleText = "Waiting for upload status...";
+            flash = true;
+        }
+        else if (lastSuccessfulUploadTime == null || (lastFailedUploadTime > lastSuccessfulUploadTime)) {
+            var failureStartTime;
+            if (lastFailedUpload.failure_type == 1) {
+                imgFile = "uploadfailhttp.png";
+                titleText = "Server error or internet connection failure";
+                uploadWidgetFailureIsHTTP = true;
+            }
+            else {
+                titleText = "Upload rejected by server";
+                imgFile = "uploadfailrejected.png";
+            }
+            if (lastSuccessfulUploadTime == null) {
+                failureStartTime = uploadButtonPressedTime;
+            }
+            else if (uploadButtonPressedTime == null) {
+                failureStartTime = lastSuccessfulUploadTime;
+            }
+            else {
+                failureStartTime = Math.max(uploadButtonPressedTime, lastSuccessfulUploadTime);
+            }
+            secondsOfFailure = now - failureStartTime;
+            errorMessage = lastFailedUpload.message;
+            lastAttemptFailed = true;
+            flash = true;
+        }
+        else if (lastSuccessfulUploadTime < now - 15) {
+            imgFile = "uploadnoidea.png";
+            secondsOfFailure = now - lastSuccessfulUploadTime;
+            errorMessage = "No upload for " + makeDurationString(secondsOfFailure);
+            titleText = errorMessage;
+            flash = true;
+        }
+        else {
+            imgFile = "uploadsuccess.png";
+            statusText = "Connected";
+            titleText = statusText;
+            successful = true;
+        }
+
+        if (!isUploading) {
+            statusElement.style.display = "none";
+        }
+        else {
+            statusElement.style.display = null;
+            if (successful) {
+                statusElement.style.backgroundColor = "#88ff88";
+                statusElement.style.color = "black";
+                statusElement.innerText = statusText;
+            }
+            else if (!lastAttemptFailed) {
+                statusElement.style.backgroundColor = "#ffff88";
+                statusElement.style.color = "black";
+                if (secondsOfFailure != null)
+                    statusElement.innerText = makeDurationString(secondsOfFailure);
+                else
+                    statusElement.innerText = statusText;
+            }
+            else {
+                statusElement.style.backgroundColor = "red";
+                statusElement.style.color = "white";
+                if (secondsOfFailure != null)
+                    statusElement.innerText = makeDurationString(secondsOfFailure);
+                else
+                    statusElement.innerText = statusText;
+            }
+        }
+
+        uploadWidgetSecondsOfFailure = secondsOfFailure;
+        uploadWidgetBroadcastingEnabled = isUploading;
+        uploadWidgetUploaderThreadFailed = false;
+        uploadWidgetSuccess = successful;
+        uploadWidgetLastAttemptFailed = lastAttemptFailed;
+        if (successful) {
+            uploadWidgetErrorMessage = null;
+        }
+        else {
+            uploadWidgetErrorMessage = errorMessage;
+        }
+    }
+    else {
+        imgFile = "uploadnoidea.png";
+        titleText = "Internal error: uploader thread failed";
+        statusElement.innerText = "Internal error";
+        statusElement.style.color = "white";
+        statusElement.style.backgroundColor = "black";
+        uploadWidgetUploaderThreadFailed = true;
+        uploadWidgetSuccess = false;
+        uploadWidgetBroadcastingEnabled = false;
+        uploadWidgetSecondsOfFailure = 0;
+        uploadWidgetLastAttemptFailed = true;
+    }
+
+    if (flash) {
+        lightFlashImgSrc = "/images/" + imgFile;
+        if (lightFlashInterval == null) {
+            lightFlashInterval = setInterval(lightFlashUpdate, 500);
+            lightFlashState = true;
+        }
+    }
+    else {
+        if (lightFlashInterval != null) {
+            clearInterval(lightFlashInterval);
+            lightFlashInterval = null;
+            lightFlashImgSrc = false;
+            lightFlashState = true;
+        }
+    }
+    img.setAttribute("src", "/images/" + imgFile);
+    if (titleText != null) {
+        img.setAttribute("title", titleText);
+        img.setAttribute("alt", titleText);
+    }
+}
+
+function refreshUploadWidgetCallback() {
+    var req = uploadStatusRequest;
+    if (req.status == 200 && req.responseText != null) {
+        var uploadStatus = JSON.parse(req.responseText);
+        updateUploadWidgetWithStatus(uploadStatus);
+        if (uploadWidgetExtraCallback != null) {
+            uploadWidgetExtraCallback(uploadWidgetBroadcastingEnabled,
+                    uploadWidgetSuccess, uploadWidgetSecondsOfFailure,
+                    uploadWidgetErrorMessage, uploadWidgetFailureIsHTTP,
+                    uploadWidgetLastAttemptFailed, uploadWidgetUploaderThreadFailed);
+        }
+    }
+    uploadStatusRequest = null;
+}
+
+function refreshUploadWidgetError() {
+    var el = document.getElementById("uploaderwidgetstatus");
+    el.innerText = "Internal error";
+    //el.setAttribute("title", "jsonreq.py failed: " + uploadStatusRequest.statusText);
+    updateUploadWidgetWithStatus(null);
+    if (uploadWidgetExtraCallback != null) {
+        uploadWidgetExtraCallback(uploadWidgetBroadcastingEnabled,
+                uploadWidgetSuccess, uploadWidgetSecondsOfFailure,
+                uploadWidgetErrorMessage, uploadWidgetFailureIsHTTP,
+                uploadWidgetLastAttemptFailed, uploadWidgetUploaderThreadFailed);
+    }
+    uploadStatusRequest = null;
+}
+
+function refreshUploadWidget() {
+    /* Ask our uploader thread for its status, and when it returns, display
+       it on the uploader widget */
+    if (uploadStatusRequest == null) {
+        uploadStatusRequest = new XMLHttpRequest();
+        uploadStatusRequest.open("GET", "jsonreq.py?tourney=$TOURNEY_NAME&request=uploader", true);
+        uploadStatusRequest.onload = refreshUploadWidgetCallback;
+        uploadStatusRequest.onerror = refreshUploadWidgetError;
+        uploadStatusRequest.send(null);
+    }
+}
+
+var uploadWidgetInterval = null;
+function setupUploadWidget() {
+    refreshUploadWidget();
+
+    /* So that we don't have to wait 10 seconds to get the result, call
+       refreshUploadWidget 2 and 4 seconds after the page loads */
+    setTimeout(refreshUploadWidget, 2000);
+    setTimeout(refreshUploadWidget, 4000);
+    uploadWidgetInterval = setInterval(refreshUploadWidget, 10000);
+}
+
+setupUploadWidget();
+
+// -->
+</script>"""
+    upload_widget_script_text = re.sub("\$TOURNEY_NAME", tourney_name, upload_widget_script_text)
+    writeln(upload_widget_script_text)
+
+
 def show_sidebar(tourney):
     new_window_html = "<img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Opens in new window\" />"
     writeln("<div class=\"sidebar\">");
@@ -146,7 +417,20 @@ def show_sidebar(tourney):
         writeln("<br />")
 
         writeln("<div>")
+        writeln(("<a href=\"/cgi-bin/uploadsetup.py?tourney=%s\"><strong>Broadcast Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
+        writeln("</div>")
+
+        writeln(("<a class=\"widgetlink\" href=\"/cgi-bin/uploadsetup.py?tourney=%s\">" % urllib.parse.quote_plus(tourney.name)));
+        write_live_upload_widget(tourney.name)
+        writeln("</a>")
+
+        writeln("<br />")
+
+        writeln("<div>")
         writeln(("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\"><strong>Display Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
+        writeln("<span class=\"sidebaropendisplaylink\" title=\"Open public display window\">")
+        writeln("<a href=\"/cgi-bin/display.py?tourney=%s\" target=\"_blank\">Window <img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Open public display in new window\"/></a>" % (urllib.parse.quote_plus(tourney.name)))
+        writeln("</span>")
         writeln("</div>")
 
         banner_text = tourney.get_banner_text()

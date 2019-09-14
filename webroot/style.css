@@ -1168,6 +1168,15 @@ div.videprinterentry {
     cursor: pointer;
 }
 
+div.videprinternewsentry {
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+div.videprinternewsentryediting {
+    background-color: #505;
+}
+
 span.videprintersuperseded {
     text-decoration: line-through;
     color: gray;
@@ -1195,6 +1204,41 @@ span.videprinterlosingplayer {
 
 span.videprinterscore {
     color: white;
+}
+
+div.newsform {
+    margin-top: 10px;
+}
+div.newsformheading {
+    background-color: navy;
+    color: #dddddd;
+    padding: 5px;
+}
+
+div.newsformheadingedit {
+    background-color: purple;
+}
+
+div.newsformbody {
+    margin: 5px;
+}
+
+input.newsformtext {
+    width: 80%;
+}
+
+input.newsformbutton {
+    width: 18%;
+    float: right;
+}
+
+div.newsformheadingtext {
+    display: inline-block;
+}
+
+div.newsformheadingclose {
+    display: inline-block;
+    float: right;
 }
 
 /* Blinkenlights */
@@ -1619,6 +1663,20 @@ div.opendisplaylink a {
     border-radius: 5px;
 }
 
+span.sidebaropendisplaylink {
+    background-color: cyan;
+    font-size: 8pt;
+    border-radius: 5px;
+    line-height: 12pt;
+    padding-top: 4px;
+    padding-left: 2px;
+    padding-right: 2px;
+    margin-left: 4px;
+}
+
+div.sidebaropendisplaylink a {
+}
+
 
 input.tourneysetupnumber {
     width: 60px;
@@ -1635,6 +1693,24 @@ div.generalsetupcontrolgroup {
     margin-top: 10px;
     margin-bottom: 10px;
     margin-left: 30px;
+}
+
+div.generalsetuptourneydetailslabel {
+    display: inline-block;
+    width: 10em;
+}
+
+div.generalsetuptourneydetailsbox {
+    display: inline-block;
+}
+
+div.generalsetuptourneydetailsbox input {
+    width: 20em;
+}
+
+span.generalsetupinputexample {
+    color: gray;
+    font-size: 10pt;
 }
 
 .handcursor {
@@ -1800,4 +1876,88 @@ ul.sqldictcolumnlist {
 
 ul.sqldict li.tablename {
     margin-top: 0.2em;
+}
+
+
+div.formbox {
+}
+
+div.formline {
+    padding: 5px;
+}
+
+div.formline label {
+    margin-right: 20px;
+}
+
+div.submitline {
+    margin-top: 10px;
+}
+
+input.noteditable {
+    background-color: #ddd;
+    color: gray;
+}
+
+div.uploaderwidget {
+    position: relative;
+    min-height: 15px;
+    max-height: 36px;
+    max-width: 150px;
+}
+
+div.uploaderwidgeticon {
+    position: absolute;
+    max-height: 18px;
+    width: 52px;
+    top: 2px;
+    left: 0px;
+    text-align: center;
+    font-size: 10pt;
+}
+
+div.uploaderwidgetstatus {
+    position: absolute;
+    max-height: 18px;
+    left: 56px;
+    top: 2px;
+    line-height: 18px;
+    text-align: center;
+    font-size: 10pt;
+    padding-left: 5px;
+    padding-right: 5px;
+    background-color: silver;
+    border-radius: 5px;
+}
+
+a.widgetlink:link {
+    color: black;
+}
+
+a.widgetlink:visited {
+    color: black;
+}
+
+div.uploadconsole {
+    width: 400px;
+    border: 1px solid gray;
+    margin-top: 15px;
+    margin-left: 5px;
+}
+
+div.uploadconsoleenabled {
+    text-align: center;
+    padding: 5px;
+}
+
+div.uploadconsolestatus {
+    text-align: center;
+    border-top: 1px solid gray;
+    padding: 5px;
+}
+
+div.uploadconsolediag {
+    font-size: 10pt;
+    border-top: 1px solid gray;
+    padding: 5px;
 }

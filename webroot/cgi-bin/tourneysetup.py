@@ -8,6 +8,7 @@ import csv;
 import os;
 import json
 import io
+import time
 import urllib.request, urllib.parse, urllib.error;
 
 def int_or_none(s):
@@ -89,6 +90,8 @@ auto_rating_behaviour = int_or_none(form.getfirst("autoratingbehaviour"))
 if auto_rating_behaviour is None:
     auto_rating_behaviour = countdowntourney.RATINGS_UNIFORM
 modify_player_submit = form.getfirst("modifyplayersubmit");
+full_name = form.getfirst("fullname")
+venue = form.getfirst("venue")
 rank = form.getfirst("rank");
 rank = int_or_none(rank);
 show_draws_column = int_or_none(form.getfirst("showdrawscolumn"))
@@ -398,6 +401,13 @@ else:
 
             # Rank method
             tourney.set_rank_method(rank);
+
+            # Full name
+            if full_name is not None:
+                tourney.set_full_name(full_name)
+
+            if venue is not None:
+                tourney.set_venue(venue)
             
             # Whether draws are a thing
             tourney.set_show_draws_column(show_draws_column);
@@ -608,6 +618,20 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         rank = tourney.get_rank_method();
         cgicommon.writeln(('<form action="%s?tourney=%s" method="post">' % (baseurl, urllib.parse.quote_plus(tourneyname))));
         cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
+        
+        cgicommon.writeln("<h3>Event details</h3>")
+        cgicommon.writeln("<p>These details will appear at the top of exported tournament reports, and on the webpage if you enable the broadcast feature.</p>")
+
+        cgicommon.writeln("<div class=\"generalsetupcontrolgroup generalsetuptourneydetails\">")
+        cgicommon.writeln("<div class=\"generalsetuptourneydetailslabel\"><label for=\"fullname\">Full tourney name </label></div><div class=\"generalsetuptourneydetailsbox\"><input type=\"text\" name=\"fullname\" value=\"%s\" id=\"fullname\" /></div>" % (cgi.escape(tourney.get_full_name(), True)))
+
+        cgicommon.writeln("<span class=\"generalsetupinputexample\">(e.g. \"CoTrod %d\")</span>" % (time.localtime().tm_year))
+        cgicommon.writeln("</div>")
+        cgicommon.writeln("<div class=\"generalsetupcontrolgroup generalsetuptourneydetails\">")
+        cgicommon.writeln("<div class=\"generalsetuptourneydetailslabel\"><label for=\"venue\">Venue</label></div><div class=\"generalsetuptourneydetailsbox\"><input type=\"text\" name=\"venue\" value=\"%s\" id=\"venue\" /></div>" % (cgi.escape(tourney.get_venue(), True)))
+        cgicommon.writeln("<span class=\"generalsetupinputexample\">(e.g. \"St Quinquangle's Village Hall, Trodmore\")</span>")
+        cgicommon.writeln("</div>")
+
         cgicommon.writeln("<h3>Ranking order</h3>");
         cgicommon.writeln("<p>How do you want to rank players in the standings table?</p>");
         cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")

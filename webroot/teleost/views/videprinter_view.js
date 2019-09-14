@@ -86,68 +86,90 @@ class VideprinterView extends View {
     }
 
     format_videprinter_preamble(entry) {
-        var html = "";
-        var supersededClass = entry.superseded ? " videprintersuperseded" : "";
+        if (entry.log_type == 1 || entry.log_type == 2) {
+            var html = "";
+            var supersededClass = entry.superseded ? " videprintersuperseded" : "";
 
-        html += "<span class=\"videprinterroundandtable" + supersededClass + "\">";
-        if (entry.game_type == "P" || entry.game_type == "N") {
-            html += "R" + entry.round_no.toString() + "T" + entry.table_no.toString();
+            html += "<span class=\"videprinterroundandtable" + supersededClass + "\">";
+            if (entry.game_type == "P" || entry.game_type == "N") {
+                html += "R" + entry.round_no.toString() + "T" + entry.table_no.toString();
+            }
+            else {
+                html += escapeHTML(entry.game_type) + " " + entry.table_no.toString();
+            }
+            html += "</span>";
+            return html;
         }
         else {
-            html += escapeHTML(entry.game_type) + " " + entry.table_no.toString();
+            return "";
         }
-        html += "</span>";
-        return html;
     }
 
     format_videprinter_entry(entry) {
-        var html = "";
-        var supersededClass = entry.superseded ? " videprintersuperseded" : "";
+        if (entry.log_type == 1 || entry.log_type == 2) {
+            var html = "";
+            var supersededClass = entry.superseded ? " videprintersuperseded" : "";
 
-        html += "<span class=\"videprinterplayer" + supersededClass + "\">";
-        html += escapeHTML(entry.p1);
-        if (entry.tc1 != null) {
-            html += "<span class=\"teamdotleftplayer\"";
-            if (!entry.superseded)
-                html += " style=\"color: " + teamColourToHTML(entry.tc1) + ";\"";
-            html += ">" + teamIndicatorHTML + "</span>";
-        }
-        html += "</span>";
+            html += "<span class=\"videprinterplayer" + supersededClass + "\">";
+            html += escapeHTML(entry.p1);
+            if (entry.tc1 != null) {
+                html += "<span class=\"teamdotleftplayer\"";
+                if (!entry.superseded)
+                    html += " style=\"color: " + teamColourToHTML(entry.tc1) + ";\"";
+                html += ">" + teamIndicatorHTML + "</span>";
+            }
+            html += "</span>";
 
-        html += "<span class=\"videprinterscore" + supersededClass + "\">";
-        if (entry.s1 == null || entry.s2 == null) {
-            html += " - ";
+            html += "<span class=\"videprinterscore" + supersededClass + "\">";
+            if (entry.s1 == null || entry.s2 == null) {
+                html += " - ";
+            }
+            else if (entry.s1 == 0 && entry.s2 == 0 && entry.tb) {
+                html += "&#10006; - &#10006;";
+            }
+            else {
+                html += " ";
+                html += entry.s1.toString();
+                if (this.scoreBracketThreshold != null && entry.s1 >= this.scoreBracketThreshold)
+                    html += " (" + number_to_words(entry.s1) + ")";
+                if (entry.tb && entry.s1 > entry.s2)
+                    html += "*";
+                html += " - ";
+                html += entry.s2.toString();
+                if (this.scoreBracketThreshold != null && entry.s2 >= this.scoreBracketThreshold)
+                    html += " (" + number_to_words(entry.s2) + ")";
+                if (entry.tb && entry.s2 >= entry.s1)
+                    html += "*";
+                html += " ";
+            }
+            html += "</span>";
+            html += "<span class=\"videprinterplayer" + supersededClass + "\">";
+            if (entry.tc2 != null) {
+                html += "<span class=\"teamdotrightplayer\"";
+                if (!entry.superseded)
+                    html += " style=\"color: " + teamColourToHTML(entry.tc2) + ";\"";
+                html += ">" + teamIndicatorHTML + "</span>";
+            }
+            html += escapeHTML(entry.p2);
+            html += "</span>";
+
+            return html;
         }
-        else if (entry.s1 == 0 && entry.s2 == 0 && entry.tb) {
-            html += "&#10006; - &#10006;";
+        else if (entry.log_type == 101) {
+            if (entry.comment == null) {
+                return "";
+            }
+            else {
+                var html = "<span class=\"videprintercommentbullet\">&#8227;</span>";
+                html += " <span class=\"videprintercomment\">";
+                html += escapeHTML(entry.comment);
+                html += "</span>";
+                return html;
+            }
         }
         else {
-            html += " ";
-            html += entry.s1.toString();
-            if (this.scoreBracketThreshold != null && entry.s1 >= this.scoreBracketThreshold)
-                html += " (" + number_to_words(entry.s1) + ")";
-            if (entry.tb && entry.s1 > entry.s2)
-                html += "*";
-            html += " - ";
-            html += entry.s2.toString();
-            if (this.scoreBracketThreshold != null && entry.s2 >= this.scoreBracketThreshold)
-                html += " (" + number_to_words(entry.s2) + ")";
-            if (entry.tb && entry.s2 >= entry.s1)
-                html += "*";
-            html += " ";
+            return "?";
         }
-        html += "</span>";
-        html += "<span class=\"videprinterplayer" + supersededClass + "\">";
-        if (entry.tc2 != null) {
-            html += "<span class=\"teamdotrightplayer\"";
-            if (!entry.superseded)
-                html += " style=\"color: " + teamColourToHTML(entry.tc2) + ";\"";
-            html += ">" + teamIndicatorHTML + "</span>";
-        }
-        html += escapeHTML(entry.p2);
-        html += "</span>";
-
-        return html;
     }
 
     refresh(timeNow, enableAnimation) {

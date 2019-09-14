@@ -281,6 +281,15 @@ div.videprinteranimatescoreline {
     color: gray;
 }
 
+.videprintercomment {
+    color: cyan;
+}
+
+.videprintercommentbullet {
+    color: orange;
+    padding-right: 0.5vw;
+}
+
 /* Team score: appears on various views */
 .teamscore {
     font-size: 4vmin;

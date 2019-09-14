@@ -431,11 +431,64 @@ function load_data_entry_form(name1, name2, score1, score2, tb) {
     set_infoboxes();
 }
 
+var videprinterDivEditing = null;
+
+function news_edit_close() {
+    var newsPost = document.getElementById("newspost");
+    var newsEdit = document.getElementById("newsedit");
+    var inputText = document.getElementById("newsformtext");
+
+    /* If any news entry is highlighted, unhighlight it */
+    if (videprinterDivEditing != null) {
+        videprinterDivEditing.classList.remove("videprinternewsentryediting");
+        videprinterDivEditing = null;
+    }
+
+    /* Hide the comment-editing box, show the comment-posting box, and give
+       the latter focus */
+    newsPost.style.display = null;
+    newsEdit.style.display = "none";
+    inputText.focus();
+}
+
+function news_edit_open(seq, currentText) {
+    var newsPost = document.getElementById("newspost");
+    var newsEdit = document.getElementById("newsedit");
+    var entryDiv = document.getElementById("videprinter_news_" + seq.toString());
+
+    /* Hide the comment-posting box and show the comment-editing box */
+    newsPost.style.display = "none";
+    newsEdit.style.display = null;
+
+    /* If any news entry is highlighted, unhighlight it... */
+    if (videprinterDivEditing != null) {
+        videprinterDivEditing.classList.remove("videprinternewsentryediting");
+        videprinterDivEditing = null;
+    }
+
+    /* ... and highlight the news entry we just clicked */
+    if (entryDiv != null) {
+        videprinterDivEditing = entryDiv;
+        entryDiv.classList.add("videprinternewsentryediting");
+    }
+
+    /* Populate the comment-editing form and give it focus */
+    var inputSeq = document.getElementById("newseditseq")
+    inputSeq.value = seq.toString();
+
+    var inputText = document.getElementById("newsformedittext");
+    inputText.value = currentText;
+    inputText.focus();
+}
+
 """)
     cgicommon.writeln("</script>")
 
 def escape_double_quotes(value):
-    return "".join([ x if x not in ('\\', '\"') else "\\\\" + x for x in value ])
+    return "".join([ x if x not in ('\\', '\"') else "\\" + x for x in value ])
+
+def js_quote_string(s):
+    return "\"" + escape_double_quotes(s) + "\""
 
 def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
         last_entry_error=None, last_entry_names=None,
@@ -561,59 +614,104 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
 
 def write_videprinter(tourney, round_no):
     cgicommon.writeln("<div class=\"videprinter boxshadow\" id=\"videprinterdiv\">")
-    cgicommon.writeln("<div class=\"resultsentrytitle\">Recent results</div>")
+    cgicommon.writeln("<div class=\"resultsentrytitle\">Latest updates</div>")
     cgicommon.writeln("<div class=\"videprinterwindow\" id=\"videprinterwindow\">")
 
     logs = tourney.get_logs_since(None, False, round_no)
     num_divisions = tourney.get_num_divisions()
 
     for entry in logs:
-        (seq_no, timestamp, rno, round_seq, table_no, game_type, name1, score1, name2, score2, tiebreak, log_type, division, superseded) = entry
-        cgicommon.writeln("<div class=\"videprinterentry\" onclick=\"select_game(%d, true);\">" % (round_seq))
+        (seq_no, timestamp, rno, round_seq, table_no, game_type, name1, score1, name2, score2, tiebreak, log_type, division, superseded, comment) = entry
 
-        if score1 is not None and score2 is not None:
-            if score1 == 0 and score2 == 0 and tiebreak:
-                scorestr1 = "&#10006"
-                scorestr2 = "&#10006"
-            else:
-                scorestr1 = str(score1)
-                scorestr2 = str(score2)
-                if tiebreak:
-                    if score1 > score2:
-                        scorestr1 += "*"
-                    else:
-                        scorestr2 += "*"
-        else:
-            scorestr1 = ""
-            scorestr2 = ""
+        if log_type in (1, 2):
+            cgicommon.writeln("<div class=\"videprinterentry\" onclick=\"select_game(%d, true);\">" % (round_seq))
 
-        if superseded:
-            cgicommon.writeln("<span class=\"videprintersuperseded\">")
-            if division:
-                cgicommon.writeln(cgicommon.escape(tourney.get_short_division_name(division)))
-            cgicommon.writeln(cgicommon.escape("R%dT%d %s " % (rno, table_no, name1)));
-            cgicommon.writeln("%s-%s" % (scorestr1, scorestr2))
-            cgicommon.writeln(cgicommon.escape(" %s" % (name2)))
-            cgicommon.writeln("</span>")
-        else:
-            if num_divisions > 1 and division is not None:
-                cgicommon.writeln("<span class=\"videprinterdivision\">%s</span>" % (tourney.get_short_division_name(division)))
-            cgicommon.writeln("<span class=\"videprinterroundandtable\">R%dT%d</span>" % (rno, table_no))
-
-            player_classes = [ "videprinterplayer", "videprinterplayer" ]
             if score1 is not None and score2 is not None:
                 if score1 == 0 and score2 == 0 and tiebreak:
-                    player_classes = [ "videprinterlosingplayer", "videprinterlosingplayer" ]
-                elif score1 > score2:
-                    player_classes = [ "videprinterwinningplayer", "videprinterlosingplayer" ]
-                elif score2 > score1:
-                    player_classes = [ "videprinterlosingplayer", "videprinterwinningplayer" ]
+                    scorestr1 = "&#10006"
+                    scorestr2 = "&#10006"
+                else:
+                    scorestr1 = str(score1)
+                    scorestr2 = str(score2)
+                    if tiebreak:
+                        if score1 > score2:
+                            scorestr1 += "*"
+                        else:
+                            scorestr2 += "*"
+            else:
+                scorestr1 = ""
+                scorestr2 = ""
 
-            cgicommon.writeln("<span class=\"%s\">%s</span>" % (player_classes[0], cgicommon.escape(name1)))
-            cgicommon.writeln("<span class=\"videprinterscore\">%s-%s</span>" % (scorestr1, scorestr2))
-            cgicommon.writeln("<span class=\"%s\">%s</span>" % (player_classes[1], cgicommon.escape(name2)))
-        cgicommon.writeln("</div>")
+            if superseded:
+                cgicommon.writeln("<span class=\"videprintersuperseded\">")
+                if division:
+                    cgicommon.writeln(cgicommon.escape(tourney.get_short_division_name(division)))
+                cgicommon.writeln(cgicommon.escape("R%dT%d %s " % (rno, table_no, name1)));
+                cgicommon.writeln("%s-%s" % (scorestr1, scorestr2))
+                cgicommon.writeln(cgicommon.escape(" %s" % (name2)))
+                cgicommon.writeln("</span>")
+            else:
+                if num_divisions > 1 and division is not None:
+                    cgicommon.writeln("<span class=\"videprinterdivision\">%s</span>" % (tourney.get_short_division_name(division)))
+                cgicommon.writeln("<span class=\"videprinterroundandtable\">R%dT%d</span>" % (rno, table_no))
+
+                player_classes = [ "videprinterplayer", "videprinterplayer" ]
+                if score1 is not None and score2 is not None:
+                    if score1 == 0 and score2 == 0 and tiebreak:
+                        player_classes = [ "videprinterlosingplayer", "videprinterlosingplayer" ]
+                    elif score1 > score2:
+                        player_classes = [ "videprinterwinningplayer", "videprinterlosingplayer" ]
+                    elif score2 > score1:
+                        player_classes = [ "videprinterlosingplayer", "videprinterwinningplayer" ]
+
+                cgicommon.writeln("<span class=\"%s\">%s</span>" % (player_classes[0], cgicommon.escape(name1)))
+                cgicommon.writeln("<span class=\"videprinterscore\">%s-%s</span>" % (scorestr1, scorestr2))
+                cgicommon.writeln("<span class=\"%s\">%s</span>" % (player_classes[1], cgicommon.escape(name2)))
+            cgicommon.writeln("</div>")
+        elif log_type == 101:
+            # News item
+            cgicommon.writeln("<div class=\"videprinterentry videprinternewsentry\" id=\"videprinter_news_%d\" onclick=\"news_edit_open(%d, %s);\">" % (seq_no, seq_no, cgi.escape(js_quote_string(comment), True)))
+            cgicommon.writeln("&#8227; " + cgi.escape(comment))
+            cgicommon.writeln("</div>")
+
     cgicommon.writeln("</div>") # videprinterwindow
+
+    # Form to post a new comment
+    videprinter_showing = tourney.is_videprinter_showing()
+    cgicommon.writeln("<div class=\"newsform\" id=\"newspost\">")
+    cgicommon.writeln("<div class=\"newsformheading\">")
+    cgicommon.writeln("Post comment on videprinter%s" % (" (not currently showing)" if not videprinter_showing else ""))
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("<div class=\"newsformbody\">")
+    cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no))
+    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourney_name, True)))
+    cgicommon.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
+    cgicommon.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformtext\" id=\"newsformtext\" value=\"\" />")
+    cgicommon.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformsubmit\" id=\"newsformbutton\" value=\"Post\" />")
+    cgicommon.writeln("</form>")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>") # newsform
+
+    # Form to edit an existing comment
+    cgicommon.writeln("<div class=\"newsform\" id=\"newsedit\" style=\"display: none;\">")
+    cgicommon.writeln("<div class=\"newsformheading newsformheadingedit\">")
+    cgicommon.writeln("<div class=\"newsformheadingtext\">Editing comment</div>")
+    cgicommon.writeln("<div class=\"newsformheadingclose\">")
+    cgicommon.writeln("<button onclick=\"news_edit_close();\">Close</button>")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>")
+
+    cgicommon.writeln("<div class=\"newsformbody\">")
+    cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no))
+    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourney_name, True)))
+    cgicommon.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
+    cgicommon.writeln("<input type=\"hidden\" name=\"newseditseq\" value=\"\" id=\"newseditseq\" />")
+    cgicommon.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformedittext\" id=\"newsformedittext\" value=\"\" />")
+    cgicommon.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformeditsubmit\" id=\"newsformeditbutton\" value=\"Save\" />")
+    cgicommon.writeln("</form>")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>") # newsform
+
     cgicommon.writeln("</div>") # videprinter
 
 def write_blinkenlights(tourney, round_no):
@@ -1084,6 +1182,16 @@ try:
             last_entry_names = (name1, name2)
             last_entry_scores = (score1, score2)
             last_entry_tb = tb
+        elif "newsformsubmit" in form:
+            news_text = form.getfirst("newsformtext")
+            if news_text:
+                tourney.post_news_item(round_no, news_text)
+                #cgicommon.writeln("<p> text " + cgi.escape(news_text) + ", round " + str(round_no) + "</p>")
+        elif "newsformeditsubmit" in form:
+            news_text = form.getfirst("newsformedittext")
+            news_entry_seq = int_or_none(form.getfirst("newseditseq"))
+            if news_entry_seq is not None:
+                tourney.edit_news_item(news_entry_seq, news_text)
 
         num_divisions = tourney.get_num_divisions()
 

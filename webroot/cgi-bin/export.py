@@ -205,6 +205,8 @@ elif export_format == "csv":
 try:
     tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
 
+    full_name = tourney.get_full_name()
+    venue = tourney.get_venue()
     games = tourney.get_games();
 
     show_draws_column = tourney.get_show_draws_column()
@@ -219,12 +221,15 @@ try:
         cgicommon.writeln("");
         started_html = True;
 
-        cgicommon.print_html_head_local("Tourney: %s" % tourney_name);
+        cgicommon.print_html_head_local("Tourney: %s" % full_name);
 
         cgicommon.writeln("<body>");
 
         cgicommon.writeln("<div class=\"exportedstandings\">")
-        cgicommon.writeln("<h1>%s - Standings</h1>" % tourney_name)
+        cgicommon.writeln("<h1>%s</h1>" % (cgi.escape(full_name)))
+        if venue:
+            cgicommon.writeln("<p>%s</p>" % (cgi.escape(venue)))
+        cgicommon.writeln("<h2>Standings</h2>")
 
         num_divisions = tourney.get_num_divisions()
 
@@ -247,7 +252,7 @@ try:
         cgicommon.writeln("</div>")
 
         cgicommon.writeln("<div class=\"exportedresults\">")
-        cgicommon.writeln("<h1>Results</h1>")
+        cgicommon.writeln("<h2>Results</h2>")
         prev_round_no = None
         prev_table_no = None
         prev_division = None
@@ -302,7 +307,10 @@ try:
         cgicommon.writeln("</body></html>");
     elif export_format == "text":
         cgicommon.writeln("Content-Type: text/plain; charset=utf-8")
-        cgicommon.writeln(tourney_name)
+        cgicommon.writeln("")
+        cgicommon.writeln(full_name)
+        if venue:
+            cgicommon.writeln(venue)
         cgicommon.writeln("")
         cgicommon.writeln("STANDINGS")
         cgicommon.writeln("")

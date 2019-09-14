@@ -4,12 +4,13 @@ import sys
 import sqlite3;
 import re;
 import os;
+import random
 import qualification
 
 from cttable import CandidateTable, TableVotingGroup, PhantomTableVotingGroup
 import cttable
 
-SW_VERSION_SPLIT = (1, 0, 5)
+SW_VERSION_SPLIT = (1, 0, 6)
 SW_VERSION = ".".join([str(x) for x in SW_VERSION_SPLIT])
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
@@ -23,6 +24,9 @@ RATINGS_UNIFORM = 2
 
 CONTROL_NUMBER = 1
 CONTROL_CHECKBOX = 2
+
+UPLOAD_FAIL_TYPE_HTTP = 1
+UPLOAD_FAIL_TYPE_REJECTED = 2
 
 teleost_modes = [
         {
@@ -204,12 +208,13 @@ create table if not exists game_log (
     table_no int,
     division int,
     game_type text,
-    p1 integer not null,
+    p1 integer,
     p1_score int,
-    p2 integer not null,
+    p2 integer,
     p2_score int,
     tiebreak int,
-    log_type int
+    log_type int,
+    comment text default null
 );
 
 -- Games where we don't yet know who the players are going to be, but we
@@ -409,6 +414,19 @@ create table board (
 -- By default, if a board isn't listed in this table then it isn't accessible.
 insert into board (table_no, accessible) values (-1, 0);
 
+-- Log any failures to upload updates
+create table if not exists upload_error_log (
+    ts text,
+    failure_type int,
+    message text
+);
+
+-- Time of last successful upload
+create table if not exists upload_success (
+    ts text
+);
+insert into upload_success values (null);
+
 commit;
 """;
 
@@ -569,7 +587,7 @@ class Player(object):
 
     def get_name(self):
         return self.name;
-    
+
     def get_rating(self):
         return self.rating
     
@@ -1033,9 +1051,27 @@ class Tourney(object):
             self.round_view_name = "rounds_derived"
         else:
             self.round_view_name = "rounds"
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.close()
     
     def get_name(self):
         return self.name
+
+    def get_full_name(self):
+        return self.get_attribute("fullname", self.name)
+    
+    def set_full_name(self, name):
+        self.set_attribute("fullname", name)
+
+    def get_venue(self):
+        return self.get_attribute("venue", "")
+    
+    def set_venue(self, venue):
+        self.set_attribute("venue", venue)
     
     def get_db_version(self):
         return ".".join([str(x) for x in self.db_version])
@@ -1782,6 +1818,25 @@ class Tourney(object):
         except:
             self.db.rollback();
             raise;
+    
+    def post_news_item(self, round_no, text):
+        if self.db_version >= (1, 0, 6):
+            cur = self.db.cursor()
+            cur.execute("""insert into game_log (ts, round_no, round_seq,
+                    table_no, division, game_type, p1, p1_score, p2, p2_score,
+                    tiebreak, log_type, comment) values (
+                    current_timestamp, ?, null,
+                    null, null, null, null, null, null, null,
+                    null, 101, ?)""", (round_no, text))
+            cur.close()
+            self.db.commit()
+
+    def edit_news_item(self, seq, new_text):
+        if self.db_version >= (1, 0, 6):
+            cur = self.db.cursor()
+            cur.execute("update game_log set comment = ? where seq = ? and log_type = 101", (new_text, seq))
+            cur.close()
+            self.db.commit()
 
     def delete_round_div(self, round_no, division):
         try:
@@ -2429,9 +2484,11 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                     and gl.round_seq = gl2.round_seq
                     and gl.log_type > 0 and gl2.log_type > 0
                     and gl2.seq > gl.seq
-                ) then 1 else 0 end superseded
-                from game_log gl, player p1, player p2
-                where p1 = p1.id and p2 = p2.id""";
+                ) then 1 else 0 end superseded, %s
+                from game_log gl left outer join player p1 on gl.p1 = p1.id
+                left outer join player p2 on gl.p2 = p2.id where 1=1 """ % (
+                       "comment" if self.db_version >= (1, 0, 6) else "null"
+                );
         if seq is not None:
             sql += " and seq > ?"
         if round_no is not None:
@@ -2542,6 +2599,10 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             if teleost_modes[mode]["id"] == "TELEOST_MODE_AUTO":
                 mode = self.get_auto_effective_teleost_mode()
             return mode
+
+    def is_videprinter_showing(self):
+        mode = self.get_effective_teleost_mode()
+        return teleost_modes[mode]["id"] == "TELEOST_MODE_STANDINGS_VIDEPRINTER"
 
     def set_teleost_options(self, options):
         # Nope
@@ -3296,7 +3357,61 @@ and g.game_type = 'P'
         cur.close()
         self.db.commit()
 
-    
+    def get_unique_id(self):
+        unique_id = self.get_attribute("uniqueid", None)
+        if unique_id is None:
+            return self.get_name()
+        else:
+            return unique_id
+
+    def log_successful_upload(self):
+        if self.db_version >= (1, 0, 6):
+            self.db.execute("update upload_success set ts = current_timestamp")
+            self.db.commit()
+
+    def log_failed_upload(self, failure_type, message):
+        if self.db_version >= (1, 0, 6):
+            self.db.execute("insert into upload_error_log(ts, failure_type, message) values (current_timestamp, ?, ?)", (failure_type, message))
+            self.db.commit()
+
+    def get_last_successful_upload_time(self):
+        if self.db_version >= (1, 0, 6):
+            cur = self.db.cursor()
+            cur.execute("select strftime('%s', ts) from upload_success")
+            row = cur.fetchone()
+            ts = None
+            if not row or not row[0]:
+                ts = None
+            else:
+                ts = row[0]
+                if ts is not None:
+                    ts = int(ts)
+            cur.close()
+            return ts
+        else:
+            return None
+
+    def get_last_failed_upload(self):
+        if self.db_version >= (1, 0, 6):
+            cur = self.db.cursor()
+            cur.execute("select strftime('%s', ts), failure_type, message from upload_error_log order by ts desc limit 1")
+            row = cur.fetchone()
+            upload_desc = None
+            if row:
+                (ts, failure_type, message) = row
+                if ts is not None:
+                    ts = int(ts)
+                upload_desc = {}
+                upload_desc["ts"] = ts
+                upload_desc["failure_type"] = int(failure_type)
+                upload_desc["message"] = message
+            cur.close()
+            return upload_desc
+        else:
+            return None
+        
+ 
+
 def get_5_3_table_sizes(num_players):
     if num_players < 8:
         return []
@@ -3319,6 +3434,11 @@ def get_game_types():
             { "code" : "F", "name" : "Final" } ,
             { "code" : "N", "name" : "Other game not counted in standings" }
     ]
+
+unique_id_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+def generate_unique_id():
+    return "".join([ random.choice(unique_id_chars) for x in range(10) ])
+
 
 def tourney_open(dbname, directory="."):
     if not re.match("^[A-Za-z0-9_-]+$", dbname):
@@ -3348,6 +3468,13 @@ def tourney_create(dbname, directory="."):
     tourney.db_version = SW_VERSION_SPLIT;
     tourney.db.executescript(create_tables_sql);
     tourney.db.execute("insert into options values ('atropineversion', ?)", (SW_VERSION,)) 
+
+    # We now generate a unique ID for each tourney db file. This helps with the
+    # web broadcast feature. It stops us from accidentally uploading an
+    # existing tourney such that it overwrites and destroys a different but
+    # identically-named one on the website.
+    unique_id = generate_unique_id()
+    tourney.db.execute("insert into options values ('uniqueid', ?)", (unique_id,))
     tourney.db.commit();
     return tourney;
 
