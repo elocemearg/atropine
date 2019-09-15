@@ -44,11 +44,12 @@ def send_request(request_type, request_body):
         raise UploaderClientException(rep.get("message", "No message"))
     return rep
 
-def start_uploading(tourney_name, username, password):
+def start_uploading(tourney_name, username, password, private):
     return send_request("start_uploading", {
         "tourney": tourney_name,
         "username" : username,
-        "password" : password
+        "password" : password,
+        "private" : private
     })
 
 def stop_uploading(tourney_name):

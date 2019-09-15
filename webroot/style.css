@@ -1697,7 +1697,7 @@ div.generalsetupcontrolgroup {
 
 div.generalsetuptourneydetailslabel {
     display: inline-block;
-    width: 10em;
+    width: 8em;
 }
 
 div.generalsetuptourneydetailsbox {
@@ -1711,6 +1711,11 @@ div.generalsetuptourneydetailsbox input {
 span.generalsetupinputexample {
     color: gray;
     font-size: 10pt;
+}
+
+div.rulessubmit {
+    margin-top: 30px;
+    margin-bottom: 20px;
 }
 
 .handcursor {
@@ -1883,11 +1888,20 @@ div.formbox {
 }
 
 div.formline {
-    padding: 5px;
 }
 
 div.formline label {
     margin-right: 20px;
+}
+
+div.formlabel {
+    display: table-cell;
+    padding: 5px;
+}
+
+div.formcontrol {
+    display: table-cell;
+    padding: 5px;
 }
 
 div.submitline {

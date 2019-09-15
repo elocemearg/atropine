@@ -92,8 +92,9 @@ if auto_rating_behaviour is None:
 modify_player_submit = form.getfirst("modifyplayersubmit");
 full_name = form.getfirst("fullname")
 venue = form.getfirst("venue")
-rank = form.getfirst("rank");
-rank = int_or_none(rank);
+date_year = form.getfirst("dateyear")
+date_month = form.getfirst("datemonth")
+date_day = form.getfirst("dateday")
 show_draws_column = int_or_none(form.getfirst("showdrawscolumn"))
 accessible_tables_default = int_or_none(form.getfirst("accessibletablesdefault"))
 accessible_tables_string = form.getfirst("accessibletables")
@@ -284,6 +285,17 @@ function playerListExtraHelpShow() {
     }
 }
 
+function setDateToday() {
+    var today = new Date();
+    var yearBox = document.getElementById("dateyear");
+    var monthBox = document.getElementById("datemonth");
+    var dayBox = document.getElementById("dateday");
+
+    yearBox.value = today.getFullYear().toString();
+    monthBox.value = (today.getMonth() + 1).toString();
+    dayBox.value = today.getDate().toString();
+}
+
 </script>
 """)
 
@@ -399,16 +411,21 @@ else:
             except ValueError:
                 raise countdowntourney.TourneyException("The accessible table list, if set, must be a comma-separated list of positive integers.")
 
-            # Rank method
-            tourney.set_rank_method(rank);
-
             # Full name
             if full_name is not None:
                 tourney.set_full_name(full_name)
 
             if venue is not None:
                 tourney.set_venue(venue)
-            
+
+            date_year = int_or_none(date_year)
+            date_month = int_or_none(date_month)
+            date_day = int_or_none(date_day)
+            if date_year and date_month and date_day:
+                tourney.set_event_date(date_year, date_month, date_day)
+            else:
+                tourney.set_event_date(None, None, None)
+
             # Whether draws are a thing
             tourney.set_show_draws_column(show_draws_column);
 
@@ -429,7 +446,7 @@ else:
                         if value < 0:
                             value = 0
                     tourney.set_attribute(name, value)
-            cgicommon.show_success_box("Rules updated.")
+            cgicommon.show_success_box("Tourney properties updated.")
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
 
@@ -453,7 +470,8 @@ else:
     if tourney.get_num_games() == 0:
         if players:
             cgicommon.show_info_box("""<p>
-When you're happy with the player list and the tourney rules below, head to
+When you're happy with the player list and the
+<a href="#tourneyprops">tourney properties</a> below, head to
 <a href="/cgi-bin/fixturegen.py?tourney=%s">Generate fixtures</a> to generate
 the first games. Once you've generated the first games, you won't be able to
 delete players, but you can always withdraw them, edit names and ratings, or
@@ -614,8 +632,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         # We'll only show these controls when the user has entered some player
         # names.
         cgicommon.writeln("<hr />")
-        cgicommon.writeln("<h2>Tourney rules</h2>");
-        rank = tourney.get_rank_method();
+        cgicommon.writeln("<h2 id=\"tourneyprops\">Tourney properties</h2>");
         cgicommon.writeln(('<form action="%s?tourney=%s" method="post">' % (baseurl, urllib.parse.quote_plus(tourneyname))));
         cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
         
@@ -623,7 +640,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("<p>These details will appear at the top of exported tournament reports, and on the webpage if you enable the broadcast feature.</p>")
 
         cgicommon.writeln("<div class=\"generalsetupcontrolgroup generalsetuptourneydetails\">")
-        cgicommon.writeln("<div class=\"generalsetuptourneydetailslabel\"><label for=\"fullname\">Full tourney name </label></div><div class=\"generalsetuptourneydetailsbox\"><input type=\"text\" name=\"fullname\" value=\"%s\" id=\"fullname\" /></div>" % (cgi.escape(tourney.get_full_name(), True)))
+        cgicommon.writeln("<div class=\"generalsetuptourneydetailslabel\"><label for=\"fullname\">Event name </label></div><div class=\"generalsetuptourneydetailsbox\"><input type=\"text\" name=\"fullname\" value=\"%s\" id=\"fullname\" /></div>" % (cgi.escape(tourney.get_full_name(), True)))
 
         cgicommon.writeln("<span class=\"generalsetupinputexample\">(e.g. \"CoTrod %d\")</span>" % (time.localtime().tm_year))
         cgicommon.writeln("</div>")
@@ -631,14 +648,29 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("<div class=\"generalsetuptourneydetailslabel\"><label for=\"venue\">Venue</label></div><div class=\"generalsetuptourneydetailsbox\"><input type=\"text\" name=\"venue\" value=\"%s\" id=\"venue\" /></div>" % (cgi.escape(tourney.get_venue(), True)))
         cgicommon.writeln("<span class=\"generalsetupinputexample\">(e.g. \"St Quinquangle's Village Hall, Trodmore\")</span>")
         cgicommon.writeln("</div>")
+        cgicommon.writeln("<div class=\"generalsetupcontrolgroup generalsetuptourneydetails\">")
+        cgicommon.writeln("<div class=\"generalsetuptourneydetailslabel\"><label for=\"dateyear\">Event date</label></div><div class=\"generalsetuptourneydetailsbox\">")
 
-        cgicommon.writeln("<h3>Ranking order</h3>");
-        cgicommon.writeln("<p>How do you want to rank players in the standings table?</p>");
-        cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
-        cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankwinspoints" %s /><label for="rankwinspoints"> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.</label><br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "")));
-        cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankwinsspread" %s /><label for="rankwinsspread"> Wins, then cumulative winning margin (spread). Draws are worth half a win.</label><br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")))
-        cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankpoints" %s /><label for="rankpoints"> Points only.</label>' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "")));
-        cgicommon.writeln("</div>")
+        (date_year, date_month, date_day) = tourney.get_event_date()
+        if date_year:
+            year_str = str(date_year)
+        else:
+            year_str = ""
+        if date_month:
+            month_str = str(date_month)
+        else:
+            month_str = ""
+        if date_day:
+            day_str = str(date_day)
+        else:
+            day_str = ""
+        cgicommon.writeln("<input type=\"number\" name=\"dateyear\" value=\"%s\" id=\"dateyear\" placeholder=\"YYYY\" min=\"0\" max=\"9999\" style=\"width: 5em;\" /> -" % (cgicommon.escape(year_str)))
+        cgicommon.writeln("<input type=\"number\" name=\"datemonth\" value=\"%s\" id=\"datemonth\" placeholder=\"MM\" min=\"1\" max=\"12\" style=\"width: 3em;\" /> -" % (cgicommon.escape(month_str)))
+        cgicommon.writeln("<input type=\"number\" name=\"dateday\" value=\"%s\" id=\"dateday\" placeholder=\"DD\" min=\"1\" max=\"31\" style=\"width: 3em;\" />" % (cgicommon.escape(day_str)))
+
+        cgicommon.writeln("<button type=\"button\" onclick=\"setDateToday();\" style=\"margin-left: 10px;\">Today</button>");
+        cgicommon.writeln("</div>") #generalsetuptourneydetailsbox
+        cgicommon.writeln("</div>") #generalsetupcontrolgroup
 
         (table_list, accessible_default) = tourney.get_accessible_tables()
         cgicommon.writeln("<h3>Accessibility</h3>")
@@ -654,21 +686,21 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("</div>")
 
 
-        cgicommon.writeln("<h3>Draws</h3>")
-        cgicommon.writeln("<p>")
-        cgicommon.writeln("""
-        Tick this box if draws are possible in your tournament.
-        Leaving it unticked won't stop you recording a drawn game - it only
-        affects analysis of whether a player is guaranteed to finish in the
-        qualification zone, and whether the draws column is shown in exported
-        HTML or text results.
-        The <a href=\"/cgi-bin/standings.py?tourney=%s\">standings page</a>
-        will always show a draws column regardless.""" % (urllib.parse.quote_plus(tourney.get_name())))
-        cgicommon.writeln("</p>")
-        cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
-        cgicommon.writeln(("<input type=\"checkbox\" name=\"showdrawscolumn\" id=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")))
-        cgicommon.writeln("<label for=\"showdrawscolumn\">Expect that draws might happen</label>")
-        cgicommon.writeln("</div>")
+        #cgicommon.writeln("<h3>Draws</h3>")
+        #cgicommon.writeln("<p>")
+        #cgicommon.writeln("""
+        #Tick this box if draws are possible in your tournament.
+        #Leaving it unticked won't stop you recording a drawn game - it only
+        #affects analysis of whether a player is guaranteed to finish in the
+        #qualification zone, and whether the draws column is shown in exported
+        #HTML or text results.
+        #The <a href=\"/cgi-bin/standings.py?tourney=%s\">standings page</a>
+        #will always show a draws column regardless.""" % (urllib.parse.quote_plus(tourney.get_name())))
+        #cgicommon.writeln("</p>")
+        #cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
+        #cgicommon.writeln(("<input type=\"checkbox\" name=\"showdrawscolumn\" id=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")))
+        #cgicommon.writeln("<label for=\"showdrawscolumn\">Expect that draws might happen</label>")
+        #cgicommon.writeln("</div>")
 
         cgicommon.writeln("<h3>Intended number of rounds, and qualification</h3>")
         cgicommon.writeln("<p>")
@@ -702,8 +734,12 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
             cgicommon.writeln("<div class=\"tourneyqualifyingcontrols\">")
             cgicommon.writeln("The qualification zone is the top <input class=\"tourneysetupnumber\" type=\"number\" name=\"%squalplaces\" value=\"%s\" /> places in the standings table" % (div_prefix, cgicommon.escape(qual_places, True)))
             cgicommon.writeln("</div>")
+        cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
+        cgicommon.writeln(("<input type=\"checkbox\" name=\"showdrawscolumn\" id=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")))
+        cgicommon.writeln("<label for=\"showdrawscolumn\">Draws are possible</label>")
+        cgicommon.writeln("</div>")
 
-        cgicommon.writeln('<p><input type="submit" class="bigbutton" name="rulessubmit" value="Save Rules" /></p>')
+        cgicommon.writeln('<div class="rulessubmit"><input type="submit" class="bigbutton" name="rulessubmit" value="Save Changes" /></div>')
         cgicommon.writeln("</form>");
 
         if tourney.get_num_games() > 0:

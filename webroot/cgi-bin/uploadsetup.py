@@ -57,6 +57,7 @@ else:
     request_method = os.environ.get("REQUEST_METHOD", "")
     username = ""
     password = ""
+    private_tourney = None
 
     exception_context = None
     exception_text = None
@@ -69,7 +70,9 @@ else:
             username = form.getfirst("username", "")
             password = form.getfirst("password", "")
             if form.getfirst("submitstartuploading"):
-                uploadercli.start_uploading(tourney_name, username, password)
+                private_tourney = ("privatetourney" in form)
+                uploadercli.start_uploading(tourney_name, username, password, private_tourney)
+                tourney.set_broadcast_private(private_tourney)
                 upload_on = True
             elif form.getfirst("submitstopuploading"):
                 uploadercli.stop_uploading(tourney_name)
@@ -88,6 +91,11 @@ else:
         username = state.get("username", "")
     if not password:
         password = state.get("password", "")
+    if private_tourney is None:
+        private_tourney = state.get("private", None)
+        if private_tourney is None:
+            private_tourney = tourney.is_broadcast_private()
+
     upload_on = state.get("publishing", False)
 
     if exception_text:
@@ -106,13 +114,42 @@ else:
 
     cgicommon.writeln("<div class=\"formbox\">")
     cgicommon.writeln("<form action=\"uploadsetup.py?tourney=%s\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name)))
+
+    form_info = [
+            { "type" : "text", "name" : "username", "label" : "Username",
+                "autocomplete" : "username", "value" : username },
+            { "type" : "password", "name" : "password", "label" : "Password",
+                "autocomplete" : "current-password", "value" : password }
+    ]
+    for info in form_info:
+        cgicommon.writeln("<div class=\"formline\">")
+        cgicommon.writeln("""<div class="formlabel" style="width: 7em;">
+        <label for="%s">%s</label>
+        </div>
+        <div class="formcontrol">
+        <input type="%s" name="%s" id="%s" value="%s" autocomplete="%s" %s />
+        </div>""" % (
+            cgicommon.escape(info["name"]),
+            cgicommon.escape(info["label"]),
+            cgicommon.escape(info["type"]),
+            cgicommon.escape(info["name"]),
+            cgicommon.escape(info["name"]),
+            cgicommon.escape(info["value"]),
+            cgicommon.escape(info["autocomplete"]),
+            "class=\"noteditable\" readonly" if upload_on else "")
+        )
+        cgicommon.writeln("</div>")
     cgicommon.writeln("<div class=\"formline\">")
-    cgicommon.writeln("<label for=\"username\">Username</label> <input type=\"text\" name=\"username\" id=\"username\" value=\"%s\" autocomplete=\"username\" %s />" % (cgicommon.escape(username), "class=\"noteditable\" readonly" if upload_on else ""))
+    cgicommon.writeln("<div class=\"formlabel\" style=\"width: 7em;\">")
+    cgicommon.writeln("Unlisted")
     cgicommon.writeln("</div>")
-    cgicommon.writeln("<div class=\"formline\">")
-    cgicommon.writeln("<label for=\"password\">Password</label> <input type=\"password\" name=\"password\" id=\"password\" value=\"%s\" autocomplete=\"current-password\" %s />" % (cgicommon.escape(password), "class=\"noteditable\" readonly" if upload_on else ""))
+    cgicommon.writeln("<div class=\"formcontrol\">")
+    cgicommon.writeln("<input type=\"checkbox\" name=\"privatetourney\" id=\"privatetourney\" %s %s />" % ("checked" if private_tourney else "", "disabled" if upload_on else ""))
+    cgicommon.writeln("<label for=\"privatetourney\" style=\"font-size: 10pt; color: gray;\">If ticked, this tourney will not appear in the public list and will be visible only to people with the link. This is useful if you're just testing things.</label>")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>")
+
     cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name)))
-    cgicommon.writeln("</div>")
     if show_delete_confirm:
         warning_html = "<div class=\"formline\">\n"
         warning_html += "<p>Are you sure you want to delete the tourney <strong>%s</strong> from the web?</p>\n" % (cgicommon.escape(tourney_name))

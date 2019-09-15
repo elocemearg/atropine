@@ -38,6 +38,7 @@ tourneyname = form.getfirst("tourney");
 show_tournament_rating = bool(int_or_none(form.getfirst("showtournamentratingcolumn")))
 tr_bonus = float_or_none(form.getfirst("tournamentratingbonus"))
 tr_diff_cap = float_or_none(form.getfirst("tournamentratingdiffcap"))
+rank = int_or_none(form.getfirst("rank"))
 
 tourney = None;
 request_method = os.environ.get("REQUEST_METHOD", "");
@@ -73,6 +74,7 @@ else:
         try:
             tourney.set_show_tournament_rating_column(show_tournament_rating)
             tourney.set_tournament_rating_config(tr_bonus, tr_diff_cap)
+            tourney.set_rank_method(rank)
             cgicommon.show_success_box("Options updated.");
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
@@ -80,6 +82,16 @@ else:
     cgicommon.writeln("<hr />")
     cgicommon.writeln(('<form action="%s?tourney=%s" method="post">' % (baseurl, urllib.parse.quote_plus(tourneyname))));
     cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
+
+    cgicommon.writeln("<h2>Ranking order</h2>");
+    rank = tourney.get_rank_method();
+    cgicommon.writeln("<p>How do you want to rank players in the standings table?</p>");
+    cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
+    cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankwinspoints" %s /><label for="rankwinspoints"> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.</label><br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "")));
+    cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankwinsspread" %s /><label for="rankwinsspread"> Wins, then cumulative winning margin (spread). Draws are worth half a win.</label><br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")))
+    cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankpoints" %s /><label for="rankpoints"> Points only.</label>' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "")));
+    cgicommon.writeln("</div>")
+
     cgicommon.writeln("<h2>Tournament Ratings</h2>")
     cgicommon.writeln("<p>If you don't know what tournament ratings are, you can safely leave these as the defaults and they won't affect anything.</p>")
     cgicommon.writeln("<p>")
@@ -95,10 +107,10 @@ else:
     cgicommon.writeln("<li>If you lose, your opponent's <em>effective rating</em> minus the <em>win value</em>.</li>")
     cgicommon.writeln("</ul>")
     cgicommon.writeln("<p>")
-    cgicommon.writeln(("The <em>win value</em> is <input type=\"number\" name=\"tournamentratingbonus\" value=\"%g\" />" % (tourney.get_tournament_rating_bonus_value())))
+    cgicommon.writeln(("The <em>win value</em> is <input type=\"number\" name=\"tournamentratingbonus\" value=\"%g\" style=\"width: 5em;\" />" % (tourney.get_tournament_rating_bonus_value())))
     cgicommon.writeln("</p><p>")
     cgicommon.writeln("Your opponent's <em>effective rating</em> for a game is their rating at the start of the tournament, capped to within")
-    cgicommon.writeln(("<input type=\"number\" name=\"tournamentratingdiffcap\" value=\"%g\" />" % (tourney.get_tournament_rating_diff_cap())))
+    cgicommon.writeln(("<input type=\"number\" name=\"tournamentratingdiffcap\" value=\"%g\" style=\"width: 5em;\" />" % (tourney.get_tournament_rating_diff_cap())))
     cgicommon.writeln("of your own.")
     cgicommon.writeln("</p>")
     cgicommon.writeln("<p>")
@@ -107,7 +119,7 @@ else:
     cgicommon.writeln('<p><input type="submit" name="submit" value="Save Advanced Setup" class="bigbutton" /></p>')
     cgicommon.writeln("</form>");
 
-    cgicommon.writeln("<h2>Raw database access</h2>")
+    cgicommon.writeln("<h1>Raw database access</h1>")
     cgicommon.writeln("<p>This gives you direct SQL access to the tourney database. You shouldn't normally need to use this feature. If you don't know what you're doing, you can mess up your entire tournament. Don't say you weren't warned!</p>")
     cgicommon.writeln("<p><a href=\"/cgi-bin/sql.py?tourney=%s\">I understand. Take me to the raw database access page, and on my own head be it.</a></p>" % (urllib.parse.quote_plus(tourneyname)))
 

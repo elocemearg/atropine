@@ -94,7 +94,8 @@ def make_https_json_request(server_host, server_port, path, request):
         return {
                 "success" : False,
                 "http_failure" : True,
-                "message" : "Failed to upload game state to server %s: %s. Check your internet connection." % (url, str(e)) }
+                "message" : "Failed to upload game state to server %s: %s. Check your internet connection." % (url, str(e))
+        }
     except Exception as e:
         httpcon.close()
         sys.stderr.write("Failed to send HTTP request to %s: %s\r\n" % (url, str(e)))
@@ -155,9 +156,9 @@ class UploaderThread(object):
     def is_uploading_tourney(self, tourney):
         return (tourney in self.uploading_tourneys)
 
-    def add_tourney_to_upload_list(self, tourney, username, password):
+    def add_tourney_to_upload_list(self, tourney, username, password, private):
         self.uploading_tourneys.add(tourney)
-        self.tourney_auth[tourney] = { "username" : username, "password" : password }
+        self.tourney_auth[tourney] = { "username" : username, "password" : password, "private" : private }
         self.tourney_upload_start_time[tourney] = int(time.time());
         self.tourney_last_upload_attempt_time[tourney] = 0
 
@@ -209,7 +210,8 @@ class UploaderThread(object):
     def body(self):
         upload_period_sec = 10
         while True:
-            for tourney_name in self.uploading_tourneys:
+            uploading_tourneys = self.uploading_tourneys.copy()
+            for tourney_name in uploading_tourneys:
                 now = time.time()
                 last_upload_time = self.tourney_last_upload_attempt_time.get(tourney_name, 0)
                 if now >= last_upload_time + upload_period_sec:
@@ -225,12 +227,15 @@ class UploaderThread(object):
                             if auth:
                                 username = auth.get("username")
                                 password = auth.get("password")
+                                private = auth.get("private", False)
                             else:
                                 username = None
                                 password = None
+                                private = False
                             req = {
                                     "username" : username,
                                     "password" : password,
+                                    "private" : private,
                                     "unique_id" : tourney_unique_id,
                                     "tourney" : tourney_name,
                                     "state" : game_state
@@ -279,8 +284,8 @@ class UploaderServiceHandler(BaseRequestHandler):
 
         try:
             if req_type == "start_uploading":
-                (tourney, username, password) = self.get_fields_from_req(req_body, ["tourney", "username", "password"])
-                uploader_thread.add_tourney_to_upload_list(tourney, username, password)
+                (tourney, username, password, private) = self.get_fields_from_req(req_body, ["tourney", "username", "password", "private"])
+                uploader_thread.add_tourney_to_upload_list(tourney, username, password, private)
                 rep = make_ok_response()
             elif req_type == "stop_uploading":
                 (tourney,) = self.get_fields_from_req(req_body, ["tourney"])
@@ -299,6 +304,7 @@ class UploaderServiceHandler(BaseRequestHandler):
                 if auth:
                     rep["username"] = auth.get("username", None)
                     rep["password"] = auth.get("password", None)
+                    rep["private"] = auth.get("private", False)
                 rep["last_successful_upload_time"] = uploader_thread.get_last_successful_upload_time(tourney)
                 rep["last_failed_upload"] = uploader_thread.get_last_failed_upload(tourney)
                 rep["upload_button_pressed_time"] = uploader_thread.get_upload_button_pressed_time(tourney)

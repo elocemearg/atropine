@@ -383,7 +383,8 @@ def get_tourney_details(tourney, options):
     return {
             "success" : True,
             "full_name" : tourney.get_full_name(),
-            "venue" : tourney.get_venue()
+            "venue" : tourney.get_venue(),
+            "event_date" : tourney.get_event_date_string()
     }
 
 def get_state_for_upload(tourney):

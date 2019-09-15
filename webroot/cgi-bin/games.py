@@ -699,7 +699,7 @@ def write_videprinter(tourney, round_no):
     cgicommon.writeln("<div class=\"newsformheading newsformheadingedit\">")
     cgicommon.writeln("<div class=\"newsformheadingtext\">Editing comment</div>")
     cgicommon.writeln("<div class=\"newsformheadingclose\">")
-    cgicommon.writeln("<button onclick=\"news_edit_close();\">Close</button>")
+    cgicommon.writeln("<button type=\"button\" onclick=\"news_edit_close();\">Close</button>")
     cgicommon.writeln("</div>")
     cgicommon.writeln("</div>")
 

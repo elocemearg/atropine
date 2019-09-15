@@ -522,6 +522,10 @@ class QualificationTimeoutException(TourneyException):
     description = "In calculating the standings table, we took too long to work out which players, if any, have qualified for the final. This may be due to an unusually large number of players, or an unusual tournament setup. In this case it is strongly recommended go to General Setup and disable qualification analysis by setting the number of places in the qualification zone to zero."
     pass
 
+class InvalidDateException(TourneyException):
+    def __init__(self, reason):
+        self.description = reason
+
 def get_teleost_mode_services_to_fetch(mode):
     if mode < 0 or mode >= len(teleost_modes):
         return [ "all" ]
@@ -1072,6 +1076,51 @@ class Tourney(object):
     
     def set_venue(self, venue):
         self.set_attribute("venue", venue)
+
+    def get_event_date(self):
+        date_str = self.get_attribute("eventdate", None)
+        if not date_str:
+            return (None, None, None)
+        else:
+            fields = date_str.split("-")
+            if len(fields) != 3:
+                return (None, None, None)
+            try:
+                return tuple([int(x) for x in fields])
+            except ValueError:
+                return (None, None, None)
+
+    def get_event_date_string(self):
+        (year, month, day) = self.get_event_date()
+        if not day or not month or not year:
+            return None
+        else:
+            return "%04d-%02d-%02d" % (year, month, day)
+
+    def check_date(self, year, month, day):
+        if month < 1 or month > 12:
+            raise InvalidDateException("Invalid date: %d is not a valid month." % (month))
+        if year < 1 or year > 9999:
+            raise InvalidDateException("Invalid date: year %04d is out of range." % (year))
+        if day < 1:
+            raise InvalidDateException("Invalid date: day of month %d is out of range." % (day))
+
+        leap = (year % 4 == 0 and not (year % 100 == 0 and year % 400 != 0))
+        if month == 2:
+            day_max = 29 if leap else 28
+        elif month in (4, 6, 9, 11):
+            day_max = 30
+        else:
+            day_max = 31
+        if day > day_max:
+            raise InvalidDateException("Invalid date: day of month %d is out of range for month %d." % (day, month))
+
+    def set_event_date(self, year, month, day):
+        if not year or not month or not day:
+            self.set_attribute("eventdate", "")
+        else:
+            self.check_date(year, month, day)
+            self.set_attribute("eventdate", "%04d-%02d-%02d" % (year, month, day))
     
     def get_db_version(self):
         return ".".join([str(x) for x in self.db_version])
@@ -3409,7 +3458,12 @@ and g.game_type = 'P'
             return upload_desc
         else:
             return None
-        
+
+    def set_broadcast_private(self, value):
+        self.set_attribute("broadcastprivate", 1 if value else 0)
+
+    def is_broadcast_private(self):
+        return self.get_int_attribute("broadcastprivate", 0) != 0
  
 
 def get_5_3_table_sizes(num_players):

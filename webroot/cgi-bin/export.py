@@ -97,14 +97,21 @@ if export_format == "wikitext":
         cgicommon.writeln("<body>")
         cgicommon.show_sidebar(tourney)
 
-        # Default value for date is today, default value for game prefix is the
+        # Default value for date is the tourney's event date. If that's not
+        # set then the default is today. Default value for game prefix is the
         # tourney name, upcased, with all non-letter and non-digit characters
         # removed, and with a dot on the end if it ends with a digit.
         if wikitext_submit is None:
-            today = datetime.date.today()
-            wikitext_date_d = today.day
-            wikitext_date_m = today.month
-            wikitext_date_y = today.year
+            (year, month, day) = tourney.get_event_date()
+            if year and month and day:
+                wikitext_date_d = day
+                wikitext_date_m = month
+                wikitext_date_y = year
+            else:
+                today = datetime.date.today()
+                wikitext_date_d = today.day
+                wikitext_date_m = today.month
+                wikitext_date_y = today.year
 
             wikitext_game_prefix = ""
             for c in tourney_name.upper():
@@ -207,6 +214,11 @@ try:
 
     full_name = tourney.get_full_name()
     venue = tourney.get_venue()
+    (date_year, date_month, date_day) = tourney.get_event_date()
+    if date_year and date_month and date_day:
+        date_string = "%d %s %04d" % (date_day, "Octember" if date_month < 1 or date_month > 12 else calendar.month_name[date_month], date_year)
+    else:
+        date_string = None
     games = tourney.get_games();
 
     show_draws_column = tourney.get_show_draws_column()
@@ -229,6 +241,8 @@ try:
         cgicommon.writeln("<h1>%s</h1>" % (cgi.escape(full_name)))
         if venue:
             cgicommon.writeln("<p>%s</p>" % (cgi.escape(venue)))
+        if date_string:
+            cgicommon.writeln("<p>%s</p>" % (cgi.escape(date_string)))
         cgicommon.writeln("<h2>Standings</h2>")
 
         num_divisions = tourney.get_num_divisions()
@@ -311,6 +325,8 @@ try:
         cgicommon.writeln(full_name)
         if venue:
             cgicommon.writeln(venue)
+        if date_string:
+            cgicommon.writeln(date_string)
         cgicommon.writeln("")
         cgicommon.writeln("STANDINGS")
         cgicommon.writeln("")
