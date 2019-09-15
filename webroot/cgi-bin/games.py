@@ -570,12 +570,14 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
     score1div = "<div class=\"scoreentryscore\" id=\"score1div\">"
     score1div += ("<input class=\"entryscore\" type=\"text\" name=\"entryscore1\" " +
             "id=\"entryscore1\" placeholder=\"Score\" value=\"%s\" " +
+            "autocomplete=\"off\" " +
             "oninput=\"entry_score_change(true);\" />") % (cgicommon.escape(default_scores[0], True))
     score1div += "</div>"
 
     score2div = "<div class=\"scoreentryscore\" id=\"score2div\">"
     score2div += ("<input class=\"entryscore\" type=\"text\" name=\"entryscore2\" " +
             "id=\"entryscore2\" placeholder=\"Score\" value=\"%s\" " +
+            "autocomplete=\"off\" " +
             "oninput=\"entry_score_change(true);\" />") % (cgicommon.escape(default_scores[1], True))
     score2div += "</div>"
 
