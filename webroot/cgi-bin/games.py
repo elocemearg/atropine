@@ -672,6 +672,8 @@ def write_videprinter(tourney, round_no):
             cgicommon.writeln("</div>")
         elif log_type == 101:
             # News item
+            if comment is None:
+                comment = ""
             cgicommon.writeln("<div class=\"videprinterentry videprinternewsentry\" id=\"videprinter_news_%d\" onclick=\"news_edit_open(%d, %s);\">" % (seq_no, seq_no, cgi.escape(js_quote_string(comment), True)))
             cgicommon.writeln("&#8227; " + cgi.escape(comment))
             cgicommon.writeln("</div>")
@@ -1191,6 +1193,8 @@ try:
                 #cgicommon.writeln("<p> text " + cgi.escape(news_text) + ", round " + str(round_no) + "</p>")
         elif "newsformeditsubmit" in form:
             news_text = form.getfirst("newsformedittext")
+            if news_text is None:
+                news_text = ""
             news_entry_seq = int_or_none(form.getfirst("newseditseq"))
             if news_entry_seq is not None:
                 tourney.edit_news_item(news_entry_seq, news_text)
