@@ -87,7 +87,11 @@ else:
             exception_text = str(e)
             exception_context = "Request to website failed"
 
-    state = uploadercli.get_tourney_upload_state(tourney_name)
+    try:
+        state = uploadercli.get_tourney_upload_state(tourney_name)
+    except uploadercli.UploaderClientException:
+        state = {}
+
     if not username:
         username = state.get("username", "")
     if not password:

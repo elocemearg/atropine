@@ -413,13 +413,18 @@ def get_all(tourney, options):
     return reply
 
 def get_uploader_status(tourney, options):
-    reply = {}
-    reply["success"] = True
-    uploader_state = uploadercli.get_tourney_upload_state(tourney.get_name())
-    if uploader_state and "password" in uploader_state:
-        del uploader_state["password"]
-    reply["uploader_state"] = uploader_state
-    return reply
+    try:
+        reply = {}
+        reply["success"] = True
+        uploader_state = uploadercli.get_tourney_upload_state(tourney.get_name())
+        if uploader_state and "password" in uploader_state:
+            del uploader_state["password"]
+        reply["uploader_state"] = uploader_state
+        return reply
+    except uploadercli.UploaderClientException as e:
+        reply["success"] = False
+        reply["message"] = str(e)
+        return reply
 
 valid_requests["standings"] = get_standings
 valid_requests["games"] = get_games
