@@ -7,6 +7,7 @@ import cgitb
 import cgicommon
 import urllib
 import time
+import html
 
 cgitb.enable()
 cgicommon.set_module_path()
@@ -104,6 +105,7 @@ else:
         cgicommon.show_success_box("Successfully deleted tourney <strong>%s</strong> from the website." % (cgicommon.escape(tourney_name)))
 
     web_link = colive_url_base + "/" + cgi.escape(tourney_name, True)
+    web_link_raw = colive_url_base + "/" + tourney_name
     cgicommon.writeln("<p>This will upload the tourney state every few seconds so that games, scores and standings are visible at <a href=\"%s\" target=\"_blank\">%s <img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\"/></a></p>" % (web_link, web_link))
     cgicommon.writeln("<p>You will need:</p>")
     cgicommon.writeln("<ul>")
@@ -180,15 +182,44 @@ else:
         cgicommon.writeln("""<div class="uploadconsole">
 <div class="uploadconsoleenabled" id="uploadconsoleenabled"></div>
 <div class="uploadconsolestatus" id="uploadconsolestatus"></div>
-<div class="uploadconsolediag" id="uploadconsolediag"></div>
+<div class="uploadconsolediag" id="uploadconsolediag">
 </div>
-
+    <div class="shareablelinkbox" id="shareablelinkbox" style="display: none;" >
+    <div style="font-size: 10pt; color: gray;">Shareable link</div>
+    <input type="text" name="linktext" id="linktext" value="%s" style="width: 270px; background-color: #eee;" readonly />
+    <button type="button" onclick="copyLink();" style="width: 155px; float: right">Copy to clipboard</button>
+    </div>
+</div>
+    """ % (html.escape(web_link_raw)))
+    #<div style="display: inline-block; width: 120px;">Shareable link</div>
+    
+    cgicommon.writeln("""
 <script>
 // <!--
+
+function copyLink() {
+    var element = document.getElementById("linktext");
+    if (element != null) {
+        element.focus();
+        element.select();
+        try {
+            document.execCommand("copy");
+        }
+        catch (err) {
+            console.log("Unable to copy link text");
+        }
+    }
+}
 
 function uploadConsoleRefresh(enabled, success, secondsOfFailure, errorMessage,
             uploadWidgetFailureIsHTTP, lastAttemptFailed, uploaderThreadFailed) {
     var enabledDiv = document.getElementById("uploadconsoleenabled");
+    var statusDiv = document.getElementById("uploadconsolestatus");
+    var shareableDiv = document.getElementById("shareablelinkbox");
+
+    if (enabledDiv == null || statusDiv == null)
+        return;
+
     if (uploaderThreadFailed) {
         enabledDiv.innerText = "Internal error: uploader thread failed";
         enabledDiv.style.backgroundColor = "black";
@@ -205,7 +236,6 @@ function uploadConsoleRefresh(enabled, success, secondsOfFailure, errorMessage,
         enabledDiv.style.color = "black";
     }
 
-    var statusDiv = document.getElementById("uploadconsolestatus");
     statusDiv.style.backgroundColor = "white";
     statusDiv.style.color = "black";
     if (!enabled) {
@@ -232,6 +262,13 @@ function uploadConsoleRefresh(enabled, success, secondsOfFailure, errorMessage,
             statusDiv.style.backgroundColor = "yellow";
             statusDiv.style.color = "black";
         }
+    }
+
+    if (success) {
+        shareableDiv.style.display = "block";
+    }
+    else {
+        shareableDiv.style.display = "none";
     }
 
     var diagDiv = document.getElementById("uploadconsolediag");

@@ -141,7 +141,7 @@ div.sidebarbanner {
        margin-right: 10px;
        padding: 5px;
        border: 2px solid blue;
-       width: 156px;
+       width: 146px;
 }
 
 .groupseparator {
@@ -1953,7 +1953,7 @@ a.widgetlink:visited {
 }
 
 div.uploadconsole {
-    width: 400px;
+    width: 450px;
     border: 1px solid gray;
     margin-top: 15px;
     margin-left: 5px;
@@ -1974,4 +1974,8 @@ div.uploadconsolediag {
     font-size: 10pt;
     border-top: 1px solid gray;
     padding: 5px;
+}
+
+div.shareablelinkbox {
+    margin: 5px;
 }
