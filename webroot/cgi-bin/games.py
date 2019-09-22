@@ -451,14 +451,33 @@ function news_edit_close() {
     inputText.focus();
 }
 
-function news_edit_open(seq, currentText) {
+function news_edit_open(seq, currentText, postedToVideprinter, postedToWeb) {
     var newsPost = document.getElementById("newspost");
     var newsEdit = document.getElementById("newsedit");
+    var newsEditVideprinter = document.getElementById("posttovideprinter1")
+    var newsEditWeb = document.getElementById("posttoweb1")
     var entryDiv = document.getElementById("videprinter_news_" + seq.toString());
 
     /* Hide the comment-posting box and show the comment-editing box */
     newsPost.style.display = "none";
     newsEdit.style.display = null;
+
+    if (newsEditVideprinter != null) {
+        if (newsEditVideprinter.type == "checkbox") {
+            newsEditVideprinter.checked = postedToVideprinter;
+        }
+        else if (newsEditVideprinter.type == "hidden") {
+            newsEditVideprinter.value = (postedToVideprinter ? "1" : "0");
+        }
+    }
+    if (newsEditWeb != null) {
+        if (newsEditWeb.type == "checkbox") {
+            newsEditWeb.checked = postedToWeb;
+        }
+        else if (newsEditWeb.type == "hidden") {
+            newsEditWeb.value = (postedToWeb ? "1" : "0");
+        }
+    }
 
     /* If any news entry is highlighted, unhighlight it... */
     if (videprinterDivEditing != null) {
@@ -614,9 +633,48 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
 
     cgicommon.writeln("<p id=\"diag\"></p>")
 
+def write_news_form_tick_box_div(tourney, publishing, is_edit):
+    if is_edit:
+        id_suffix = "1"
+    else:
+        id_suffix = "0"
+
+    cgicommon.writeln("<div class=\"newsformheadingoptions\">")
+    if publishing or is_edit:
+        tick_box_html_format = """
+        <input type="checkbox" name="posttovideprinter" id="posttovideprinter%s" value="1" %s />
+        <label for="posttovideprinter%s">To display</label>
+        <input type="checkbox" name="posttoweb" id="posttoweb%s" value="1" %s />
+        <label for="posttoweb%s">To web</label>
+        """
+        cgicommon.writeln(tick_box_html_format % (
+            str(id_suffix),
+            "checked" if tourney.is_post_to_videprinter_set() else "",
+            str(id_suffix),
+            str(id_suffix),
+            "checked" if tourney.is_post_to_web_set() else "",
+            str(id_suffix)
+        ))
+    else:
+        cgicommon.writeln("<input type=\"hidden\" name=\"posttovideprinter\" id=\"posttovideprinter%s\" value=\"1\" />" % (str(id_suffix)))
+        cgicommon.writeln("<input type=\"hidden\" name=\"posttoweb\" id=\"posttovideprinter%s\" value=\"1\" />" % (str(id_suffix)))
+
+    if is_edit:
+        cgicommon.writeln("<button type=\"button\" onclick=\"news_edit_close();\">Close</button>")
+    cgicommon.writeln("</div>")
+
 def write_videprinter(tourney, round_no):
+    try:
+        upload_state = uploadercli.get_tourney_upload_state(tourney_name)
+        if upload_state and upload_state.get("publishing", False):
+            publishing = True
+        else:
+            publishing = False
+    except uploadercli.UploaderClientException:
+        publishing = False
+
     cgicommon.writeln("<div class=\"videprinter boxshadow\" id=\"videprinterdiv\">")
-    cgicommon.writeln("<div class=\"resultsentrytitle\">Latest updates</div>")
+    cgicommon.writeln("<div class=\"resultsentrytitle\">News feed</div>")
     cgicommon.writeln("<div class=\"videprinterwindow\" id=\"videprinterwindow\">")
 
     logs = tourney.get_logs_since(None, False, round_no)
@@ -670,11 +728,18 @@ def write_videprinter(tourney, round_no):
                 cgicommon.writeln("<span class=\"videprinterscore\">%s-%s</span>" % (scorestr1, scorestr2))
                 cgicommon.writeln("<span class=\"%s\">%s</span>" % (player_classes[1], cgicommon.escape(name2)))
             cgicommon.writeln("</div>")
-        elif log_type == 101:
+        elif (log_type & countdowntourney.LOG_TYPE_COMMENT) != 0:
             # News item
             if comment is None:
                 comment = ""
-            cgicommon.writeln("<div class=\"videprinterentry videprinternewsentry\" id=\"videprinter_news_%d\" onclick=\"news_edit_open(%d, %s);\">" % (seq_no, seq_no, cgi.escape(js_quote_string(comment), True)))
+            post_to_videprinter = (log_type & countdowntourney.LOG_TYPE_COMMENT_VIDEPRINTER_FLAG) != 0
+            post_to_web = (log_type & countdowntourney.LOG_TYPE_COMMENT_WEB_FLAG) != 0
+            cgicommon.writeln("<div class=\"videprinterentry videprinternewsentry\" id=\"videprinter_news_%d\" onclick=\"news_edit_open(%d, %s, %s, %s);\">" % (
+                seq_no, seq_no,
+                cgi.escape(js_quote_string(comment), True),
+                "true" if post_to_videprinter else "false",
+                "true" if post_to_web else "false"
+            ))
             cgicommon.writeln("&#8227; " + cgi.escape(comment))
             cgicommon.writeln("</div>")
 
@@ -683,37 +748,38 @@ def write_videprinter(tourney, round_no):
     # Form to post a new comment
     videprinter_showing = tourney.is_videprinter_showing()
     cgicommon.writeln("<div class=\"newsform\" id=\"newspost\">")
+    cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no))
     cgicommon.writeln("<div class=\"newsformheading\">")
-    cgicommon.writeln("Post comment on videprinter%s" % (" (not currently showing)" if not videprinter_showing else ""))
+    cgicommon.writeln("<div class=\"newsformheadingtext\">Post comment</div>")
+
+    write_news_form_tick_box_div(tourney, publishing, False)
+    #cgicommon.writeln("Post comment on videprinter%s" % (" (not currently showing)" if not videprinter_showing else ""))
     cgicommon.writeln("</div>")
     cgicommon.writeln("<div class=\"newsformbody\">")
-    cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no))
     cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourney_name, True)))
     cgicommon.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
     cgicommon.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformtext\" id=\"newsformtext\" value=\"\" />")
     cgicommon.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformsubmit\" id=\"newsformbutton\" value=\"Post\" />")
-    cgicommon.writeln("</form>")
     cgicommon.writeln("</div>")
+    cgicommon.writeln("</form>")
     cgicommon.writeln("</div>") # newsform
 
     # Form to edit an existing comment
     cgicommon.writeln("<div class=\"newsform\" id=\"newsedit\" style=\"display: none;\">")
+    cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no))
     cgicommon.writeln("<div class=\"newsformheading newsformheadingedit\">")
     cgicommon.writeln("<div class=\"newsformheadingtext\">Editing comment</div>")
-    cgicommon.writeln("<div class=\"newsformheadingclose\">")
-    cgicommon.writeln("<button type=\"button\" onclick=\"news_edit_close();\">Close</button>")
-    cgicommon.writeln("</div>")
+    write_news_form_tick_box_div(tourney, publishing, True)
     cgicommon.writeln("</div>")
 
     cgicommon.writeln("<div class=\"newsformbody\">")
-    cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no))
     cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourney_name, True)))
     cgicommon.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
     cgicommon.writeln("<input type=\"hidden\" name=\"newseditseq\" value=\"\" id=\"newseditseq\" />")
     cgicommon.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformedittext\" id=\"newsformedittext\" value=\"\" />")
     cgicommon.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformeditsubmit\" id=\"newsformeditbutton\" value=\"Save\" />")
-    cgicommon.writeln("</form>")
     cgicommon.writeln("</div>")
+    cgicommon.writeln("</form>")
     cgicommon.writeln("</div>") # newsform
 
     cgicommon.writeln("</div>") # videprinter
@@ -965,6 +1031,7 @@ request_method = os.environ.get("REQUEST_METHOD", "");
 cgicommon.set_module_path();
 
 import countdowntourney;
+import uploadercli
 
 cgicommon.print_html_head("Games: " + str(tourney_name));
 
@@ -1188,16 +1255,22 @@ try:
             last_entry_tb = tb
         elif "newsformsubmit" in form:
             news_text = form.getfirst("newsformtext")
+            post_to_videprinter = bool(int_or_none(form.getfirst("posttovideprinter")))
+            post_to_web = bool(int_or_none(form.getfirst("posttoweb")))
             if news_text:
-                tourney.post_news_item(round_no, news_text)
-                #cgicommon.writeln("<p> text " + cgi.escape(news_text) + ", round " + str(round_no) + "</p>")
+                tourney.post_news_item(round_no, news_text, post_to_videprinter, post_to_web)
+            tourney.set_post_to_videprinter(post_to_videprinter)
+            tourney.set_post_to_web(post_to_web)
         elif "newsformeditsubmit" in form:
             news_text = form.getfirst("newsformedittext")
+            post_to_videprinter = bool(int_or_none(form.getfirst("posttovideprinter")))
+            post_to_web = bool(int_or_none(form.getfirst("posttoweb")))
+            sys.stderr.write("post_to_videprinter %s, post_to_web %s\n" % (str(post_to_videprinter), str(post_to_web))) # GOZZARD
             if news_text is None:
                 news_text = ""
             news_entry_seq = int_or_none(form.getfirst("newseditseq"))
             if news_entry_seq is not None:
-                tourney.edit_news_item(news_entry_seq, news_text)
+                tourney.edit_news_item(news_entry_seq, news_text, post_to_videprinter, post_to_web)
 
         num_divisions = tourney.get_num_divisions()
 

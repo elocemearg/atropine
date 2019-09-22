@@ -28,6 +28,12 @@ CONTROL_CHECKBOX = 2
 UPLOAD_FAIL_TYPE_HTTP = 1
 UPLOAD_FAIL_TYPE_REJECTED = 2
 
+LOG_TYPE_NEW_RESULT = 1
+LOG_TYPE_CORRECTION = 2
+LOG_TYPE_COMMENT = 96
+LOG_TYPE_COMMENT_VIDEPRINTER_FLAG = 1
+LOG_TYPE_COMMENT_WEB_FLAG = 4
+
 teleost_modes = [
         {
             "id" : "TELEOST_MODE_AUTO",
@@ -1868,22 +1874,32 @@ class Tourney(object):
             self.db.rollback();
             raise;
     
-    def post_news_item(self, round_no, text):
+    def post_news_item(self, round_no, text, post_to_videprinter, post_to_web):
         if self.db_version >= (1, 0, 6):
             cur = self.db.cursor()
+            log_type = LOG_TYPE_COMMENT
+            if post_to_videprinter:
+                log_type |= LOG_TYPE_COMMENT_VIDEPRINTER_FLAG
+            if post_to_web:
+                log_type |= LOG_TYPE_COMMENT_WEB_FLAG
             cur.execute("""insert into game_log (ts, round_no, round_seq,
                     table_no, division, game_type, p1, p1_score, p2, p2_score,
                     tiebreak, log_type, comment) values (
                     current_timestamp, ?, null,
                     null, null, null, null, null, null, null,
-                    null, 101, ?)""", (round_no, text))
+                    null, ?, ?)""", (round_no, log_type, text))
             cur.close()
             self.db.commit()
 
-    def edit_news_item(self, seq, new_text):
+    def edit_news_item(self, seq, new_text, post_to_videprinter, post_to_web):
         if self.db_version >= (1, 0, 6):
             cur = self.db.cursor()
-            cur.execute("update game_log set comment = ? where seq = ? and log_type = 101", (new_text, seq))
+            log_type = LOG_TYPE_COMMENT
+            if post_to_videprinter:
+                log_type |= LOG_TYPE_COMMENT_VIDEPRINTER_FLAG
+            if post_to_web:
+                log_type |= LOG_TYPE_COMMENT_WEB_FLAG
+            cur.execute("update game_log set comment = ?, log_type = ? where seq = ? and (log_type & ?) != 0", (new_text, log_type, seq, LOG_TYPE_COMMENT))
             cur.close()
             self.db.commit()
 
@@ -3464,6 +3480,18 @@ and g.game_type = 'P'
 
     def is_broadcast_private(self):
         return self.get_int_attribute("broadcastprivate", 0) != 0
+    
+    def is_post_to_videprinter_set(self):
+        return self.get_int_attribute("posttovideprinter", 1) != 0
+    
+    def is_post_to_web_set(self):
+        return self.get_int_attribute("posttoweb", 1) != 0
+
+    def set_post_to_videprinter(self, value):
+        return self.set_attribute("posttovideprinter", 1 if value else 0)
+    
+    def set_post_to_web(self, value):
+        return self.set_attribute("posttoweb", 1 if value else 0)
  
 
 def get_5_3_table_sizes(num_players):

@@ -1213,14 +1213,29 @@ div.newsformheading {
     background-color: navy;
     color: #dddddd;
     padding: 5px;
+    clear: both;
 }
 
 div.newsformheadingedit {
     background-color: purple;
+    clear: both;
+}
+
+div.newsformheadingoptions {
+    display: inline-block;
+    float: right;
+}
+
+div.newsformheadingoptions input {
+    margin-left: 10px;
+}
+
+div.newsformheadingoptions label {
+    margin-right: 10px;
 }
 
 div.newsformbody {
-    margin: 5px;
+    margin: 2px;
 }
 
 input.newsformtext {
@@ -1234,11 +1249,6 @@ input.newsformbutton {
 
 div.newsformheadingtext {
     display: inline-block;
-}
-
-div.newsformheadingclose {
-    display: inline-block;
-    float: right;
 }
 
 /* Blinkenlights */

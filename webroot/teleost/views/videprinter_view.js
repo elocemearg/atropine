@@ -155,7 +155,7 @@ class VideprinterView extends View {
 
             return html;
         }
-        else if (entry.log_type == 101) {
+        else if ((entry.log_type & 97) != 0) {
             if (entry.comment == null) {
                 return "";
             }
@@ -182,20 +182,26 @@ class VideprinterView extends View {
     redraw() {
         this.latestGameRevisionSeen = gameStateRevision;
         var gameState = this.getGameState();
-        var logs_reply = null;
         var log_entries = [];
         var maxLogSeq = null;
 
         if (gameState.success) {
-            logs_reply = gameState.logs;
-            var start = logs_reply.logs.length - this.numRows;
+            var applicable_logs = []
+            /* We only want the log types we're interested in */
+            for (var i = 0; i < gameState.logs.logs.length; ++i) {
+                var lt = gameState.logs.logs[i].log_type;
+                if (lt == 1 || lt == 2 || ((lt & 96) != 0 && (lt & 1) != 0)) {
+                    applicable_logs.push(gameState.logs.logs[i])
+                }
+            }
+            var start = applicable_logs.length - this.numRows;
             if (start < 0) {
                 start = 0;
             }
-            for (var i = start; i < logs_reply.logs.length; ++i) {
-                log_entries.push(logs_reply.logs[i]);
-                if (maxLogSeq == null || logs_reply.logs[i].seq > maxLogSeq)
-                    maxLogSeq = logs_reply.logs[i].seq;
+            for (var i = start; i < applicable_logs.length; ++i) {
+                log_entries.push(applicable_logs[i]);
+                if (maxLogSeq == null || applicable_logs[i].seq > maxLogSeq)
+                    maxLogSeq = applicable_logs[i].seq;
             }
         }
 
