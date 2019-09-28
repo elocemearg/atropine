@@ -8,7 +8,7 @@ import fixgen
 # Who is "Random", and where is "Seeded Pots"?
 name = "Random from Seeded Pots"
 
-description = "Divide the players by rating into pots, the number of pots being the desired group size. Each group contains one randomly-selected player from each pot. If two or more players have the same rating, the player with the lower player ID is rated higher. Any prunes are placed on the highest-numbered tables."
+description = "Divide the players by rating into pots, the number of pots being the desired group size. Each group contains one randomly-selected player from each pot, thus keeping the highest-rated players apart. Any prunes are placed on the highest-numbered tables."
 
 def get_user_form(tourney, settings, div_rounds):
     return gencommon.get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=False)

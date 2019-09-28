@@ -1265,7 +1265,6 @@ try:
             news_text = form.getfirst("newsformedittext")
             post_to_videprinter = bool(int_or_none(form.getfirst("posttovideprinter")))
             post_to_web = bool(int_or_none(form.getfirst("posttoweb")))
-            sys.stderr.write("post_to_videprinter %s, post_to_web %s\n" % (str(post_to_videprinter), str(post_to_web))) # GOZZARD
             if news_text is None:
                 news_text = ""
             news_entry_seq = int_or_none(form.getfirst("newseditseq"))

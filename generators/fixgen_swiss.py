@@ -7,7 +7,7 @@ import cgi
 import fixgen
 
 name = "Swiss Army Blunderbuss";
-description = "Players are matched against opponents who have performed similarly to them so far in the tourney, but repeats of previous fixtures are avoided.";
+description = "Players are matched against opponents who have performed similarly to them so far in the tourney, but repeats of previous fixtures are avoided. This is the most commonly-used fixture generator for the second round onwards.";
 valid_group_sizes = (2, 3, 4, 5, -5)
 
 def int_or_none(s):

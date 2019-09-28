@@ -9,7 +9,7 @@ import re
 import fixgen
 
 name = "Manual Pairings/Groups"
-description = "Player groups are specified manually. A fixture is generated between each pair in a group."
+description = "Player groups are specified manually. A fixture is generated between each pair in a group. Use this fixture generator if you're generating fixtures yourself, for example by picking names out of a hat."
 
 def int_or_none(s):
     try:

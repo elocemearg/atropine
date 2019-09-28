@@ -7,7 +7,7 @@ import cgi
 import fixgen
 
 name = "Round Robin"
-description = "Pairs only. We generate N-1 rounds, where N is the number of players in the largest selected division. Smaller selected divisions will sit out later rounds. Every player plays every other player in their division once."
+description = "Pairs only. Every player plays every other player in their division once. We generate N-1 rounds, where N is the number of players in the largest selected division. Smaller selected divisions will sit out later rounds."
 
 def int_or_none(s):
     try:

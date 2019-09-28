@@ -646,7 +646,6 @@ th.fixgenth {
 }
 
 td.fixgen {
-	width: 200px;
 	background-color: #ffee66;
 	padding: 5px;
 	border-bottom: 1px solid gray;
@@ -660,7 +659,7 @@ td.fixgenmodule {
 }
 
 td.fixgendescription {
-	font-size: 10pt;
+	font-size: 11pt;
 	padding: 5px;
 	border-bottom: 1px solid gray;
 	background-color: #ffffaa;

@@ -9,7 +9,7 @@ import re
 import fixgen
 
 name = "Fully Manual Fixtures"
-description = "Organiser has full control over how many matches are in the round and who plays whom. There are no table groups, and there is no requirement that all players play."
+description = "You have full control over how many matches are in the round and who plays whom. There are no table groups, and there is no requirement that all players play. Use this generator if you want a knockout stage or grand final."
 
 special_round_names = {
         "QF" : "Quarter-finals",

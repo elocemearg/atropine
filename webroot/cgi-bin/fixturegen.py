@@ -20,6 +20,7 @@ tourney_name = form.getfirst("tourney");
 
 tourney = None;
 request_method = os.environ.get("REQUEST_METHOD", "");
+popular_fixgens = [ "fixgen_swiss", "fixgen_random", "fixgen_random_seeded" ]
 
 cgicommon.set_module_path();
 
@@ -400,19 +401,45 @@ if warning_content:
 if success_content:
     cgicommon.show_success_box(success_content)
 
+
 # show_fixgen_list is set when the user hasn't yet picked a fixture generator.
 if show_fixgen_list:
-    cgicommon.writeln("<p>The following fixture generators are available.</p>");
+    cgicommon.writeln("<p>Choose a fixture generator from the table below.</p>");
+    cgicommon.writeln("<p>")
+    cgicommon.writeln("The most commonly-used fixture generators are ")
+
+    links = []
+    for module_name in module_list:
+        if module_name in popular_fixgens:
+            fixgen_module = importlib.import_module(module_name)
+            links.append("<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">%s</a>" % (
+                    urllib.parse.quote_plus(module_name),
+                    urllib.parse.quote_plus(tourney_name),
+                    fixgen_module.name
+                )
+            )
+    for i in range(len(links)):
+        if i == len(links) - 1:
+            cgicommon.write(" and ")
+        elif i > 0:
+            cgicommon.write(", ")
+        cgicommon.write(links[i])
+    cgicommon.writeln(".</p>")
 
     cgicommon.writeln("<table class=\"fixgentable\">");
-    cgicommon.writeln("<tr><th class=\"fixgentable fixgenth\">Fixture Generator</th><th class=\"fixgentable fixgenth\">Module Name</th><th class=\"fixgentable fixgenth\">Description</th></tr>");
+    cgicommon.writeln("<tr><th class=\"fixgentable fixgenth\"></th><th class=\"fixgentable fixgenth\">Generator</th><th class=\"fixgentable fixgenth\">Description</th></tr>");
     for module_name in module_list:
         fixgen_module = importlib.import_module(module_name);
         cgicommon.writeln("<tr>");
         cgicommon.writeln("<td class=\"fixgentable fixgen\">");
+        cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">" % (urllib.parse.quote_plus(module_name), urllib.parse.quote_plus(tourney_name)))
+        cgicommon.writeln("<img src=\"/images/fixgen/%s.png\" alt=\"%s\" />" % (cgicommon.escape(module_name), cgicommon.escape(fixgen_module.name)))
+        cgicommon.writeln("</a>")
+        cgicommon.writeln("</td>")
+        cgicommon.writeln("<td class=\"fixgentable fixgen\">");
         cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">%s</a>" % (urllib.parse.quote_plus(module_name), urllib.parse.quote_plus(tourney_name), cgicommon.escape(fixgen_module.name)));
         cgicommon.writeln("</td>");
-        cgicommon.writeln("<td class=\"fixgentable fixgenmodule\">%s</td>" % (cgicommon.escape(module_name)));
+        #cgicommon.writeln("<td class=\"fixgentable fixgenmodule\">%s</td>" % (cgicommon.escape(module_name)));
         cgicommon.writeln("<td class=\"fixgentable fixgendescription\">%s</td>" % (cgicommon.escape(fixgen_module.description)));
         cgicommon.writeln("</tr>");
     cgicommon.writeln("</table>");

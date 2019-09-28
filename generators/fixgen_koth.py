@@ -9,7 +9,7 @@ import gencommon
 import fixgen
 
 name = "King of the Hill"
-description = "Players are grouped based on their current position in the standings. If the group size is N, the top N players go on the first table, the next N players go on the second table, and so on. No attempt is made to avoid rematches, but prunes are kept apart.";
+description = "Players are grouped based on their current position in the standings. If the group size is N, the top N players go on the first table, the next N players go on the second table, and so on. Prunes are kept apart, but no attempt is made to avoid rematches, which is why nobody ever uses this generator. Everyone uses the Swiss one instead.";
 
 def lookup_player(players, name):
     for p in players:
