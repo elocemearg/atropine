@@ -406,6 +406,12 @@ td.standingsplayed {
 	border-right: 1px solid gray;
 }
 
+td.standingsfinals {
+    text-align: right;
+    border-right: 1px solid gray;
+    font-weight: bold;
+}
+
 td.standingswins {
 	text-align: right;
 	border-right: 1px solid gray;

@@ -10,7 +10,7 @@ import qualification
 from cttable import CandidateTable, TableVotingGroup, PhantomTableVotingGroup
 import cttable
 
-SW_VERSION_SPLIT = (1, 0, 6)
+SW_VERSION_SPLIT = (1, 0, 7)
 SW_VERSION = ".".join([str(x) for x in SW_VERSION_SPLIT])
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
@@ -357,17 +357,58 @@ select p.id, count(g.p1) played_first
 from player p left outer join completed_heat_game g on p.id = g.p1
 group by p.id;
 
+create table final_game_types(game_type text, power int);
+insert into final_game_types values ('QF', 2), ('SF', 1), ('F', 0);
+
+create view if not exists player_finals_results as
+select p.id, gt.game_type,
+case when gd.p_score is null then '-'
+     when gd.p_score > gd.opp_score then 'W'
+     when gd.p_score = gd.opp_score then 'D'
+     else 'L'
+end result
+from player p, final_game_types gt
+left outer join game_divided gd on p.id = gd.p_id
+     and gd.game_type = gt.game_type;
+
+create view if not exists player_finals_form as 
+select p.id, pfr_qf.result qf, pfr_sf.result sf, pfr_f.result f
+from player p, player_finals_results pfr_qf on p.id = pfr_qf.id and pfr_qf.game_type = 'QF',
+player_finals_results pfr_sf on p.id = pfr_sf.id and pfr_sf.game_type = 'SF',
+player_finals_results pfr_f on p.id = pfr_f.id and pfr_f.game_type = 'F';
+
 create view if not exists player_standings as
-select p.id, p.name, p.division, played.played, wins.wins, draws.draws, points.points, points_against.points_against, ppf.played_first
+select p.id, p.name, p.division, played.played, wins.wins, draws.draws,
+    points.points, points_against.points_against, ppf.played_first,
+    pff.qf || pff.sf || pff.f finals_form,
+    case when pff.f = '-' then 0
+    else
+        case when pff.qf = 'W' then 48
+             when pff.qf = 'D' then 32
+             when pff.qf = 'L' then 16
+             else case when pff.sf != '-' or pff.f != '-' then 48 else 0 end
+        end +
+        case when pff.sf = 'W' then 12
+             when pff.sf = 'D' then 8
+             when pff.sf = 'L' then 4
+             else case when pff.f != '-' then 12 else 0 end
+        end +
+        case when pff.f = 'W' then 3
+             when pff.f = 'D' then 2
+             when pff.f = 'L' then 1
+             else 0
+        end
+    end finals_points
 from player p, player_wins wins, player_draws draws, player_played played,
 player_points points, player_points_against points_against,
-player_played_first ppf
+player_played_first ppf, player_finals_form pff
 where p.id = wins.id
 and p.id = played.id
 and p.id = points.id
 and p.id = draws.id
 and p.id = points_against.id
-and p.id = ppf.id;
+and p.id = ppf.id
+and p.id = pff.id;
 
 -- Tables for controlling the display system Teleost
 create table if not exists teleost(current_mode int);
@@ -790,7 +831,7 @@ class Team(object):
         return ((self.colour >> 16) & 0xff, (self.colour >> 8) & 0xff, self.colour & 0xff)
 
 class StandingsRow(object):
-    def __init__(self, position, name, played, wins, points, draws, spread, played_first, rating, tournament_rating, withdrawn):
+    def __init__(self, position, name, played, wins, points, draws, spread, played_first, rating, tournament_rating, withdrawn, finals_form, finals_points):
         self.position = position
         self.name = name
         self.played = played
@@ -803,6 +844,8 @@ class StandingsRow(object):
         self.tournament_rating = tournament_rating
         self.withdrawn = withdrawn
         self.qualified = False
+        self.finals_form = finals_form
+        self.finals_points = finals_points
 
     def __str__(self):
         return "%3d. %-25s %3dw %3dd %4dp%s" % (self.position, self.name, self.wins, self.draws, self.points, " (W)" if self.withdrawn else "")
@@ -2438,14 +2481,14 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def get_standings(self, division=None, exclude_withdrawn_with_no_games=False, calculate_qualification=True):
         method = self.get_rank_method();
         if method == RANK_WINS_POINTS:
-            orderby = "order by s.wins * 2 + s.draws desc, s.points desc, p.name";
-            rankcols = [10,4];
+            orderby = "order by 13 desc, s.wins * 2 + s.draws desc, s.points desc, p.name";
+            rankcols = [13, 10, 4];
         elif method == RANK_WINS_SPREAD:
-            orderby = "order by s.wins * 2 + s.draws desc, s.points - s.points_against desc, p.name"
-            rankcols = [10,6]
+            orderby = "order by 13 desc, s.wins * 2 + s.draws desc, s.points - s.points_against desc, p.name"
+            rankcols = [13, 10, 6]
         elif method == RANK_POINTS:
-            orderby = "order by s.points desc, p.name";
-            rankcols = [4];
+            orderby = "order by 13 desc, s.points desc, p.name";
+            rankcols = [13, 4];
         else:
             raise UnknownRankMethodException("This tourney's standings are ranked by method %d, which I don't recognise." % method);
 
@@ -2461,9 +2504,20 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         else:
             where_clause = ""
 
-        results = self.ranked_query("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws, p.withdrawn from player_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id " + where_clause + orderby, rankcols);
+        results = self.ranked_query("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws, p.withdrawn, %s, %s from player_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id %s %s " % (
+            "s.finals_form" if self.db_version >= (1, 0, 7) else "''",
+            "s.finals_points" if self.db_version >= (1, 0, 7) else "0",
+            where_clause, orderby), rankcols);
 
-        standings = [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], bool(x[11])) for x in results ]
+        standings = [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], bool(x[11]), x[12], x[13]) for x in results ]
+
+        # If anyone has played any finals matches, don't calculate
+        # qualification because we're already past that and it wouldn't make
+        # sense anyway.
+        for s in standings:
+            if "W" in s.finals_form or "D" in s.finals_form or "L" in s.finals_form:
+                calculate_qualification = False
+                break
 
         if division is not None and calculate_qualification:
             # If we can, mark already-qualified players as such

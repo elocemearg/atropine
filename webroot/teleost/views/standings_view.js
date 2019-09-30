@@ -148,6 +148,11 @@ class StandingsView extends PagedTableView {
         var spread = "";
         var rowName = "standingsrow" + tableRow.toString();
         var withdrawn = false;
+        var finalsForm = standing.finals_form;
+
+        while (finalsForm.length > 0 && finalsForm[0] == '-') {
+            finalsForm = finalsForm.substring(1);
+        }
 
         pos = standing.position;
         name = standing.name;
@@ -186,6 +191,10 @@ class StandingsView extends PagedTableView {
         }
         else {
             name = escapeHTML(name);
+        }
+
+        if (finalsForm.length > 0) {
+            played = played.toString() + "(+" + finalsForm + ")";
         }
 
         if (standing.team_colour) {

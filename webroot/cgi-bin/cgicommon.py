@@ -669,26 +669,52 @@ onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.roun
 def show_standings_table(tourney, show_draws_column, show_points_column,
         show_spread_column, show_first_second_column=False,
         linkify_players=False, show_tournament_rating_column=False,
-        show_qualified=False):
+        show_qualified=False, which_division=None, show_finals_column=True):
+    writeln(make_standings_table(tourney, show_draws_column, show_points_column,
+        show_spread_column, show_first_second_column, linkify_players,
+        show_tournament_rating_column, show_qualified, which_division,
+        show_finals_column))
+
+def make_standings_table(tourney, show_draws_column, show_points_column,
+        show_spread_column, show_first_second_column=False,
+        linkify_players=False, show_tournament_rating_column=False,
+        show_qualified=False, which_division=None, show_finals_column=True):
+    html = []
+
     num_divisions = tourney.get_num_divisions()
     ranking_by_wins = tourney.is_ranking_by_wins()
 
     if linkify_players:
-        linkfn = lambda x : player_to_link(x, tourney.get_name())
+        linkfn = lambda x : player_to_link(x, tourney.get_name(), open_in_new_window=True)
     else:
         linkfn = lambda x : escape(x.get_name())
 
-    writeln("<table class=\"standingstable\">");
-    for div_index in range(num_divisions):
+    if which_division is None:
+        div_list = range(num_divisions)
+    else:
+        div_list = [which_division]
+
+    html.append("<table class=\"standingstable\">")
+    for div_index in div_list:
         standings = tourney.get_standings(div_index)
         if num_divisions > 1:
             div_string = tourney.get_division_name(div_index)
         else:
             div_string = ""
+
+        finals_form_exists = False
+        for s in standings:
+            if "W" in s.finals_form or "D" in s.finals_form or "L" in s.finals_form:
+                finals_form_exists = True
+                break
+        if not finals_form_exists:
+            show_finals_column = False
+
         if div_index > 0:
-            writeln("<tr class=\"standingstabledivspacer\"><td></td></tr>")
-        writeln("<tr><th colspan=\"2\">%s</th><th>Played</th><th>Wins</th>%s%s%s%s%s</tr>" % (
+            html.append("<tr class=\"standingstabledivspacer\"><td></td></tr>")
+        html.append("<tr><th colspan=\"2\">%s</th>%s<th>Played</th><th>Wins</th>%s%s%s%s%s</tr>" % (
                 escape(div_string),
+                "<th>Finals</th>" if show_finals_column else "",
                 "<th>Draws</th>" if show_draws_column else "",
                 "<th>Points</th>" if show_points_column else "",
                 "<th>Spread</th>" if show_spread_column else "",
@@ -700,8 +726,17 @@ def show_standings_table(tourney, show_draws_column, show_points_column,
         for s in standings:
             (pos, name, played, wins, points, draws, spread, num_first) = s[0:8];
             tournament_rating = s.tournament_rating
+            finals_form = s.finals_form
+
+            # Remove any leading dashes
+            while finals_form and finals_form[0] == '-':
+                finals_form = finals_form[1:]
+
+            finals_points = s.finals_points
             player = tourney.get_player_from_name(name)
-            if ranking_by_wins:
+            if finals_form:
+                bgcolour = "#aaffaa"
+            elif ranking_by_wins:
                 if last_wins_inc_draws is None:
                     bgcolour_index = 0;
                 elif last_wins_inc_draws != wins + 0.5 * draws:
@@ -722,7 +757,7 @@ def show_standings_table(tourney, show_draws_column, show_points_column,
                 else:
                     bgcolour = "#ffdd66"
 
-            writeln("<tr class=\"standingsrow\" style=\"background-color: %s\">" % (bgcolour));
+            html.append("<tr class=\"standingsrow\" style=\"background-color: %s\">" % (bgcolour));
 
             bold_style = "style=\"font-weight: bold;\""
             if ranking_by_wins:
@@ -739,25 +774,29 @@ def show_standings_table(tourney, show_draws_column, show_points_column,
                 spread_style = bold_style
             else:
                 spread_style = ""
-            writeln("<td class=\"standingspos\">%d</td>" % pos);
-            writeln("<td class=\"standingsname\">%s</td>" % (linkfn(player)));
-            writeln("<td class=\"standingsplayed\">%d</td>" % played);
-            writeln("<td class=\"standingswins\" %s >%d</td>" % (wins_style, wins));
+            html.append("<td class=\"standingspos\">%d</td>" % pos);
+            html.append("<td class=\"standingsname\">%s</td>" % (linkfn(player)));
+
+            if show_finals_column:
+                html.append("<td class=\"standingsfinals\">%s</td>" % (finals_form))
+            html.append("<td class=\"standingsplayed\">%d</td>" % played);
+            html.append("<td class=\"standingswins\" %s >%d</td>" % (wins_style, wins));
             if show_draws_column:
-                writeln("<td class=\"standingsdraws\" %s >%d</td>" % (draws_style, draws));
+                html.append("<td class=\"standingsdraws\" %s >%d</td>" % (draws_style, draws));
             if show_points_column:
-                writeln("<td class=\"standingspoints\" %s >%d</td>" % (points_style, points));
+                html.append("<td class=\"standingspoints\" %s >%d</td>" % (points_style, points));
             if show_spread_column:
-                writeln("<td class=\"standingsspread\" %s >%+d</td>" % (spread_style, spread));
+                html.append("<td class=\"standingsspread\" %s >%+d</td>" % (spread_style, spread));
             if show_first_second_column:
-                writeln("<td class=\"standingsfirstsecond\">%d/%d</td>" % (num_first, played - num_first))
+                html.append("<td class=\"standingsfirstsecond\">%d/%d</td>" % (num_first, played - num_first))
             if show_tournament_rating_column:
-                writeln("<td class=\"standingstournamentrating\">")
+                html.append("<td class=\"standingstournamentrating\">")
                 if tournament_rating is not None:
-                    writeln("%.2f" % (tournament_rating))
-                writeln("</td>")
-            writeln("</tr>");
-    writeln("</table>");
+                    html.append("%.2f" % (tournament_rating))
+                html.append("</td>")
+            html.append("</tr>");
+    html.append("</table>");
+    return "\n".join(html)
 
 def player_to_link(player, tourney_name, emboldenise=False, disable_tab_order=False, open_in_new_window=False, custom_text=None, withdrawn=False):
     return "<a class=\"playerlink%s%s\" href=\"player.py?tourney=%s&id=%d\" %s%s>%s</a>" % (

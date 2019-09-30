@@ -3,6 +3,7 @@
 import sys;
 import cgi;
 import html
+import cgicommon
 
 class HTMLForm(object):
     def __init__(self, method, action, element_list):
@@ -53,6 +54,11 @@ class HTMLFormElement(object):
             for name in self.other_attrs:
                 s += "%s=\"%s\" " % (html.escape(name), html.escape(self.other_attrs[name], True));
         return s
+
+    def set_attr(self, name, value):
+        if self.other_attrs is None:
+            self.other_attrs = {}
+        self.other_attrs[name] = value
 
 class HTMLFragment(HTMLFormElement):
     def __init__(self, html):
@@ -121,6 +127,9 @@ class HTMLFormTextInput(HTMLFormElement):
     
     def get_value(self):
         return self.value;
+    
+    def set_value(self, value):
+        self.value = value
 
     def html(self):
         return "%s <input type=\"text\" name=\"%s\" value=\"%s\" %s />\n" % (self.label, html.escape(self.name, True), html.escape(self.value, True), self.other_attrs_to_html());
@@ -229,3 +238,34 @@ class HTMLFormDropDownBox(HTMLFormElement):
         s += "</select>\n";
         return s;
 
+class HTMLFormComboBox(HTMLFormElement):
+    def __init__(self, name, options, other_attrs=None):
+        super(HTMLFormComboBox, self).__init__(name, other_attrs);
+        self.options = options[:];
+        self.value = None
+
+    def get_value(self):
+        return self.value
+    
+    def set_value(self, value):
+        self.value = value
+
+    def html(self):
+        s = "<input type=\"text\" name=\"%s\" list=\"_%s_opts\" value=\"%s\" />\n" % (
+                html.escape(self.name, True), html.escape(self.name, True),
+                html.escape("" if self.value is None else self.value, True)
+        )
+        s += "<datalist id=\"_%s_opts\">\n" % (html.escape(self.name, True))
+        for o in self.options:
+            s += "<option value=\"%s\" />\n" % (html.escape(o, True))
+        s += "</datalist>\n"
+        return s
+
+class HTMLFormStandingsTable(HTMLFormElement):
+    def __init__(self, name, tourney, which_division, other_attrs=None):
+        super(HTMLFormStandingsTable, self).__init__(name, other_attrs);
+        self.tourney = tourney
+        self.division = which_division
+
+    def html(self):
+        return cgicommon.make_standings_table(self.tourney, True, True, False, linkify_players=True, show_qualified=True, which_division=self.division)

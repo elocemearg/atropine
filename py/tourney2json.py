@@ -52,6 +52,8 @@ def get_standings(tourney, options):
             standing["team_colour"] = team_colour
             standing["withdrawn"] = p.is_withdrawn()
             standing["qualified"] = s.qualified
+            standing["finals_points"] = s.finals_points
+            standing["finals_form"] = s.finals_form
             standings.append(standing)
         div_dict = dict()
         div_dict["div_num"] = div
