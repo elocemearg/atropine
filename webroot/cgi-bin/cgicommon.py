@@ -544,7 +544,8 @@ def show_team_score_table(team_scores):
 def show_games_as_html_table(games, editable=True, remarks=None,
         include_round_column=False, round_namer=None, player_to_link=None,
         remarks_heading="", show_game_type=True, game_onclick_fn=None,
-        colour_win_loss=True, score_id_prefix=None, show_heading_row=True):
+        colour_win_loss=True, score_id_prefix=None, show_heading_row=True,
+        hide_game_type_if_p=False):
     if round_namer is None:
         round_namer = lambda x : ("Round %d" % (x))
 
@@ -552,6 +553,15 @@ def show_games_as_html_table(games, editable=True, remarks=None,
         player_to_link = lambda x : escape(x.get_name())
 
     writeln("<table class=\"scorestable\">");
+    
+    if show_game_type and hide_game_type_if_p:
+        for g in games:
+            if g.game_type != 'P':
+                break
+        else:
+            # There are no non-type-P games, so don't bother showing the game
+            # type column at all
+            show_game_type = False
 
     if show_heading_row:
         writeln("<tr>");
@@ -612,7 +622,9 @@ def show_games_as_html_table(games, editable=True, remarks=None,
             writeln("<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, g.table_no));
 
         if show_game_type:
-            writeln("<td class=\"gametype\">%s</td>" % escape(g.game_type));
+            writeln("<td class=\"gametype\">%s</td>" % (
+                "" if g.game_type == "P" and hide_game_type_if_p else escape(g.game_type)
+            ))
 
         p1_classes = ["gameplayer1"];
         p2_classes = ["gameplayer2"];

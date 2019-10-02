@@ -1346,10 +1346,10 @@ try:
             cgicommon.show_games_as_html_table(div_games, editable=False,
                     remarks=None, include_round_column=False, round_namer=None,
                     player_to_link=None, remarks_heading="",
-                    show_game_type=False,
+                    show_game_type=True,
                     game_onclick_fn=lambda rnd, seq : "select_game(%d, false);" % (seq),
                     colour_win_loss=False, score_id_prefix="gamelistscore",
-                    show_heading_row=False)
+                    show_heading_row=False, hide_game_type_if_p=True)
 
         cgicommon.writeln("</div>") #gamelistpanebody
         cgicommon.writeln("</div>") #gamelistpane

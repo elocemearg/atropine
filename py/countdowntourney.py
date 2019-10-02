@@ -361,7 +361,7 @@ create table final_game_types(game_type text, power int);
 insert into final_game_types values ('QF', 2), ('SF', 1), ('F', 0);
 
 create view if not exists player_finals_results as
-select p.id, gt.game_type,
+select p.id, coalesce(gd.game_type, gt.game_type) game_type,
 case when gd.p_score is null then '-'
      when gd.p_score > gd.opp_score then 'W'
      when gd.p_score = gd.opp_score then 'D'
@@ -369,18 +369,24 @@ case when gd.p_score is null then '-'
 end result
 from player p, final_game_types gt
 left outer join game_divided gd on p.id = gd.p_id
-     and gd.game_type = gt.game_type;
+     and (gd.game_type = gt.game_type or (gt.game_type = 'F' and gd.game_type = '3P'));
 
 create view if not exists player_finals_form as 
-select p.id, pfr_qf.result qf, pfr_sf.result sf, pfr_f.result f
-from player p, player_finals_results pfr_qf on p.id = pfr_qf.id and pfr_qf.game_type = 'QF',
-player_finals_results pfr_sf on p.id = pfr_sf.id and pfr_sf.game_type = 'SF',
-player_finals_results pfr_f on p.id = pfr_f.id and pfr_f.game_type = 'F';
+select p.id, coalesce(pfr_qf.result, '-') qf,
+             coalesce(pfr_sf.result, '-') sf,
+    case when pfr_f.result is null then '-'
+         when pfr_f.game_type = '3P' then lower(pfr_f.result)
+         else pfr_f.result end f
+from player p
+left outer join player_finals_results pfr_qf on p.id = pfr_qf.id and pfr_qf.game_type = 'QF'
+left outer join player_finals_results pfr_sf on p.id = pfr_sf.id and pfr_sf.game_type = 'SF'
+left outer join player_finals_results pfr_f on p.id = pfr_f.id and pfr_f.game_type in ('3P', 'F')
+group by p.id;
 
 create view if not exists player_standings as
 select p.id, p.name, p.division, played.played, wins.wins, draws.draws,
     points.points, points_against.points_against, ppf.played_first,
-    pff.qf || pff.sf || pff.f finals_form,
+    pff.qf || pff.sf || upper(pff.f) finals_form,
     case when pff.f = '-' then 0
     else
         case when pff.qf = 'W' then 48
@@ -391,7 +397,12 @@ select p.id, p.name, p.division, played.played, wins.wins, draws.draws,
         case when pff.sf = 'W' then 12
              when pff.sf = 'D' then 8
              when pff.sf = 'L' then 4
-             else case when pff.f != '-' then 12 else 0 end
+             -- If you're playing in a third place match then you're considered
+             -- to have lost the nonexistent semi-final. If you're playing in a
+             -- final then you're considered to have won the semi-final.
+             else case when pff.f in ('w', 'd', 'l') then 4
+                       when pff.f in ('W', 'D', 'L') then 12
+                       else 0 end
         end +
         case when pff.f = 'W' then 3
              when pff.f = 'D' then 2
