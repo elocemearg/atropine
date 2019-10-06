@@ -39,6 +39,7 @@ show_tournament_rating = bool(int_or_none(form.getfirst("showtournamentratingcol
 tr_bonus = float_or_none(form.getfirst("tournamentratingbonus"))
 tr_diff_cap = float_or_none(form.getfirst("tournamentratingdiffcap"))
 rank = int_or_none(form.getfirst("rank"))
+rank_finals = int_or_none(form.getfirst("rankfinals"))
 
 tourney = None;
 request_method = os.environ.get("REQUEST_METHOD", "");
@@ -75,6 +76,7 @@ else:
             tourney.set_show_tournament_rating_column(show_tournament_rating)
             tourney.set_tournament_rating_config(tr_bonus, tr_diff_cap)
             tourney.set_rank_method(rank)
+            tourney.set_rank_finals(rank_finals)
             cgicommon.show_success_box("Options updated.");
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
@@ -85,11 +87,17 @@ else:
 
     cgicommon.writeln("<h2>Ranking order</h2>");
     rank = tourney.get_rank_method();
+    rank_finals = tourney.get_rank_finals()
     cgicommon.writeln("<p>How do you want to rank players in the standings table?</p>");
     cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
     cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankwinspoints" %s /><label for="rankwinspoints"> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.</label><br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "")));
     cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankwinsspread" %s /><label for="rankwinsspread"> Wins, then cumulative winning margin (spread). Draws are worth half a win.</label><br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")))
     cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankpoints" %s /><label for="rankpoints"> Points only.</label>' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "")));
+    cgicommon.writeln("</div>")
+
+    cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
+    cgicommon.writeln("<input type=\"checkbox\" name=\"rankfinals\" value=\"1\" id=\"rankfinals\" %s />" % ("checked" if rank_finals else ""))
+    cgicommon.writeln("<label for=\"rankfinals\">Modify standings order according to results of finals, if played</label>")
     cgicommon.writeln("</div>")
 
     cgicommon.writeln("<h2>Tournament Ratings</h2>")

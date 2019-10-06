@@ -2492,16 +2492,25 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def get_standings(self, division=None, exclude_withdrawn_with_no_games=False, calculate_qualification=True):
         method = self.get_rank_method();
         if method == RANK_WINS_POINTS:
-            orderby = "order by 13 desc, s.wins * 2 + s.draws desc, s.points desc, p.name";
-            rankcols = [13, 10, 4];
+            orderby = "s.wins * 2 + s.draws desc, s.points desc, p.name";
+            rankcols = [10, 4];
         elif method == RANK_WINS_SPREAD:
-            orderby = "order by 13 desc, s.wins * 2 + s.draws desc, s.points - s.points_against desc, p.name"
-            rankcols = [13, 10, 6]
+            orderby = "s.wins * 2 + s.draws desc, s.points - s.points_against desc, p.name"
+            rankcols = [10, 6]
         elif method == RANK_POINTS:
-            orderby = "order by 13 desc, s.points desc, p.name";
-            rankcols = [13, 4];
+            orderby = "s.points desc, p.name";
+            rankcols = [4];
         else:
             raise UnknownRankMethodException("This tourney's standings are ranked by method %d, which I don't recognise." % method);
+
+        # If we're also taking account of any finals matches, then finals
+        # performance has a higher sorting priority than anything else.
+        rank_finals = self.get_rank_finals()
+        if rank_finals:
+            rankcols = [13] + rankcols
+            orderby = "13 desc, " + orderby
+
+        orderby = "order by " + orderby
 
         conditions = []
 
@@ -3557,6 +3566,12 @@ and g.game_type = 'P'
     
     def set_post_to_web(self, value):
         return self.set_attribute("posttoweb", 1 if value else 0)
+
+    def get_rank_finals(self):
+        return self.get_int_attribute("rankfinals", 1) != 0
+
+    def set_rank_finals(self, rank_finals):
+        return self.set_attribute("rankfinals", 1 if rank_finals else 0)
  
 
 def get_5_3_table_sizes(num_players):
