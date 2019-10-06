@@ -34,7 +34,7 @@ if tourney_name is None:
 
 try:
     tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir)
-    cgicommon.show_sidebar(tourney)
+    cgicommon.show_sidebar(tourney, show_misc_table_links=True)
     num_losing_games = cgicommon.int_or_none(form.getfirst("numlosinggames", 3))
     if num_losing_games is None or num_losing_games <= 0:
         num_losing_games = 3

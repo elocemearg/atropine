@@ -178,7 +178,7 @@ else:
         cgicommon.writeln('<h2>Teams</h2>')
         for team in teams:
             cgicommon.writeln('<p>')
-            cgicommon.writeln('<span style=\"color: #%s\">&bull;</span> %s' % (team.get_hex_colour(), team.get_name()))
+            cgicommon.writeln(cgicommon.make_team_dot_html(team) + " " + cgicommon.escape(team.get_name()))
             player_name_list = [ cgicommon.escape(p.get_name()) for (p, pt) in player_teams if pt is not None and pt.get_id() == team.get_id() ]
 
             if player_name_list:

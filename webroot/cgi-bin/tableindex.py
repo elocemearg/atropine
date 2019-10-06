@@ -23,7 +23,7 @@ def fatal_exception(exc, tourney=None):
     cgicommon.print_html_head("Table Index")
     cgicommon.writeln("<body>")
     if tourney:
-        cgicommon.show_sidebar(tourney)
+        cgicommon.show_sidebar(tourney, show_misc_table_links=True)
     cgicommon.writeln("<div class=\"mainpane\">")
     cgicommon.show_tourney_exception(exc)
     cgicommon.writeln("</div>")
@@ -72,7 +72,7 @@ cgicommon.writeln("<body>")
 
 cgicommon.assert_client_from_localhost()
 
-cgicommon.show_sidebar(tourney)
+cgicommon.show_sidebar(tourney, show_misc_table_links=True)
 
 cgicommon.writeln("<div class=\"mainpane\">")
 

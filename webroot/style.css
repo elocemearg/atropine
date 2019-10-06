@@ -118,6 +118,14 @@ div.sidebarversioninfo {
     color: #444444;
 }
 
+#miscstats {
+    padding-left: 20px;
+}
+
+#miscstatslink {
+    font-size: 10pt;
+}
+
 .mainpane {
 	margin-left: 200px;
 }
@@ -520,6 +528,15 @@ td.teamscorestablescore {
 	font-weight: bold;
 }
 
+span.faintoutline {
+    text-shadow:
+        -1px -1px 0 #aaa,
+        1px -1px 0 #aaa,
+        -1px 1px 0 #aaa,
+        1px 1px 0 #aaa;
+}
+
+
 /* Warnings and exceptions */
 
 div.warningbox {
@@ -911,6 +928,11 @@ div.playerlisthelp {
 }
 
 #playerlistextrahelpshow {
+    color: blue;
+    cursor: pointer;
+}
+
+a.fakelink {
     color: blue;
     cursor: pointer;
 }
@@ -1744,22 +1766,28 @@ div.rulessubmit {
 
 
 table.teamtable {
-    border: 1px solid black;
     border-collapse: collapse;
+    border: 1px solid gray;
 }
 
 table.teamtable th {
-    border: 1px solid black;
+    border: 1px solid gray;
+    background-color: silver;
+    color: black;
+    padding: 2px 5px 2px 5px;
+}
+
+table.teamtable td {
+    padding: 2px 5px 2px 5px;
+    border: 1px dashed gray;
 }
 
 td.teamtableplayername {
     text-align: left;
-    border: 1px solid gray;
 }
 
 td.teamtablebuttoncell {
     text-align: center;
-    border: 1px solid gray;
 }
 
 div.playersetupcontainer {

@@ -621,7 +621,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("</p>")
         cgicommon.writeln("</div>") #playerlistextrahelp
 
-        cgicommon.writeln("<a id=\"playerlistextrahelpshow\" onclick=\"playerListExtraHelpShow();\">Show less</a>");
+        cgicommon.writeln("<a id=\"playerlistextrahelpshow\" onclick=\"playerListExtraHelpShow();\" class=\"fakelink\">Show less</a>");
 
         cgicommon.writeln("</div>")
         cgicommon.writeln("</div>")

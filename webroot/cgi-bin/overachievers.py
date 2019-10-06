@@ -75,7 +75,7 @@ if tourney_name is None:
 
 try:
     tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir)
-    cgicommon.show_sidebar(tourney)
+    cgicommon.show_sidebar(tourney, show_misc_table_links=True)
 
 
     cgicommon.writeln("<div class=\"mainpane\">")

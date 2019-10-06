@@ -391,7 +391,7 @@ setupUploadWidget();
     writeln(upload_widget_script_text)
 
 
-def show_sidebar(tourney):
+def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
     new_window_html = "<img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Opens in new window\" />"
     writeln("<div class=\"sidebar\">");
 
@@ -399,23 +399,26 @@ def show_sidebar(tourney):
     if tourney:
         writeln("<p><strong>%s</strong></p>" % escape(tourney.name));
         writeln(("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\"><strong>General Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
-        writeln("<div class=\"sidebarlinklist\">")
-        writeln("<div>")
-        writeln(("<a href=\"/cgi-bin/player.py?tourney=%s\">Players...</a>" % (urllib.parse.quote_plus(tourney.name))))
-        writeln("</div>")
-        writeln("<div>")
-        writeln(("<a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions...</a>" % (urllib.parse.quote_plus(tourney.name))))
-        writeln("</div>")
-        writeln("<div>")
-        writeln(("<a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Teams...</a>" % (urllib.parse.quote_plus(tourney.name))))
-        writeln("</div>")
-        writeln("<div>")
-        writeln(("<a href=\"/cgi-bin/tourneysetupadvanced.py?tourney=%s\">Advanced...</a>" % (urllib.parse.quote_plus(tourney.name))))
-        writeln("</div>")
-        writeln("</div>")
+
+        if show_setup_links:
+            writeln("<div class=\"sidebarlinklist\">")
+            writeln("<div>")
+            writeln(("<a href=\"/cgi-bin/player.py?tourney=%s\">Players...</a>" % (urllib.parse.quote_plus(tourney.name))))
+            writeln("</div>")
+            writeln("<div>")
+            writeln(("<a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions...</a>" % (urllib.parse.quote_plus(tourney.name))))
+            writeln("</div>")
+            writeln("<div>")
+            writeln(("<a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Teams...</a>" % (urllib.parse.quote_plus(tourney.name))))
+            writeln("</div>")
+            writeln("<div>")
+            writeln(("<a href=\"/cgi-bin/tourneysetupadvanced.py?tourney=%s\">Advanced...</a>" % (urllib.parse.quote_plus(tourney.name))))
+            writeln("</div>")
+            writeln("</div>")
+        else:
+            writeln("<div style=\"clear: both;\"></div>")
 
         writeln("<br />")
-
         writeln("<div>")
         writeln(("<a href=\"/cgi-bin/uploadsetup.py?tourney=%s\"><strong>Broadcast Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
         writeln("</div>")
@@ -463,28 +466,55 @@ def show_sidebar(tourney):
         writeln("</div>")
         writeln("<br />");
         writeln("<div class=\"genroundlink\">");
-        writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Generate fixtures...</a>" % (urllib.parse.quote_plus(tourney.name)));
+        writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\"><strong>Generate fixtures...</strong></a>" % (urllib.parse.quote_plus(tourney.name)));
         writeln("</div>");
-
         writeln("<br />")
+
         writeln("<div class=\"misclinks\">")
-        writeln(("<a href=\"/cgi-bin/tableindex.py?tourney=%s\">Name-to-table index</a>" % (urllib.parse.quote_plus(tourney.name))))
-        writeln("<br />")
-
         writeln("<a href=\"/cgi-bin/standings.py?tourney=%s\">Standings</a>" % (urllib.parse.quote_plus(tourney.name)));
-        writeln("<br />")
-        writeln("<a href=\"/cgi-bin/tuffluck.py?tourney=%s\">Tuff Luck</a>" % (urllib.parse.quote_plus(tourney.name)))
-        writeln("<br />")
-        writeln("<a href=\"/cgi-bin/overachievers.py?tourney=%s\">Overachievers</a>" % (urllib.parse.quote_plus(tourney.name)))
-        writeln("<br />")
-        writeln("<a href=\"/cgi-bin/timdownaward.py?tourney=%s\">Tim Down Award</a>" % (urllib.parse.quote_plus(tourney.name)))
         writeln("</div>")
 
-        writeln("<br />")
+        misc_links_html = """
+<a href="/cgi-bin/tableindex.py?tourney=$TOURNEY">Name-table index</a>
+<br />
+<a href="/cgi-bin/tuffluck.py?tourney=$TOURNEY">Tuff Luck</a>
+<br />
+<a href="/cgi-bin/overachievers.py?tourney=$TOURNEY">Overachievers</a>
+<br />
+<a href="/cgi-bin/timdownaward.py?tourney=$TOURNEY">Tim Down Award</a>
+"""
+        misc_links_html = misc_links_html.replace("$TOURNEY", urllib.parse.quote_plus(tourney.name))
 
         writeln("<div class=\"misclinks\">")
-        writeln("<a href=\"/cgi-bin/export.py?tourney=%s\">Export results</a>" % (urllib.parse.quote_plus(tourney.name)))
+        writeln("<a href=\"/cgi-bin/export.py?tourney=%s\">Export results...</a>" % (urllib.parse.quote_plus(tourney.name)))
         writeln("</div>")
+
+        writeln("<noscript><div class=\"misclinks\">")
+        writeln(misc_links_html)
+        writeln("</div></noscript>")
+
+        writeln("""<script>
+function toggleMiscStats() {
+    var miscStatsLink = document.getElementById("miscstatslink");
+    var miscStatsDiv = document.getElementById("miscstats");
+    if (miscStatsDiv.style.display == "block") {
+        miscStatsDiv.style.display = "none";
+        miscStatsLink.innerText = "[Expand]";
+    }
+    else {
+        miscStatsDiv.style.display = "block";
+        miscStatsLink.innerText = "[Collapse]";
+    }
+}
+</script>""")
+
+        writeln("More")
+        writeln("<a id=\"miscstatslink\" class=\"fakelink\" onclick=\"toggleMiscStats();\">%s</a>" % ("[Collapse]" if show_misc_table_links else "[Expand]"))
+        writeln("<div style=\"clear: both\"></div>")
+        writeln("<div class=\"misclinks\" id=\"miscstats\" style=\"display: %s;\">" % ("block" if show_misc_table_links else "none"))
+        writeln(misc_links_html)
+        writeln("</div>")
+
     writeln("<br />")
     writeln("<div class=\"globalprefslink\">")
     writeln("<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" ")
@@ -506,7 +536,7 @@ def show_sidebar(tourney):
 
 def make_team_dot_html(team):
     if team:
-        team_string = '<font color="#%s">&bull;</font>' % team.get_hex_colour()
+        team_string = '<span style="color: #%s;" class="faintoutline">&#10022;</span>' % team.get_hex_colour()
     else:
         team_string = ""
     return team_string
