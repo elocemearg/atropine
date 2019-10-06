@@ -24,31 +24,34 @@ os.environ["GENERATORPATH"] = os.path.join(os.getcwd(), "generators");
 os.environ["CODEPATH"] = os.path.join(os.getcwd(), "py");
 
 import uploader
+from countdowntourney import SW_VERSION
 
 uploader_service = None
 
+print("Atropine " + SW_VERSION + " by Graeme Cole")
+print("See licence.txt for licensing information.")
+print()
+
 try:
     uploader_service = uploader.TourneyUploaderService(uploader_listen_port)
-except Exception as e:
-    print("Failed to start uploader thread...")
-    print(str(e))
-    print("Press ENTER to exit...")
-    input()
-    sys.exit(1)
 
-os.chdir("webroot");
-try:
+    os.chdir("webroot");
     server_address = ('', http_listen_port);
     httpd = ThreadedHTTPServer(server_address, http.server.CGIHTTPRequestHandler);
-    print("Tourney web server");
+    print("Local web server created. Paste this link into your browser:")
     print()
-    print("Browser link: http://localhost:" + str(http_listen_port) + "/cgi-bin/home.py")
+    print("http://localhost:" + str(http_listen_port) + "/cgi-bin/home.py")
     print()
     httpd.serve_forever();
 except socket.error as e:
     err = e.args[0];
+    print("Failed to start...")
     if err == errno.EADDRINUSE:
-        print("Address localhost:%d is already in use." % http_listen_port);
+        if uploader_service is None:
+            failed_port = uploader_listen_port
+        else:
+            failed_port = http_listen_port
+        print("Address localhost:%d is already in use." % failed_port);
         print();
         print("Perhaps there is another instance of Atropine running?")
         print("If so, close it before attempting to start a new one.")
@@ -57,5 +60,11 @@ except socket.error as e:
         print(str(e))
     print("Press ENTER to exit...");
     input();
+except Exception as e:
+    print("Failed to start...")
+    print(str(e))
+    print("Press ENTER to exit...")
+    input()
+    sys.exit(1)
 
 sys.exit(0);
