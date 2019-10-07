@@ -81,9 +81,16 @@ else:
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
 
-    cgicommon.writeln("<hr />")
     cgicommon.writeln(('<form action="%s?tourney=%s" method="post">' % (baseurl, urllib.parse.quote_plus(tourneyname))));
     cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
+
+    cgicommon.writeln("<h2>Team Setup</h2>")
+    cgicommon.writeln("""<p>Atropine can assign each player to one of
+two teams. Every match between players on opposing teams gives a point to the
+winner's team. The team scores are displayed alongside the standings.</p>""")
+    cgicommon.writeln("""<p>
+<a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Go to the Team Setup page</a>
+</p>""" % (urllib.parse.quote_plus(tourneyname)))
 
     cgicommon.writeln("<h2>Ranking order</h2>");
     rank = tourney.get_rank_method();
