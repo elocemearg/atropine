@@ -3620,6 +3620,8 @@ def tourney_open(dbname, directory="."):
 def tourney_create(dbname, directory="."):
     if not re.match("^[A-Za-z0-9_-]+$", dbname):
         raise InvalidDBNameException("The tourney database name can only contain letters, numbers, underscores and hyphens.");
+    if len(dbname) > 60:
+        raise InvalidDBNameException("The tourney database name may not be more than 60 characters long.")
     if directory:
         if directory[-1] != '/':
             directory += "/";
