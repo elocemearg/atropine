@@ -317,6 +317,8 @@ td.drawingplayer {
 .gametype {
 	text-align: center;
     color: gray;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
 }
 
 .gameplayer1 {
