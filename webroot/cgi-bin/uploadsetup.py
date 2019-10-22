@@ -215,8 +215,9 @@ function copyLink() {
     }
 }
 
-function uploadConsoleRefresh(enabled, success, secondsOfFailure, errorMessage,
-            uploadWidgetFailureIsHTTP, lastAttemptFailed, uploaderThreadFailed) {
+function uploadConsoleRefresh(enabled, success, numViewers, secondsOfFailure,
+        errorMessage, uploadWidgetFailureIsHTTP, lastAttemptFailed,
+        uploaderThreadFailed) {
     var enabledDiv = document.getElementById("uploadconsoleenabled");
     var statusDiv = document.getElementById("uploadconsolestatus");
     var shareableDiv = document.getElementById("shareablelinkbox");
@@ -247,10 +248,14 @@ function uploadConsoleRefresh(enabled, success, secondsOfFailure, errorMessage,
         statusDiv.style.display = "none";
     }
     else if (success) {
-        statusDiv.innerText = "Running";
+        statusDiv.innerText = "Connected";
         statusDiv.style.backgroundColor = "green";
         statusDiv.style.color = "white";
         statusDiv.style.display = null;
+
+        if (numViewers != null) {
+            statusDiv.innerText += ", " + numViewers.toString() + " viewing";
+        }
     }
     else {
         statusDiv.style.display = null;

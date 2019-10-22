@@ -143,6 +143,7 @@ var uploadWidgetExtraCallback = null;
 var uploadWidgetSecondsOfFailure = null;
 var uploadWidgetBroadcastingEnabled = false;
 var uploadWidgetSuccess = false;
+var uploadWidgetNumViewers = null;
 var uploadWidgetErrorMessage = null;
 var uploadWidgetUploaderThreadFailed = false;
 var uploadWidgetFailureIsHTTP = false;
@@ -202,6 +203,7 @@ function updateUploadWidgetWithStatus(response) {
         var successful = false;
         var errorMessage = null;
         var lastAttemptFailed = false;
+        var numViewers = null;
 
         if (lastFailedUpload != null) {
             lastFailedUploadTime = lastFailedUpload.ts;
@@ -252,7 +254,12 @@ function updateUploadWidgetWithStatus(response) {
         else {
             imgFile = "uploadsuccess.png";
             statusText = "Connected";
+            numViewers = status.viewers;
             titleText = statusText;
+            if (numViewers != null) {
+                statusText = " &#128065; " + numViewers.toString();
+                titleText += ", " + numViewers.toString() + " viewing";
+            }
             successful = true;
         }
 
@@ -264,7 +271,7 @@ function updateUploadWidgetWithStatus(response) {
             if (successful) {
                 statusElement.style.backgroundColor = "#88ff88";
                 statusElement.style.color = "black";
-                statusElement.innerText = statusText;
+                statusElement.innerHTML = statusText;
             }
             else if (!lastAttemptFailed) {
                 statusElement.style.backgroundColor = "#ffff88";
@@ -272,7 +279,7 @@ function updateUploadWidgetWithStatus(response) {
                 if (secondsOfFailure != null)
                     statusElement.innerText = makeDurationString(secondsOfFailure);
                 else
-                    statusElement.innerText = statusText;
+                    statusElement.innerHTML = statusText;
             }
             else {
                 statusElement.style.backgroundColor = "red";
@@ -280,7 +287,7 @@ function updateUploadWidgetWithStatus(response) {
                 if (secondsOfFailure != null)
                     statusElement.innerText = makeDurationString(secondsOfFailure);
                 else
-                    statusElement.innerText = statusText;
+                    statusElement.innerHTML = statusText;
             }
         }
 
@@ -288,6 +295,7 @@ function updateUploadWidgetWithStatus(response) {
         uploadWidgetBroadcastingEnabled = isUploading;
         uploadWidgetUploaderThreadFailed = false;
         uploadWidgetSuccess = successful;
+        uploadWidgetNumViewers = numViewers;
         uploadWidgetLastAttemptFailed = lastAttemptFailed;
         if (successful) {
             uploadWidgetErrorMessage = null;
@@ -304,6 +312,7 @@ function updateUploadWidgetWithStatus(response) {
         statusElement.style.backgroundColor = "black";
         uploadWidgetUploaderThreadFailed = true;
         uploadWidgetSuccess = false;
+        uploadWidgetNumViewers = null;
         uploadWidgetBroadcastingEnabled = false;
         uploadWidgetSecondsOfFailure = 0;
         uploadWidgetLastAttemptFailed = true;
@@ -328,6 +337,7 @@ function updateUploadWidgetWithStatus(response) {
     if (titleText != null) {
         img.setAttribute("title", titleText);
         img.setAttribute("alt", titleText);
+        statusElement.setAttribute("title", titleText);
     }
 }
 
@@ -338,9 +348,10 @@ function refreshUploadWidgetCallback() {
         updateUploadWidgetWithStatus(uploadStatus);
         if (uploadWidgetExtraCallback != null) {
             uploadWidgetExtraCallback(uploadWidgetBroadcastingEnabled,
-                    uploadWidgetSuccess, uploadWidgetSecondsOfFailure,
-                    uploadWidgetErrorMessage, uploadWidgetFailureIsHTTP,
-                    uploadWidgetLastAttemptFailed, uploadWidgetUploaderThreadFailed);
+                    uploadWidgetSuccess, uploadWidgetNumViewers,
+                    uploadWidgetSecondsOfFailure, uploadWidgetErrorMessage,
+                    uploadWidgetFailureIsHTTP, uploadWidgetLastAttemptFailed,
+                    uploadWidgetUploaderThreadFailed);
         }
     }
     uploadStatusRequest = null;
@@ -353,9 +364,10 @@ function refreshUploadWidgetError() {
     updateUploadWidgetWithStatus(null);
     if (uploadWidgetExtraCallback != null) {
         uploadWidgetExtraCallback(uploadWidgetBroadcastingEnabled,
-                uploadWidgetSuccess, uploadWidgetSecondsOfFailure,
-                uploadWidgetErrorMessage, uploadWidgetFailureIsHTTP,
-                uploadWidgetLastAttemptFailed, uploadWidgetUploaderThreadFailed);
+                uploadWidgetSuccess, uploadWidgetNumViewers,
+                uploadWidgetSecondsOfFailure, uploadWidgetErrorMessage,
+                uploadWidgetFailureIsHTTP, uploadWidgetLastAttemptFailed,
+                uploadWidgetUploaderThreadFailed);
     }
     uploadStatusRequest = null;
 }

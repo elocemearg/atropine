@@ -148,6 +148,7 @@ class UploaderThread(object):
         self.uploading_tourneys = set()
         self.tourney_upload_start_time = {}
         self.tourney_last_upload_attempt_time = {}
+        self.tourney_num_viewers = {}
         self.tourney_auth = {}
         self.thread = threading.Thread(target=self.body)
         self.thread.daemon = True
@@ -191,6 +192,9 @@ class UploaderThread(object):
         except countdowntourney.TourneyException as e:
             sys.stderr.write("Failed to get last failed upload info: %s\n" % (str(e)))
             return None
+
+    def get_num_viewers(self, tourney_name):
+        return self.tourney_num_viewers.get(tourney_name, None)
     
     def get_tourney_auth(self, tourney):
         return self.tourney_auth.get(tourney)
@@ -242,9 +246,13 @@ class UploaderThread(object):
                             }
 
                             rep = make_https_json_request(http_server_host, http_server_port, http_submit_path, req)
+                            num_viewers = None
                             if rep.get("success", False):
                                 tourney.log_successful_upload()
                                 self.write_log("Successfully uploaded state for tourney \"%s\"" % (tourney_name))
+                                num_viewers = rep.get("viewers", None)
+                                if num_viewers is not None:
+                                    self.write_log("Server reports %d viewer%s." % (num_viewers, "s" if num_viewers != 1 else ""))
                             else:
                                 if rep.get("http_failure", False):
                                     failure_type = countdowntourney.UPLOAD_FAIL_TYPE_HTTP
@@ -252,6 +260,7 @@ class UploaderThread(object):
                                     failure_type = countdowntourney.UPLOAD_FAIL_TYPE_REJECTED
                                 tourney.log_failed_upload(failure_type, rep.get("message", "(no message)"))
                                 self.write_log("Failed to upload state for tourney \"%s\": %s" % (tourney_name, rep.get("message", "(no message")))
+                            self.tourney_num_viewers[tourney_name] = num_viewers
                     except countdowntourney.TourneyException as e:
                         self.write_log("UploaderThread: couldn't open tourney %s: %s" % (tourney_name, str(e)))
                         traceback.print_tb(e.__traceback__)
@@ -301,6 +310,7 @@ class UploaderServiceHandler(BaseRequestHandler):
                 rep = { "success" : True }
                 auth = uploader_thread.get_tourney_auth(tourney)
                 rep["publishing"] = uploader_thread.is_uploading_tourney(tourney)
+                rep["viewers"] = uploader_thread.get_num_viewers(tourney)
                 if auth:
                     rep["username"] = auth.get("username", None)
                     rep["password"] = auth.get("password", None)
