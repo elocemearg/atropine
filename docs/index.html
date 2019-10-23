@@ -1,328 +1,34 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB" xml:lang="en-GB">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<title>Atropine - Tutorial</title>
+<title>Atropine - Documentation</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style>
+body {
+    font-family: sans-serif;
+}
+</style>
 </head>
 <body>
-	<h1>Atropine Tutorial</h1>
+	<h1>Atropine Help Index</h1>
 
 	<p>
 	Atropine is a Countdown tournament administration system controlled
 	by your web browser.
 	</p>
 
-	<h2>Prerequisites</h2>
-	<p>
-	There is only one thing you need to have installed that you might not have
-    installed already, and that is <a href="https://www.python.org/">Python</a>.
-	Python is the programming language in which Atropine is written.
-	</p>
-	<p>
-	To use Atropine, you need
-	<a href="http://www.python.org/downloads/">Python 3</a> installed.
-	At the time of writing (July 2018), the latest version of this is 3.7.0.
-    If there's a newer version by the time you read this, then install that.
-	</p>
     <p>
-    Earlier versions of Atropine needed the Python module "pygame" for the
-    public-facing screen. pygame is no longer needed. If you already have it
-    installed then you don't need to remove it, but you don't need it.
-    </p>
-    <h3>Python 3</h3>
-    <p>
-    Older versions of atropine used Python 2. Starting from version 1.0.0,
-    all atropine releases will be for Python 3, and only for Python 3.
+    Here are some links to bare minimum help.
     </p>
 
-	<h2>Installation</h2>
-	<p>
-	After you have installed the prerequisites detailed above, unzip
-	atropine.zip into a directory of your choosing. There are a number
-	of files and directories, but the only one you need to know about
-	to use Atropine is <tt>atropine.py</tt>.
-	</p>
-	<h2>Starting Atropine</h2>
-	<p>
-	Atropine is a web server. When you run it, you leave it sitting in the
-	background and then use your web browser to connect to it and
-	administer tournaments. To start atropine, run
-	<tt>atropine.py</tt>. The Windows Firewall might tell you
-	it has blocked some features of Python and ask you what you want to
-	do about it. You need to allow Python to use at least private networks.
-	</p>
-	<p>
-	Once <tt>atropine.py</tt> is running, use your web browser to
-	visit <a href="http://localhost:3960/">http://localhost:3960</a>. This
-	will redirect you to the home screen.
-	</p>
-	<h2>Creating a tourney</h2>
-	<p>
-	Decide on a name for your tourney and enter it into the "Tourney name"
-	box. This name must consist only of letters, numbers, underscores and
-	hyphens - no spaces. So "colin2014" is okay, but "Countdown In Lincoln
-	2014" is not. Then click <em>Create Tourney</em>.
-	When that succeeds, click the "click here to continue" link
-	and you will land on the Tourney Setup page.
-	</p>
-    <h2>Public-facing screen</h2>
-    <p>
-    This used to be a separate script called <tt>teleost.py</tt>. This no
-    longer exists. Now it's part of the web interface. See the <em>Display
-    Setup</em> section below.
-	</p>
-	<h2>Tourney Setup</h2>
-	<p>
-	The Tourney Setup page allows you to load the list of players and
-	specify the rules of the tournament.
-	To get back to this page at any time, you can click the
-	<em>General Setup</em> link in the sidebar.
-	</p>
-	<p>
-	A tourney isn't much of a tourney without players. The text area under
-	the heading <em>Player List</em> is where your list of players
-	goes. Put each player name on a separate line, starting with the
-	highest-rated player and finishing with the lowest-rated player. If
-    your tournament is split into divisions, put a hyphen (-) on a line
-    by itself to indicate where the splits are.
-	</p>
-	<p>
-	<em>N.B.</em> If you need to add a prune (an imaginary player who always
-    scores zero) to take the number of players up to a multiple of two or
-    three, give them a rating of zero by adding a comma and a zero after their
-    name. This is important because some of the fixture generators treat
-    prunes specially to avoid drawing prunes against each other, and to avoid
-    players playing two different prunes twice.
-	</p>
-	<p>
-	Here's an example list of players you can copy and paste into the player
-    list box.
-	</p>
-	<pre>	Cymbelina Spatchcock
-	Lord Hoppleton
-	Compton Pauncefoot
-	Vampira Smithersby
-	Tinned Peaches
-	Infumbula Trousers
-	Jacquard Hookflash
-	Trilby Battenberg
-	Blancmange McTaggart
-	Sincerity Sandwich
-	Salzburg Pound-Quedgeley
-	Apterous Prune,0</pre>
-	<p>
-	Then click <em>Save Player List</em>.
-	</p>
-	<p>
-	The General Setup stage is also where you can specify other
-	attributes like how to rank players and whether draws are possible.
-	</p>
-	<h2>Generating Fixtures</h2>
-	<p>
-	Once your tourney has some players, you can get on with generating
-	fixtures for the first round. This tutorial will assume a COLIN-style
-	tournament structure: there are three rounds, in each round
-	players are divided into groups of three, and in each group three
-	games are played, with each player playing two games and hosting one.
-	</p>
-	<p>
-	Click the <em>Generate new round...</em> link in the sidebar.
-	You'll be presented with a list of fixture generators. Click
-    <em>Swiss Army Blunderbuss</em> or <em>Random Pairings/Groups</em> and
-    answer the questions, telling it you want three players per table.
-    For the first round, this will come back to you with a list of fixtures
-    immediately.
-	</p>
-	<p>
-	Review the fixtures, then click <em>Accept Fixtures</em>. The
-	fixtures aren't committed until you click this button.
-	</p>
-	<p>
-	You should then see a page telling you the fixtures were added
-	successfully. Click the <em>View games</em> link to go to the
-	results entry page.
-	</p>
+    <blockquote>
+        <li><a href="gettingstarted.html">Getting Started</a> - prerequisites, installation and starting Atropine.</li>
+        <li><a href="tourneysetup.html">Tourney Setup</a> - creating a tourney, entering the player list, and accessibility requirements.</li>
+        <li><a href="fixtures.html">Generating Fixtures</a> - generating a list of who plays whom.</li>
+        <li><a href="resultentry.html">Entering Results</a> - you'll spend most of the event using this screen.</a></li>
+        <li><a href="displaysetup.html">Display Setup</a> - showing the tourney state to your event's players on a second monitor.</li>
+        <li><a href="broadcastsetup.html">Broadcast Setup</a> - broadcasting live updates to the web (account required).</li>
+    </blockquote>
 
-	<h2>Filling in results</h2>
-    <p>
-    This is the page you'll be using the most. After you generate fixtures
-    you'll be led here. You can also get here using the "Results entry"
-    link in the sidebar.
-    </p>
-    <p>
-    As of atropine 0.8.0, the results entry interface gives you a space to
-    enter results at the top of the screen, then a videprinter-like display
-    of recently-entered results below that, then a box of blinkenlights.
-    </p>
-
-    <h3>Result entry</h3>
-    <p>
-    When you want to enter a result, first enter the players' names in the
-    player name boxes, then enter the players' scores in the boxes below, then
-    press enter or click <em>Submit result</em>. As you type a player's name,
-    it will be auto-completed for you when you've typed enough. You can press
-    TAB to move on to the next box.
-    </p>
-    <p>
-    It doesn't matter which way round the two players appear on the fixture
-    list - you can enter either name first. It is recommended that if you're
-    handed a scoresheet with a result on it, you enter the names in the order
-    they appear on the scoresheet. It's easier and avoids mistakes.
-    </p>
-    <h4>Tiebreaks</h4>
-    <p>
-    If the score you enter has a winning margin of exactly 10, a checkbox will
-    appear asking you whether this game was won on a tiebreak conundrum. Tick
-    the box if so. This will cause the winner's extra 10 points for the
-    tiebreak not to be counted in the standings table. If you're used to the
-    old interface, typing an asterisk (*) next to the score in one of the score
-    boxes is another way of indicating that a game was won on a tiebreak.
-    </p>
-    <h4>Double loss</h4>
-    <p>
-    If you want to record a game as having been lost by both players, enter a
-    score of 0-0 and tick the tiebreak box, which will now have become the
-    "loss for both players" box. This causes the game to be a 0-0 loss on
-    both sides. Neither player is credited with any points for the game and
-    it is not counted as a draw. This is useful if neither player turns up to
-    play their game.
-    </p>
-
-    <h3>Recent results</h3>
-    <p>
-    This is the videprinter-like display on the Results Entry page. It shows
-    all the results so far entered for this round. If you want to correct a
-    result, click it in the videprinter and the details will be loaded into the
-    result entry form. Correct the score and submit it.
-    </p>
-    <p>
-    Corrected entries appear grey with a line through them.
-    </p>
-
-    <h3>Blinkenlights</h3>
-    <p>
-    The Blinkenlights are a grid of numbered boxes. Each box represents a
-    table, or board, on which one or more games are being played in that round.
-    Within each numbered box is one coloured box for each game being played on
-    that table. A grey box means the result for that game has been entered, and
-    a red box means we don't have the result yet.
-    </p>
-    <p>
-    The purpose of the Blinkenlights is to show you at a glance which tables
-    have had their results entered and which haven't. At a Lincoln-style event
-    this can be useful to identify which tables are playing slowly or hoarding
-    their scoresheets.
-    </p>
-    <p>
-    If you hover the mouse cursor over a table number, the message bar at the
-    bottom of the Blinkenlights shows you the list of players on that table.
-    If you hover over a red or grey box representing a game, it shows you the
-    players playing in that game, and the score if applicable.
-    </p>
-    <p>
-    You can click a red or grey box to load that game's details into the
-    results entry interface, for results input or correction. If you'd rather
-    the names and scores were loaded into the results entry interface the other
-    way round, click the same game again and they'll swap over.
-    </p>
-
-    <h3>I hate this new interface! I want the old interface back, the one with the list of games!</h3>
-    <p>
-    The old one is still there, but I would strongly recommend trying out the
-    new interface if you can. The main reason for this is that with the old
-    interface, it was very, very easy to accidentally enter the result for a
-    game the wrong way round and not notice.
-    This usually happened when the score editor showed, say, "Alice v Bob" and
-    the scoresheet handed to the organiser had the names the other way
-    round, "Bob 34-56 Alice". If you've entered 200 results already that
-    day, it's very likely you'll accidentally type in "34-56" for Alice v Bob
-    instead of the correct "56-34".
-    </p>
-    <p>
-    Nevertheless, if you need to use the old interface, which showed you all
-    the games in a list with an edit box for each one, it's still there: just
-    click the <em>"show all the games in this round as a list"</em> link at the
-    bottom of the results entry page.
-    </p>
-    <p>
-    There are some very rare cases where you might need the old interface. If
-    you've generated a round in which two players play each other twice (this
-    used to be possible with some fixture generators), only the old interface
-    will work for those matches. Also, the old interface allowed you to declare
-    that a match was won on a tiebreak when the winning margin was something
-    other than 10. Arguably this was a bug, but if you ever need to do that
-    because some event has weird rules, then you need to use the old interface
-    to do that.
-    </p>
-    <p>
-    Aside from that, you should be using the new interface. If there's any
-    problem with the new interface that's driving you back to the old one,
-    let me know, and I'll look at making appropriate improvements to the new
-    interface.
-    </p>
-
-	<h2>The rest of the tourney</h2>
-	<p>
-	When you've entered all results for one round and you're ready to
-	generate fixtures for the next round, click
-	<em>Generate new round...</em> as before. This time, if you
-	click <em>Swiss Army Blunderbuss</em> you'll be asked for more
-    information before proceeding. This fixture generator needs to
-	group together players with similar performance, ensuring players don't
-	play anyone they've already played in the tourney. This is rather
-	complicated, so you can specify a time limit after which it will give
-	you the best grouping it has found up to that point. The default is
-	30 seconds.
-	</p>
-	<p>
-	Therefore, when you click the <em>Generate Fixtures</em> button
-	for round 2 onwards, it may take a few seconds to bring you the
-	fixtures. With our example of 12 players it should be very quick, but
-	in larger tournaments the fixtures will take longer to generate.
-	</p>
-	<h2>Display Setup</h2>
-	<p>
-	The <em>Display Setup</em> link in the sidebar takes you the page
-    which administers the public-facing screen. Click the <em>Open
-    Display Window</em> link at the top of this page to open the
-    public-facing screen in a new browser window. You can then drag this
-    new browser window onto a second screen (e.g. a projector) and full-screen
-    or resize it as necessary.
-    </p>
-    <p>
-    The menu on the Display Setup page shows you all the views you can
-    choose from. If you want the least-effort solution, leave it on the
-    default setting, "Auto".
-    </p>
-    <p>
-    If you want the public-facing window to show a particular screen, you can
-    select it from "Available screen modes" and click "Switch to this screen
-    mode". The public-facing window will then show only that screen until you
-    specify otherwise.
-	</p>
-	<p>
-	In <em>Auto</em> mode, Atropine uses the following rules to
-	decide which screen to show:
-	</p>
-	<ul>
-		<li>If the latest round has had fixtures generated
-		but no scores have been filled in yet, we display the
-		<em>Fixtures</em> screen.</li>
-		<li>Otherwise, if the latest round has had some but not all of
-		its scores filled in, we display the
-		<em>Standings / Videprinter</em> screen.</li>
-		<li>If in the latest round all games have had their
-		scores filled in, we display the
-		<em>Standings / Table Results</em> screen.</li>
-	</ul>
-	<p>
-	<em>Auto</em> mode never shows other screens such as the
-	<em>High Scores</em> or <em>Overachievers</em> screens,
-	so if you want to show those you need to switch to them manually using
-	the Display Setup menu.
-	</p>
-<hr />
-	<p>
-	</p>
 </body>
 </html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Atropine - Help - Result Entry</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style>
+body {
+    font-family: sans-serif;
+}
+</style>
+</head>
+<body>
+    <h1>Entering results</h1>
+    <p>
+    This is the page you'll be using the most. After you generate fixtures
+    you'll be led to the Results Entry page. You can also get there using the
+    "Results entry" link in the sidebar.
+    </p>
+
+    <h2>Result entry controls</h2>
+    <p>
+    As of atropine 0.8.0, the results entry interface gives you a box to
+    enter results at the top of the screen ("Result entry"), then a
+    videprinter-like display of recently-entered results below that ("News
+    feed"), then a box of blinkenlights.
+    </p>
+
+    <h3>Result entry</h3>
+    <p>
+    When you want to enter a result, first enter the players' names in the
+    player name boxes, then enter the players' scores in the boxes below, then
+    press enter or click <em>Submit result</em>. As you type a player's name,
+    it will be auto-completed for you when you've typed enough. You can press
+    TAB to move on to the next box.
+    </p>
+    <p>
+    It doesn't matter which way round the two players appear on the fixture
+    list - you can enter either name first. It is recommended that if you're
+    handed a scoresheet with a result on it, you enter the names in the order
+    they appear on the scoresheet. It's easier and avoids mistakes.
+    </p>
+    <h4>Tiebreaks</h4>
+    <p>
+    If the score you enter has a winning margin of exactly 10, a checkbox will
+    appear asking you whether this game was won on a tiebreak conundrum. Tick
+    the box if so. This will cause the winner's extra 10 points for the
+    tiebreak not to be counted in the standings table. If you're used to the
+    old interface, typing an asterisk (*) next to the score in one of the score
+    boxes is another way of indicating that a game was won on a tiebreak.
+    </p>
+    <h4>Double loss</h4>
+    <p>
+    If you want to record a game as having been lost by both players, enter a
+    score of 0-0 and tick the tiebreak box, which will now have become the
+    "loss for both players" box. This causes the game to be a 0-0 loss on
+    both sides. Neither player is credited with any points for the game and
+    it is not counted as a draw. This is useful if neither player turns up to
+    play their game.
+    </p>
+
+    <h3>Recent results / news feed</h3>
+    <p>
+    This is the videprinter-like display on the Results Entry page. It shows
+    all the results so far entered for this round. If you want to correct a
+    result, click it in the videprinter and the details will be loaded into the
+    result entry form. Correct the score and submit it. Corrected entries
+    appear grey with a line through them.
+    </p>
+    <p>
+    As of version 1.1.0, you can also add news items containing arbitrary text.
+    These will appear on the videprinter on the public display, but the line
+    won't wrap if it's too long, so try to be brief. These news items will also
+    appear on the live updates webpage if you're using that feature
+    (see <a href="broadcastsetup.html">Broadcast Setup</a>).
+    </p>
+
+    <h3>Blinkenlights</h3>
+    <p>
+    The Blinkenlights are a grid of numbered boxes. Each box represents a
+    table, or board, on which one or more games are being played in that round.
+    Within each numbered box is one coloured box for each game being played on
+    that table. A grey box means the result for that game has been entered, and
+    a red box means we don't have the result yet.
+    </p>
+    <p>
+    The purpose of the Blinkenlights is to show you at a glance which tables
+    have had their results entered and which haven't. At a Lincoln-style event
+    this can be useful to identify which tables are playing slowly or hoarding
+    their scoresheets.
+    </p>
+    <p>
+    If you hover the mouse cursor over a table number, the message bar at the
+    bottom of the Blinkenlights shows you the list of players on that table.
+    If you hover over a red or grey box representing a game, it shows you the
+    players playing in that game, and the score if applicable.
+    </p>
+    <p>
+    You can click a red or grey box to load that game's details into the
+    results entry interface, for results input or correction. If you'd rather
+    the names and scores were loaded into the results entry interface the other
+    way round, click the same game again and they'll swap over.
+    </p>
+    <h3>Historical note: I hate this new interface! I want the old interface back, the one with the list of games!</h3>
+    <p>
+    The old interface from pre-0.8.0 editions of Atropine is still there, but I
+    strongly recommend trying out the new interface if you can. The main reason
+    for this is that with the old interface, it was very, very easy to
+    accidentally enter the result for a game the wrong way round and not notice.
+    This usually happened when the score editor showed, say, "Alice v Bob" and
+    the scoresheet handed to the organiser had the names the other way
+    round, "Bob 34-56 Alice". If you've entered 200 results already that
+    day, it's very likely you'll accidentally type in "34-56" for Alice v Bob
+    instead of the correct "56-34".
+    </p>
+    <p>
+    Nevertheless, if you need to use the old interface, which showed you all
+    the games in a list with an edit box for each one, it's still there: just
+    click the <em>"show all the games in this round as a list"</em> link at the
+    bottom of the results entry page.
+    </p>
+    <p>
+    There are some very rare cases where you might need the old interface. If
+    you've generated a round in which two players play each other twice (this
+    used to be possible with some fixture generators), only the old interface
+    will work for those matches. Also, the old interface allowed you to declare
+    that a match was won on a tiebreak when the winning margin was something
+    other than 10. Arguably this was a bug, but if you ever need to do that
+    because some event has weird rules, then you need to use the old interface
+    to do that.
+    </p>
+    <p>
+    Aside from that, you should be using the new interface. If there's any
+    problem with the new interface that's driving you back to the old one,
+    let me know, and I'll look at making appropriate improvements to the new
+    interface.
+    </p>
+    <h2>After the round is over</h2>
+    <p>
+    When you've entered all results for one round and you're ready to generate
+    fixtures for the next round, click <em>Generate Fixtures...</em> as before,
+    and generate the fixtures for the next round as explained in the
+    <a href="fixtures.html">Generating Fixtures</a> help page.
+    </p>
+
+    <hr /><p><a href="index.html">Back to the index</a></p>
+</body>
+</html>

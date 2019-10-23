@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Atropine - Documentation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style>
+body {
+    font-family: sans-serif;
+}
+</style>
+</head>
+<body>
+    <h1>Broadcast setup</h1>
+    <p>
+    Atropine is designed to work without any internet access - everything is
+    hosted on your own computer. This has been a design goal from the very
+    beginning. The Broadcast feature, however, is the one thing that breaks
+    this rule. Access to <tt>greem.co.uk</tt> from the computer running
+    Atropine is required to use this feature.
+    </p>
+
+    <h2>Yes, you need a username and password</h2>
+    <p>If you have a username and password at
+    <a href="https://greem.co.uk/co">https://greem.co.uk/co</a> (you can't sign
+    up for a username yourself, I have to assign you one), you can make live
+    updates from your tournament appear at the URL
+    <tt>https://greem.co.uk/co/your_tournament_name</tt>.
+    </p>
+    
+    <h2>The Broadcast Setup page</h2>
+    <p>
+    Click the <em>Broadcast Setup</em> link in the sidebar. Fill in your
+    username and password and click <em>Start Broadcasting</em>. Once this is
+    done, Atropine will upload the state of your tourney to the server every
+    ten seconds. It will continue doing this until you tell it to stop
+    (<em>Stop Broadcasting</em>), or until you close Atropine.
+    </p>
+
+    <h2>Tourney names must be globally unique</h2>
+    <p>
+    The server won't allow two tourneys with the same name. So if you
+    called last year's tourney <tt>colin</tt>, and uploaded it to the website,
+    then if you call this year's tourney <tt>colin</tt> and try to upload it
+    you'll get an error. You'll either have to call the tourney something else
+    or manually delete the original tourney from the website.
+    </p>
+
+    <h2>Broadcast status widget in the sidebar</h2>
+    <p>
+    While you're administering the rest of the tourney, the status of the
+    uploads will be shown in the sidebar underneath the <em>Broadcast
+    Setup</em> link. A horizontal traffic light image tells you how it's
+    getting on.
+    </p>
+    <blockquote>
+        <li>If all three lights are off, the Broadcast feature is off. Nothing
+            is being uploaded. This is the default.</li>
+        <li>If the red light is flashing, it means the last upload was rejected
+            by the server. This could be because your username or password was
+            incorrect, for example.</li>
+        <li>If the red and amber light are both flashing, it means the last
+            upload couldn't reach the server. This usually indicates some
+            problem with your internet connection, or possibly a problem with
+            the server.</li>
+        <li>If the amber light is flashing, it means it doesn't have any
+            information yet about whether the last upload succeeded. Wait a
+            few seconds.</li>
+        <li>If the green light is on, then the last upload was successful.</li>
+    </blockquote>
+    <p>
+    If the last upload was not successful, a duration is indicated next to the
+    traffic light (e.g. <tt>5m</tt>). This is how long the problem has lasted.
+    In other words, <tt>5m</tt> means Atropine hasn't done a successful upload
+    of the tourney state for at least five minutes.
+    </p>
+    <p>
+    If the last upload was successful, then next to the traffic light is an
+    eye symbol and a number, on a green background. This is the number of
+    people currently viewing this tourney's page on the website.
+    </p>
+
+    <hr /><p><a href="index.html">Back to the index</a></p>
+        
+
+</body>
+</html>
