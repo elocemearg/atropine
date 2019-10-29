@@ -148,6 +148,7 @@ class UploaderThread(object):
         self.uploading_tourneys = set()
         self.tourney_upload_start_time = {}
         self.tourney_last_upload_attempt_time = {}
+        self.tourney_last_uploaded_game_state = {}
         self.tourney_num_viewers = {}
         self.tourney_auth = {}
         self.thread = threading.Thread(target=self.body)
@@ -161,6 +162,8 @@ class UploaderThread(object):
         self.uploading_tourneys.add(tourney)
         self.tourney_auth[tourney] = { "username" : username, "password" : password, "private" : private }
         self.tourney_upload_start_time[tourney] = int(time.time());
+        if tourney in self.tourney_last_uploaded_game_state:
+            del self.tourney_last_uploaded_game_state[tourney]
         self.tourney_last_upload_attempt_time[tourney] = 0
 
     def remove_tourney_from_upload_list(self, tourney):
@@ -241,15 +244,27 @@ class UploaderThread(object):
                                     "password" : password,
                                     "private" : private,
                                     "unique_id" : tourney_unique_id,
-                                    "tourney" : tourney_name,
-                                    "state" : game_state
+                                    "tourney" : tourney_name
                             }
 
+                            # If the game state has changed since the last time
+                            # we did a successful upload, include the new game
+                            # state, otherwise we just submit a null update
+                            # which only checks the server still works and
+                            # reads how many current visitors there are.
+                            if tourney_name not in self.tourney_last_uploaded_game_state or game_state != self.tourney_last_uploaded_game_state[tourney_name]:
+                                req["state"] = game_state
+
+                            # Send the submission to the server & get the reply
                             rep = make_https_json_request(http_server_host, http_server_port, http_submit_path, req)
                             num_viewers = None
                             if rep.get("success", False):
+                                self.tourney_last_uploaded_game_state[tourney_name] = game_state
                                 tourney.log_successful_upload()
-                                self.write_log("Successfully uploaded state for tourney \"%s\"" % (tourney_name))
+                                if "state" in req:
+                                    self.write_log("Successfully uploaded state for tourney \"%s\"" % (tourney_name))
+                                else:
+                                    self.write_log("No change since last upload of tourney \"%s\"" % (tourney_name))
                                 num_viewers = rep.get("viewers", None)
                                 if num_viewers is not None:
                                     self.write_log("Server reports %d viewer%s." % (num_viewers, "s" if num_viewers != 1 else ""))
