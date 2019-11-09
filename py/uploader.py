@@ -30,6 +30,8 @@ http_server_port = None
 http_submit_path = "/cgi-bin/colive/submit.py"
 http_delete_path = "/cgi-bin/colive/submit.py"
 
+upload_interval_sec = 10
+
 db_dir = os.path.join(os.getcwd(), "tourneys")
 
 import tourney2json
@@ -215,15 +217,14 @@ class UploaderThread(object):
         sys.stderr.write("%s: %s\r\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), message))
     
     def body(self):
-        upload_period_sec = 10
         while True:
             uploading_tourneys = self.uploading_tourneys.copy()
             for tourney_name in uploading_tourneys:
                 now = time.time()
                 last_upload_time = self.tourney_last_upload_attempt_time.get(tourney_name, 0)
-                if now >= last_upload_time + upload_period_sec:
+                if now >= last_upload_time + upload_interval_sec:
                     # Upload this tourney to the web if it's been at least
-                    # upload_period_sec seconds since the previous upload
+                    # upload_interval_sec seconds since the previous upload
                     # attempt.
                     try:
                         self.tourney_last_upload_attempt_time[tourney_name] = now
