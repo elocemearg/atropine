@@ -701,6 +701,19 @@ a.fixturecancellink {
     font-size: 12pt;
 }
 
+table.fixdivselector {
+    border-collapse: collapse;
+    margin-bottom: 30px;
+}
+
+table.fixdivselector td {
+    padding: 5px;
+}
+
+input.fixdivroundsel {
+    max-width: 5em;
+}
+
 
 /* Divisions */
 

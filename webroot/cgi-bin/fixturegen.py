@@ -206,11 +206,17 @@ success_content = None
 show_link_to_round = None
 tourney = None
 module_list = []
+fixgen_settings = None
 
 try:
     tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
 
     generator_name = form.getfirst("generator");
+    if generator_name:
+        fixgen_settings = FixtureGeneratorSettings(tourney.get_fixgen_settings(generator_name));
+    else:
+        fixgen_settings = None
+
     module_list = generators.get_fixture_generator_list();
     num_divisions = tourney.get_num_divisions()
     if len(tourney.get_active_players()) == 0:
@@ -243,7 +249,7 @@ try:
 
         for key in form:
             fixgen_settings[key] = form.getfirst(key);
-
+        
         if fixgen_settings.get("_divsubmit", None) is None:
             fixgen_settings["_divsubmit"] = "Next"
             for div in range(num_divisions):
@@ -355,12 +361,6 @@ except countdowntourney.TourneyException as e:
 # a list of fixtures, we want to write those to the database before we display
 # the sidebar, so that the sidebar contains a link to the new round.
 
-generator_name = form.getfirst("generator");
-if generator_name:
-    fixgen_settings = FixtureGeneratorSettings(tourney.get_fixgen_settings(generator_name));
-else:
-    fixgen_settings = None
-
 if tourney:
     cgicommon.show_sidebar(tourney);
 
@@ -386,6 +386,8 @@ if exception_content:
 if exceptions_to_show:
     for e in exceptions_to_show:
         cgicommon.show_tourney_exception(e);
+
+if exception_content or exceptions_to_show:
     cgicommon.writeln("<p>")
     if generator_name:
         cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s&amp;generator=%s\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name), urllib.parse.quote_plus(generator_name)))
@@ -451,13 +453,17 @@ if fixgen_ask_divisions:
     elements = []
     elements.append(htmlform.HTMLFragment("<p>Which divisions do you want to generate fixtures for, starting from which rounds? By default, a division's fixtures will go in the round after the latest round which has games for that division.</p>"))
     num_divisions = tourney.get_num_divisions()
+    elements.append(htmlform.HTMLFragment("<table class=\"fixdivselector\">"))
+    elements.append(htmlform.HTMLFragment("<tr><th>Division</th><th>Round number</th></tr>"))
     for div in range(num_divisions):
-        elements.append(htmlform.HTMLFragment("<p>"))
+        elements.append(htmlform.HTMLFragment("<tr><td>"))
         elements.append(htmlform.HTMLFormCheckBox("_div%d" % (div), tourney.get_division_name(div), True))
         next_free_round_number = tourney.get_next_free_round_number_for_division(div)
-        elements.append(htmlform.HTMLFormTextInput(" round ", "_div%dround" % (div), str(next_free_round_number)))
-        elements.append(htmlform.HTMLFragment("</p>"))
-    elements.append(htmlform.HTMLFormSubmitButton("_divsubmit", "Next"))
+        elements.append(htmlform.HTMLFragment("</td><td>"))
+        elements.append(htmlform.HTMLFormTextInput("", "_div%dround" % (div), str(next_free_round_number), other_attrs={"class": "fixdivroundsel"}))
+        elements.append(htmlform.HTMLFragment("</td></tr>"))
+    elements.append(htmlform.HTMLFragment("</table>"))
+    elements.append(htmlform.HTMLFormSubmitButton("_divsubmit", "Next", other_attrs={"class" : "bigbutton"}))
     settings_form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s&generator=%s" % (urllib.parse.quote_plus(tourney.get_name()), urllib.parse.quote_plus(generator_name)), elements)
     cgicommon.writeln(settings_form.html());
 
