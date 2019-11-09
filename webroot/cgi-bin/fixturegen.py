@@ -207,6 +207,7 @@ show_link_to_round = None
 tourney = None
 module_list = []
 fixgen_settings = None
+check_ready_failed = False
 
 try:
     tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
@@ -351,6 +352,7 @@ try:
             # because the user needs to provide us information - it's
             # that there aren't the right number of players, or the
             # previous round hasn't finished, or something like that.
+            check_ready_failed = True
             exception_content = "Couldn't generate fixtures: %s" % (excuse)
 
 except countdowntourney.TourneyException as e:
@@ -389,7 +391,7 @@ if exceptions_to_show:
 
 if exception_content or exceptions_to_show:
     cgicommon.writeln("<p>")
-    if generator_name:
+    if generator_name and not check_ready_failed:
         cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s&amp;generator=%s\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name), urllib.parse.quote_plus(generator_name)))
     else:
         cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name)))
