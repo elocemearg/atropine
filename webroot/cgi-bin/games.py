@@ -1106,6 +1106,7 @@ try:
         last_entry_scores = None
         last_entry_tb = False
         control_with_error = None
+        default_control_focus = "entryname1"
 
         if "entrysubmit" in form:
             # If the user entered names and a score into the data entry panel,
@@ -1261,6 +1262,7 @@ try:
                 tourney.post_news_item(round_no, news_text, post_to_videprinter, post_to_web)
             tourney.set_post_to_videprinter(post_to_videprinter)
             tourney.set_post_to_web(post_to_web)
+            default_control_focus = "newsformtext"
         elif "newsformeditsubmit" in form:
             news_text = form.getfirst("newsformedittext")
             post_to_videprinter = bool(int_or_none(form.getfirst("posttovideprinter")))
@@ -1270,6 +1272,7 @@ try:
             news_entry_seq = int_or_none(form.getfirst("newseditseq"))
             if news_entry_seq is not None:
                 tourney.edit_news_item(news_entry_seq, news_text, post_to_videprinter, post_to_web)
+            default_control_focus = "newsformtext"
 
         num_divisions = tourney.get_num_divisions()
 
@@ -1289,13 +1292,17 @@ try:
         # just been applied.
         games = tourney.get_games(round_no=round_no, only_players_known=False);
 
+        # If the user got something wrong, the control with the mistake should
+        # have focus. If the user just submitted a news item then the news text
+        # box should have focus. Otherwise, the player 1 text box should have
+        # focus.
         if control_with_error or games:
             highlight_control = False
             if control_with_error:
                 control_with_focus = control_with_error
                 highlight_control = True
             else:
-                control_with_focus = "entryname1"
+                control_with_focus = default_control_focus
             cgicommon.writeln("<script>")
             cgicommon.writeln("document.getElementById('" + control_with_focus + "').focus();")
             if highlight_control:
