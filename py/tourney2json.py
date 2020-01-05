@@ -104,6 +104,7 @@ def get_games(tourney, options):
             game_dict["round"] = g.round_no
             game_dict["complete"] = g.is_complete()
             game_dict["score_text"] = g.format_score()
+            game_dict["type"] = g.get_game_type()
             rounds_seen.add(g.round_no)
             games_this_div.append(game_dict)
 
