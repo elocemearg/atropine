@@ -3,7 +3,7 @@
 import random;
 import countdowntourney;
 import htmlform;
-import cgi;
+import cgicommon
 import urllib.request, urllib.parse, urllib.error;
 import re
 import fixgen
@@ -97,7 +97,7 @@ def get_user_form(tourney, settings, div_rounds):
         if len(div_players) >= 8:
             choices.append(htmlform.HTMLFormChoice("-5", "5&3", div_table_sizes[div_index] == -5))
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgi.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
         elements.append(htmlform.HTMLFragment("<p>"))
         elements.append(htmlform.HTMLFormRadioButton(table_size_name, "Players per table", choices))
         elements.append(htmlform.HTMLFragment("</p>"))
@@ -379,7 +379,7 @@ function editBoxEdit(divIndex, controlId) {
         game_type = div_game_type[div_index]
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgi.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
 
         elements.append(htmlform.HTMLFragment("<table class=\"seltable\">\n"));
         prev_table_no = None;
@@ -398,7 +398,7 @@ function editBoxEdit(divIndex, controlId) {
             elements.append(htmlform.HTMLFragment("<tr>\n"))
             elements.append(htmlform.HTMLFragment("<td class=\"tablenumber\">%d</td>\n" % table_no));
             if game_type is not None:
-                elements.append(htmlform.HTMLFragment("<td class=\"fixturegametype\">%s</td>" % (cgi.escape(game_type, True))))
+                elements.append(htmlform.HTMLFragment("<td class=\"fixturegametype\">%s</td>" % (cgicommon.escape(game_type, True))))
             for i in range(table_size):
                 p = set_players[player_index]
                 td_style = "";
@@ -492,7 +492,7 @@ function editBoxEdit(divIndex, controlId) {
             elements.append(htmlform.HTMLFragment("<p>Players still to be given a table:\n"));
             for i in range(len(unselected_names)):
                 name = unselected_names[i]
-                elements.append(htmlform.HTMLFragment("%s%s" % (cgi.escape(name, True), "" if i == len(unselected_names) - 1 else ", ")));
+                elements.append(htmlform.HTMLFragment("%s%s" % (cgicommon.escape(name, True), "" if i == len(unselected_names) - 1 else ", ")));
             elements.append(htmlform.HTMLFragment("</p>\n"));
 
         elements.append(htmlform.HTMLFormHiddenInput("d%d_groupsize" % (div_index), str(div_table_sizes[div_index])))

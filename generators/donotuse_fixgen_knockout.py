@@ -357,7 +357,7 @@ def get_user_form(tourney, settings):
             html += "<p>The following rounds will be generated</p>\n";
             html += "<blockquote>\n";
             for r in rounds:
-                html += "<li>%s</li>\n" % cgi.escape(r["name"]);
+                html += "<li>%s</li>\n" % cgicommon.escape(r["name"]);
             html += "</blockquote>\n";
             elements.append(htmlform.HTMLFragment(html));
 

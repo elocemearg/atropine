@@ -3,7 +3,7 @@ import random;
 import countdowntourney;
 import htmlform;
 import swissN;
-import cgi
+import cgicommon
 import fixgen
 
 name = "Swiss Army Blunderbuss";
@@ -241,7 +241,7 @@ function generate_fixtures_clicked() {
         div_prefix = "d%d_" % (div_index)
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h2>%s (%d active players)</h2>" % (cgi.escape(tourney.get_division_name(div_index)), len(players))))
+            elements.append(htmlform.HTMLFragment("<h2>%s (%d active players)</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)), len(players))))
         else:
             elements.append(htmlform.HTMLFragment("<h2>Fixture generation (%d active players)</h2>" % (len(players))))
 

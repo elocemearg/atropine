@@ -3,7 +3,7 @@
 import random;
 import countdowntourney;
 import htmlform;
-import cgi;
+import cgicommon
 import urllib.request, urllib.parse, urllib.error;
 import re
 import fixgen
@@ -104,7 +104,7 @@ def get_user_form(tourney, settings, div_rounds):
                 div_game_types[div_index] = None
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgi.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
 
         elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
         num_games_element = htmlform.HTMLFormTextInput("Number of games to create", num_games_name, "")

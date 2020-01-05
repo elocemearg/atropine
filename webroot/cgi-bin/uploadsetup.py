@@ -108,12 +108,12 @@ else:
     if delete_success:
         cgicommon.show_success_box("Successfully deleted tourney <strong>%s</strong> from the website." % (cgicommon.escape(tourney_name)))
 
-    web_link = colive_url_base + "/" + cgi.escape(tourney_name, True)
+    web_link = colive_url_base + "/" + cgicommon.escape(tourney_name, True)
     web_link_raw = colive_url_base + "/" + tourney_name
     cgicommon.writeln("<p>This will upload the tourney state every few seconds so that games, scores and standings are visible at <a href=\"%s\" target=\"_blank\">%s <img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\"/></a></p>" % (web_link, web_link))
     cgicommon.writeln("<p>You will need:</p>")
     cgicommon.writeln("<ul>")
-    cgicommon.writeln("<li>A username and password for the server at %s. If you don't have these, then ignore this whole feature. Just pretend it doesn't exist.</li>" % (cgi.escape(uploader.http_server_host)))
+    cgicommon.writeln("<li>A username and password for the server at %s. If you don't have these, then ignore this whole feature. Just pretend it doesn't exist.</li>" % (cgicommon.escape(uploader.http_server_host)))
     cgicommon.writeln("<li>A connection to the internet.</li>")
     cgicommon.writeln("</ul>")
     cgicommon.writeln("<p>If you lose internet access, uploads will be suspended but everything that doesn't require internet access such as results entry, fixture generation and the public display window will be unaffected. Uploads to the server will resume when the internet connection is restored.</p>")
@@ -160,7 +160,7 @@ else:
         warning_html = "<div class=\"formline\">\n"
         warning_html += "<p>Are you sure you want to delete the tourney <strong>%s</strong> from the web?</p>\n" % (cgicommon.escape(tourney_name))
         warning_html += "<p>If you click Confirm below, <a href=\"%s/%s\" target=\"_blank\">this tourney called <strong>%s</strong></a> will be deleted from the website.</p>\n" % (
-            colive_url_base, cgi.escape(tourney_name, True),
+            colive_url_base, cgicommon.escape(tourney_name, True),
             cgicommon.escape(tourney_name))
         warning_html += "<p>Your local copy of this tourney will not be affected.</p>\n"
         warning_html += "</div>\n"

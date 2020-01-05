@@ -286,11 +286,11 @@ try:
         cgicommon.writeln("<body>");
 
         cgicommon.writeln("<div class=\"exportedstandings\">")
-        cgicommon.writeln("<h1>%s</h1>" % (cgi.escape(full_name)))
+        cgicommon.writeln("<h1>%s</h1>" % (cgicommon.escape(full_name)))
         if venue:
-            cgicommon.writeln("<p>%s</p>" % (cgi.escape(venue)))
+            cgicommon.writeln("<p>%s</p>" % (cgicommon.escape(venue)))
         if date_string:
-            cgicommon.writeln("<p>%s</p>" % (cgi.escape(date_string)))
+            cgicommon.writeln("<p>%s</p>" % (cgicommon.escape(date_string)))
         cgicommon.writeln("<h2>Standings</h2>")
 
         num_divisions = tourney.get_num_divisions()

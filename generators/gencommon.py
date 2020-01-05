@@ -2,7 +2,7 @@
 
 import countdowntourney
 import htmlform
-import cgi
+import cgicommon
 
 def check_ready_existing_games_and_table_size(tourney, div_rounds, include_5and3=True):
     num_divisions = tourney.get_num_divisions()
@@ -65,7 +65,7 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
         if len(players) >= 8 and include_5and3:
             table_size_choices.append(htmlform.HTMLFormChoice("-5", "5&3", table_size == -5))
 
-        elements.append(htmlform.HTMLFragment("<h2>%s (%d players)</h2>" % (cgi.escape(tourney.get_division_name(div_index)), tourney.get_num_active_players(div_index))))
+        elements.append(htmlform.HTMLFragment("<h2>%s (%d players)</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)), tourney.get_num_active_players(div_index))))
         elements.append(htmlform.HTMLFormRadioButton("d%d_groupsize" % (div_index), "Players per table", table_size_choices))
         valid_table_sizes_submitted.append(valid_table_size_submitted)
 

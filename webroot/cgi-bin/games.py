@@ -736,11 +736,11 @@ def write_videprinter(tourney, round_no):
             post_to_web = (log_type & countdowntourney.LOG_TYPE_COMMENT_WEB_FLAG) != 0
             cgicommon.writeln("<div class=\"videprinterentry videprinternewsentry\" id=\"videprinter_news_%d\" onclick=\"news_edit_open(%d, %s, %s, %s);\">" % (
                 seq_no, seq_no,
-                cgi.escape(js_quote_string(comment), True),
+                cgicommon.escape(js_quote_string(comment), True),
                 "true" if post_to_videprinter else "false",
                 "true" if post_to_web else "false"
             ))
-            cgicommon.writeln("&#8227; " + cgi.escape(comment))
+            cgicommon.writeln("&#8227; " + cgicommon.escape(comment))
             cgicommon.writeln("</div>")
 
     cgicommon.writeln("</div>") # videprinterwindow
@@ -756,7 +756,7 @@ def write_videprinter(tourney, round_no):
     #cgicommon.writeln("Post comment on videprinter%s" % (" (not currently showing)" if not videprinter_showing else ""))
     cgicommon.writeln("</div>")
     cgicommon.writeln("<div class=\"newsformbody\">")
-    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourney_name, True)))
+    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
     cgicommon.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
     cgicommon.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformtext\" id=\"newsformtext\" value=\"\" />")
     cgicommon.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformsubmit\" id=\"newsformbutton\" value=\"Post\" />")
@@ -773,7 +773,7 @@ def write_videprinter(tourney, round_no):
     cgicommon.writeln("</div>")
 
     cgicommon.writeln("<div class=\"newsformbody\">")
-    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgi.escape(tourney_name, True)))
+    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
     cgicommon.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
     cgicommon.writeln("<input type=\"hidden\" name=\"newseditseq\" value=\"\" id=\"newseditseq\" />")
     cgicommon.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformedittext\" id=\"newsformedittext\" value=\"\" />")
@@ -1348,7 +1348,7 @@ try:
             div_games = games_by_division[div]
             if num_divisions > 1:
                 cgicommon.writeln("<div class=\"gamelistdivisionheading\">")
-                cgicommon.writeln(cgi.escape(tourney.get_division_name(div)))
+                cgicommon.writeln(cgicommon.escape(tourney.get_division_name(div)))
                 cgicommon.writeln("</div>")
             cgicommon.show_games_as_html_table(div_games, editable=False,
                     remarks=None, include_round_column=False, round_namer=None,
