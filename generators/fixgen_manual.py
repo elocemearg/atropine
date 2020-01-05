@@ -381,6 +381,14 @@ function editBoxEdit(divIndex, controlId) {
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
 
+        if not game_type:
+            # Ask the user if they want these games to count towards the
+            # standings table (this is pretty much universally yes)
+            elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
+            elements.append(htmlform.HTMLFormCheckBox("d%d_heats" % (div_index), "Count the results of these matches in the standings table", div_count_in_standings[div_index]))
+            elements.append(htmlform.HTMLFragment("</div>"))
+
+        # Show the table of groups for the user to fill in
         elements.append(htmlform.HTMLFragment("<table class=\"seltable\">\n"));
         prev_table_no = None;
         unselected_names = [x.get_name() for x in div_players];
@@ -471,12 +479,7 @@ function editBoxEdit(divIndex, controlId) {
 
         elements.append(htmlform.HTMLFragment("</table>\n"));
 
-        if not game_type:
-            elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
-            elements.append(htmlform.HTMLFormCheckBox("d%d_heats" % (div_index), "Count the results of these matches in the standings table", div_count_in_standings[div_index]))
-            elements.append(htmlform.HTMLFragment("</div>"))
-
-
+        # Add the submit button
         elements.append(htmlform.HTMLFragment("<p>\n"))
         elements.append(htmlform.HTMLFormHiddenInput("submitplayers", "1"))
         elements.append(htmlform.HTMLFormHiddenInput("lasteditedinput", "", other_attrs={"id" : "lasteditedinput"}))
