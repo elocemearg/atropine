@@ -28,8 +28,10 @@ from countdowntourney import SW_VERSION
 
 uploader_service = None
 
-print("Atropine " + SW_VERSION + " by Graeme Cole")
+print("Atropine © 2014-2020 by Graeme Cole")
 print("See licence.txt for licensing information.")
+print("Visit https://greem.co.uk/atropine/ for updates.")
+print("Atropine version " + SW_VERSION + ", using Python %d.%d.%d." % tuple(sys.version_info[0:3]))
 print()
 
 try:

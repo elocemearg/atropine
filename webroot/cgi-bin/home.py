@@ -145,7 +145,8 @@ else:
     cgicommon.writeln("<h2>Select tourney</h2>")
     print_tourney_table(tourney_list, None, False, True, True)
 
-cgicommon.writeln("<p>atropine version %s</p>" % (countdowntourney.SW_VERSION))
+cgicommon.writeln("<p>Atropine version %s</p>" % (countdowntourney.SW_VERSION))
+cgicommon.writeln("<p>Python version %d.%d.%d</p>" % tuple(sys.version_info[0:3]))
 
 cgicommon.writeln("</body>");
 cgicommon.writeln("</html>");
