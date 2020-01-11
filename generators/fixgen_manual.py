@@ -365,6 +365,8 @@ function editBoxEdit(divIndex, controlId) {
         elements.append(htmlform.HTMLFormCheckBox("showallplayers", "Show all players in drop-down boxes, even those already assigned a table", show_already_assigned_players))
         elements.append(htmlform.HTMLFragment("</div>"))
 
+    (acc_tables, acc_default) = tourney.get_accessible_tables()
+
     table_no = 1;
     for div_index in div_rounds:
         div_players = [x for x in players if x.get_division() == div_index];
@@ -401,10 +403,15 @@ function editBoxEdit(divIndex, controlId) {
         for p in set_players:
             if p and p.get_name() in unselected_names:
                 unselected_names.remove(p.get_name())
-
+        
         for table_size in table_sizes:
             elements.append(htmlform.HTMLFragment("<tr>\n"))
-            elements.append(htmlform.HTMLFragment("<td class=\"tablenumber\">%d</td>\n" % table_no));
+            elements.append(htmlform.HTMLFragment(
+                "<td>%s</td><td class=\"tablenumber\">%d</td>\n" % (
+                    " &#9855;" if (table_no in acc_tables) != acc_default else "",
+                    table_no
+                )
+            ));
             if game_type is not None:
                 elements.append(htmlform.HTMLFragment("<td class=\"fixturegametype\">%s</td>" % (cgicommon.escape(game_type, True))))
             for i in range(table_size):
@@ -478,6 +485,11 @@ function editBoxEdit(divIndex, controlId) {
             elements.append(htmlform.HTMLFragment("</tr>\n"))
 
         elements.append(htmlform.HTMLFragment("</table>\n"));
+
+        if len(acc_tables) > 0:
+            # Warn the user that the table numbers displayed above might not
+            # end up being the final table numbers.
+            elements.append(htmlform.HTMLFragment("<p style=\"font-size: 10pt\">Note: You have designated accessible tables, so the table numbers above may be automatically reassigned to fulfil accessibility requirements.</p>"))
 
         # Add the submit button
         elements.append(htmlform.HTMLFragment("<p>\n"))
