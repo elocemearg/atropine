@@ -318,6 +318,11 @@ div.videprinteranimatescoreline {
     float: right;
 }
 
+.teamscorelight {
+    text-shadow: none;
+    color: black;
+}
+
 /* Current round per-table results */
 
 .roundresultsheading {

@@ -260,9 +260,7 @@ class FixturesView extends PagedTableView {
                 html += "<span class=\"fixturesheadingteamscore\" style=\"margin-top: 0.6vh;\">";
                 for (var i = fixturesObject.teamScores.length - 1; i >= 0; --i) {
                     var team = fixturesObject.teamScores[i];
-                    html += "<div class=\"teamscore teamscoreright\" style=\"background-color: " + teamColourToHTML(team.colour) + "\">";
-                    html += team.score.toString();
-                    html += "</div>";
+                    html += teamScoreBoxDivHTML(team.colour, team.score, "teamscoreright");
                 }
                 html += "</span>";
             }

@@ -84,6 +84,42 @@ function teamColourToHTML(rgbList) {
     return html;
 }
 
+// See https://www.w3.org/TR/AERT/#color-contrast
+var brightnessCoeffs = [ 0.299, 0.587, 0.114 ];
+function teamColourIsLight(rgbList) {
+    /* Get a rough guess of the brightness of this colour, and return true if
+     * it's greater than 50%. This is quite unscientific and ignores the
+     * requirement to apply something something colour space something
+     * something gamma decoding, but it's good enough to tell a "dark" colour
+     * from a "light" colour for the purposes of deciding whether text on it
+     * should be white or black. */
+
+    if (rgbList.length < 3) {
+        return false;
+    }
+
+    var roughBrightness = 0;
+    for (var i = 0; i < 3; ++i) {
+        roughBrightness += brightnessCoeffs[i] * rgbList[i] / 255.0;
+    }
+    return roughBrightness > 0.5;
+}
+
+function teamScoreBoxDivHTML(colour, score, additionalClassName) {
+    var teamColourClass;
+    var html = "";
+    if (teamColourIsLight(colour))
+        teamColourClass = "teamscorelight";
+    else
+        teamColourClass = "";
+    html += "<div class=\"teamscore " + additionalClassName + " " +
+        teamColourClass + "\" style=\"background-color: " +
+        teamColourToHTML(colour) + "\">";
+    html += score.toString();
+    html += "</div>";
+    return html;
+}
+
 function findSelectedDivisions(games, whichDiv) {
     if (whichDiv == -1) {
         var divs = [];

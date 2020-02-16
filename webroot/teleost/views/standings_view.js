@@ -246,9 +246,7 @@ class StandingsView extends PagedTableView {
         if (teamScores) {
             var html = " ";
             for (var i = 0; i < teamScores.length; ++i) {
-                html += "<div class=\"teamscore teamscoreleft\" style=\"background-color: " + teamColourToHTML(teamScores[i].colour) + "\">";
-                html += teamScores[i].score.toString();
-                html += "</div>"
+                html += teamScoreBoxDivHTML(teamScores[i].colour, teamScores[i].score, "teamscoreleft");
             }
             divisionNameElement.innerHTML += html;
         }
