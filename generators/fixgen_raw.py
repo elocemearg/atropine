@@ -10,7 +10,7 @@ import fixgen
 import fixgen_manual
 
 name = "Raw"
-description = "You have full control over how many matches are in the round and who plays whom. There are no table groups, and there is no requirement that all players play. Use this generator if you want a knockout stage or grand final."
+description = "You have full control over how many matches are in the round and who plays whom. There are no table groups, and there is no requirement that all players play. Use this generator if you want a knockout stage or one-off game."
 
 special_round_names = {
         "QF" : "Quarter-finals",
