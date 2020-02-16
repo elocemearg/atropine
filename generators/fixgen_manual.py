@@ -90,14 +90,19 @@ def get_user_form(tourney, settings, div_rounds):
         if num_groups:
             if div_table_sizes[div_index] is not None and div_table_sizes[div_index] <= 0:
                 raise countdowntourney.FixtureGeneratorException("%s: invalid table size for fully-manual setup." % (tourney.get_division_name(div_index)))
+        else:
+            for size in (2,3,4,5):
+                if num_groups or len(div_players) % size == 0:
+                    choices.append(htmlform.HTMLFormChoice(str(size), str(size), size == div_table_sizes[div_index]))
+            if len(div_players) >= 8:
+                choices.append(htmlform.HTMLFormChoice("-5", "5&3", div_table_sizes[div_index] == -5))
 
-        for size in (2,3,4,5):
-            if num_groups or len(div_players) % size == 0:
-                choices.append(htmlform.HTMLFormChoice(str(size), str(size), size == div_table_sizes[div_index]))
-        if len(div_players) >= 8:
-            choices.append(htmlform.HTMLFormChoice("-5", "5&3", div_table_sizes[div_index] == -5))
+            if not choices:
+                raise countdowntourney.FixtureGeneratorException("%s: number of players (%d) is not compatible with any supported table size." % (tourney.get_division_name(div_index), len(div_players)))
+
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
+
         elements.append(htmlform.HTMLFragment("<p>"))
         elements.append(htmlform.HTMLFormRadioButton(table_size_name, "Players per table", choices))
         elements.append(htmlform.HTMLFragment("</p>"))
@@ -179,6 +184,12 @@ def get_user_form(tourney, settings, div_rounds):
         # Slot numbers which contain text that doesn't match any player name
         invalid_slots = []
 
+        allow_player_repetition = int_or_none(settings.get("d%d_allow_player_repetition" % (div_index)))
+        if allow_player_repetition is None:
+            allow_player_repetition = False
+        else:
+            allow_player_repetition = bool(allow_player_repetition)
+
         # Ask the user to fill in N little drop-down boxes, where N is the
         # number of players, to decide who's going on what table.
         for player_index in range(0, num_slots):
@@ -207,13 +218,14 @@ def get_user_form(tourney, settings, div_rounds):
                 empty_slots.append(player_index);
                 all_filled = False;
             else:
-                count = 0;
-                for q in set_players:
-                    if q is not None and q.get_name() == p.get_name():
-                        count += 1;
-                if count > 1:
-                    duplicate_slots.append(player_index);
-                    all_filled = False;
+                if not allow_player_repetition:
+                    count = 0;
+                    for q in set_players:
+                        if q is not None and q.get_name() == p.get_name():
+                            count += 1;
+                    if count > 1:
+                        duplicate_slots.append(player_index);
+                        all_filled = False;
             player_index += 1;
 
         div_set_players[div_index] = set_players
@@ -561,14 +573,26 @@ for (var i = 0; i < playerBoxOrder.length; ++i) {
     return form;
 
 def check_ready(tourney, div_rounds):
+    players = tourney.get_active_players()
     for div in div_rounds:
+        div_players = [x for x in players if x.get_division() == div]
         round_no = div_rounds[div]
+        
         existing_games = tourney.get_games(round_no=round_no, game_type="P", division=div)
         if existing_games:
             return (False, "%s: round %d already has %d games in it." % (tourney.get_division_name(div), round_no, len(existing_games)))
+
+        possible_sizes = []
+        for size in (2,3,4,5):
+            if len(div_players) % size == 0:
+                possible_sizes.append(size)
+        if len(div_players) >= 8:
+            possible_sizes.append(-5)
+        if not possible_sizes:
+            return (False, "%s: number of players (%d) is not compatible with any supported table size." % (tourney.get_division_name(div), len(div_players)))
     return (True, None)
 
-def generate(tourney, settings, div_rounds):
+def generate(tourney, settings, div_rounds, check_ready_fn=None):
     num_divisions = tourney.get_num_divisions()
     div_table_sizes = dict()
 
@@ -614,7 +638,10 @@ def generate(tourney, settings, div_rounds):
             table_sizes = countdowntourney.get_5_3_table_sizes(num_slots)
         div_table_sizes[div_index] = table_sizes
 
-    (ready, excuse) = check_ready(tourney, div_rounds);
+    if check_ready_fn:
+        (ready, excuse) = check_ready_fn(tourney, div_rounds);
+    else:
+        (ready, excuse) = check_ready(tourney, div_rounds);
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
 

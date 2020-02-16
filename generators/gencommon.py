@@ -19,7 +19,7 @@ def check_ready_existing_games_and_table_size(tourney, div_rounds, include_5and3
                 break
         else:
             if len(players) < 8 or not include_5and3:
-                return (False, "%s: Number of players (%d) not compatible with any supported table configuration" % (tourney.get_division_name(div_index), len(players)))
+                return (False, "%s: Number of players (%d) is not compatible with any supported table size." % (tourney.get_division_name(div_index), len(players)))
     return (True, None)
 
 def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=True, additional_elements=[]):

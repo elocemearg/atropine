@@ -78,8 +78,10 @@ def get_user_form(tourney, settings, div_rounds):
         num_games_name = "d%d_num_groups" % (div_index)
         game_type_name = "d%d_game_type" % (div_index)
 
-        # For fully-manual, number of players per group is always 2
+        # For fully-manual, number of players per group is always 2, and
+        # we're allowed to put a player on more than one table
         settings["d%d_groupsize" % (div_index)] = "2"
+        settings["d%d_allow_player_repetition" % (div_index)] = "1"
 
         # Also we want fixgen_manual to show the standings table for each
         # division.
@@ -142,7 +144,7 @@ def check_ready(tourney, div_rounds):
     return (True, None)
 
 def generate(tourney, settings, div_rounds):
-    return fixgen_manual.generate(tourney, settings, div_rounds)
+    return fixgen_manual.generate(tourney, settings, div_rounds, check_ready)
 
 def save_form_on_submit():
     return True

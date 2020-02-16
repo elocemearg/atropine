@@ -296,7 +296,7 @@ def check_ready(tourney, div_rounds):
                 break
         else:
             if len(players) < 8:
-                return (False, "%s: Number of players (%d) is not a multiple of any of %s" % (tourney.get_division_name(div_index), len(players), ", ".join(map(str, valid_group_sizes))))
+                return (False, "%s: Number of players (%d) is not a multiple of any of %s" % (tourney.get_division_name(div_index), len(players), ", ".join([ str(x) for x in valid_group_sizes if x >= 0] )))
 
     for div in div_rounds:
         games = tourney.get_games(game_type='P', division=div);
