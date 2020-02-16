@@ -20,7 +20,9 @@ tourney_name = form.getfirst("tourney");
 
 tourney = None;
 request_method = os.environ.get("REQUEST_METHOD", "");
-popular_fixgens = [ "fixgen_swiss", "fixgen_random", "fixgen_random_seeded" ]
+
+fixgens_r1 = [ "fixgen_manual", "fixgen_random", "fixgen_random_seeded", "fixgen_round_robin" ]
+fixgens_not_r1 = [ "fixgen_swiss", "fixgen_random", "fixgen_final" ]
 
 cgicommon.set_module_path();
 
@@ -182,7 +184,34 @@ def show_fixtures_to_accept(tourney, generator_name, fixtures, fixgen_settings):
     cgicommon.writeln("</div>")
     cgicommon.writeln("</form>");
 
-cgicommon.print_html_head("Fixture Generator: " + str(tourney_name));
+
+def show_fixgen_table(tourney_name, module_list, title, description):
+    cgicommon.writeln("<h2>%s</h2>" % (cgicommon.escape(title)))
+    if description:
+        cgicommon.writeln("<p>")
+        cgicommon.writeln(description)
+        cgicommon.writeln("</p>")
+    cgicommon.writeln("<table class=\"fixgentable\">");
+    #cgicommon.writeln("<tr><th class=\"fixgentable fixgenth\"></th><th class=\"fixgentable fixgenth\">Generator</th><th class=\"fixgentable fixgenth\">Description</th></tr>");
+    for module_name in module_list:
+        fixgen_module = importlib.import_module(module_name);
+        cgicommon.writeln("<tr>");
+        cgicommon.writeln("<td class=\"fixgentable fixgen\">");
+        cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">" % (urllib.parse.quote_plus(module_name), urllib.parse.quote_plus(tourney_name)))
+        cgicommon.writeln("<img src=\"/images/fixgen/%s.png\" alt=\"%s\" />" % (cgicommon.escape(module_name), cgicommon.escape(fixgen_module.name)))
+        cgicommon.writeln("</a>")
+        cgicommon.writeln("</td>")
+        cgicommon.writeln("<td class=\"fixgentable fixgen\">");
+        cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">%s</a>" % (urllib.parse.quote_plus(module_name), urllib.parse.quote_plus(tourney_name), cgicommon.escape(fixgen_module.name)));
+        cgicommon.writeln("</td>");
+        #cgicommon.writeln("<td class=\"fixgentable fixgenmodule\">%s</td>" % (cgicommon.escape(module_name)));
+        cgicommon.writeln("<td class=\"fixgentable fixgendescription\">%s</td>" % (cgicommon.escape(fixgen_module.description)));
+        cgicommon.writeln("</tr>");
+    cgicommon.writeln("</table>");
+
+
+
+cgicommon.print_html_head("Generate Fixtures: " + str(tourney_name));
 
 cgicommon.writeln("<body>");
 
@@ -378,7 +407,7 @@ else:
 if fixturegen:
     cgicommon.writeln("<h1>%s</h1>" % (fixturegen.name))
 else:
-    cgicommon.writeln("<h1>Fixture Generator</h1>")
+    cgicommon.writeln("<h1>Generate Fixtures</h1>")
 
 # If exception_content is set, show the exception box.
 if exception_content:
@@ -408,45 +437,31 @@ if success_content:
 
 # show_fixgen_list is set when the user hasn't yet picked a fixture generator.
 if show_fixgen_list:
-    cgicommon.writeln("<p>Choose a fixture generator from the table below.</p>");
+    num_divisions = tourney.get_num_divisions()
+
     cgicommon.writeln("<p>")
-    cgicommon.writeln("The most commonly-used fixture generators are ")
-
-    links = []
-    for module_name in module_list:
-        if module_name in popular_fixgens:
-            fixgen_module = importlib.import_module(module_name)
-            links.append("<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">%s</a>" % (
-                    urllib.parse.quote_plus(module_name),
-                    urllib.parse.quote_plus(tourney_name),
-                    fixgen_module.name
-                )
-            )
-    for i in range(len(links)):
-        if i == len(links) - 1:
-            cgicommon.write(" and ")
-        elif i > 0:
-            cgicommon.write(", ")
-        cgicommon.write(links[i])
-    cgicommon.writeln(".</p>")
-
-    cgicommon.writeln("<table class=\"fixgentable\">");
-    cgicommon.writeln("<tr><th class=\"fixgentable fixgenth\"></th><th class=\"fixgentable fixgenth\">Generator</th><th class=\"fixgentable fixgenth\">Description</th></tr>");
-    for module_name in module_list:
-        fixgen_module = importlib.import_module(module_name);
-        cgicommon.writeln("<tr>");
-        cgicommon.writeln("<td class=\"fixgentable fixgen\">");
-        cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">" % (urllib.parse.quote_plus(module_name), urllib.parse.quote_plus(tourney_name)))
-        cgicommon.writeln("<img src=\"/images/fixgen/%s.png\" alt=\"%s\" />" % (cgicommon.escape(module_name), cgicommon.escape(fixgen_module.name)))
-        cgicommon.writeln("</a>")
-        cgicommon.writeln("</td>")
-        cgicommon.writeln("<td class=\"fixgentable fixgen\">");
-        cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">%s</a>" % (urllib.parse.quote_plus(module_name), urllib.parse.quote_plus(tourney_name), cgicommon.escape(fixgen_module.name)));
-        cgicommon.writeln("</td>");
-        #cgicommon.writeln("<td class=\"fixgentable fixgenmodule\">%s</td>" % (cgicommon.escape(module_name)));
-        cgicommon.writeln("<td class=\"fixgentable fixgendescription\">%s</td>" % (cgicommon.escape(fixgen_module.description)));
-        cgicommon.writeln("</tr>");
-    cgicommon.writeln("</table>");
+    cgicommon.writeln("When you want to generate the next round's fixtures, choose a fixture generator from the list below.")
+    if num_divisions > 1:
+        cgicommon.writeln("If you want to generate fixtures for only one division or a subset of divisions, you'll be asked which divisions to generate fixtures for on the next screen.")
+    
+    cgicommon.writeln("</p>");
+    
+    rounds = tourney.get_rounds()
+    if rounds:
+        suggested_fixgens = fixgens_not_r1
+        suggested_title = "Suggested fixture generators"
+        suggested_description = "Fixtures for the second round onwards are usually generated by one of these fixture generators."
+    else:
+        suggested_fixgens = fixgens_r1
+        suggested_title = "Suggested fixture generators"
+        suggested_description = "Fixtures for the first round are usually generated by one of these fixture generators."
+    
+    remaining_fixgens = []
+    for fixgen_name in module_list:
+        if fixgen_name not in suggested_fixgens:
+            remaining_fixgens.append(fixgen_name)
+    show_fixgen_table(tourney_name, suggested_fixgens, suggested_title, suggested_description)
+    show_fixgen_table(tourney_name, remaining_fixgens, "Other fixture generators", "")
 
 # After picking a fixture generator, the user is asked to select which 
 # divisions they want to generate fixtures for, if there's more than one

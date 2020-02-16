@@ -9,8 +9,7 @@ import fixgen
 name = "Random Pairings/Groups"
 description = """Randomly assign players to tables, avoiding rematches if
 required. Prunes, if any, are placed on the highest numbered tables and are
-kept separate from each other if possible. This is a popular choice for the
-first round of an event, as is the Random from Seeded Pots generator."""
+kept separate from each other if possible."""
 
 # If this fixture generator is now able to generate a new round without
 # any further information from the user, return None.
