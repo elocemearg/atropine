@@ -30,6 +30,7 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
 
     elements = []
     valid_table_sizes_submitted = []
+    num_divisions = tourney.get_num_divisions()
     for div_index in div_rounds:
         valid_table_size_submitted = False
         players = [x for x in tourney.get_active_players() if x.get_division() == div_index];
@@ -65,8 +66,12 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
         if len(players) >= 8 and include_5and3:
             table_size_choices.append(htmlform.HTMLFormChoice("-5", "5&3", table_size == -5))
 
-        elements.append(htmlform.HTMLFragment("<h2>%s (%d players)</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)), tourney.get_num_active_players(div_index))))
-        elements.append(htmlform.HTMLFormRadioButton("d%d_groupsize" % (div_index), "Players per table", table_size_choices))
+        if num_divisions > 1:
+            elements.append(htmlform.HTMLFragment("<h2>%s (%d players)</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)), tourney.get_num_active_players(div_index))))
+        else:
+            elements.append(htmlform.HTMLFragment("<h2>%d players</h2>" % (tourney.get_num_active_players(div_index))))
+
+        elements.append(htmlform.HTMLFormRadioButton("d%d_groupsize" % (div_index), "How many players per table?", table_size_choices))
         valid_table_sizes_submitted.append(valid_table_size_submitted)
 
     if False not in valid_table_sizes_submitted and "submit" in settings:
