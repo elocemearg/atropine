@@ -237,6 +237,7 @@ tourney = None
 module_list = []
 fixgen_settings = None
 check_ready_failed = False
+no_players = False
 
 try:
     tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
@@ -251,6 +252,7 @@ try:
     num_divisions = tourney.get_num_divisions()
     if len(tourney.get_active_players()) == 0:
         exception_content = "You can't generate fixtures because the tournament doesn't have any active players."
+        no_players = True
     elif generator_name is None:
         num_players_requiring_accessible_table = tourney.get_num_active_players_requiring_accessible_table()
         num_accessible_tables = tourney.get_num_accessible_tables()
@@ -422,6 +424,8 @@ if exception_content or exceptions_to_show:
     cgicommon.writeln("<p>")
     if generator_name and not check_ready_failed:
         cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s&amp;generator=%s\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name), urllib.parse.quote_plus(generator_name)))
+    elif no_players:
+        cgicommon.writeln("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Set the player list at the tourney setup page</a>" % (urllib.parse.quote_plus(tourney_name)))
     else:
         cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name)))
     cgicommon.writeln("</p>")
