@@ -1,6 +1,7 @@
 class RoundResultsView extends PagedTableView {
-    constructor(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod) {
+    constructor(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod, alwaysShowLastStartedRound) {
         super(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage < 2 ? 2 : rowsPerPage, scrollPeriod);
+        this.alwaysShowLastStartedRound = alwaysShowLastStartedRound;
     }
 
     setup(container) {
@@ -49,26 +50,66 @@ class RoundResultsView extends PagedTableView {
                 roundToName[r.num] = r.name;
             }
 
-            /* For each division, find the latest round which has at least
-             * one game completed, and call that the "current" round for the
-             * purpose of this view. If no round is complete, show round 1,
-             * and if there is no round 1, don't show anything. */
+            /* For each division, find the latest round which has at least one
+             * game completed. As a special case, if alwaysShowLastStartedRound
+             * is not set and if the round immediately after the one we select
+             * has exactly one game in it, and that game is not completed,
+             * select that next round as if it's the final.
+             * 
+             * Call this the "current" round for the purpose of this view. If
+             * no such round can be found, show round 1, and if there's no
+             * round 1, don't show anything. */
+
             for (var divIndex = 0; divIndex < divisions.length; ++divIndex) {
                 var divGames = divisions[divIndex].games;
                 var earliestRoundSeen = null;
+                var roundsToGameCounts = {};
+                var roundsToCompletedGameCounts = {};
+
                 for (var gameIndex = 0; gameIndex < divGames.length; ++gameIndex) {
                     var rnd = divGames[gameIndex].round;
                     if (earliestRoundSeen == null || rnd < earliestRoundSeen)
                         earliestRoundSeen = rnd;
 
+                    if (!(rnd in roundsToGameCounts)) {
+                        roundsToGameCounts[rnd] = 0;
+                        roundsToCompletedGameCounts[rnd] = 0;
+                    }
+                    roundsToGameCounts[rnd]++;
+
                     if (divGames[gameIndex].complete) {
-                        if (divIndex in divisionToCurrentRound) {
-                            if (rnd > divisionToCurrentRound[divIndex])
-                                divisionToCurrentRound[divIndex] = rnd;
+                        roundsToCompletedGameCounts[rnd]++;
+                    }
+                }
+
+                var roundInts = [];
+                for (var roundStr in roundsToGameCounts) {
+                    roundInts.push(parseInt(roundStr));
+                }
+                roundInts.sort(function (a, b) { return a - b; });
+
+                /* Go through the rounds in numerical order */
+                var latestStartedRound = null;
+                var candidateSingleGameRound = null;
+                for (var roundIndex = 0; roundIndex < roundInts.length; roundIndex++) {
+                    var round = roundInts[roundIndex];
+                    if (roundsToCompletedGameCounts[round] > 0) {
+                        latestStartedRound = round;
+                        candidateSingleGameRound = null;
+                    }
+                    else if (candidateSingleGameRound == null) {
+                        if (roundsToGameCounts[round] == 1) {
+                            candidateSingleGameRound = round;
                         }
-                        else {
-                            divisionToCurrentRound[divIndex] = rnd;
-                        }
+                    }
+                }
+
+                if (latestStartedRound != null) {
+                    if (candidateSingleGameRound != null && !this.alwaysShowLastStartedRound) {
+                        divisionToCurrentRound[divIndex] = candidateSingleGameRound;
+                    }
+                    else {
+                        divisionToCurrentRound[divIndex] = latestStartedRound;
                     }
                 }
 
@@ -231,7 +272,7 @@ class RoundResultsView extends PagedTableView {
             score_element.innerHTML = formatScore(row.score1, row.score2, row.tb);
         }
         else {
-            score_element.innerHTML = "&ndash;";
+            score_element.innerHTML = "v";
         }
     }
 }

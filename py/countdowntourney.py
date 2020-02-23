@@ -152,6 +152,7 @@ teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_scroll", CONTROL_NUMBER, "Standings scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_results_lines", CONTROL_NUMBER, "Number of results per page", 3),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_results_scroll", CONTROL_NUMBER, "Results scroll interval $CONTROL seconds", 5),
+    (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_show_unstarted_round_if_single_game", CONTROL_CHECKBOX, "$CONTROL Show unstarted next round if it only has one game", 1),
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_lines", CONTROL_NUMBER, "Lines per page", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_rows", CONTROL_NUMBER, "Rows per page $CONTROL", 12),
@@ -2708,7 +2709,16 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                 mode_name = "TELEOST_MODE_STANDINGS_VIDEPRINTER"
             elif played == 0 and unplayed > 0:
                 # Fixtures announced, but no games played yet.
-                if self.get_auto_use_table_index():
+                # If there is only one game, then show the standings/table
+                # results screen for this unplayed round, because it's likely
+                # this is the final and people want to know where they finished
+                # in the standings, so we don't want to show just the final
+                # fixture and nothing else.
+                # If there's more than one game then show the fixture list
+                # for this round.
+                if played + unplayed == 1:
+                    mode_name = "TELEOST_MODE_STANDINGS_RESULTS"
+                elif self.get_auto_use_table_index():
                     mode_name = "TELEOST_MODE_TABLE_NUMBER_INDEX"
                 else:
                     mode_name = "TELEOST_MODE_FIXTURES"

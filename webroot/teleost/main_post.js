@@ -50,12 +50,14 @@ function createStandingsAndRoundResultsScreen(tourneyName, options) {
             ),
             new RoundResultsView(tourneyName, 0, standingsVerticalPc,
                 100, 100 - standingsVerticalPc, roundResultsLines,
-                dictGet(options, "standings_results_results_scroll", 5) * 1000)
+                dictGet(options, "standings_results_results_scroll", 5) * 1000,
+                dictGet(options, "standings_results_show_unstarted_round_if_single_game", 1) == 0 ? true : false
+            )
     ]);
 }
 
 function createRoundResultsScreen(tourneyName, options) {
-    return new RoundResultsView(tourneyName, 0, 0, 100, 100, 14, 10000);
+    return new RoundResultsView(tourneyName, 0, 0, 100, 100, 14, 10000, false);
 }
 
 function createFixturesScreen(tourneyName, options) {
