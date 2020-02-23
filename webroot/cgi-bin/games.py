@@ -657,7 +657,7 @@ def write_news_form_tick_box_div(tourney, publishing, is_edit):
         ))
     else:
         cgicommon.writeln("<input type=\"hidden\" name=\"posttovideprinter\" id=\"posttovideprinter%s\" value=\"1\" />" % (str(id_suffix)))
-        cgicommon.writeln("<input type=\"hidden\" name=\"posttoweb\" id=\"posttovideprinter%s\" value=\"1\" />" % (str(id_suffix)))
+        cgicommon.writeln("<input type=\"hidden\" name=\"posttoweb\" id=\"posttoweb%s\" value=\"1\" />" % (str(id_suffix)))
 
     if is_edit:
         cgicommon.writeln("<button type=\"button\" onclick=\"news_edit_close();\">Close</button>")

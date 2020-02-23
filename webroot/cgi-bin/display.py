@@ -51,15 +51,15 @@ teleost_modes = tourney.get_teleost_modes()
 cgicommon.writeln("<body class=\"display\" onload=\"displaySetup();\">")
 
 cgicommon.writeln("<script>")
-cgicommon.writeln("var tourneyName = \"%s\";" % (tourney_name));
+cgicommon.writeln("const tourneyName = \"%s\";" % (tourney_name));
 
 if mode is None:
-    cgicommon.writeln("var displayMode = -1;") # display whatever the db says the current mode is
+    cgicommon.writeln("const displayMode = -1;") # display whatever the db says the current mode is
 else:
-    cgicommon.writeln("var displayMode = %d;" % (mode))
+    cgicommon.writeln("const displayMode = %d;" % (mode))
 
 for mode in teleost_modes:
-    cgicommon.writeln("var %s = %d;" % (mode["id"], mode["num"]))
+    cgicommon.writeln("const %s = %d;" % (mode["id"], mode["num"]))
 
 cgicommon.writeln("</script>")
 
