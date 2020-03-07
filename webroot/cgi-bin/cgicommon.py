@@ -525,6 +525,11 @@ function toggleMiscStats() {
         writeln("</div>")
 
     writeln("<br />")
+    
+    writeln("<div class=\"misclinks\">")
+    writeln("<a href=\"/docs/\" target=\"_blank\">Help " + new_window_html + "</a>")
+    writeln("</div>")
+
     writeln("<div class=\"globalprefslink\">")
     writeln("<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" ")
     writeln("onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=450,height=500'); return false;\" >Preferences... " + new_window_html + "</a>")
