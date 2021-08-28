@@ -45,8 +45,8 @@
 }
 
 body.display {
-    font-family: "Roboto Condensed", sans-serif;
-    --text-font-family: "Roboto Condensed";
+    font-family: "Roboto", sans-serif;
+    --text-font-family: "Roboto";
     --heading-font-family: "Cabin";
     overflow: hidden;
     position: absolute;
@@ -87,8 +87,8 @@ body.display {
 .headingbar {
     background-color: navy;
     font-family: var(--heading-font-family);
-    border-top: 1px solid gray;
-    border-bottom: 1px solid gray;
+    border-top: 0.1vh solid gray;
+    border-bottom: 0.1vh solid gray;
 }
 
 /* Placeholder */
@@ -129,7 +129,7 @@ table.teleoststandings {
 
 table.teleoststandings tr {
     height: 10%;
-    border-top: 1px solid gray;
+    border-top: 0.1vh solid gray;
 }
 
 tr.teleoststandingsheadingrow {
@@ -153,8 +153,8 @@ th.teleoststandingsheadingnumber {
 table.teleoststandings td {
     padding-left: 2vw;
     padding-right: 2vw;
-    border-top: 1px solid gray;
-    border-bottom: 1px solid gray;
+    border-top: 0.1vh solid gray;
+    border-bottom: 0.1vh solid gray;
 }
 
 tr.teleoststandingsevenrow {
@@ -394,7 +394,7 @@ col.roundresultscolp2 {
 }
 
 table.roundresults tr {
-    border-bottom: 1px solid gray;
+    border-bottom: 0.1vh solid gray;
 }
 
 table.roundresults td {
@@ -475,19 +475,19 @@ table.fixtures tr {
 }
 
 tr.fixturesrowlastinblock {
-    border-bottom: 1px solid gray;
+    border-bottom: 0.1vh solid gray;
 }
 
 td.fixturestablenumbercell {
     width: 10%;
-    border-bottom: 1px solid gray;
+    border-bottom: 0.1vh solid gray;
     text-align: center;
 }
 
 .fixturestablenumber {
     font-family: var(--heading-font-family);
     border-radius: 2vmin;
-    border: 1px solid gray;
+    border: 0.1vh solid gray;
     background-color: navy;
 }
 
@@ -590,7 +590,7 @@ table.teleostmaintable th {
 }
 
 table.teleostmaintable tr {
-    border-bottom: 1px solid gray;
+    border-bottom: 0.1vh solid gray;
 }
 
 table.teleostmaintable td {
@@ -676,8 +676,8 @@ table.tableofgames {
 }
 
 table.tableofgames tr {
-    border-top: 1px solid gray;
-    border-bottom: 1px solid gray;
+    border-top: 0.1vh solid gray;
+    border-bottom: 0.1vh solid gray;
 }
 
 table.highscorestable td {
