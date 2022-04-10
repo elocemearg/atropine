@@ -79,10 +79,11 @@ class HTMLLineBreak(HTMLFragment):
         super(HTMLLineBreak, self).__init__("<br />\n");
 
 class HTMLFormChoice(object):
-    def __init__(self, value, label, selected=False):
+    def __init__(self, value, label, selected=False, enabled=True):
         self.value = value;
         self.label = label;
-        self.selected = selected;
+        self.selected = selected and enabled
+        self.enabled = enabled
 
 class HTMLFormCheckBox(HTMLFormElement):
     def __init__(self, name, label, checked, other_attrs=None):
@@ -159,16 +160,14 @@ class HTMLFormRadioButton(HTMLFormElement):
         s += "<br />";
         num = 0
         for c in self.choices:
-            if c.selected:
-                checked = "checked";
-            else:
-                checked = "";
-            s += "<input type=\"radio\" name=\"%s\" id=\"%s_%d\" value=\"%s\" %s /><label for=\"%s_%d\"> %s</label>" % (
+            s += "<input type=\"radio\" name=\"%s\" id=\"%s_%d\" value=\"%s\" %s %s /><label for=\"%s_%d\" %s> %s</label>" % (
                     html.escape(self.name, True),
                     html.escape(self.name, True), num,
                     html.escape(c.value, True),
-                    checked,
+                    "checked" if c.selected else "",
+                    "" if c.enabled else "disabled",
                     html.escape(self.name, True), num,
+                    "" if c.enabled else "style=\"color: gray;\"",
                     html.escape(c.label));
             s += "<br />\n";
             num += 1
@@ -269,3 +268,12 @@ class HTMLFormStandingsTable(HTMLFormElement):
 
     def html(self):
         return cgicommon.make_standings_table(self.tourney, True, True, False, linkify_players=True, show_qualified=True, which_division=self.division)
+
+class HTMLWarningBox(HTMLFormElement):
+    def __init__(self, name, contents, wide=False):
+        super(HTMLWarningBox, self).__init__(name)
+        self.contents = contents
+        self.wide = wide
+
+    def html(self):
+        return cgicommon.make_warning_box(self.contents, self.wide)

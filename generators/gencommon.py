@@ -3,6 +3,7 @@
 import countdowntourney
 import htmlform
 import cgicommon
+import urllib
 
 def check_ready_existing_games_and_table_size(tourney, div_rounds, include_5and3=True):
     num_divisions = tourney.get_num_divisions()
@@ -54,24 +55,29 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
                 table_size = 2
             elif len(players) % 5 == 0:
                 table_size = 5
-            elif len(players) < 8 and include_5and3:
+            elif len(players) >= 8 and include_5and3:
                 table_size = -5
             elif len(players) % 4 == 0:
                 table_size = 4
 
         table_size_choices = []
         for size in (2,3,4,5):
-            if len(players) % size == 0:
-                table_size_choices.append(htmlform.HTMLFormChoice(str(size), str(size), table_size == size))
+            table_size_choices.append(htmlform.HTMLFormChoice(str(size), str(size), table_size == size, len(players) % size == 0))
         if len(players) >= 8 and include_5and3:
             table_size_choices.append(htmlform.HTMLFormChoice("-5", "5&3", table_size == -5))
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h2>%s (%d players)</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)), tourney.get_num_active_players(div_index))))
-        else:
-            elements.append(htmlform.HTMLFragment("<h2>%d players</h2>" % (tourney.get_num_active_players(div_index))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escale(tourney.get_division_name(div_index)))))
+        num_active_players = tourney.get_num_active_players(div_index)
+        elements.append(htmlform.HTMLFragment("<p>This %s has <strong>%d active players</strong>.</p>" % ("division" if num_divisions > 1 else "tournament", num_active_players)))
+        if num_active_players % 2 != 0 and num_active_players % 3 != 0:
+            elements.append(htmlform.HTMLWarningBox("unusualplayercountwarningbox", "The number of active players is not a multiple of 2 or 3. Do you want to add one or more Prune players on the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page?</p>" % (
+                urllib.parse.quote_plus(tourney.get_name())
+            )))
 
-        elements.append(htmlform.HTMLFormRadioButton("d%d_groupsize" % (div_index), "How many players per table?", table_size_choices))
+        elements.append(htmlform.HTMLFormRadioButton("d%d_groupsize" % (div_index),
+            "How many players per table? This must exactly divide the number of active players in %s." % ("this division" if num_divisions > 1 else "the tournament"),
+            table_size_choices))
         valid_table_sizes_submitted.append(valid_table_size_submitted)
 
     if False not in valid_table_sizes_submitted and "submit" in settings:

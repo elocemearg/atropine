@@ -77,17 +77,22 @@ def show_error_text(text):
     writeln("</div>")
     writeln("</div>")
 
+def make_warning_box(html, wide=False):
+    lines = []
+    lines.append("<div class=\"warningbox%s\">" % (" warningboxwidthlimited" if not wide else ""))
+    lines.append("<div class=\"warningboximage\">")
+    lines.append("<img src=\"/images/warning.png\" alt=\"Warning\" />")
+    lines.append("</div>")
+    lines.append("<div class=\"warningboxmessagecontainer%s\">" % (" warningboxmessagecontainerwidthlimited" if not wide else ""))
+    lines.append("<div class=\"warningboxmessage\">")
+    lines.append(html)
+    lines.append("</div>")
+    lines.append("</div>")
+    lines.append("</div>")
+    return "\n".join(lines)
+
 def show_warning_box(html, wide=False):
-    writeln("<div class=\"warningbox%s\">" % (" warningboxwidthlimited" if not wide else ""))
-    writeln("<div class=\"warningboximage\">")
-    writeln("<img src=\"/images/warning.png\" alt=\"Warning\" />")
-    writeln("</div>")
-    writeln("<div class=\"warningboxmessagecontainer%s\">" % (" warningboxmessagecontainerwidthlimited" if not wide else ""))
-    writeln("<div class=\"warningboxmessage\">")
-    writeln(html)
-    writeln("</div>")
-    writeln("</div>")
-    writeln("</div>")
+    writeln(make_warning_box(html, wide))
 
 def show_info_box(html):
     writeln("<div class=\"infoboxcontainer\">")

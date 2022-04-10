@@ -5,6 +5,7 @@ import htmlform;
 import swissN;
 import cgicommon
 import fixgen
+import urllib
 
 name = "Swiss Army Blunderbuss";
 description = "Players are matched against opponents who have performed similarly to them so far in the tourney, but repeats of previous fixtures are avoided. This is the most commonly-used fixture generator for the second round onwards.";
@@ -241,9 +242,15 @@ function generate_fixtures_clicked() {
         div_prefix = "d%d_" % (div_index)
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h2>%s (%d active players)</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)), len(players))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
         else:
-            elements.append(htmlform.HTMLFragment("<h2>Fixture generation (%d active players)</h2>" % (len(players))))
+            elements.append(htmlform.HTMLFragment("<h2>Fixture generation</h2>"))
+        elements.append(htmlform.HTMLFragment("<p>%s contains <strong>%d active players</strong>.</p>" % ("This division" if num_divisions > 1 else "The tournament", len(players))))
+
+        if len(players) % 2 != 0 and len(players) % 3 != 0:
+            elements.append(htmlform.HTMLWarningBox("swissunusualplayercount", "The number of active players is not a multiple of 2 or 3. Do you want to add one or more Prune players on the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page?</p>" % (
+                urllib.parse.quote_plus(tourney.get_name())
+            )))
 
         elements.append(htmlform.HTMLFragment("<p>"))
 
@@ -255,11 +262,14 @@ function generate_fixtures_clicked() {
                 ticked_group_size = 0
             else:
                 ticked_group_size = get_default_group_size(len(players), len(rounds))
+        if not div_valid_sizes:
+            raise countdowntourney.FixtureGeneratorException("Can't use Swiss fixture generator: number of players%s is not compatible with any supported table size." % (" in a division" if num_divisions > 1 else ""))
+
         group_size_choices = [ htmlform.HTMLFormChoice(str(gs), "5&3" if gs == -5 else str(gs), gs == ticked_group_size) for gs in div_valid_sizes ]
         if num_divisions > 1 and len(table_sizes_valid_for_all_divs) > 0:
             group_size_choices = [ htmlform.HTMLFormChoice("0", "Round default (above)", ticked_group_size == 0) ] + group_size_choices
 
-        elements.append(htmlform.HTMLFormRadioButton(div_prefix + "groupsize", "Players per table", group_size_choices))
+        elements.append(htmlform.HTMLFormRadioButton(div_prefix + "groupsize", "How many players per table? This must exactly divide the number of active players in the %s." % ("division" if num_divisions > 1 else "tournament"), group_size_choices))
         elements.append(htmlform.HTMLFragment("</p>\n"))
         elements.append(htmlform.HTMLFragment("<p>Increase the following values if the fixture generator has trouble finding a grouping within the time limit.</p>\n"));
         
