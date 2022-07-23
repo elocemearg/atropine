@@ -1776,8 +1776,7 @@ class Tourney(object):
     def set_show_tournament_rating_column(self, value):
         self.set_attribute("showtournamentratingcolumn", str(int(value)))
 
-    # games is a list of tuples:
-    # (round_no, seq, table_no, game_type, name1, score1, name2, score2, tiebreak)
+    # games is a list of countdowntourney.Game
     def merge_games(self, games):
         try:
             known_games = [x for x in games if x.are_players_known()];
@@ -1958,25 +1957,6 @@ class Tourney(object):
             cur.close()
             self.db.commit()
 
-    def delete_round_div(self, round_no, division):
-        try:
-            cur = self.db.cursor()
-            cur.execute("delete from game where round_no = ? and division = ?", (round_no, division))
-            num_deleted = cur.rowcount
-            cur.execute("select count(*) from game where round_no = ?", (round_no,))
-            row = cur.fetchone()
-            games_left_in_round = -1
-            if row is not None and row[0] is not None:
-                games_left_in_round = row[0]
-            if games_left_in_round == 0:
-                cur.execute("delete from rounds where id = ?", (round_no,))
-            cur.close()
-            self.db.commit()
-            return num_deleted
-        except:
-            self.db.rollback()
-            raise
-
     def delete_round(self, round_no):
         latest_round_no = self.get_latest_round_no();
         if latest_round_no is None:
@@ -1993,8 +1973,24 @@ class Tourney(object):
             self.db.rollback()
             raise
 
+    # deletions is a list of (round_no, seq).
+    def delete_games(self, deletions):
+        try:
+            round_numbers_affected = set()
+            for (round_no, seq) in deletions:
+                round_numbers_affected.add(round_no)
+            cur = self.db.cursor()
+            cur.executemany("delete from game where round_no = ? and seq = ?", deletions)
+            num_deleted = cur.rowcount
+            cur.close()
+            self.db.commit()
+            return num_deleted
+        except:
+            self.db.rollback()
+            raise
+
     def alter_games(self, alterations):
-        # alterations is (round_no, seq, p1, p2, game_type)
+        # alterations is a list of (round_no, seq, p1, p2, game_type)
         # but we want (p1name, p2name, game_type, round_no, seq) for feeding
         # into the executemany() call.
         alterations_reordered = [(x[2].get_name().lower(), x[2].get_name(), x[3].get_name().lower(), x[3].get_name(), x[4], x[0], x[1]) for x in alterations];
@@ -2276,7 +2272,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                 where 1=1 """;
         for c in conditions:
             sql += " and " + c;
-        sql += "\norder by g.round_no, g.division, g.seq";
+        sql += "\norder by g.round_no, g.division, g.table_no, g.seq";
         if len(params) == 0:
             cur.execute(sql);
         else:

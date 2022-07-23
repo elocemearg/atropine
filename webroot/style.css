@@ -187,6 +187,16 @@ div.createtourneybuttonbox {
 	border-collapse: collapse;
 }
 
+div.addgamebox {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+div.addgamedetails {
+    margin-top: 10px;
+    margin-left: 20px;
+}
+
 table.fixturetable td {
 	padding-top: 3px;
 	padding-bottom: 3px;
@@ -213,6 +223,11 @@ table.fixturetable td.gameplayer1 {
 table.scorestable td.gamescore {
     min-width: 6ex;
     text-align: center;
+}
+
+table.scorestable td.gameremarks {
+    padding-left: 0.5em;
+    padding-right: 0.5em;
 }
 
 table.fixturetable td.gamescore {

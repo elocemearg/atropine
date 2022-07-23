@@ -67,7 +67,7 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
             table_size_choices.append(htmlform.HTMLFormChoice("-5", "5&3", table_size == -5))
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escale(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
         num_active_players = tourney.get_num_active_players(div_index)
         elements.append(htmlform.HTMLFragment("<p>This %s has <strong>%d active players</strong>.</p>" % ("division" if num_divisions > 1 else "tournament", num_active_players)))
         if num_active_players % 2 != 0 and num_active_players % 3 != 0:
