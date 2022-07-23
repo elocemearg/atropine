@@ -38,6 +38,12 @@ def show_error(err_str):
     cgicommon.writeln("</body>")
     cgicommon.writeln("</html>")
 
+form_letter_to_word = {
+        "W" : "won",
+        "D" : "drew",
+        "L" : "lost"
+}
+
 cgitb.enable();
 
 baseurl = "/cgi-bin/export.py"
@@ -427,6 +433,23 @@ try:
                         cgicommon.write("%7.2f " % s.tournament_rating)
                     else:
                         cgicommon.write("        ")
+
+                # If this player has played in any QF, SF, final or third place
+                # playoff, insert a parenthetical explanatory note as to why
+                # their position in the table might not match their wins/points
+                # total.
+                finals_form = s.finals_form
+                # Remove any leading dashes from finals form
+                while finals_form and finals_form[0] == '-':
+                    finals_form = finals_form[1:]
+                if finals_form:
+                    if len(finals_form) == 1 and s[0] <= 4:
+                        match_type = ("final" if s[0] <= 2 else "third place")
+                        cgicommon.write(" (%s %s)" % (form_letter_to_word.get(finals_form), match_type))
+                    else:
+                        # Not just a single finals match, so display
+                        # something like "(finals: WWL)".
+                        cgicommon.write(" (finals: " + finals_form + ")")
                 cgicommon.writeln("")
             cgicommon.writeln("")
             cgicommon.writeln("")
