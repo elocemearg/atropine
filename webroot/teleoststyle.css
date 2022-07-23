@@ -44,10 +44,26 @@
        url('/fonts/cabin-v12-latin-regular.svg#Cabin') format('svg'); /* Legacy iOS */
 }
 
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    src: url('/fonts/Inter-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Inter SemiBold';
+    font-style: normal;
+    font-weight: 500;
+    src: url('/fonts/Inter-SemiBold.ttf') format('truetype');
+}
+
 body.display {
-    font-family: "Roboto", sans-serif;
-    --text-font-family: "Roboto";
-    --heading-font-family: "Cabin";
+    font-family: "Inter", sans-serif;
+    --text-font-family: "Inter", sans-serif;
+    --heading-font-family: "Inter SemiBold", "Inter", sans-serif;
+    --videprinter-font-family: "Roboto", sans-serif;
+    font-variant-numeric: tabular-nums;
     overflow: hidden;
     position: absolute;
     width: 100%;
@@ -137,8 +153,8 @@ tr.teleoststandingsheadingrow {
 
 table.teleoststandings th {
     font-family: var(--heading-font-family);
-    padding-left: 2%;
-    padding-right: 2%;
+    padding-left: 1.5vw;
+    padding-right: 1.5vw;
     font-weight: normal;
 }
 
@@ -151,8 +167,8 @@ th.teleoststandingsheadingnumber {
 }
 
 table.teleoststandings td {
-    padding-left: 2vw;
-    padding-right: 2vw;
+    padding-left: 1.5vw;
+    padding-right: 1.5vw;
     border-top: 0.1vh solid gray;
     border-bottom: 0.1vh solid gray;
 }
@@ -175,7 +191,7 @@ col.teleoststandingscolpos {
 }
 
 col.teleoststandingscolname {
-    width: 50vw;
+    width: 46vw;
 }
 
 col.teleoststandingscolplayed {
@@ -185,12 +201,12 @@ col.teleoststandingscolplayed {
 
 col.teleoststandingscolwins {
     color: cyan;
-    width: 8vw;
+    width: 10vw;
 }
 
 col.teleoststandingscolpoints {
     color: cyan;
-    width: 10vw;
+    width: 12vw;
 }
 
 td.teleoststandingspos {
@@ -217,6 +233,7 @@ div.videprintercontainer {
     height: 100%;
     /*border-bottom: 2px solid #004000;*/
     border-top: 0.75vh ridge silver;
+    font-family: var(--videprinter-font-family);
 }
 
 table.teleostvideprinter {
