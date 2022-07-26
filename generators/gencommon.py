@@ -82,7 +82,7 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
 
     if False not in valid_table_sizes_submitted and "submit" in settings:
         return None
-    
+
     for element in additional_elements:
         elements.append(element)
 

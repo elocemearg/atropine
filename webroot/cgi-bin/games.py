@@ -86,21 +86,6 @@ def write_autocomplete_scripts(tourney, games):
             else:
                 division_field = ""
 
-            # define "win marks" is 2 * wins + draws, and display that divided
-            # by two, using the half symbol if necessary
-            #
-            #win_marks = row.wins * 2 + row.draws
-            #if win_marks == 1:
-            #    win_marks_str = "&frac12;"
-            #else:
-            #    win_marks_str = str(int(win_marks / 2))
-            #    if win_marks % 2 == 1:
-            #        win_marks_str += "&frac12;"
-            #
-            #players_summaries[row.name] = "%s %s%d%s %s/%d %d" % (
-            #        table_field, division_field, row.position,
-            #        ordinal_suffix(row.position), win_marks_str, row.played,
-            #        row.points)
             if row.draws == 0:
                 draw_string = ""
             else:
@@ -253,7 +238,7 @@ function entry_name_change_finished(control_id, opponent_control_id) {
     var opponent_control = document.getElementById(opponent_control_id);
     var score_control_id = control_id.replace("name", "score");
     var opponent_score_control_id = opponent_control_id.replace("name", "score");
-    
+
     var player_score_control = document.getElementById(score_control_id);
     var opponent_score_control = document.getElementById(opponent_score_control_id);
     var tiebreak_control = document.getElementById("entrytiebreak");
@@ -285,7 +270,7 @@ function entry_name_change_finished(control_id, opponent_control_id) {
     tiebreak_prev_state = false;
 
     var opponent_name = opponent_control.value.trim()
-    
+
     /* If both names are now filled in, and there is exactly one game in this
        round between these two players, and the score fields are either blank
        or contain something not entered by the user, then fill in the score
@@ -926,7 +911,7 @@ function set_blinkenlights_mouseover(text) {
     cgicommon.writeln("<div class=\"blinkenlights boxshadow\">")
     cgicommon.writeln("<div class=\"resultsentrytitle\" style=\"padding: 7px;\">Blinkenlights</div>")
     cgicommon.writeln("<table class=\"blinkenlightstable\">")
-    
+
     num_tables_drawn = 0
     tables_per_row = 8
 
@@ -1081,7 +1066,7 @@ try:
             cgicommon.writeln("<p>\"%s\" is not a valid round number.</p>" % (cgicommon.escape(form.getfirst("round"))));
     else:
         cgicommon.writeln("<h1>No round number specified</h1>");
-    
+
     if round_no is not None:
         games = tourney.get_games(round_no=round_no);
         rounds = tourney.get_rounds();
@@ -1228,7 +1213,7 @@ try:
                                     control_with_error = "entryscore1"
                                     score_valid = False
 
-                            
+
                             if score_valid:
                                 if tb:
                                     tb = True

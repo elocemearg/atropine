@@ -71,22 +71,6 @@ def get_user_form(tourney, settings, div_rounds):
 
         if max_time is not None and max_time > 0 and group_size in valid_group_sizes and (group_size == -5 or len(players) % group_size == 0):
             div_ready[div_index] = True
-#        else:
-#            if max_time is None or max_time == 0:
-#                max_time = 30;
-#            if group_size is None or group_size not in valid_group_sizes:
-#                if len(players) % 3 == 0:
-#                    group_size = 3
-#                elif len(players) % 2 == 0:
-#                    group_size = 2
-#                elif len(players) % 5 == 0:
-#                    group_size = 5
-#                elif len(players) >= 8:
-#                    group_size = -5
-#                elif len(players) % 4 == 0:
-#                    group_size = 4
-#                else:
-#                    group_size = None
 
         div_group_size[div_index] = group_size
         div_init_max_rematches[div_index] = init_max_rematches
@@ -214,7 +198,7 @@ function generate_fixtures_clicked() {
     else:
         default_default_group_size = None
 
-    
+
     if num_divisions > 1 and len(table_sizes_valid_for_all_divs) > 0:
         elements.append(htmlform.HTMLFragment("<p>"))
         group_size_choices = [ htmlform.HTMLFormChoice(str(gs),
@@ -272,7 +256,7 @@ function generate_fixtures_clicked() {
         elements.append(htmlform.HTMLFormRadioButton(div_prefix + "groupsize", "How many players per table? This must exactly divide the number of active players in the %s." % ("division" if num_divisions > 1 else "tournament"), group_size_choices))
         elements.append(htmlform.HTMLFragment("</p>\n"))
         elements.append(htmlform.HTMLFragment("<p>Increase the following values if the fixture generator has trouble finding a grouping within the time limit.</p>\n"));
-        
+
         elements.append(htmlform.HTMLFragment("<blockquote>"))
         elements.append(htmlform.HTMLFormTextInput("Initial maximum rematches between players", div_prefix + "initmaxrematches", str(init_max_rematches), other_attrs={"size" : "3"}))
         elements.append(htmlform.HTMLFragment("</blockquote>\n<blockquote>"))
@@ -322,7 +306,7 @@ def check_ready(tourney, div_rounds):
                 return (False, "%s: Cannot generate the next round because there is still a heat game unplayed: %s" % (tourney.get_division_name(div), str(g)));
             else:
                 return (False, "%s: Cannot generate the next round because there are still %d heat games unplayed. The first one is: %s" % (tourney.get_division_name(div), num_incomplete, str(first_incomplete)));
-    
+
     return (True, None);
 
 def generate(tourney, settings, div_rounds):
@@ -331,7 +315,7 @@ def generate(tourney, settings, div_rounds):
     (ready, excuse) = check_ready(tourney, div_rounds);
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
-    
+
     max_time = settings.get("maxtime", 30);
     try:
         limit_ms = int(max_time) * 1000;
@@ -416,7 +400,7 @@ def generate(tourney, settings, div_rounds):
         for g in groups:
             generated_groups.add_group(round_no, div_index, g)
         generated_groups.set_repeat_threes(round_no, div_index, group_size == -5)
-    
+
     return generated_groups
 
 def save_form_on_submit():

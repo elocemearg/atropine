@@ -530,7 +530,7 @@ function toggleMiscStats() {
         writeln("</div>")
 
     writeln("<br />")
-    
+
     writeln("<div class=\"misclinks\">")
     writeln("<a href=\"/docs/\" target=\"_blank\">Help " + new_window_html + "</a>")
     writeln("</div>")
@@ -585,7 +585,7 @@ def show_games_as_html_table(games, editable=True, remarks=None,
         player_to_link = lambda x : escape(x.get_name())
 
     writeln("<table class=\"scorestable\">");
-    
+
     if show_game_type and hide_game_type_if_p:
         for g in games:
             if g.game_type != 'P':
@@ -636,7 +636,7 @@ def show_games_as_html_table(games, editable=True, remarks=None,
             first_game_in_round = True
         else:
             first_game_in_round = False
-        
+
         if g.is_complete():
             tr_classes.append("completedgame");
         else:
@@ -673,7 +673,7 @@ def show_games_as_html_table(games, editable=True, remarks=None,
             elif g.s2 > g.s1:
                 p1_classes.append("losingplayer");
                 p2_classes.append("winningplayer");
-        
+
         team_string = make_player_dot_html(g.p1)
 
         writeln("<td class=\"%s\">%s %s</td>" % (" ".join(p1_classes), player_html_strings[0], team_string));
@@ -707,7 +707,7 @@ onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.roun
         last_round_no = g.round_no
         last_table_no = g.table_no;
         game_seq += 1
-    
+
     writeln("</table>");
 
 def show_standings_table(tourney, show_draws_column, show_points_column,
@@ -879,7 +879,7 @@ class GlobalPreferences(object):
 
 def get_global_preferences():
     db = sqlite3.connect(globaldbfile)
-    
+
     cur = db.cursor()
     cur.execute("create table if not exists prefs(name text, value text)")
     cur.execute("select name, value from prefs")
@@ -895,9 +895,9 @@ def get_global_preferences():
 def set_global_preferences(prefs):
     db = sqlite3.connect(globaldbfile)
     db.execute("delete from prefs")
-    
+
     rows_to_insert = []
-    
+
     mapping = prefs.get_map()
     for name in mapping:
         rows_to_insert.append((name, mapping[name]))
@@ -935,7 +935,7 @@ def assert_client_from_localhost():
     if not is_client_from_localhost():
         show_tourney_exception(FakeException(
             "You're only allowed to access this page from the same computer " +
-            "as the one on which atropine is running. Your address is " + 
+            "as the one on which atropine is running. Your address is " +
             os.environ.get("REMOTE_ADDR", "(unknown)") + " and I'll only " +
             "serve you this page if you're from localhost."))
         writeln("</body></html>")

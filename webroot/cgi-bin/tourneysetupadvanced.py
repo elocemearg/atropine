@@ -70,7 +70,6 @@ if tourneyname is None:
 elif not tourney:
     cgicommon.writeln("<p>No valid tourney name specified</p>");
 else:
-    #print '<p><a href="%s?tourney=%s">%s</a></p>' % (baseurl, urllib.quote_plus(tourneyname), cgicommon.escape(tourneyname));
     if request_method == "POST" and "submit" in form:
         try:
             tourney.set_show_tournament_rating_column(show_tournament_rating)

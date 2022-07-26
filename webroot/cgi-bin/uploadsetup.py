@@ -196,7 +196,7 @@ else:
 </div>
     """ % (html.escape(web_link_raw)))
     #<div style="display: inline-block; width: 120px;">Shareable link</div>
-    
+
     cgicommon.writeln("""
 <script>
 // <!--

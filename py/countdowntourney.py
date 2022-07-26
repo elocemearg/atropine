@@ -372,7 +372,7 @@ from player p, final_game_types gt
 left outer join game_divided gd on p.id = gd.p_id
      and (gd.game_type = gt.game_type or (gt.game_type = 'F' and gd.game_type = '3P'));
 
-create view if not exists player_finals_form as 
+create view if not exists player_finals_form as
 select p.id, coalesce(pfr_qf.result, '-') qf,
              coalesce(pfr_sf.result, '-') sf,
     case when pfr_f.result is null then '-'
@@ -611,7 +611,7 @@ class Player(object):
         self.avoid_prune = avoid_prune
         self.require_accessible_table = require_accessible_table
         self.preferred_table = preferred_table
-    
+
     def __eq__(self, other):
         if other is None:
             return False;
@@ -619,17 +619,17 @@ class Player(object):
             return True;
         else:
             return False;
-    
+
     def __ne__(self, other):
         return not(self.__eq__(other));
-    
+
     # Emulate a 3-tuple
     def __len__(self):
         return 3;
 
     def __getitem__(self, key):
         return [self.name, self.rating, self.division][key];
-    
+
     def __str__(self):
         return self.name;
 
@@ -638,7 +638,7 @@ class Player(object):
 
     def is_pending(self):
         return False;
-    
+
     def is_withdrawn(self):
         return self.withdrawn
 
@@ -653,16 +653,16 @@ class Player(object):
 
     def get_rating(self):
         return self.rating
-    
+
     def get_id(self):
         return self.player_id
-    
+
     def get_team_colour_tuple(self):
         if self.team:
             return self.team.get_colour_tuple()
         else:
             return None
-    
+
     def get_team(self):
         return self.team
 
@@ -683,7 +683,7 @@ class Player(object):
 
     def is_avoiding_prune(self):
         return self.avoid_prune
-    
+
     def is_requiring_accessible_table(self):
         return self.require_accessible_table
 
@@ -711,7 +711,7 @@ def get_short_name(name, player_names):
             break
     else:
         return short_name
-    
+
     short_name = get_first_name_and_last_initial(name)
     for op in player_names:
         if name != op and short_name == get_first_name_and_last_initial(op):
@@ -750,19 +750,19 @@ class EnteredPlayer(object):
 
     def get_short_name(self):
         return self.short_name
-    
+
     def get_division(self):
         return self.division
 
     def get_team_id(self):
         return self.team_id
-    
+
     def get_avoid_prune(self):
         return self.avoid_prune
 
     def get_withdrawn(self):
         return self.withdrawn
-    
+
     def get_requires_accessible_table(self):
         return self.requires_accessible_table
 
@@ -778,7 +778,7 @@ class PlayerPending(object):
         self.round_seq = round_seq;
         self.winner = winner;
         self.round_short_name = round_short_name if round_short_name else ("R%d" % self.round_no)
-    
+
     def __eq__(self, other):
         if other is None:
             return False;
@@ -786,7 +786,7 @@ class PlayerPending(object):
             return True;
         else:
             return False;
-    
+
     def __len__(self):
         return 3;
 
@@ -806,7 +806,7 @@ class PlayerPending(object):
                 "winner" : self.winner,
                 "round_short_name" : self.round_short_name
         };
-    
+
     @staticmethod
     def from_dict(d):
         return PlayerPending(d["round"], d["round_seq"], d["winner"], d["round_short_name"]);
@@ -829,10 +829,10 @@ class Team(object):
         self.team_id = team_id;
         self.name = team_name;
         self.colour = colour;
-    
+
     def get_name(self):
         return self.name
-    
+
     def get_id(self):
         return self.team_id
 
@@ -865,10 +865,10 @@ class StandingsRow(object):
     # Emulate a list for bits of the code that require it
     def __len__(self):
         return 8
-    
+
     def __getitem__(self, index):
         return [self.position, self.name, self.played, self.wins, self.points, self.draws, self.spread, self.played_first][index]
-    
+
     def is_qualified(self):
         return self.qualified
 
@@ -884,13 +884,13 @@ class Game(object):
         self.s1 = s1;
         self.s2 = s2;
         self.tb = tb;
-    
+
     def is_complete(self):
         if self.s1 is not None and self.s2 is not None:
             return True;
         else:
             return False;
-    
+
     def are_players_known(self):
         if self.p1.is_player_known() and self.p2.is_player_known():
             return True;
@@ -911,19 +911,19 @@ class Game(object):
 
     def get_score(self):
         return (self.s1, self.s2)
-    
+
     def __str__(self):
         if self.is_complete():
             return "Round %d, %s, Table %d, %s %s %s" % (self.round_no, get_general_division_name(self.division), self.table_no, str(self.p1), self.format_score(), str(self.p2));
         else:
             return "Round %d, %s, Table %d, %s v %s" % (self.round_no, get_general_division_name(self.division), self.table_no, str(self.p1), str(self.p2));
-    
+
     def get_short_string(self):
         if self.is_complete():
             return "%s %s %s" % (str(self.p1), self.format_score(), str(self.p2))
         else:
             return "%s v %s" % (str(self.p1), str(self.p2))
-    
+
     def make_dict(self):
         names = self.get_player_names();
         if self.p1.is_pending():
@@ -960,13 +960,13 @@ class Game(object):
 
     def get_players(self):
         return [ self.p1, self.p2 ]
-    
+
     def get_player_names(self):
         return [self.p1.get_name(), self.p2.get_name()];
-    
+
     def get_short_player_names(self):
         return [self.p1.get_short_name(), self.p2.get_short_name()]
-    
+
     def get_player_score(self, player):
         if self.p1.is_player_known() and self.p1 == player:
             score = self.s1;
@@ -975,7 +975,7 @@ class Game(object):
         else:
             raise PlayerNotInGameException("player %s is not in the game between %s and %s." % (str(player), str(self.p1), str(self.p2)));
         return score;
-    
+
     def get_player_name_score(self, player_name):
         if self.p1.is_player_known() and (self.p1.get_name().lower() == player_name.lower() or self.p1.get_name() == player_name):
             return self.s1
@@ -983,7 +983,7 @@ class Game(object):
             return self.s2
         else:
             raise PlayerNotInGameException("Player %s not in the game between %s and %s." % (str(player_name), str(self.p1), str(self.p2)))
-    
+
     def get_opponent_score(self, player):
         if self.p1 == player:
             score = self.s2;
@@ -1000,15 +1000,15 @@ class Game(object):
             self.s2 = score;
         else:
             raise PlayerNotInGameException("player %s is not in the game between %s and %s." % (str(player), str(self.p1), str(self.p2)));
-    
+
     def set_tiebreak(self, tb):
         self.tb = tb;
-    
+
     def set_score(self, s1, s2, tb):
         self.s1 = s1;
         self.s2 = s2;
         self.tb = tb;
-    
+
     def get_round_no(self):
         return self.round_no
 
@@ -1017,13 +1017,13 @@ class Game(object):
 
     def get_table_no(self):
         return self.table_no
-    
+
     def get_round_seq(self):
         return self.seq
-    
+
     def get_game_type(self):
         return self.game_type
-    
+
     def format_score(self):
         if self.s1 is None and self.s2 is None:
             return "";
@@ -1051,7 +1051,7 @@ class Game(object):
             return True
         else:
             return False
-    
+
     # Emulate a list of values
     def __len__(self):
         return 10;
@@ -1122,19 +1122,19 @@ class Tourney(object):
 
     def __exit__(self, type, value, tb):
         self.close()
-    
+
     def get_name(self):
         return self.name
 
     def get_full_name(self):
         return self.get_attribute("fullname", self.name)
-    
+
     def set_full_name(self, name):
         self.set_attribute("fullname", name)
 
     def get_venue(self):
         return self.get_attribute("venue", "")
-    
+
     def set_venue(self, venue):
         self.set_attribute("venue", venue)
 
@@ -1182,13 +1182,13 @@ class Tourney(object):
         else:
             self.check_date(year, month, day)
             self.set_attribute("eventdate", "%04d-%02d-%02d" % (year, month, day))
-    
+
     def get_db_version(self):
         return ".".join([str(x) for x in self.db_version])
 
     def get_software_version(self):
         return get_software_version()
-    
+
     # Number of games in the GAME table - that is, number of games played
     # or in progress.
     def get_num_games(self):
@@ -1198,7 +1198,7 @@ class Tourney(object):
         count = row[0];
         cur.close();
         return count;
-    
+
     def get_next_free_table_number_in_round(self, round_no):
         cur = self.db.cursor()
         cur.execute("select max(table_no) from game g where g.round_no = ?", (round_no,))
@@ -1209,7 +1209,7 @@ class Tourney(object):
             next_table_no = row[0] + 1
         cur.close()
         return next_table_no
-    
+
     def get_next_free_seq_number_in_round(self, round_no):
         cur = self.db.cursor()
         cur.execute("select max(seq) from game g where g.round_no = ?", (round_no,))
@@ -1220,7 +1220,7 @@ class Tourney(object):
             next_seq_no = row[0] + 1
         cur.close()
         return next_seq_no
-    
+
     def get_next_free_round_number_for_division(self, div):
         cur = self.db.cursor()
         cur.execute("select max(round_no) from game g where g.division = ?", (div,))
@@ -1231,7 +1231,7 @@ class Tourney(object):
             round_no = row[0] + 1
         cur.close()
         return round_no
-    
+
     def get_round_name(self, round_no):
         cur = self.db.cursor();
         cur.execute("select name from " + self.round_view_name + " where id = ?", (round_no,));
@@ -1242,7 +1242,7 @@ class Tourney(object):
         else:
             cur.close();
             return row[0];
-    
+
     def get_short_round_name(self, round_no):
         cur = self.db.cursor();
         cur.execute("select cast(id as text) short_name from rounds where id = ?", (round_no,));
@@ -1253,7 +1253,7 @@ class Tourney(object):
         else:
             cur.close();
             return row[0];
-    
+
     def get_rounds(self):
         cur = self.db.cursor();
         cur.execute("select g.round_no, r.name from game g left outer join " +
@@ -1281,7 +1281,7 @@ class Tourney(object):
             d["name"] = row[1]
         cur.close()
         return d
-    
+
     def name_round(self, round_no, round_name):
         # Does round_no already exist?
         cur = self.db.cursor();
@@ -1309,7 +1309,7 @@ class Tourney(object):
         self.db.commit()
         cur.close()
         return count;
-    
+
     def player_name_exists(self, name):
         cur = self.db.cursor()
         cur.execute("select count(*) from player where lower(name) = ? or name = ?", (name.lower(), name))
@@ -1328,7 +1328,7 @@ class Tourney(object):
         cur.execute("update player set avoid_prune = ? where lower(name) = ? or name = ?", (1 if value else 0, name.lower(), name))
         cur.close()
         self.db.commit()
-    
+
     def get_player_avoid_prune(self, name):
         if self.db_version < (0, 7, 7):
             return False
@@ -1342,7 +1342,7 @@ class Tourney(object):
         cur.close()
         self.db.commit()
         return retval
-    
+
     def add_player(self, name, rating, division=0):
         if self.player_name_exists(name):
             raise PlayerExistsException("Can't add player \"%s\" because there is already a player with that name." % (name))
@@ -1452,15 +1452,15 @@ class Tourney(object):
 
     def get_auto_rating_behaviour(self):
         return self.get_int_attribute("autoratingbehaviour", RATINGS_UNIFORM)
-    
+
     def get_active_players(self):
         # Return the list of players in the tournament who are not marked
         # as withdrawn.
         return self.get_players(exclude_withdrawn=True)
-    
+
     def get_withdrawn_players(self):
         return [x for x in self.get_players() if x.withdrawn]
-    
+
     def get_players(self, exclude_withdrawn=False):
         cur = self.db.cursor();
         if self.db_version < (0, 7, 7):
@@ -1493,7 +1493,7 @@ class Tourney(object):
             players.append(Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8], row[9], row[10], row[11], row[12]));
         cur.close();
         return players;
-    
+
     def rerate_player(self, name, rating):
         try:
             rating = float(rating)
@@ -1506,7 +1506,7 @@ class Tourney(object):
             raise PlayerDoesNotExistException("Cannot change the rating of player \"" + name + "\" because no player by that name exists.");
         cur.close();
         self.db.commit();
-    
+
     def rename_player(self, oldname, newname):
         newname = newname.strip();
         if newname == "":
@@ -1637,7 +1637,7 @@ class Tourney(object):
         div_rank_ranges = []
         for div_index in range(num_divisions):
             div_rank_ranges.append(
-                    (min(player_ranks[x.get_name()] for x in div_players[div_index]), 
+                    (min(player_ranks[x.get_name()] for x in div_players[div_index]),
                      max(player_ranks[x.get_name()] for x in div_players[div_index])
             ))
 
@@ -1699,7 +1699,7 @@ class Tourney(object):
         retval = (row[0] != 0)
         cur.close()
         return retval
- 
+
     def set_player_preferred_table(self, name, value):
         if self.db_version < (1, 0, 5):
             return
@@ -1752,7 +1752,7 @@ class Tourney(object):
             bonus = row[0]
         cur.close()
         return bonus
-    
+
     def get_tournament_rating_diff_cap(self):
         cur = self.db.cursor()
         cur.execute("select rating_diff_cap from tr_opts")
@@ -1772,7 +1772,7 @@ class Tourney(object):
 
     def get_show_tournament_rating_column(self):
         return bool(self.get_int_attribute("showtournamentratingcolumn", 0))
-    
+
     def set_show_tournament_rating_column(self, value):
         self.set_attribute("showtournamentratingcolumn", str(int(value)))
 
@@ -1927,7 +1927,7 @@ class Tourney(object):
         except:
             self.db.rollback();
             raise;
-    
+
     def post_news_item(self, round_no, text, post_to_videprinter, post_to_web):
         if self.db_version >= (1, 0, 6):
             cur = self.db.cursor()
@@ -1963,7 +1963,7 @@ class Tourney(object):
             raise NoGamesException()
         if latest_round_no != round_no:
             raise NotMostRecentRoundException()
-        
+
         try:
             cur = self.db.cursor()
             cur.execute("delete from game where round_no = ?", (latest_round_no,))
@@ -2005,7 +2005,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
         cur.close();
         self.db.commit();
         return rows_updated;
-    
+
     def get_player_from_name(self, name):
         sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s, %s, %s from player p left outer join team t on p.team_id = t.id where (lower(p.name) = ? or p.name = ?)" % (
                 "0" if self.db_version < (0, 7, 7) else "p.avoid_prune",
@@ -2024,7 +2024,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
             else:
                 team = None
             return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12]);
-    
+
     def get_player_from_id(self, player_id):
         sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, %s, %s, %s from player p left outer join team t on p.team_id = t.id where p.id = ?" % (
                 "0" if self.db_version < (0, 7, 7) else "p.avoid_prune",
@@ -2056,7 +2056,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
         if round_no is None:
             return None
         return self.get_round(round_no)
-    
+
     def is_round_finished(self, round_no):
         cur = self.db.cursor()
         cur.execute("select count(*) from game g where round_no = ?", (round_no,))
@@ -2122,7 +2122,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
                     r = None
 
         return r
-    
+
     def get_latest_round_no(self):
         cur = self.db.cursor();
         cur.execute("select max(id) from rounds");
@@ -2145,7 +2145,7 @@ where round_no = ? and seq = ?""", alterations_reordered);
             latest_round = row[0]
         cur.close()
         return latest_round
-    
+
     def get_played_unplayed_counts(self, round_no=None):
         cur = self.db.cursor();
         params = [];
@@ -2342,7 +2342,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                 prev_sort_vals = sort_vals;
             else:
                 pos += 1;
-            
+
             result = [pos];
             for val in row:
                 result.append(val);
@@ -2390,7 +2390,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
     def set_teleost_animate_scroll(self, value):
         self.set_attribute("teleostanimatescroll", str(int(value)))
-    
+
     def get_teleost_animate_scroll(self):
         return self.get_int_attribute("teleostanimatescroll", 1) != 0
 
@@ -2405,16 +2405,16 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
     def get_auto_current_round_must_have_games_in_all_divisions(self):
         return self.get_int_attribute("autocurrentroundmusthavegamesinalldivisions", 1) != 0
-    
+
     def get_rank_method(self):
         return self.get_int_attribute("rankmethod", RANK_WINS_POINTS);
-    
+
     def is_ranking_by_wins(self):
         return self.get_rank_method() in [ RANK_WINS_POINTS, RANK_WINS_SPREAD ]
-    
+
     def is_ranking_by_points(self):
         return self.get_rank_method() in [ RANK_WINS_POINTS, RANK_POINTS ]
-    
+
     def is_ranking_by_spread(self):
         return self.get_rank_method() == RANK_WINS_SPREAD
 
@@ -2422,15 +2422,15 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         if method not in [RANK_WINS_POINTS, RANK_WINS_SPREAD, RANK_POINTS]:
             raise UnknownRankMethodException("Can't rank tourney by method %d because I don't know what that is." % method);
         self.set_attribute("rankmethod", method);
-    
+
     def set_table_size(self, table_size):
         if table_size not in [2,3]:
             raise InvalidTableSizeException("Number of players to a table must be 2 or 3.");
         self.set_attribute("tablesize", int(table_size));
-    
+
     def get_table_size(self):
         return self.get_int_attribute("tablesize", 3);
-    
+
     def set_show_draws_column(self, value):
         self.set_attribute("showdrawscolumn", 1 if value else 0)
 
@@ -2472,7 +2472,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         cur.close()
         return count
 
- 
+
     def get_division_name(self, num):
         name = self.get_attribute("div%d_name" % (num))
         if name:
@@ -2482,7 +2482,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
     def set_division_name(self, num, name):
         self.set_attribute("div%d_name" % (num), name)
-    
+
     def get_short_division_name(self, num):
         return get_general_short_division_name(num)
 
@@ -2608,7 +2608,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                                     standings_row.qualified = True
                                     break
         return standings
-    
+
     def get_logs_since(self, seq=None, include_new_games=False, round_no=None, maxrows=None):
         cur = self.db.cursor();
         sql = """select seq, datetime(ts, 'localtime') ts, round_no,
@@ -2677,7 +2677,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         cur.execute("update teleost set current_mode = ?", (mode,));
         cur.close();
         self.db.commit();
-    
+
     def define_teleost_modes(self, modes):
         # No longer done by Teleost
         return
@@ -2749,23 +2749,6 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         mode = self.get_effective_teleost_mode()
         return teleost_modes[mode]["id"] == "TELEOST_MODE_STANDINGS_VIDEPRINTER"
 
-    def set_teleost_options(self, options):
-        # Nope
-        return
-        
-        #if self.db_version < (0, 7, 7):
-        #    print self.db_version
-        #    return
-        #cur = self.db.cursor()
-        #options_rows = []
-        #for o in options:
-        #    options_rows.append((o.mode, o.seq, o.name, o.control_type, o.desc, o.value))
-        # Insert option metadata
-        #cur.execute("delete from teleost_options")
-        #cur.executemany("insert into teleost_options(mode, seq, name, control_type, desc, default_value) values (?, ?, ?, ?, ?, ?)", options_rows)
-        #cur.close()
-        #self.db.commit()
-
     def get_teleost_options(self, mode=None):
         if self.db_version < (0, 7, 7):
             return []
@@ -2796,37 +2779,20 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                     opt[3], # description
                     value   # effective value
             ))
-
-        #if mode is not None:
-        #    mode_clause = "where telo.mode = %d" % (mode)
-        #else:
-        #    mode_clause = ""
-        #cur.execute("select telo.mode, telo.seq, telo.name, telo.control_type, telo.desc, telo.default_value, att.value from teleost_options telo left outer join options att on telo.name = att.name " + mode_clause + " order by telo.mode, telo.seq")
-        #for row in cur:
-        #    options.append(TeleostOption(int(row[0]), int(row[1]), row[2], row[3], row[4], row[6] if row[6] is not None else row[5]))
-        #cur.close()
         return options
-    
+
     def get_teleost_option_value(self, name):
         if self.db_version < (0, 7, 7):
             return None
-        #cur.execute("select telo.default_value, att.value from teleost_options telo left outer join options att on telo.name = att.name where telo.name = ?", (name,))
-        #row = cur.fetchone()
-        #value = None
-        #if row is not None:
-        #    if row[1] is not None:
-        #        value = row[1]
-        #    else:
-        #        value = row[0]
         value = self.get_attribute(name, None)
         if value is None:
             for opt in teleost_per_view_option_list:
                 if opt[1] == name:
                     value = opt[4]
                     break
-        
+
         return value
-    
+
     def set_teleost_option_value(self, name, value):
         self.set_attribute(name, value)
 
@@ -2845,7 +2811,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             d[table] = count;
         cur.close();
         return d;
-    
+
     def get_max_games_per_table(self, round_no=None):
         sql = """select max(game_count) from (
             select table_no, count(*) game_count
@@ -2863,7 +2829,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                 value = row[0]
         cur.close()
         return value
-    
+
     def get_latest_game_times_by_table(self, round_no=None):
         sql = "select table_no, max(ts) from game_log";
         sql += " where log_type = 1";
@@ -2887,7 +2853,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             teams.append(Team(team_id, team_name, colour))
         cur.close()
         return teams
-    
+
     def get_team_from_id(self, team_id):
         sql = "select id, name, colour from team where id = ?"
         cur = self.db.cursor()
@@ -2930,7 +2896,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         (num,) = cur.fetchone()
         cur.close()
         return num > 0
-    
+
     def get_team_scores(self, round_no=None):
         sql = """
 select t.id, sum(case when p1.team_id != t.id and p2.team_id != t.id then 0
@@ -2955,7 +2921,7 @@ and g.game_type = 'P'
             team_score.append((self.get_team_from_id(team_id), score))
         cur.close()
         return team_score
-    
+
     def store_fixgen_settings(self, fixgen_name, settings):
         cur = self.db.cursor()
         cur.execute("delete from fixgen_settings where fixgen = ?", (fixgen_name,))
@@ -3024,7 +2990,7 @@ and g.game_type = 'P'
             count = row[0]
         cur.close()
         return count
-    
+
     def first_acc_player(self, group):
         group_acc_players = [ p for p in group if p.is_requiring_accessible_table() ]
         if not group_acc_players:
@@ -3227,7 +3193,7 @@ and g.game_type = 'P'
                 tuffness_list.append((p, sum(margin_list), margin_list))
 
         return sorted(tuffness_list, key=lambda x : x[1])
-    
+
     def get_players_overachievements(self, div_index):
         # Get every player's standing position in this division
         standings = self.get_standings(div_index)
@@ -3269,7 +3235,7 @@ and g.game_type = 'P'
             if player:
                 overachievements.append((player, seed, position, overachievement))
         return sorted(overachievements, key=lambda x : (x[3], x[1]), reverse=True)
-    
+
     # Return true if all player ratings in a division are the same, with the
     # exception of players with a zero rating.
     def are_player_ratings_uniform(self, div_index):
@@ -3295,7 +3261,7 @@ and g.game_type = 'P'
 
     def clear_banner_text(self):
         self.set_attribute("teleost_banner_text", "")
-    
+
     def get_game_table_revision_no(self, round_no):
         cur = self.db.cursor()
         cur.execute("select max(seq) from game_log where round_no = ?", (round_no,))
@@ -3335,7 +3301,7 @@ and g.game_type = 'P'
             })
         cur.close()
         return retlist
-    
+
     def get_highest_winning_scores(self, max_rows):
         return self.query_result_to_game_dict_list(
             """
@@ -3428,7 +3394,7 @@ and g.game_type = 'P'
     def get_num_accessible_tables(self):
         if self.db_version < (1, 0, 4):
             return 0
-        
+
         cur = self.db.cursor()
 
         cur.execute("select accessible from board where table_no = -1")
@@ -3560,16 +3526,16 @@ and g.game_type = 'P'
 
     def is_broadcast_private(self):
         return self.get_int_attribute("broadcastprivate", 0) != 0
-    
+
     def is_post_to_videprinter_set(self):
         return self.get_int_attribute("posttovideprinter", 1) != 0
-    
+
     def is_post_to_web_set(self):
         return self.get_int_attribute("posttoweb", 1) != 0
 
     def set_post_to_videprinter(self, value):
         return self.set_attribute("posttovideprinter", 1 if value else 0)
-    
+
     def set_post_to_web(self, value):
         return self.set_attribute("posttoweb", 1 if value else 0)
 
@@ -3578,7 +3544,7 @@ and g.game_type = 'P'
 
     def set_rank_finals(self, rank_finals):
         return self.set_attribute("rankfinals", 1 if rank_finals else 0)
- 
+
 
 def get_5_3_table_sizes(num_players):
     if num_players < 8:
@@ -3637,7 +3603,7 @@ def tourney_create(dbname, directory="."):
     tourney = Tourney(dbpath, dbname, versioncheck=False);
     tourney.db_version = SW_VERSION_SPLIT;
     tourney.db.executescript(create_tables_sql);
-    tourney.db.execute("insert into options values ('atropineversion', ?)", (SW_VERSION,)) 
+    tourney.db.execute("insert into options values ('atropineversion', ?)", (SW_VERSION,))
 
     # We now generate a unique ID for each tourney db file. This helps with the
     # web broadcast feature. It stops us from accidentally uploading an

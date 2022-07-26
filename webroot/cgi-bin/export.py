@@ -252,9 +252,9 @@ elif export_format == "csv":
         cgicommon.writeln("<input type=\"submit\" name=\"csvsubmitview\" value=\"View CSV in browser\" />")
         cgicommon.writeln("<input type=\"submit\" name=\"csvsubmitdownload\" value=\"Download CSV\" />")
         cgicommon.writeln("</p>")
-        
+
         cgicommon.writeln("</form>")
-        
+
         cgicommon.writeln("</div>")
 
         cgicommon.writeln("</body>")

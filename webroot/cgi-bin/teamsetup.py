@@ -38,7 +38,7 @@ def random_team_assignment(tourney, group_size):
     if len(teams) == 0:
         # wat
         return []
-    
+
     team_counts = dict()
     for t in teams:
         team_counts[t.get_id()] = 0
@@ -77,7 +77,7 @@ def random_team_assignment(tourney, group_size):
     # Assign each prune to no team
     for p in prunes:
         player_teams.append((p.get_name(), -1))
-    
+
     # Return the map of players to team IDs
     return player_teams
 
@@ -165,8 +165,6 @@ else:
     elif tourney_exception:
         cgicommon.show_tourney_exception(e)
 
-    #print '<p>'
-
     teams = tourney.get_teams()
     player_teams = sorted(tourney.get_player_teams(), key=lambda x : x[0].get_rating(), reverse=True)
 
@@ -174,7 +172,6 @@ else:
         cgicommon.writeln("<p>This tourney doesn't have any players, so you can't specify teams yet.</p>")
         cgicommon.writeln('<p><a href="/cgi-bin/tourneysetup.py?tourney=%s">Back to Tourney Setup</a></p>' % (urllib.parse.quote_plus(tourneyname)));
     else:
-        #print '<p><a href="/cgi-bin/tourneysetup.py?tourney=%s">Back to tourney setup</a></p>' % (urllib.quote_plus(tourneyname));
         cgicommon.writeln('<h2>Teams</h2>')
         for team in teams:
             cgicommon.writeln('<p>')
@@ -239,7 +236,6 @@ else:
         cgicommon.writeln('<input type="submit" name="clearteams" value="Clear team assignments"/>')
         cgicommon.writeln('</p>')
         cgicommon.writeln('</form>')
-    #print '</p>'
 
 cgicommon.writeln('</div>')
 cgicommon.writeln('</body>')

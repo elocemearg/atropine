@@ -48,7 +48,7 @@ def show_view_option_controls(tourney, form, options):
             after_control = ""
 
         cgicommon.writeln(before_control)
-        
+
         if o.name in checkbox_to_assoc_field:
             onclick_value = "var numberField = document.getElementById('%s'); var checkboxField = document.getElementById('%s'); numberField.disabled = !checkboxField.checked;" % ("teleost_option_" + checkbox_to_assoc_field[o.name], name_escaped)
         else:
@@ -68,7 +68,7 @@ def show_view_option_controls(tourney, form, options):
                     else:
                         disabled_attr = "disabled"
                     break
-        
+
         if o.control_type == countdowntourney.CONTROL_NUMBER:
             cgicommon.writeln("<input type=\"number\" style=\"width: 5em;\" name=\"%s\" id=\"%s\" value=\"%s\" %s />" % (name_escaped, name_escaped, value_escaped, disabled_attr))
         elif o.control_type == countdowntourney.CONTROL_CHECKBOX:

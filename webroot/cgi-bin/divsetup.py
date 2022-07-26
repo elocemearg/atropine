@@ -164,7 +164,7 @@ else:
             else:
                 for div_index in range(0, num_divisions):
                     div_players[div_index] = sorted(div_players[div_index], key=lambda x : (x.get_rating()), reverse=True)
-            
+
             cgicommon.writeln("<h2>Summary</h2>")
             cgicommon.writeln("<table class=\"divsummarytable\">")
             cgicommon.writeln("<tr><th></th><th colspan=\"2\">Players</th><th></th></tr>")

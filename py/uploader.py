@@ -84,7 +84,7 @@ def make_https_json_request(server_host, server_port, path, request):
             httpcon.close()
         sys.stderr.write("Failed to connect to %s: %s\r\n" % (server_host, str(e)))
         return { "success" : False, "http_failure" : True, "message" : "Failed to connect to %s: %s. Check your internet connection." % (server_host, str(e)) }
-    
+
     try:
         while path and path[0] == '/':
             path = path[1:]
@@ -185,7 +185,7 @@ class UploaderThread(object):
         except countdowntourney.TourneyException as e:
             sys.stderr.write("Failed to get last successful upload time: %s\n" % (str(e)))
             return None
-    
+
     def get_last_failed_upload(self, tourney_name):
         try:
             with countdowntourney.tourney_open(tourney_name, db_dir) as tourney:
@@ -200,13 +200,13 @@ class UploaderThread(object):
 
     def get_num_viewers(self, tourney_name):
         return self.tourney_num_viewers.get(tourney_name, None)
-    
+
     def get_tourney_auth(self, tourney):
         return self.tourney_auth.get(tourney)
-    
+
     def set_tourney_auth(self, tourney, username, password):
         self.tourney_auth[tourney] = { "username" : username, "password" : password }
-    
+
     def get_upload_button_pressed_time(self, tourney):
         if tourney not in self.uploading_tourneys:
             return None
@@ -215,7 +215,7 @@ class UploaderThread(object):
 
     def write_log(self, message):
         sys.stderr.write("%s: %s\r\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), message))
-    
+
     def body(self):
         while True:
             uploading_tourneys = self.uploading_tourneys.copy()

@@ -49,7 +49,7 @@ def generate(tourney, settings, div_rounds):
         players = [ x for x in tourney.get_active_players() if x.get_division() == div_index ]
 
         table_size = int(settings.get("d%d_groupsize" % (div_index)))
-        
+
         # Put the players in order of rating, from highest to lowest. If two
         # players have the same rating, sort them by player ID (lowest first).
         players = sorted(players, key=lambda x : (x.get_rating(), -x.get_id()), reverse=True)

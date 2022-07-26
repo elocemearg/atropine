@@ -48,13 +48,13 @@ class TableVotingGroup(object):
 
     def is_phantom_group(self):
         return False
-    
+
     def get_division(self):
         return self.division
 
     def get_group(self):
         return self.group
-    
+
     def get_player_names_by_priority(self):
         # Return the list of player names by priority, with the highest
         # priority first. Priority is (requires accessible, has preference).
@@ -119,7 +119,7 @@ class TableVotingGroup(object):
                 pref_tables = acc_tables_pref
         else:
             pref_tables = all_tables_pref
-        
+
         if len(pref_tables) > 0:
             # Pick the most-preferred table in pref_tables. In the event of a
             # tie, pick the most-preferred table in pref_tables which is also
@@ -156,7 +156,7 @@ class TableVotingGroup(object):
                             if t not in occupied_tables:
                                 preferred_table = t
                                 break
-                    
+
                     if preferred_table is None:
                         # If nobody in this group needs an accessible table, or
                         # there are no accessible tables left, pick the lowest-
@@ -374,7 +374,7 @@ if __name__ == "__main__":
                     p.preferred_table = pref_table
                     preferred_tables.add(pref_table)
             players.append(p)
-        
+
         accessible_tables = []
         num_tables = num_players // players_per_table
         tab_nums = list(range(1, num_tables + 1))
@@ -387,7 +387,7 @@ if __name__ == "__main__":
 
         # We should now have enough accessible tables for everybody, and each of
         # the specific tables preferred by a player will be accessible
-        
+
         # Come up with random groups
         ggr = fixgen.GeneratedGroupsRound(round_no)
         shuffled_players = players[:]

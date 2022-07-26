@@ -15,10 +15,10 @@ class GeneratedGroupsDivision(object):
 
     def get_groups(self):
         return self.groups[:]
-    
+
     def get_division(self):
         return self.division
-    
+
     def set_repeat_threes(self, value=True):
         self.repeat_threes = value
 
@@ -47,13 +47,13 @@ class GeneratedGroupsRound(object):
     def add_group(self, division, group):
         div_obj = self.get_or_create_division_object(division)
         div_obj.add_group(group)
-    
+
     def get_round_no(self):
         return self.round_no
 
     def set_round_name(self, name):
         self.name = name
-    
+
     def get_round_name(self):
         if self.name is None:
             return "Round %d" % (self.round_no)
@@ -62,11 +62,11 @@ class GeneratedGroupsRound(object):
 
     def get_divisions(self):
         return [ self.divisions[div] for div in sorted(self.divisions) ]
-    
+
     def set_repeat_threes(self, division, value=True):
         div_obj = self.get_or_create_division_object(division)
         div_obj.set_repeat_threes(value)
-    
+
     def set_game_type(self, division, game_type):
         self.get_or_create_division_object(division).set_game_type(game_type)
 

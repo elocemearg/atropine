@@ -74,7 +74,7 @@ def generate(tourney, settings, div_rounds):
         #
         # 0 1 2 3
         # 7 6 5 4
-        # 
+        #
         # That's the first round: 0v7, 1v6, etc.
         # Then keep player 0 fixed and rotate all the others clockwise:
         #
@@ -109,12 +109,6 @@ def generate(tourney, settings, div_rounds):
                 if div_players[i1] is not None and div_players[i2] is not None:
                     generated_groups.add_group(start_round_no + round_offset, div, (div_players[i1], div_players[i2]))
 
-            #if start_round_no + round_offset not in round_numbers_generated:
-            #    round_numbers_generated.append(start_round_no + round_offset)
-
-            #fixtures += tourney.make_fixtures_from_groups(groups, fixtures,
-            #        start_round_no + round_offset, False, division=div)
-            
             # Take the last element from top_line and put it on the end of
             # bottom_line, and take the first element of bottom_line and put
             # it after the first element of top_line
@@ -122,7 +116,6 @@ def generate(tourney, settings, div_rounds):
             top_line = [top_line[0]] + [bottom_line[0]] + top_line[1:-1]
             bottom_line = bottom_line[1:]
 
-    
     return generated_groups
 
 def save_form_on_submit():

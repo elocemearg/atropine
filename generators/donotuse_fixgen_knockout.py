@@ -45,7 +45,7 @@ name = "Knockout Fixture Generator";
 # [ Players 1-M will receive a bye. ]
 #
 # If you want to modify the draw, do so now and press "Use modified draw".
-# 
+#
 # #1  [dropdown]  Conor Travers (6 wins, 380 points)
 # #2  [dropdown]  Innis Carson (6 wins, 377 points)
 # #3  [dropdown]  Mark Deeks (6 wins, 371 points)
@@ -60,7 +60,7 @@ name = "Knockout Fixture Generator";
 # 3  (#3) Mark Deeks v (#6) Kirk Bevins
 # 4  (#4) Jonathan Rawlinson v (#5) Jack Worsley
 #
-# Semi-final: 
+# Semi-final:
 # 1  Winner QF1 v Winner QF4
 # 2  Winner QF2 v Winner QF3
 #
@@ -75,7 +75,7 @@ name = "Knockout Fixture Generator";
 # and/or the user's request for this knockout series. We'll call these "seeds"
 # regardless of whether they're based on performance. So even if the draw was
 # random, there's still a No.1 Seed. We'll call these #1, #2, ... etc for short.
-# 
+#
 #    If N is not a power of two:
 #        Find the largest power of two, T, smaller than N
 #        Take the bottom 2(N-T) players, that is, players numbered from
@@ -87,7 +87,7 @@ name = "Knockout Fixture Generator";
 #        F(1) plays F(T)
 #        F(2) plays F(T-1)
 #        and so on.
-#        
+#
 #        F(x) is defined as:
 #            if x <= N - 2(N - T), then #x              (player with a bye)
 #            else, winner of prelim 1 + N-T - (T-x)     (player who won a prelim)
@@ -142,11 +142,11 @@ def generate_knockout(tourney, seeds, next_round_no=None):
     base = 1;
     while 2 ** base < num_players:
         base += 1;
-    
+
     po2 = 2 ** base;
     if po2 > num_players:
         po2 = 2 ** (base - 1);
-    
+
     if next_round_no is None:
         current_rounds = tourney.get_rounds();
         if not current_rounds:
@@ -275,13 +275,13 @@ def get_user_form(tourney, settings):
                 for p in random_player_order[0:num_players]:
                     settings["seed%d" % seed] = p.name;
                     seed += 1;
-        
+
         all_seeds_set = True;
         found_dupes = False;
         seed_players = [ None for i in range(num_players) ];
 
         elements.append(htmlform.HTMLFragment("<p>Use the following %d players in the knockout series...</p>" % num_players));
-        
+
         # Make N drop-down boxes, each containing the N players
         for seed_index in range(1, num_players + 1):
             keyname = "seed%d" % seed_index;
@@ -348,7 +348,7 @@ def get_user_form(tourney, settings):
 
             # Work out fixtures and display them.
             (rounds, fixtures) = generate_knockout(tourney, seed_players);
-            
+
             if settings.get("generate"):
                 # The fixtures have already been okayed, so nothing more to do
                 return None;
@@ -389,7 +389,7 @@ def get_user_form(tourney, settings):
         else:
             if "generate" in settings:
                 del settings["generate"];
-    
+
     return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % urllib.parse.quote_plus(tourney.name), elements);
 
 def check_ready(tourney):
@@ -419,7 +419,7 @@ def generate(tourney, settings):
             raise countdowntourney.FixtureGeneratorException("Number of players must be between 2 and %d" % len(players));
     except ValueError:
         raise countdowntourney.FixtureGeneratorException("Number of players is not valid");
-    
+
     seeds = [];
     for seed in range(1, num_players + 1):
         player_name = settings.get("seed%d" % seed);
@@ -434,7 +434,7 @@ def generate(tourney, settings):
                 raise countdowntourney.FixtureGeneratorException("Seed %d \"%s\" is not a known player name" % (seed, player_name));
         else:
             raise countdowntourney.FixtureGeneratorException("Seed %d is not specified" % seed);
-    
+
     (rounds, fixtures) = generate_knockout(tourney, seeds);
 
     d = dict();

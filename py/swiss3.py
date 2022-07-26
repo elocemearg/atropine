@@ -20,7 +20,7 @@ class StandingsPlayer(object):
 
     def get_rating(self):
         return self.rating
-    
+
     def post_result(self, myscore, theirscore, tb=False):
         if myscore > theirscore:
             self.wins += 1;
@@ -58,7 +58,7 @@ def add_game(games, players, round_no, table_no, name1, score1, score2, name2, t
     else:
         print("Unknown player %s" % name2);
         raise UnknownPlayerException();
-    
+
     g = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', p1, p2, score1, score2, tb);
     games.append(g);
 
@@ -98,7 +98,7 @@ def get_penalty(games, p1, p2, rank_by_wins=True):
             elif g.p2.get_name() == human.get_name():
                 if g.p1.get_rating() == 0:
                     pen += 1000000
-    
+
     # If two players have a different number of wins, apply a penalty.
     # Fixtures between players whose win counts differ by 1 are usually
     # unavoidable, but there should be exponentially harsher penalties for
@@ -133,12 +133,12 @@ def calculate_weight_matrix(games, players, rank_by_wins=True):
             vector.append(pen);
 
         matrix.append(vector);
-    
+
     for i in range(matrix_size):
         for j in range(matrix_size):
             if matrix[i][j] != matrix[j][i]:
                 print("i %d, j %d, matrix[i][j] %f, matrix[j][i] %f!" % (i, j, matrix[i][j], matrix[j][i]));
-    
+
     return matrix;
 
 
@@ -152,7 +152,7 @@ def calculate_weight_matrix(games, players, rank_by_wins=True):
 # then we've got 10 candidate arrangements. We return the best one.
 #
 # We try to keep within limit_ms milliseconds.
-# 
+#
 def best_grouping(weight_cube, player_indices, limit_ms=None, depth=0, best_total_so_far=None, result_cache=None):
     best_groups = [];
     size = len(player_indices);
@@ -170,7 +170,7 @@ def best_grouping(weight_cube, player_indices, limit_ms=None, depth=0, best_tota
     # return the weight.
     if size == 3:
         return (weight_cube[player_indices[0]][player_indices[1]][player_indices[2]], [player_indices]);
-    
+
     # A naive solution might make a table by picking i,j,k from player_indices
     # where weight_cube[i][j][k] is the minimum, then call that a table and
     # recurse to find the seating arrangement for what's left. This sometimes
@@ -316,7 +316,7 @@ class PlayerGroup(object):
 
     def __getitem__(self, i):
         return self.player_list[i];
-    
+
     def __len__(self):
         return 3;
 
@@ -348,20 +348,8 @@ def swiss3(games, cdt_players, rank_by_wins=True, limit_ms=None):
                 p.post_result(g.s1, g.s2, g.tb);
             elif p.name == g.p2.name:
                 p.post_result(g.s2, g.s1, g.tb);
-    
-    def player_cmp(p1, p2):
-        if p1.wins < p2.wins:
-            return -1;
-        elif p1.wins > p2.wins:
-            return 1;
-        elif p1.points < p2.points:
-            return -1;
-        elif p1.points > p2.points:
-            return 1;
-        else:
-            return 0;
 
-    players = sorted(players, cmp=player_cmp, reverse=True);
+    players = sorted(players, key=lambda p : (p.wins, p.points), reverse=True);
     matrix = calculate_weight_matrix(games, players, rank_by_wins);
     matrix_size = len(players);
     weighted_companion_cube = [];
@@ -395,7 +383,7 @@ def swiss3(games, cdt_players, rank_by_wins=True, limit_ms=None):
                 raise UnknownPlayerException();
         group_weight = weighted_companion_cube[g[0]][g[1]][g[2]];
         player_groups.append(PlayerGroup(player_group, group_weight));
-    
+
     return (weight, player_groups);
 
 

@@ -37,7 +37,7 @@ def parse_score(score):
     # number of spaces are allowed between any of these
     # tokens, but you can't put a space in the middle
     # of a number, or between a negative sign and a number.
-    
+
     # If the score consists only of whitespace, then the
     # game hasn't been played.
     if not score or re.match("^\s*$", score):
@@ -63,13 +63,10 @@ def set_random_score(game, rounds, scrabble):
         game.set_score(0, 0, False);
         return;
 
-
     p1_threshold = float(r1) / float(r1 + r2);
     p2_threshold = p1_threshold;
     p1_threshold *= 0.8
     p2_threshold = 1 - ((1 - p2_threshold) * 0.8)
-
-    #print "%g %g %.3f %.3f" % (game.p1.rating, game.p2.rating, p1_threshold, p2_threshold);
 
     p1_score = 0;
     p2_score = 0;
@@ -109,7 +106,7 @@ def set_random_score(game, rounds, scrabble):
 def show_conflict_resolution_box(tourney, games, round_no, stored_revision_no, stored_revision_timestamp, form):
     tourney_name = tourney.get_name()
     existing_strategy = int_or_none(form.getfirst("conflictstrategy"))
-    
+
     if existing_strategy is None:
         existing_strategy = CONFLICT_STRATEGY_DO_NOT_EMBLANKIFY
 
@@ -274,7 +271,7 @@ try:
         except ValueError:
             cgicommon.writeln("<h1>Invalid round number</h1>");
             cgicommon.writeln("<p>\"%s\" is not a valid round number.</p>");
-    
+
     if round_no is not None:
         games = tourney.get_games(round_no=round_no);
         rounds = tourney.get_rounds();
@@ -321,7 +318,7 @@ function score_modified(control_name) {
         conflict_strategy = int_or_none(form.getfirst("conflictstrategy"))
         stored_revision_no = tourney.get_game_table_revision_no(round_no)
         stored_revision_timestamp = tourney.get_game_table_revision_time(round_no, stored_revision_no)
-        
+
         if "save" in form or "randomresults" in form:
             # If the user clicked Save, then save the new scores to the
             # database.

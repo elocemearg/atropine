@@ -70,7 +70,7 @@ class PlayerNotInStandingsException(BaseException):
 #    else:
 #        print "Unknown player %s" % name2;
 #        raise UnknownPlayerException();
-#    
+#
 #    g = countdowntourney.Game(round_no, round_seq, table_no, division, 'P', p1, p2, score1, score2, tb);
 #    games.append(g);
 
@@ -110,7 +110,7 @@ def get_penalty(games, p1, p2, num_played, win_diff, rank_by_wins=True):
             elif g.p2.get_name() == human.get_name():
                 if g.p1.get_rating() == 0:
                     pen += HUGE_PENALTY
-    
+
     # If two players have a different number of wins, apply a penalty.
     # Fixtures between players whose win counts differ by 1 are usually
     # unavoidable, but there should be exponentially harsher penalties for
@@ -151,12 +151,12 @@ def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank
             vector.append(pen);
 
         matrix.append(vector);
-    
+
     for i in range(matrix_size):
         for j in range(matrix_size):
             if matrix[i][j] != matrix[j][i]:
                 print("i %d, j %d, matrix[i][j] %f, matrix[j][i] %f!" % (i, j, matrix[i][j], matrix[j][i]));
-    
+
     return matrix;
 
 def get_table_penalty(weight_matrix, table, table_penalty_cache):
@@ -237,7 +237,7 @@ def generate_all_groupings_aux(group_size_list, possible_opponents, depth, start
                     for remainder2 in generate_all_groupings_aux(group_size_list[1:], new_possible_opponents, depth + 1, start_time, limit_ms):
                         yield [candidate_table] + remainder2
 
-        
+
 
 def generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, prune_set, start_time, limit_ms):
     num_players = len(played_matrix)
@@ -261,7 +261,7 @@ class PlayerGroup(object):
 
     def __getitem__(self, i):
         return self.player_list[i];
-    
+
     def __len__(self):
         return len(self.player_list);
 
@@ -412,7 +412,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
                 max_rematches += 1
 
     #(weight, groups) = best_grouping(matrix, range(matrix_size), group_size, limit_ms=limit_ms)
-    
+
     if best_grouping is None:
         return (None, None)
 
@@ -462,7 +462,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
                 raise UnknownPlayerException();
         group_weight = get_table_penalty(matrix, g, None)
         player_groups.append(PlayerGroup(player_group, group_weight));
-    
+
     return (weight, player_groups);
 
 

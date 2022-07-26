@@ -49,7 +49,7 @@ def print_tourney_table(tourney_list, destination_page, show_last_modified, show
         else:
             cgicommon.writeln(cgicommon.escape(name))
         cgicommon.writeln('</td>')
-        
+
         if show_last_modified:
             cgicommon.writeln("<td class=\"tourneylistmtime\">%s</td>" % (time.strftime("%d %b %Y %H:%M", modified_time)))
 

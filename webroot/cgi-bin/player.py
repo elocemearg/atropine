@@ -113,7 +113,7 @@ def show_player_form(tourney, player):
     cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname, True)))
     if player:
         cgicommon.writeln("<input type=\"hidden\" name=\"id\" value=\"%d\" />" % (player_id))
-    
+
     if player:
         cgicommon.writeln("<input type=\"submit\" name=\"editplayer\" class=\"bigbutton\" value=\"Save Changes\" />")
     else:
@@ -229,7 +229,7 @@ if cgicommon.is_client_from_localhost() and request_method == "POST" and form.ge
             edit_notifications.append("%s is now %savoiding Prune" % (player.get_name(), "not " if not new_avoid_prune else ""))
         except countdowntourney.TourneyException as e:
             exceptions_to_show.append(("<p>Failed to change player avoiding-prune status...</p>", e))
-        
+
     # Set player's division
     if new_division is not None and player.get_division() != new_division:
         try:
@@ -354,7 +354,7 @@ for div in range(num_divisions):
 
     for p in div_players:
         player_selected = (player and player.get_name() == p.get_name())
-    
+
         cgicommon.writeln("<tr class=\"playerlistrow %s\">" % ("playerlistrowselected" if player_selected else ""));
 
         cgicommon.writeln("<td class=\"playerlistname\">");

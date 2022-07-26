@@ -41,11 +41,6 @@ try:
 
     cgicommon.writeln("<h1>Standings</h1>");
 
-    #if round_nos:
-    #    print "<p>Rounds: %s</p>" % (", ".join(map(str, round_nos)));
-    #if round_types:
-    #    print "<p>Round types: %s</p>" % (", ".join(round_types));
-
     cgicommon.writeln("<p>")
     rank_method = tourney.get_rank_method();
     if rank_method == countdowntourney.RANK_WINS_POINTS:

@@ -11,7 +11,7 @@ def get_standings(tourney, options):
     num_divs = tourney.get_num_divisions()
     reply = dict()
     reply["success"] = True
-    
+
     rank_method = tourney.get_rank_method()
     if rank_method == countdowntourney.RANK_WINS_POINTS:
         rank_fields = ["wins", "points"]
@@ -163,7 +163,7 @@ def get_structure(tourney, options):
         reply["teams"] = team_list
     else:
         reply["teams"] = None
-    
+
     return reply
 
 def get_game_logs(tourney, options):
@@ -338,7 +338,7 @@ def get_high_scores(tourney, options):
     game_sets = [ tourney.get_highest_winning_scores(10),
                   tourney.get_highest_losing_scores(10),
                   tourney.get_highest_combined_scores(10) ]
-    
+
     set_names = [ "highest_winning_scores",
                   "highest_losing_scores",
                   "highest_combined_scores"
@@ -353,7 +353,7 @@ def get_high_scores(tourney, options):
                 div_short_name = tourney.get_short_division_name(game["division"])
             else:
                 div_short_name = None;
-                
+
             reply_set.append( {
                     "round_num" : round_num,
                     "div_short_name" : div_short_name,
@@ -399,7 +399,7 @@ def get_state_for_upload(tourney):
             "standings" : get_standings,
             "tourney" : get_tourney_details,
     }
-    
+
     state = {}
     for req in requests:
         state[req] = requests[req](tourney, {})

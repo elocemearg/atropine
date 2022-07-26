@@ -73,7 +73,6 @@ def get_user_form(tourney, settings, div_rounds):
     # fixing at it two, so tell it that's already been submitted.
     settings["tablesizesubmit"] = "1"
 
-
     for div_index in div_rounds:
         num_games_name = "d%d_num_groups" % (div_index)
         game_type_name = "d%d_game_type" % (div_index)
@@ -134,7 +133,7 @@ def get_user_form(tourney, settings, div_rounds):
         return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.parse.quote_plus(tourney.name)), elements)
     else:
         return fixgen_manual.get_user_form(tourney, settings, div_rounds)
-    
+
 def check_ready(tourney, div_rounds):
     for div in div_rounds:
         round_no = div_rounds[div]

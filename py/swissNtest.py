@@ -40,7 +40,7 @@ def set_random_score(game):
         else:
             p1_score += round_score;
             p2_score += round_score;
-    
+
     if p1_score == p2_score:
         if random.randint(0, 1) == 0:
             p1_score += 10;
@@ -63,7 +63,7 @@ def simulate_tourney(num_players, num_rounds, group_size, limit_ms):
         name = "Player %d" % i;
         rating = top_rating - i * 20;
         players.append(countdowntourney.Player(name, rating));
-    
+
     for round_no in range(1, num_rounds + 1):
         print("Generating round %d..." % round_no);
         if round_no == 1:
@@ -94,7 +94,7 @@ def simulate_tourney(num_players, num_rounds, group_size, limit_ms):
             set_random_score(g);
 
         games = games + round_games;
-    
+
     return games;
 
 for size in range(18, 49, 3):

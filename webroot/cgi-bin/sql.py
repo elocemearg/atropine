@@ -32,7 +32,7 @@ class Table(object):
 
     def add_column(self, column):
         self.columns.append(column)
-        
+
     def get_columns(self):
         return self.columns[:]
 
@@ -260,7 +260,7 @@ if tourney_name:
                 "It is intended for debugging and emergency database " +
                 "surgery by people who know what they're doing.</p>"
                 "<p>If you don't know what SQL is or what the various tables " +
-                "in the database do, then I strongly recommend that you " + 
+                "in the database do, then I strongly recommend that you " +
                 "<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">flee to safety</a>.</p>" % (urllib.parse.quote_plus(tourney_name)) +
                 "</div>",
                 wide=True

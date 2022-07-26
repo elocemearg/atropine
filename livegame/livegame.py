@@ -42,14 +42,14 @@ def recvall(sock, length):
 class PercentageWidth(object):
 	def __init__(self, pc):
 		self.pc = pc;
-	
+
 	def get_px(self, surface):
 		return int(surface.get_width() * self.pc / 100);
 
 class PercentageHeight(object):
 	def __init__(self, pc):
 		self.pc = pc;
-	
+
 	def get_px(self, surface):
 		return int(surface.get_height() * self.pc / 100);
 
@@ -107,7 +107,7 @@ def draw_label(surface, rect, text, fgcolour=(255,255,255), bgcolour=None, align
 		label.fill(bgcolour);
 	else:
 		label.blit(surface, (0,0), area=(left, top, width, height));
-	
+
 	caption = limit_label_width(caption, width - 2 * xspacing);
 
 	if align == ALIGN_LEFT:
@@ -118,12 +118,12 @@ def draw_label(surface, rect, text, fgcolour=(255,255,255), bgcolour=None, align
 	else:
 		x = (width - caption.get_width()) / 2;
 		label.blit(caption, (x, 0));
-	
+
 	if border_size:
 		surface.fill(border_colour,
 				(left - border_size, top - border_size,
 					width + 2 * border_size, height + 2 * border_size));
-	
+
 	surface.blit(label, (left, top));
 
 def shade_area(surface, rect, colour):
@@ -166,13 +166,13 @@ class GameState:
 		self.conundrum_solution = "";
 		self.conundrum_bottom_state = 0;
 		self.round_type = "";
-	
+
 	def load(self, filename):
 		f = open(filename, "rb");
 		pickled_state = f.read();
 		state = pickle.loads(pickled_state);
 		self.set_state(state);
-	
+
 	def save(self, filename):
 		f = open(filename, "wb");
 		pickled_state = pickle.dumps(state);
@@ -184,7 +184,7 @@ class GameState:
 			self.conundrum_top_state = 1;
 		else:
 			self.conundrum_top_state = 0;
-	
+
 	def reveal_conundrum_incorrect(self):
 		if self.conundrum_bottom_state == 2:
 			self.conundrum_bottom_state = 0;
@@ -329,7 +329,7 @@ class GUILiveGameWindow:
 		scaled_width = int(scale * self.background.get_width());
 		scaled_height = int(scale * self.background.get_height());
 		self.background_scaled = pygame.transform.scale(self.background, (scaled_width, scaled_height));
-	
+
 	def draw(self, surface, state):
 		if self.background:
 			if self.background_scaled is None:
@@ -392,7 +392,7 @@ class GUILiveGameWindow:
 				bgcolour=name_bg, align=ALIGN_CENTRE,
 				border_colour=(192, 192, 192),
 				border_size=self.nameplate_border.get_px(surface));
-	
+
 		score1_left_px = self.score1_left.get_px(surface);
 		score2_left_px = self.score2_left.get_px(surface);
 		score1_width_px = self.score1_width.get_px(surface);
@@ -484,7 +484,7 @@ class GUILiveGameWindow:
 
 			flippything_border_px = letters_border_px / 2;
 			flippything_border_colour = (0, 0, 128);
-			draw_flippything(surface, 
+			draw_flippything(surface,
 					(letters_start_x,
 						letters_start_y,
 						letters_width_px - 2 * letters_border_px,
@@ -494,7 +494,7 @@ class GUILiveGameWindow:
 					self.letters_spacing.get_px(surface),
 					1, "".join(top_rack), "");
 
-			draw_flippything(surface, 
+			draw_flippything(surface,
 					(letters_start_x,
 						letters_start_y + letter_height_px + 2 * letters_border_px,
 						letters_width_px - 2 * letters_border_px,
@@ -529,7 +529,7 @@ class GUILiveGameWindow:
 			numbers_sel_top_px = self.numbers_sel_top.get_px(surface);
 			numbers_sel_width_px = self.numbers_sel_max_width.get_px(surface);
 			numbers_sel_height_px = self.numbers_sel_max_height.get_px(surface);
-			
+
 			number_width = (numbers_sel_width_px - (self.num_numbers - 1) * self.numbers_sel_spacing.get_px(surface) - 2 * self.numbers_sel_border.get_px(surface)) / self.num_numbers;
 			number_height = numbers_sel_height_px - 2 * self.numbers_sel_border.get_px(surface);
 			if number_width > number_height * self.number_ratio:
@@ -578,7 +578,7 @@ class GUILiveGameWindow:
 
 			flippything_border_px = int(con_border_px / 2);
 			flippything_border_colour = (0, 0, 128);
-			draw_flippything(surface, 
+			draw_flippything(surface,
 					(con_left_px + con_border_px,
 						con_top_px + con_border_px,
 						con_width_px - 2 * con_border_px, letter_height),
@@ -588,7 +588,7 @@ class GUILiveGameWindow:
 					state.conundrum_top_state,
 					state.conundrum_scramble, "COUNTDOWN");
 
-			draw_flippything(surface, 
+			draw_flippything(surface,
 					(con_left_px + con_border_px,
 						con_top_px + letter_height + 3 * con_border_px,
 						con_width_px - 2 * con_border_px, letter_height),
@@ -617,7 +617,7 @@ class CursesLiveGameWindow:
 
 	def __init__(self, win):
 		self.set_window_size(win);
-	
+
 	def draw(self, state):
 		self.win.erase();
 		self.win.addstr(self.title_y, 0, ("{0:^" + str(self.width) + "}").format(state.title), curses.A_REVERSE);
@@ -644,7 +644,7 @@ class CursesLiveGameWindow:
 		if state.round_type == 'L':
 			# If a letter is in the bottom rack, don't display it
 			# in the top rack
-			
+
 			letters_rack_list = list(state.letters_rack);
 
 			# Build up bottom_rack as we go: add as uppercase
@@ -692,7 +692,7 @@ class CursesLiveGameWindow:
 			if state.numbers_target > 0:
 				self.win.addstr(" {0:>3d} ".format(state.numbers_target), curses.A_BOLD | colour2(curses.COLOR_YELLOW, curses.COLOR_BLACK));
 
-			
+
 			number_rack = list(state.numbers_rack);
 
 			num_digits = 0;
@@ -848,7 +848,7 @@ def conundrum_round(state, view, dialogue):
 		set_conundrum(state, view, dialogue);
 		if state.conundrum_scramble == "" or state.conundrum_solution == "":
 			return 1;
-	
+
 	state.round_type = 'C';
 	state.conundrum_top_state = 0;
 	state.conundrum_bottom_state = 0;
@@ -898,7 +898,7 @@ def numbers_round(state, view, dialogue):
 	state.round_type = 'N';
 	broadcast_state(state);
 	view.draw(state);
-	
+
 	numstr = None;
 	while numstr == None:
 		numstr = dialogue_prompt(dialogue, "Enter target: ");
@@ -1012,13 +1012,13 @@ def set_score(state, view, dialogue, player):
 			answer = answer[1:];
 		else:
 			operation = 0;
-		
+
 		try:
 			score = int(answer);
 		except:
 			dialogue_write(dialogue, answer + " is not a number.");
 			return;
-	
+
 		if player == 1:
 			if operation == -1:
 				state.s1 -= score;
@@ -1238,7 +1238,7 @@ else:
 		dialogue.keypad(1);
 
 		helpwin.addstr(0, 0, " L   letters round        1/2  set player score      S      start clock");
-		helpwin.addstr(1, 0, " N   numbers round        B    set both scores       SPACE  stop clock"); 
+		helpwin.addstr(1, 0, " N   numbers round        B    set both scores       SPACE  stop clock");
 		helpwin.addstr(2, 0, " C   conundrum round      D    load dictionary       T      set title/players");
 		helpwin.addstr(3, 0, " SHIFT-C set conundrum    W    check word            M      show word maxes");
 		helpwin.refresh();

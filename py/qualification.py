@@ -157,7 +157,7 @@ def player_has_qualified(standings, player_of_interest, unplayed_games,
     if len(potential_overtakers) <= qual_threshold - player_row["pos"]:
         log("Not enough potential overtakers to push %s below qualification threshold" % (player_of_interest))
         return True
-    
+
     # Otherwise, our player still might be guaranteed qualification if some of
     # the potential overtakers have to play each other. For example, if we're
     # in first place having played all our games, but the players in second and
@@ -167,7 +167,7 @@ def player_has_qualified(standings, player_of_interest, unplayed_games,
     # guaranteed at least second place.
 
     # This is where it gets a bit tricky.
-    
+
     # We have a list of all unplayed games. Remove the ones that aren't between
     # two relevant players
     relevant_games = []
@@ -231,26 +231,6 @@ def player_has_qualified(standings, player_of_interest, unplayed_games,
     else:
         return True
 
-
-#possible_results = sys.argv[1].split(" ")
-#for combo in get_combinations(possible_results, int(sys.argv[2])):
-#    print combo
-
-#nodes = set()
-#edges = []
-#for arg in sys.argv[1:]:
-#    n = map(int, arg.split(","))
-#    if len(n) == 1:
-#        nodes.add(n[0])
-#    else:
-#        nodes.add(n[0])
-#        nodes.add(n[1])
-#        edges.append((n[0], n[1]))
-#
-#groups = make_connected_subgraph_groups(nodes, edges)
-#
-#for group in groups:
-#    print " ".join(map(str, group))
 
 if __name__ == "__main__":
     eight_names = [ "Alice", "Bob", "Charlie", "Dave", "Eve", "Fred", "George", "Harry" ]
@@ -459,7 +439,7 @@ if __name__ == "__main__":
                 [ 7, "Eve",     4, 1, 0 ],
                 [ 8, "George",  4, 1, 0 ]
             ],
-            "unplayed_games" : [ 
+            "unplayed_games" : [
                     # R5
                     [ "Alice", "Harry" ],
                     [ "George", "Dave" ],
@@ -494,7 +474,7 @@ if __name__ == "__main__":
                 [ 7, "Eve",     5, 2, 0 ],
                 [ 8, "George",  5, 2, 0 ]
             ],
-            "unplayed_games" : [ 
+            "unplayed_games" : [
                     # R6
                     [ "Alice", "George" ],
                     [ "Fred", "Harry" ],
@@ -524,7 +504,7 @@ if __name__ == "__main__":
                 [ 7, "Eve",     5, 2, 0 ],
                 [ 8, "George",  5, 1, 0 ]
             ],
-            "unplayed_games" : [ 
+            "unplayed_games" : [
                     # R6
                     [ "Alice", "George" ],
                     [ "Fred", "Harry" ],

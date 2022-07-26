@@ -35,7 +35,7 @@ def random_without_rematches_aux(tables, players, player_indices_remaining, tabl
 
     if time.time() > start_time + time_limit_ms / 1000.0:
         raise countdowntourney.FixtureGeneratorException("Timed out before finding a set of fixtures with no rematches.")
-    
+
     # Find the first table without its full complement of players
     table_index = 0
     while table_index < len(tables):
@@ -46,7 +46,7 @@ def random_without_rematches_aux(tables, players, player_indices_remaining, tabl
 
     if table_index >= len(tables):
         return tables
-    
+
     # Put the remaining players in a random order
     player_indices_remaining_shuffled = player_indices_remaining[:]
     random.shuffle(player_indices_remaining_shuffled)
@@ -86,11 +86,11 @@ def random_without_rematches_aux(tables, players, player_indices_remaining, tabl
 
 def random_without_rematches(players, table_sizes, previous_games, time_limit_ms):
     tables = [ [] for x in table_sizes ]
-    
+
     id_to_index = {}
     for pi in range(len(players)):
         id_to_index[players[pi].get_id()] = pi
-        
+
     # For each index into "player", make a list of potential opponents
     potential_opponents = {}
     for pi in range(len(players)):
@@ -103,7 +103,7 @@ def random_without_rematches(players, table_sizes, previous_games, time_limit_ms
         game_players = g.get_players()
         pi0 = id_to_index.get(game_players[0].get_id())
         pi1 = id_to_index.get(game_players[1].get_id())
-        
+
         if pi0 is not None and pi1 is not None:
             potential_opponents[pi0].discard(pi1)
             potential_opponents[pi1].discard(pi0)
@@ -156,7 +156,7 @@ def generate(tourney, settings, div_rounds):
 
             if not tables:
                 raise countdowntourney.FixtureGeneratorException("Failed to find a set of fixtures with no rematches.")
-            
+
             # Put any Pruney tables at the end
             tables.reverse()
         else:
@@ -187,7 +187,7 @@ def generate(tourney, settings, div_rounds):
                     table_sizes.append(5)
                 tables = [ [] for x in table_sizes ]
 
-                # Reverse the list so we use the prunes first, and they can go 
+                # Reverse the list so we use the prunes first, and they can go
                 # on the 3-tables
                 players.reverse()
 

@@ -16,7 +16,6 @@ def lookup_player(players, name):
         if p.get_name() == name:
             return p;
     return None
-    #raise countdowntourney.PlayerDoesNotExistException("Player %s does not exist! I haven't a clue who they are." % name);
 
 def get_user_form(tourney, settings, div_rounds):
     return gencommon.get_user_form_div_table_size(tourney, settings, div_rounds)

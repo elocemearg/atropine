@@ -117,7 +117,7 @@ def get_user_form(tourney, settings, div_rounds):
         elements.append(htmlform.HTMLFormSubmitButton("submit", "Submit table sizes and select players"))
         elements.append(htmlform.HTMLFragment("</p>"))
         return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.parse.quote_plus(tourney.name)), elements)
-    
+
     show_already_assigned_players = bool(settings.get("showallplayers"))
 
     div_num_slots = dict()
@@ -203,7 +203,7 @@ def get_user_form(tourney, settings, div_rounds):
                     invalid_slots.append(player_index)
             else:
                 set_players[player_index] = None
-    
+
         # Slot numbers which contain a player already contained in another slot
         duplicate_slots = [];
 
@@ -415,7 +415,7 @@ function editBoxEdit(divIndex, controlId) {
         for p in set_players:
             if p and p.get_name() in unselected_names:
                 unselected_names.remove(p.get_name())
-        
+
         for table_size in table_sizes:
             elements.append(htmlform.HTMLFragment("<tr>\n"))
             elements.append(htmlform.HTMLFragment(
@@ -448,7 +448,7 @@ function editBoxEdit(divIndex, controlId) {
                     # Drop-down list needs an initial "nothing selected" option
                     player_option_list.append(htmlform.HTMLFormDropDownOption("", " -- select --"));
                 selected_name = "";
-                
+
                 if show_already_assigned_players:
                     name_list = [ x.get_name() for x in div_players ]
                 else:
@@ -577,7 +577,7 @@ def check_ready(tourney, div_rounds):
     for div in div_rounds:
         div_players = [x for x in players if x.get_division() == div]
         round_no = div_rounds[div]
-        
+
         existing_games = tourney.get_games(round_no=round_no, game_type="P", division=div)
         if existing_games:
             return (False, "%s: round %d already has %d games in it." % (tourney.get_division_name(div), round_no, len(existing_games)))
@@ -627,7 +627,7 @@ def generate(tourney, settings, div_rounds, check_ready_fn=None):
                 raise countdowntourney.FixtureGeneratorException("%s: invalid number of players per table for fully-manual setup." % (tourney.get_division_name(div_ikndeX)))
             num_slots = num_groups * table_size
 
-        
+
         if table_size > 0:
             if num_slots % table_size != 0:
                 raise countdowntourney.FixtureGeneratorException("%s: Number of player slots (%d) is not a multiple of the table size (%d)" % (tourney.get_division_name(div_index), num_slots, table_size))
@@ -644,12 +644,6 @@ def generate(tourney, settings, div_rounds, check_ready_fn=None):
         (ready, excuse) = check_ready(tourney, div_rounds);
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
-
-    #latest_round_no = tourney.get_latest_round_no('P')
-    #if latest_round_no is None:
-    #    round_no = 1
-    #else:
-    #    round_no = latest_round_no + 1
 
     generated_groups = fixgen.GeneratedGroups()
     for div_index in div_rounds:

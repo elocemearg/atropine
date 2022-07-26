@@ -635,7 +635,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("<h2 id=\"tourneyprops\">Tourney properties</h2>");
         cgicommon.writeln(('<form action="%s?tourney=%s" method="post">' % (baseurl, urllib.parse.quote_plus(tourneyname))));
         cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
-        
+
         cgicommon.writeln("<h3>Event details</h3>")
         cgicommon.writeln("<p>These details will appear at the top of exported tournament reports, and on the webpage if you enable the broadcast feature.</p>")
 
@@ -685,23 +685,6 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("<input type=\"radio\" name=\"accessibletablesdefault\" value=\"1\" id=\"accessibletablesdefault_1\" %s /><label for=\"accessibletablesdefault_1\"> All tables are accessible <em>except</em> for the table numbers listed above.</label>" % ("checked" if accessible_default else ""))
         cgicommon.writeln("</div>")
 
-
-        #cgicommon.writeln("<h3>Draws</h3>")
-        #cgicommon.writeln("<p>")
-        #cgicommon.writeln("""
-        #Tick this box if draws are possible in your tournament.
-        #Leaving it unticked won't stop you recording a drawn game - it only
-        #affects analysis of whether a player is guaranteed to finish in the
-        #qualification zone, and whether the draws column is shown in exported
-        #HTML or text results.
-        #The <a href=\"/cgi-bin/standings.py?tourney=%s\">standings page</a>
-        #will always show a draws column regardless.""" % (urllib.parse.quote_plus(tourney.get_name())))
-        #cgicommon.writeln("</p>")
-        #cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
-        #cgicommon.writeln(("<input type=\"checkbox\" name=\"showdrawscolumn\" id=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")))
-        #cgicommon.writeln("<label for=\"showdrawscolumn\">Expect that draws might happen</label>")
-        #cgicommon.writeln("</div>")
-
         cgicommon.writeln("<h3>Intended number of rounds, and qualification</h3>")
         cgicommon.writeln("<p>")
         cgicommon.writeln("If you fill in these values, Atropine will automatically work out when a player is guaranteed to finish in the qualification zone, and highlight them in green in the standings table.")
@@ -712,7 +695,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
             if num_divisions > 1:
                 cgicommon.writeln("<h4>%s</h4>" % (cgicommon.escape(tourney.get_division_name(div_index))))
             div_prefix = "div%d_" % (div_index)
-            
+
             last_round = str(tourney.get_attribute(div_prefix + "lastround", ""))
             if last_round == "0":
                 last_round = ""
