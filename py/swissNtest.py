@@ -52,7 +52,56 @@ def set_random_score(game):
 
     game.set_score(p1_score, p2_score, tb);
 
+# Calculate the standings ourselves given the score of each game so far,
+# because this test doesn't create a tourney in the database so we can't use
+# countdowntourney.get_standings().
+def calculate_standings(games, players):
+    name_to_standings_row = {}
+    rating = 2000
+    for p in players:
+        name_to_standings_row[p.get_name()] = countdowntourney.StandingsRow(1, p.get_name(), 0, 0, 0, 0, 0, 0, rating, 1000, False, "", 0)
+        rating -= 20
+    for g in games:
+        g_names = g.get_player_names()
+        g_players = g.get_players()
+        for pi in (0, 1):
+            points_for = g.get_player_score(g_players[pi])
+            points_against = g.get_player_score(g_players[pi ^ 1])
+            win = points_for > points_against
+            draw = points_for == points_against
+            if g.is_double_loss():
+                win = False
+                draw = False
+            if g.is_tiebreak():
+                points_for = points_against
+            spread = points_for - points_against
+            sr = name_to_standings_row[g_names[pi]]
+            sr.played += 1
+            if win:
+                sr.wins += 1
+            if draw:
+                sr.draws += 1
+            sr.points += points_for
+            sr.spread += spread
+            if pi == 0:
+                sr.played_first += 1
+    standings = [ name_to_standings_row[p.get_name()] for p in players ]
+    standings = sorted(standings, key=lambda x : (x.wins, x.points, x.name), reverse=True)
+    pos = 0
+    joint = 0
+    prev_s = None
+    for s in standings:
+        if prev_s and prev_s.wins == s.wins and prev_s.points == s.points:
+            joint += 1
+        else:
+            pos += joint + 1
+            joint = 0
+        s.position = pos
+        prev_s = s
+    return standings
+
 def simulate_tourney(num_players, num_rounds, group_size, limit_ms):
+    num_warnings = 0
     games = [];
 
     # Generate player list
@@ -69,7 +118,8 @@ def simulate_tourney(num_players, num_rounds, group_size, limit_ms):
         if round_no == 1:
             (weight, groups) = swissN.swissN_first_round(players, group_size);
         else:
-            (weight, groups) = swissN.swissN(games, players, group_size, rank_by_wins=True, limit_ms=limit_ms);
+            standings = calculate_standings(games, players)
+            (weight, groups) = swissN.swissN(games, players, standings, group_size, rank_by_wins=True, limit_ms=limit_ms);
         print("Done.");
 
         round_games = [];
@@ -88,21 +138,25 @@ def simulate_tourney(num_players, num_rounds, group_size, limit_ms):
         for g in groups:
             if g.weight > 10000:
                 print("Warning: round %d table %d (%s) has penalty %d" % (round_no, table_no, ", ".join([x.name for x in g]), g.weight));
+                num_warnings += 1
             table_no += 1;
 
         for g in round_games:
             set_random_score(g);
 
         games = games + round_games;
+    return num_warnings
 
-    return games;
-
+num_warnings = 0
 for size in range(18, 49, 3):
     num_rounds = 3;
     print("%d players, %d rounds" % (size, num_rounds));
-    games = simulate_tourney(size, num_rounds, 3, 5000);
-    #for g in games:
-    #    print "%2d %2d %20s %3d-%-3d%s %-20s" % (g.round_no, g.table_no, g.p1.name, g.s1, g.s2, "*" if g.tb else " ", g.p2.name);
+    num_warnings += simulate_tourney(size, num_rounds, 3, 5000);
     print()
 
-sys.exit(0);
+if num_warnings > 0:
+    print("%d warning%s, see above." % (num_warnings, "s" if num_warnings != 1 else ""))
+else:
+    print("Finished with no warnings.")
+
+sys.exit(1 if num_warnings > 0 else 0)
