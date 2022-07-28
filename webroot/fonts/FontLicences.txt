@@ -1,0 +1,14 @@
+The font files distributed with Atropine are licensed under their respective
+licences as follows.
+
+Cabin:
+Copyright 2018 The Cabin Project Authors (https://github.com/impallari/Cabin).
+SIL Open Font License 1.1 (see OFL_Cabin.txt).
+
+Inter:
+Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter).
+SIL Open Font License 1.1 (see OFL_Inter.txt).
+
+Roboto and Roboto Condensed:
+Copyright 2011 Google Inc. All Rights Reserved.
+Apache License version 2.0 (see Apache-2.0.txt).

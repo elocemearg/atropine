@@ -10,10 +10,15 @@ You use Atropine through your web browser, but it does **not** need access to th
  * If Python 3 is not already installed on your computer, or if you're not sure whether it's installed, [download and install Python 3](https://www.python.org/downloads/).
  * Get Atropine. You can either:
    * Clone the git repository, or,
-   * If you don't use git but have somehow found this on github, download the latest Atropine zip file from [this page](http://greem.co.uk/atropine/). Unzip the zip file into a new folder of your choosing. Don't move any of Atropine's files out of that folder - the location of `atropine.py` in relation to the subfolders must be maintained as it is. It's okay to make a shortcut (or symlink, on Linux) to atropine.py and put the shortcut anywhere you want.
+   * If you don't use git but have somehow found this on github, download the latest Atropine zip file from <https://greem.co.uk/atropine/>. Unzip the zip file into a new folder of your choosing. Don't move any of Atropine's files out of that folder - the location of `atropine.py` in relation to the subfolders must be maintained as it is. It's okay to make a shortcut (or symlink, on Linux) to atropine.py and put the shortcut anywhere you want.
  * Run `atropine.py`.
  * Atropine will open a small web server on your computer, and give you a link to paste into your browser, like this: `http://localhost:3960/cgi-bin/home.py`
  * Go to that link in your web browser. You are now using the web interface, and you can create and administer your tournament from there.
 
 # Further documentation
 The file `docs/index.html` contains further information about using Atropine.
+
+# Licence
+Atropine is licensed under the [Creative Commons Attribution 4.0 International License](http://creativecommons.org/licenses/by/4.0/).
+
+The font files under `webroot/fonts/` are from third-party sources and are distributed with Atropine in accordance with their own licences. See `webroot/fonts/FontLicences.txt` for details.
