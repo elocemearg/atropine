@@ -37,7 +37,7 @@ class TableNumberIndexView extends PagedTableView {
             for (var row = 0; row < this.rowsPerColumn; ++row) {
                 var entryNo = col * this.rowsPerColumn + row;
                 html += "<tr>";
-                html += "<td class=\"tabindexname\" id=\"tabindexname" + entryNo.toString() + "\"></td>";
+                html += "<td class=\"tabindexname" + (this.colsPerPage >= 3 ? " condensedtext" : "") + "\" id=\"tabindexname" + entryNo.toString() + "\"></td>";
                 html += "<td class=\"tabindexnumber\" id=\"tabindexnumber" + entryNo.toString() + "\"></td>";
                 html += "</tr>";
             }

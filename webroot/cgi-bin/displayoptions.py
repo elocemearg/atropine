@@ -9,10 +9,10 @@ import urllib.request, urllib.parse, urllib.error;
 import re;
 
 def show_now_showing_frame(tourney):
-    cgicommon.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s\" height=\"300\" width=\"400\"></iframe>" % (urllib.parse.quote_plus(tourney.get_name())))
+    cgicommon.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s\" height=\"270\" width=\"480\"></iframe>" % (urllib.parse.quote_plus(tourney.get_name())))
 
 def show_view_preview(tourney, form, selected_view):
-    cgicommon.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s&mode=%d\" height=\"300\" width=\"400\"></iframe>" % (urllib.parse.quote_plus(tourney.get_name()), selected_view))
+    cgicommon.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s&mode=%d\" height=\"270\" width=\"480\"></iframe>" % (urllib.parse.quote_plus(tourney.get_name()), selected_view))
 
 checkbox_to_assoc_field = {
         "standings_videprinter_spell_big_scores" : "standings_videprinter_big_score_min"

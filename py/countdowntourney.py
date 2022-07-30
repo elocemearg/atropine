@@ -34,6 +34,15 @@ LOG_TYPE_COMMENT = 96
 LOG_TYPE_COMMENT_VIDEPRINTER_FLAG = 1
 LOG_TYPE_COMMENT_WEB_FLAG = 4
 
+# At the start of a round, we can either show the name-to-table index or the
+# fixtures table on the public display. If the name-to-table index is enabled,
+# we show it only if we have at least a certain number of players, and this is
+# the default value for that number.
+AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT = 36
+
+# Standard information about each public display ("teleost") mode, such as the
+# name description, preview image, and what game state objects the display
+# page should fetch when in that mode.
 teleost_modes = [
         {
             "id" : "TELEOST_MODE_AUTO",
@@ -140,7 +149,8 @@ for idx in range(len(teleost_modes)):
     teleost_mode_id_to_num[teleost_modes[idx]["id"]] = idx
 
 teleost_per_view_option_list = [
-    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindex", CONTROL_CHECKBOX, "$CONTROL Show name-to-table index at start of round", 0),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindex", CONTROL_CHECKBOX, "$CONTROL Show name-to-table index instead of fixture list at start of round if there are at least...", 1),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindexthreshold", CONTROL_NUMBER, "$INDENT $CONTROL active players", AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autocurrentroundmusthavegamesinalldivisions", CONTROL_CHECKBOX, "$CONTROL Only switch to Fixtures display after fixtures are generated for all divisions", 1),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_lines", CONTROL_NUMBER, "Players per page", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12),
@@ -156,7 +166,7 @@ teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_lines", CONTROL_NUMBER, "Lines per page", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_rows", CONTROL_NUMBER, "Rows per page $CONTROL", 12),
-    (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_columns", CONTROL_NUMBER, "Columns per page", 2),
+    (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_columns", CONTROL_NUMBER, "Columns per page", 3),
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12)
 ]
 
@@ -2419,7 +2429,12 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         self.set_attribute("autousetableindex", str(int(value)))
 
     def get_auto_use_table_index(self):
-        return self.get_int_attribute("autousetableindex", 0) != 0
+        use_table_index = self.get_int_attribute("autousetableindex", 1) != 0
+        if use_table_index:
+            threshold = self.get_int_attribute("autousetableindexthreshold", AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT)
+            return self.get_num_active_players() >= threshold
+        else:
+            return False
 
     def set_auto_current_round_must_have_games_in_all_divisions(self, value):
         self.set_attribute("autocurrentroundmusthavegamesinalldivisions", str(int(value)))

@@ -1629,8 +1629,8 @@ div.displaysetupview {
     position: relative;
     top: 0px;
     left: 0px;
-    width: 400px;
-    min-height: 345px;
+    width: 480px;
+    min-height: 315px;
     padding: 5px;
     float: left;
 }

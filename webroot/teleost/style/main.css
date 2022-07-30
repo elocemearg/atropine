@@ -52,6 +52,10 @@ div.placeholder {
     font-size: 5vmin;
 }
 
+.condensedtext {
+    font-family: var(--condensed-font-family);
+}
+
 /* Technical difficulties slide, etc */
 div.imageviewcontainer {
     position: absolute;
@@ -486,7 +490,7 @@ div.tabindexbigtable {
     left: 5%;
     height: 70%;
     width: 90vw;
-    font-size: 4vmin;
+    font-size: 3.8vmin;
 }
 
 div.tabindexcolumn {
@@ -503,7 +507,7 @@ table.tabindextable {
     position: relative;
     width: 100%;
     border-collapse: separate;
-    border-spacing: 1vmin;
+    border-spacing: 0.8vmin;
     table-layout: fixed;
 }
 
