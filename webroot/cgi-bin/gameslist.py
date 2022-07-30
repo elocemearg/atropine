@@ -394,7 +394,7 @@ function score_modified(control_name) {
                 cgicommon.show_team_score_table(team_scores)
                 cgicommon.writeln('<br />')
 
-            div_games = tourney.get_games(round_no=round_no, only_players_known=False, division=div_index);
+            div_games = tourney.get_games(round_no=round_no, division=div_index);
 
             if conflict_resolution:
                 for g in games:

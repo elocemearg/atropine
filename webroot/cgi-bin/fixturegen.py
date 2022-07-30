@@ -332,15 +332,9 @@ try:
                         division = int(f["division"])
                         game_type = f["game_type"];
                         name1 = f.get("p1");
-                        if name1:
-                            p1 = tourney.get_player_from_name(name1);
-                        else:
-                            p1 = countdowntourney.PlayerPending.from_dict(f["p1pending"]);
+                        p1 = tourney.get_player_from_name(name1);
                         name2 = f.get("p2");
-                        if name2:
-                            p2 = tourney.get_player_from_name(name2);
-                        else:
-                            p2 = countdowntourney.PlayerPending.from_dict(f["p2pending"]);
+                        p2 = tourney.get_player_from_name(name2);
 
                         if earliest_round_no is None or earliest_round_no > round_no:
                             earliest_round_no = round_no;

@@ -1275,7 +1275,7 @@ try:
 
         # Fetch the games in the tourney now, after any changes which may have
         # just been applied.
-        games = tourney.get_games(round_no=round_no, only_players_known=False);
+        games = tourney.get_games(round_no=round_no)
 
         # If the user got something wrong, the control with the mistake should
         # have focus. If the user just submitted a news item then the news text

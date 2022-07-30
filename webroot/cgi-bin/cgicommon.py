@@ -689,14 +689,13 @@ def show_games_as_html_table(games, editable=True, remarks=None,
         else:
             writeln("<td class=\"gamescore\">");
 
-        if g.are_players_known():
-            if editable:
-                writeln("""
+        if editable:
+            writeln("""
 <input class="gamescore" id="gamescore_%d_%d" type="text" size="10"
 name="gamescore_%d_%d" value="%s"
 onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.round_no, g.seq, escape(edit_box_score, True), g.round_no, g.seq));
-            else:
-                writeln(html_score);
+        else:
+            writeln(html_score);
 
         writeln("</td>");
         team_string = make_player_dot_html(g.p2)
