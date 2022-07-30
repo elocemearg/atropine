@@ -153,11 +153,11 @@ try:
                 if name.startswith("teleost_option_"):
                     option_name = name[15:]
                     option_value = form.getfirst(name)
-                    tourney.set_teleost_option_value(option_name, option_value)
+                    tourney.set_attribute(option_name, option_value)
                 elif name.startswith("exists_checkbox_teleost_option_"):
                     cgi_option_name = name[16:]
                     if cgi_option_name not in form:
-                        tourney.set_teleost_option_value(cgi_option_name[15:], 0)
+                        tourney.set_attribute(cgi_option_name[15:], 0)
         if "setbanner" in form:
             text = form.getfirst("bannertext")
             if not text:

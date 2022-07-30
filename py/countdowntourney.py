@@ -266,17 +266,6 @@ create table if not exists options (
     value text
 );
 
--- metadata for per-view options in teleost (values stored in "options" above)
-create table if not exists teleost_options (
-    mode int,
-    seq int,
-    name text primary key,
-    control_type int,
-    desc text,
-    default_value text,
-    unique(mode, seq)
-);
-
 -- Table in which we persist the HTML form settings given to a fixture
 -- generator
 create table if not exists fixgen_settings (
@@ -2400,24 +2389,6 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         cur.close();
         self.db.commit();
 
-    def set_teleost_colour_palette(self, value):
-        self.set_attribute("teleostcolourpalette", value)
-
-    def get_teleost_colour_palette(self):
-        return self.get_attribute("teleostcolourpalette", "Standard")
-
-    def get_auto_use_vertical(self):
-        return self.get_int_attribute("autousevertical", 0) != 0
-
-    def set_auto_use_vertical(self, value):
-        self.set_attribute("autousevertical", str(int(value)))
-
-    def set_teleost_animate_scroll(self, value):
-        self.set_attribute("teleostanimatescroll", str(int(value)))
-
-    def get_teleost_animate_scroll(self):
-        return self.get_int_attribute("teleostanimatescroll", 1) != 0
-
     def get_display_font_profile_id(self):
         return self.get_int_attribute("displayfontprofile", 0)
 
@@ -2714,10 +2685,6 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         cur.close();
         self.db.commit();
 
-    def define_teleost_modes(self, modes):
-        # No longer done by Teleost
-        return
-
     def get_current_teleost_mode(self):
         cur = self.db.cursor();
         cur.execute("select current_mode from teleost");
@@ -2788,7 +2755,6 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def get_teleost_options(self, mode=None):
         if self.db_version < (0, 7, 7):
             return []
-
         options = []
         seq = -1
         for opt in teleost_per_view_option_list:
@@ -2827,9 +2793,6 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                     value = opt[4]
                     break
         return value
-
-    def set_teleost_option_value(self, name, value):
-        self.set_attribute(name, value)
 
     def get_num_games_to_play_by_table(self, round_no=None):
         sql = """select table_no,
