@@ -89,9 +89,8 @@ def show_fixtures_to_accept(tourney, generator_name, fixtures, fixgen_settings):
     cgicommon.writeln("<div class=\"fixtureacceptbox\">")
     cgicommon.writeln("<p>I've generated the following fixtures. They won't be saved until you click the <em>Accept Fixtures</em> button.</p>");
     cgicommon.writeln("<input type=\"submit\" name=\"accept\" class=\"bigbutton\" value=\"Accept Fixtures\" />");
-    cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s&generator=%s\" class=\"fixturecancellink\">Discard and return to fixture generator</a>" % (
-        urllib.parse.quote_plus(tourney_name),
-        urllib.parse.quote_plus(generator_name)
+    cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\" class=\"fixturecancellink\">Discard and return to fixture generator menu</a>" % (
+        urllib.parse.quote_plus(tourney_name)
     ))
     cgicommon.writeln("</div>")
     num_divisions = tourney.get_num_divisions()
@@ -177,9 +176,8 @@ def show_fixtures_to_accept(tourney, generator_name, fixtures, fixgen_settings):
     cgicommon.writeln("<input type=\"hidden\" name=\"jsonfixtureplan\" value=\"%s\" />" % cgicommon.escape(json_fixture_plan, True));
     cgicommon.writeln("<div class=\"fixtureacceptbox\">")
     cgicommon.writeln("<input type=\"submit\" name=\"accept\" value=\"Accept Fixtures\" class=\"bigbutton\" />");
-    cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s&generator=%s\" class=\"fixturecancellink\">Discard and return to fixture generator</a>" % (
-        urllib.parse.quote_plus(tourney_name),
-        urllib.parse.quote_plus(generator_name)
+    cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\" class=\"fixturecancellink\">Discard and return to fixture generator menu</a>" % (
+        urllib.parse.quote_plus(tourney_name)
     ))
     cgicommon.writeln("</div>")
     cgicommon.writeln("</form>");
