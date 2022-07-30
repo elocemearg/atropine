@@ -160,6 +160,20 @@ teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12)
 ]
 
+# The option displayfontprofile is an index into this array, which tells us
+# the name of the font profile and the relevant CSS file in
+# webroot/teleost/style/. This font profile will be used for the public
+# display window.
+DISPLAY_FONT_PROFILES = [
+        {
+            "name" : "Default",
+            "cssfile" : "fontdefs.css"
+        },
+        {
+            "name" : "Condensed",
+            "cssfile" : "fontdefs_condensed.css"
+        }
+]
 
 create_tables_sql = """
 begin transaction;
@@ -2394,6 +2408,13 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def get_teleost_animate_scroll(self):
         return self.get_int_attribute("teleostanimatescroll", 1) != 0
 
+    def get_display_font_profile_id(self):
+        return self.get_int_attribute("displayfontprofile", 0)
+
+    def set_display_font_profile_id(self, font_profile_id):
+        if font_profile_id >= 0 and font_profile_id < len(DISPLAY_FONT_PROFILES):
+            self.set_attribute("displayfontprofile", str(font_profile_id))
+
     def set_auto_use_table_index(self, value):
         self.set_attribute("autousetableindex", str(int(value)))
 
@@ -2790,7 +2811,6 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                 if opt[1] == name:
                     value = opt[4]
                     break
-
         return value
 
     def set_teleost_option_value(self, name, value):

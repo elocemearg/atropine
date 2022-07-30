@@ -158,6 +158,19 @@ function updateCurrentView() {
             clearBanner();
         }
     }
+    if (gameState && "teleost" in gameState && "font_css" in gameState.teleost) {
+        let cssBaseName = gameState.teleost.font_css;
+        let cssPath = "/teleost/style/" + cssBaseName;
+        let cssLinkElement = document.getElementById("linkcssfont");
+        if (cssLinkElement) {
+            let existingRelPath = cssLinkElement.getAttribute("relativepath");
+            if (existingRelPath == null || existingRelPath != cssPath) {
+                cssLinkElement.href = cssPath;
+                cssLinkElement.setAttribute("relativepath", cssPath);
+                console.log("Font CSS file updated: " + cssPath);
+            }
+        }
+    }
 
     updatesSkipped = 0;
     var animate = currentView.refresh(new Date().getTime(), enableAnimation);
@@ -320,4 +333,3 @@ function displaySetup() {
     viewUpdateInterval = setInterval(updateCurrentView, 1000);
     refreshGameStateInterval = setInterval(fetchGameState, 5000);
 }
-

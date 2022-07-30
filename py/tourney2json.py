@@ -327,6 +327,10 @@ def get_teleost_state(tourney, options):
         reply_opts[opt.name] = opt.value
     reply["options"] = reply_opts
     reply["banner_text"] = tourney.get_banner_text()
+
+    font_profile_id = tourney.get_display_font_profile_id()
+    font_css = countdowntourney.DISPLAY_FONT_PROFILES[font_profile_id]["cssfile"]
+    reply["font_css"] = font_css
     return reply
 
 def get_high_scores(tourney, options):

@@ -1,69 +1,5 @@
 
-/* Self-hosted font code from
- * https://google-webfonts-helper.herokuapp.com/
- */
-
-/* roboto-condensed-regular - latin */
-@font-face {
-  font-family: 'Roboto Condensed';
-  font-style: normal;
-  font-weight: 400;
-  src: url('/fonts/roboto-condensed-v16-latin-regular.eot'); /* IE9 Compat Modes */
-  src: local('Roboto Condensed'), local('RobotoCondensed-Regular'),
-       url('/fonts/roboto-condensed-v16-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
-       url('/fonts/roboto-condensed-v16-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
-       url('/fonts/roboto-condensed-v16-latin-regular.woff') format('woff'), /* Modern Browsers */
-       url('/fonts/roboto-condensed-v16-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
-       url('/fonts/roboto-condensed-v16-latin-regular.svg#RobotoCondensed') format('svg'); /* Legacy iOS */
-}
-
-@font-face {
-  font-family: 'Roboto';
-  font-style: normal;
-  font-weight: 400;
-  src: url('/fonts/roboto-v19-latin-regular.eot'); /* IE9 Compat Modes */
-  src: local('Roboto'), local('Roboto-Regular'),
-       url('/fonts/roboto-v19-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
-       url('/fonts/roboto-v19-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
-       url('/fonts/roboto-v19-latin-regular.woff') format('woff'), /* Modern Browsers */
-       url('/fonts/roboto-v19-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
-       url('/fonts/roboto-v19-latin-regular.svg#Roboto') format('svg'); /* Legacy iOS */
-}
-
-/* cabin-regular - latin */
-@font-face {
-  font-family: 'Cabin';
-  font-style: normal;
-  font-weight: 400;
-  src: url('/fonts/cabin-v12-latin-regular.eot'); /* IE9 Compat Modes */
-  src: local('Cabin'), local('Cabin-Regular'),
-       url('/fonts/cabin-v12-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
-       url('/fonts/cabin-v12-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
-       url('/fonts/cabin-v12-latin-regular.woff') format('woff'), /* Modern Browsers */
-       url('/fonts/cabin-v12-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
-       url('/fonts/cabin-v12-latin-regular.svg#Cabin') format('svg'); /* Legacy iOS */
-}
-
-@font-face {
-    font-family: 'Inter';
-    font-style: normal;
-    font-weight: 400;
-    src: url('/fonts/Inter-Regular.ttf') format('truetype');
-}
-
-@font-face {
-    font-family: 'Inter SemiBold';
-    font-style: normal;
-    font-weight: 500;
-    src: url('/fonts/Inter-SemiBold.ttf') format('truetype');
-}
-
 body.display {
-    font-family: "Inter", sans-serif;
-    --text-font-family: "Inter", sans-serif;
-    --heading-font-family: "Inter SemiBold", "Inter", sans-serif;
-    --videprinter-font-family: "Roboto", sans-serif;
-    font-variant-numeric: tabular-nums;
     overflow: hidden;
     position: absolute;
     width: 100%;
@@ -90,12 +26,12 @@ body.display {
     position: absolute;
     width: 100%;
     text-align: center;
-    background-color: #aa0000;
     font-size: 4.5vmin;
     height: 7vmin;
     line-height: 7vmin;
     z-index: 1;
     display: none;
+    background: linear-gradient(to bottom, hsl(0, 100%, 35%), hsl(0, 100%, 10%));
     /*font-family: var(--heading-font-family);*/
 }
 

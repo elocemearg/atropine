@@ -1568,6 +1568,10 @@ div.prefstaborderfooter {
 
 /* Display setup */
 
+div.displayoptsform {
+    margin-top: 10px;
+}
+
 div.bannercontrol {
     margin-top: 20px;
 }

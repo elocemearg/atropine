@@ -1,0 +1,40 @@
+
+/* Self-hosted font code from
+ * https://google-webfonts-helper.herokuapp.com/
+ */
+
+/* roboto-condensed-regular - latin */
+@font-face {
+  font-family: 'Roboto Condensed';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/roboto-condensed-v16-latin-regular.eot'); /* IE9 Compat Modes */
+  src: local('Roboto Condensed'), local('RobotoCondensed-Regular'),
+       url('/fonts/roboto-condensed-v16-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('/fonts/roboto-condensed-v16-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+       url('/fonts/roboto-condensed-v16-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('/fonts/roboto-condensed-v16-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('/fonts/roboto-condensed-v16-latin-regular.svg#RobotoCondensed') format('svg'); /* Legacy iOS */
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    src: url('/fonts/Inter-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Inter SemiBold';
+    font-style: normal;
+    font-weight: 500;
+    src: url('/fonts/Inter-SemiBold.ttf') format('truetype');
+}
+
+body.display {
+    font-family: "Roboto Condensed", sans-serif;
+    --text-font-family: "Roboto Condensed", sans-serif;
+    --heading-font-family: "Inter SemiBold", "Inter", sans-serif;
+    --videprinter-font-family: "Roboto Condensed", sans-serif;
+    font-variant-numeric: tabular-nums;
+}

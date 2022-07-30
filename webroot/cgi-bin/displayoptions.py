@@ -148,6 +148,7 @@ try:
 
     if request_method == "POST":
         if "setoptions" in form:
+            # Set per-view options
             for name in list(form.keys()):
                 if name.startswith("teleost_option_"):
                     option_name = name[15:]
@@ -165,6 +166,14 @@ try:
                 tourney.set_banner_text(text)
         elif "clearbanner" in form:
             tourney.clear_banner_text()
+        if "setfontprofile" in form:
+            font_profile_id = form.getfirst("fontprofileselect")
+            if font_profile_id is not None:
+                try:
+                    font_profile_id = int(font_profile_id)
+                    tourney.set_display_font_profile_id(font_profile_id)
+                except ValueError:
+                    pass
         if "switchview" in form:
             tourney.set_teleost_mode(selected_view)
             teleost_modes = tourney.get_teleost_modes();
@@ -191,11 +200,24 @@ try:
         </a>""" % (urllib.parse.quote_plus(tourney.name)));
     cgicommon.writeln("</div>")
 
-    cgicommon.writeln("<div class=\"bannercontrol\">")
+    cgicommon.writeln("<div class=\"displayoptsform bannercontrol\">")
     cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
     cgicommon.writeln("Banner text: <input type=\"text\" name=\"bannertext\" id=\"bannereditbox\" value=\"%s\" size=\"50\" onclick=\"this.select();\" />" % (cgicommon.escape(banner_text, True)))
     cgicommon.writeln("<input type=\"submit\" style=\"min-width: 60px;\" name=\"setbanner\" value=\"Set\" />")
     cgicommon.writeln("<input type=\"submit\" style=\"min-width: 60px;\" name=\"clearbanner\" value=\"Clear\" />")
+    cgicommon.writeln("</form>")
+    cgicommon.writeln("</div>")
+
+    display_font_profile = tourney.get_display_font_profile_id()
+    font_profile_descs = countdowntourney.DISPLAY_FONT_PROFILES
+    cgicommon.writeln("""<div class=\"displayoptsform\">
+<form action=\"%s?tourney=%s&selectedview=%d\" method=\"POST\">
+<label for="fontprofileselect">Font profile:</label>
+<select name="fontprofileselect" id="fontprofileselect">""" % (baseurl, urllib.parse.quote_plus(tourney_name), selected_view))
+    for i in range(len(font_profile_descs)):
+        cgicommon.writeln("<option value=\"%d\" %s>%s</option>" % (i, "selected" if i == display_font_profile else "", cgicommon.escape(font_profile_descs[i]["name"])))
+    cgicommon.writeln("</select>")
+    cgicommon.writeln("<input type=\"submit\" name=\"setfontprofile\" value=\"Set font profile\" />")
     cgicommon.writeln("</form>")
     cgicommon.writeln("</div>")
 
