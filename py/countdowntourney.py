@@ -1019,19 +1019,21 @@ class Tourney(object):
             cur.execute("select value from options where name = 'atropineversion'")
             row = cur.fetchone()
             if row is None:
-                raise DBVersionMismatchException("This tourney database file was created by an atropine version prior to 0.7.0. It's not compatible with this version of atropine.")
+                raise DBVersionMismatchException("%s: This tourney's database file was created by an atropine version prior to 0.7.0. It's not compatible with this version of atropine." % (tourney_name))
             else:
                 version = row[0]
                 version_split = version.split(".")
                 if len(version_split) != 3:
-                    raise DBVersionMismatchException("This tourney database has an invalid version number %s." % (version))
+                    raise DBVersionMismatchException("%s: This tourney's database has an invalid version number %s." % (tourney_name, version))
                 else:
                     try:
                         version_split = list(map(int, version_split))
                     except ValueError:
-                        raise DBVersionMismatchException("This tourney database has an invalid version number %s." % (version))
+                        raise DBVersionMismatchException("%s: This tourney's database has an invalid version number %s." % (tourney_name, version))
                     if tuple(version_split) < EARLIEST_COMPATIBLE_DB_VERSION:
-                        raise DBVersionMismatchException("This tourney database was created with atropine version %s, which is not compatible with this version of atropine (%s)" % (version, SW_VERSION))
+                        raise DBVersionMismatchException("%s: This tourney's database was created with atropine version %s, which is not compatible with this version of atropine (%s)" % (tourney_name, version, SW_VERSION))
+                    if tuple(version_split) > SW_VERSION_SPLIT:
+                        raise DBVersionMismatchException("%s: This tourney's database was created by Atropine %s, which is newer than this version, Atropine %s. To use this tourney you need to get the latest version of Atropine from https://greem.co.uk/atropine/" % (tourney_name, version, SW_VERSION))
                 self.db_version = tuple(version_split)
         else:
             self.db_version = (0, 0, 0)
