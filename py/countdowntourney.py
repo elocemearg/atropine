@@ -222,9 +222,9 @@ create table if not exists game (
     table_no int,
     division int,
     game_type text,
-    p1 integer,
+    p1 integer not null,
     p1_score integer,
-    p2 integer,
+    p2 integer not null,
     p2_score integer,
     tiebreak int,
     unique(round_no, seq)
@@ -246,18 +246,6 @@ create table if not exists game_log (
     tiebreak int,
     log_type int,
     comment text default null
-);
-
--- Games where we don't yet know who the players are going to be, but we
--- do know it's going to be "winner of this match versus winner of that match".
-create table if not exists game_pending (
-    round_no int,
-    seq int,
-    seat int,
-    winner int,
-    from_round_no int,
-    from_seq int,
-    unique(round_no, seq, seat)
 );
 
 -- options, such as what to sort players by, how to decide fixtures, etc
@@ -646,12 +634,6 @@ class Player(object):
     def __str__(self):
         return self.name;
 
-    def is_player_known(self):
-        return True;
-
-    def is_pending(self):
-        return False;
-
     def is_withdrawn(self):
         return self.withdrawn
 
@@ -782,59 +764,6 @@ class EnteredPlayer(object):
     def get_preferred_table(self):
         return self.preferred_table
 
-# This object can be on one side and/or other of a Game, just like a Player.
-# However, it does not represent a player. It represents the winner or loser
-# of another specific game yet to be played.
-class PlayerPending(object):
-    def __init__(self, round_no, round_seq, winner=True, round_short_name=None):
-        self.round_no = round_no;
-        self.round_seq = round_seq;
-        self.winner = winner;
-        self.round_short_name = round_short_name if round_short_name else ("R%d" % self.round_no)
-
-    def __eq__(self, other):
-        if other is None:
-            return False;
-        elif self.round_no == other.round_no and self.round_seq == other.round_seq and self.winner == other.winner:
-            return True;
-        else:
-            return False;
-
-    def __len__(self):
-        return 3;
-
-    def __getitem__(self, key):
-        return [None, 0, 0][key];
-
-    def is_player_known(self):
-        return False;
-
-    def is_pending(self):
-        return True;
-
-    def make_dict(self):
-        return {
-                "round" : self.round_no,
-                "round_seq" : self.round_seq,
-                "winner" : self.winner,
-                "round_short_name" : self.round_short_name
-        };
-
-    @staticmethod
-    def from_dict(d):
-        return PlayerPending(d["round"], d["round_seq"], d["winner"], d["round_short_name"]);
-
-    def get_name(self):
-        return None;
-
-    def __str__(self):
-        if self.round_short_name is None:
-            return "%s of R%d.%d" % ("Winner" if self.winner else "Loser", self.round_no, self.round_seq);
-        else:
-            return "%s of %s.%d" % ("Winner" if self.winner else "Loser", self.round_short_name, self.round_seq);
-
-    def get_pending_game_details(self):
-        return (self.round_no, self.round_seq, self.winner);
 
 # COLIN Hangover 2015: each player is assigned a team
 class Team(object):
@@ -904,12 +833,6 @@ class Game(object):
         else:
             return False;
 
-    def are_players_known(self):
-        if self.p1.is_player_known() and self.p2.is_player_known():
-            return True;
-        else:
-            return False;
-
     def get_team_colours(self):
         return [self.p1.get_team_colour_tuple(), self.p2.get_team_colour_tuple()]
 
@@ -939,14 +862,6 @@ class Game(object):
 
     def make_dict(self):
         names = self.get_player_names();
-        if self.p1.is_pending():
-            p1pending = self.p1.make_dict();
-        else:
-            p1pending = None;
-        if self.p2.is_pending():
-            p2pending = self.p2.make_dict();
-        else:
-            p2pending = None;
         return {
                 "round_no" : self.round_no,
                 "round_seq" : self.seq,
@@ -955,16 +870,12 @@ class Game(object):
                 "game_type" : self.game_type,
                 "p1" : names[0],
                 "p2" : names[1],
-                "p1pending" : p1pending,
-                "p2pending" : p2pending,
                 "s1" : self.s1,
                 "s2" : self.s2,
                 "tb" : self.tb
         };
 
     def is_between_names(self, name1, name2):
-        if not self.p1.is_player_known() or not self.p2.is_player_known():
-            return False;
         (pname1, pname2) = self.get_player_names();
         if (pname1 == name1 and pname2 == name2) or (pname1 == name2 and pname2 == name1):
             return True;
@@ -981,18 +892,18 @@ class Game(object):
         return [self.p1.get_short_name(), self.p2.get_short_name()]
 
     def get_player_score(self, player):
-        if self.p1.is_player_known() and self.p1 == player:
+        if self.p1 == player:
             score = self.s1;
-        elif self.p2.is_player_known() and self.p2 == player:
+        elif self.p2 == player:
             score = self.s2;
         else:
             raise PlayerNotInGameException("player %s is not in the game between %s and %s." % (str(player), str(self.p1), str(self.p2)));
         return score;
 
     def get_player_name_score(self, player_name):
-        if self.p1.is_player_known() and (self.p1.get_name().lower() == player_name.lower() or self.p1.get_name() == player_name):
+        if self.p1.get_name().lower() == player_name.lower() or self.p1.get_name() == player_name:
             return self.s1
-        elif self.p2.is_player_known() and (self.p2.get_name().lower() == player_name.lower() or self.p2.get_name() == player_name):
+        elif self.p2.get_name().lower() == player_name.lower() or self.p2.get_name() == player_name:
             return self.s2
         else:
             raise PlayerNotInGameException("Player %s not in the game between %s and %s." % (str(player_name), str(self.p1), str(self.p2)))
@@ -1792,15 +1703,9 @@ class Tourney(object):
     # games is a list of countdowntourney.Game
     def merge_games(self, games):
         try:
-            known_games = [x for x in games if x.are_players_known()];
-            pending_games = [x for x in games if not x.are_players_known()];
-
-            # Records to insert into game_staging, where we use NULL if the
-            # player isn't known yet
+            # Records to insert into game_staging
             game_records = [(x.round_no, x.seq, x.table_no,
-                x.division, x.game_type,
-                x.p1.name if x.p1.is_player_known() else None, x.s1,
-                x.p2.name if x.p2.is_player_known() else None, x.s2,
+                x.division, x.game_type, x.p1.name, x.s1, x.p2.name, x.s2,
                 x.tb) for x in games];
 
             cur = self.db.cursor();
@@ -1813,11 +1718,8 @@ class Tourney(object):
                 round_no int, seq int, table_no int, division int,
                 game_type text, p1 integer, score1 integer,
                 p2 integer, score2 integer, tiebreak integer)""");
-            cur.execute("""create temporary table if not exists game_pending_staging(
-                round_no int, seq int, seat int, player_id int)""");
             cur.execute("delete from temp.game_staging");
             cur.execute("delete from temp.game_staging_ids");
-            cur.execute("delete from temp.game_pending_staging");
 
             cur.executemany("insert into temp.game_staging values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", game_records);
             cur.execute("""insert into temp.game_staging_ids
@@ -1895,47 +1797,6 @@ class Tourney(object):
                         p1, p1_score, p2, p2_score, tiebreak)
                     select * from temp.game_staging_ids""");
 
-            # Insert into GAME_PENDING any sides of a game where the player
-            # is not yet known
-            pending_games_records = [];
-            for g in pending_games:
-                if not g.p1.is_player_known():
-                    pending_games_records.append((g.round_no, g.seq, 1, g.p1.winner, g.p1.round_no, g.p1.round_seq));
-                if not g.p2.is_player_known():
-                    pending_games_records.append((g.round_no, g.seq, 2, g.p2.winner, g.p2.round_no, g.p2.round_seq));
-
-            cur.executemany("""insert or replace into
-                    game_pending
-                    values (?, ?, ?, ?, ?, ?)""",
-                    pending_games_records);
-
-            # If we inserted any rows into GAME whose (round_no, round_seq)
-            # corresponds to (from_round_no, from_round_seq) in GAME_PENDING,
-            # it means that we can fill in one or more unknown players in
-            # GAME. For example, if we inserted the result for a semi-final,
-            # then we might now be able to fill in the player ID for one side
-            # of the final.
-            cur.execute("""insert into temp.game_pending_staging
-                        select gp.round_no, gp.seq, gp.seat,
-                            case when gp.winner = 1 and gsi.score1 > gsi.score2
-                            then gsi.p1
-                            when gp.winner = 1 and gsi.score2 > gsi.score1
-                            then gsi.p2
-                            when gp.winner = 0 and gsi.score1 > gsi.score2
-                            then gsi.p2
-                            when gp.winner = 0 and gsi.score2 > gsi.score1
-                            then gsi.p1
-                            else NULL
-                            end player_id
-                        from game_staging_ids gsi, game_pending gp
-                        on gsi.round_no = gp.from_round_no and
-                           gsi.seq = gp.from_seq""");
-
-            cur.execute("select * from temp.game_pending_staging");
-            updcur = self.db.cursor();
-            for row in cur:
-                (round_no, seq, seat, player_id) = row;
-                updcur.execute("update game set p%d = ? where round_no = ? and seq = ? and p1_score is NULL and p2_score is NULL" % (seat), (player_id, round_no, seq));
             self.db.commit();
         except:
             self.db.rollback();
@@ -2250,7 +2111,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         return games;
 
-    def get_games(self, round_no=None, table_no=None, game_type=None, only_players_known=True, division=None, only_unplayed=False):
+    def get_games(self, round_no=None, table_no=None, game_type=None, division=None, only_unplayed=False):
         conditions = [];
         params = [];
 
@@ -2263,8 +2124,6 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         if game_type is not None:
             conditions.append("g.game_type = ?");
             params.append(game_type);
-        if only_players_known:
-            conditions.append("(g.p1 is not null and g.p2 is not null)");
         if division is not None:
             conditions.append("g.division = ?")
             params.append(division)
@@ -2273,16 +2132,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         cur = self.db.cursor();
         sql = """select g.round_no, g.seq, g.table_no, g.division, g.game_type,
-                g.p1, g.p1_score, g.p2, g.p2_score, g.tiebreak,
-                gp1.winner as seat1_which, gp1.from_round_no as seat1_round_no,
-                gp1.from_seq seat1_seq,
-                gp2.winner as seat2_which, gp2.from_round_no as seat2_round_no,
-                gp2.from_seq as seat2_seq
-                from game g left outer join game_pending gp1
-                on g.round_no = gp1.round_no and g.seq = gp1.seq and gp1.seat=1
-                left outer join game_pending gp2
-                on g.round_no = gp2.round_no and g.seq = gp2.seq and gp2.seat=2
-                where 1=1 """;
+                g.p1, g.p1_score, g.p2, g.p2_score, g.tiebreak
+                from game g where 1=1 """;
         for c in conditions:
             sql += " and " + c;
         sql += "\norder by g.round_no, g.division, g.table_no, g.seq";
@@ -2295,7 +2146,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         games = [];
         for row in cur:
-            (round_no, game_seq, table_no, division, game_type, p1, p1_score, p2, p2_score, tb, seat1_which, seat1_round_no, seat1_seq, seat2_which, seat2_round_no, seat2_seq) = row
+            (round_no, game_seq, table_no, division, game_type, p1, p1_score, p2, p2_score, tb) = row
             if tb is not None:
                 if tb:
                     tb = True
@@ -2306,20 +2157,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                     p_id = p1;
                 else:
                     p_id = p2;
-                if p_id is None:
-                    if p_index == 1:
-                        winner = bool(seat1_which);
-                        of_round_no = int(seat1_round_no);
-                        of_seq = int(seat1_seq);
-                    else:
-                        winner = bool(seat2_which);
-                        of_round_no = int(seat2_round_no);
-                        of_seq = int(seat2_seq);
-
-                    short_name = "R" + str(of_round_no)
-                    p = PlayerPending(of_round_no, of_seq, winner, short_name);
-                else:
-                    p = self.get_player_from_id(p_id);
+                assert(p_id is not None)
+                p = self.get_player_from_id(p_id);
                 if p_index == 1:
                     p1 = p;
                 else:
