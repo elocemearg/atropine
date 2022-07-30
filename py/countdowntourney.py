@@ -10,7 +10,7 @@ import qualification
 from cttable import CandidateTable, TableVotingGroup, PhantomTableVotingGroup
 import cttable
 
-SW_VERSION_SPLIT = (1, 1, 4)
+SW_VERSION_SPLIT = (1, 1, 5)
 SW_VERSION = ".".join([str(x) for x in SW_VERSION_SPLIT])
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
@@ -427,7 +427,6 @@ and p.id = pff.id;
 create table if not exists teleost(current_mode int);
 delete from teleost;
 insert into teleost values(0);
-create table if not exists teleost_modes(num int, name text, desc text);
 
 create table if not exists tr_opts (
     bonus float,
