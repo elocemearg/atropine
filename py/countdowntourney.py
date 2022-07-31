@@ -2479,7 +2479,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                                  ]
 
                 for row in qualification_standings:
-                    if row["pos"] <= qual_places and method == RANK_WINS_POINTS:
+                    if row["pos"] <= qual_places and rank_method_id == RANK_WINS_POINTS:
                         # This player is in the qualification zone - work out if
                         # they are guaranteed to stay there
                         try:
