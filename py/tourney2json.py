@@ -13,15 +13,7 @@ def get_standings(tourney, options):
     reply["success"] = True
 
     rank_method = tourney.get_rank_method()
-    if rank_method == countdowntourney.RANK_WINS_POINTS:
-        rank_fields = ["wins", "points"]
-    elif rank_method == countdowntourney.RANK_WINS_SPREAD:
-        rank_fields = ["wins", "spread"]
-    elif rank_method == countdowntourney.RANK_POINTS:
-        rank_fields = ["points"]
-    else:
-        rank_fields = None
-
+    rank_fields = rank_method.get_rank_fields()
     reply["rank_fields"] = rank_fields
 
     player_to_team_colour = dict()
@@ -54,6 +46,8 @@ def get_standings(tourney, options):
             standing["qualified"] = s.qualified
             standing["finals_points"] = s.finals_points
             standing["finals_form"] = s.finals_form
+            standing["secondary_rank_values"] = s.get_secondary_rank_values()
+            standing["secondary_rank_value_strings"] = s.get_secondary_rank_value_strings()
             standings.append(standing)
         div_dict = dict()
         div_dict["div_num"] = div
@@ -62,6 +56,7 @@ def get_standings(tourney, options):
         div_dict["standings"] = standings
         div_standings_list.append(div_dict)
 
+    reply["secondary_rank_headings"] = rank_method.get_secondary_rank_headings(short=True)
     reply["divisions"] = div_standings_list
 
     return reply

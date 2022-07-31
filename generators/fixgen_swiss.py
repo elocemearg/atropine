@@ -310,8 +310,6 @@ def check_ready(tourney, div_rounds):
     return (True, None);
 
 def generate(tourney, settings, div_rounds):
-    rank_method = tourney.get_rank_method();
-
     (ready, excuse) = check_ready(tourney, div_rounds);
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
@@ -380,8 +378,7 @@ def generate(tourney, settings, div_rounds):
         if limit_ms > 300000:
             limit_ms = 300000;
 
-        rank_by_wins = (rank_method == countdowntourney.RANK_WINS_POINTS or rank_method == countdowntourney.RANK_WINS_SPREAD);
-
+        rank_by_wins = tourney.is_ranked_by_wins()
         round_no = div_rounds[div_index]
         games = tourney.get_games(game_type="P");
         if len(games) == 0:

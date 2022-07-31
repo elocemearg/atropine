@@ -9,19 +9,21 @@ class StandingsView extends PagedTableView {
         container.style.maxWidth = "100%";
         var html = "";
         html += "<table class=\"teleoststandings\">";
-        html += "<colgroup>";
+        html += "<colgroup id=\"teleoststandingscolgroup\" class=\"teleoststandingstwosecondaries\">";
         html += "<col class=\"teleoststandingscolpos teleostnumber\" />";
         html += "<col class=\"teleoststandingscolname\" />";
         html += "<col class=\"teleoststandingscolplayed teleostnumber\" />";
         html += "<col class=\"teleoststandingscolwins teleostnumber\" />";
-        html += "<col class=\"teleoststandingscolpoints teleostnumber\" />";
+        html += "<col class=\"teleoststandingscolpoints teleostnumber\" id=\"teleoststandingscolgroupsecondary1\" />";
+        html += "<col class=\"teleoststandingscolpoints teleostnumber\" id=\"teleoststandingscolgroupsecondary2\" />";
         html += "</colgroup>";
         html += "<tr class=\"headingbar teleoststandingsheadingrow\">";
         html += "<th class=\"teleoststandingsheadingnumber\"></th>";
         html += "<th id=\"teleoststandingsdivisionname\" class=\"teleoststandingsheadingstring\"></th>";
         html += "<th class=\"teleoststandingsheadingnumber\">P</th>";
         html += "<th class=\"teleoststandingsheadingnumber\">W</th>";
-        html += "<th id=\"teleoststandingspointsheading\" class=\"teleoststandingsheadingnumber\">Pts</th>";
+        html += "<th id=\"teleoststandingssecondary1\" class=\"teleoststandingsheadingnumber\"></th>";
+        html += "<th id=\"teleoststandingssecondary2\" class=\"teleoststandingsheadingnumber\"></th>";
         html += "</tr>";
         for (var i = 0; i < this.rowsPerPage; ++i) {
             var rowName = "standingsrow" + i.toString();
@@ -36,7 +38,8 @@ class StandingsView extends PagedTableView {
             html += "<td id=\"" + rowName + "_name\"></td>";
             html += "<td class=\"teleoststandingsnumbercol teleostnumber\" id=\"" + rowName + "_played\"></td>";
             html += "<td class=\"teleoststandingsnumbercol teleostnumber\" id=\"" + rowName + "_wins\"></td>";
-            html += "<td class=\"teleoststandingsnumbercol teleostnumber\" id=\"" + rowName + "_points\">---</td>";
+            html += "<td class=\"teleoststandingsnumbercol teleostnumber\" id=\"" + rowName + "_secondary1\">---</td>";
+            html += "<td class=\"teleoststandingsnumbercol teleostnumber\" id=\"" + rowName + "_secondary2\">---</td>";
             html += "</tr>";
         }
         html += "</table>";
@@ -51,7 +54,6 @@ class StandingsView extends PagedTableView {
         var page = null;
         var divisionName = "";
         var rankFields = [];
-        var useSpread = false;
         var showDivisionName = false;
         var standings = null;
         var errorString = null;
@@ -101,21 +103,11 @@ class StandingsView extends PagedTableView {
             errorString = gameState.description;
         }
 
-        for (var i = 0; i < rankFields.length; ++i) {
-            if (rankFields[i] == "points") {
-                break;
-            }
-            if (rankFields[i] == "spread") {
-                useSpread = true;
-                break;
-            }
-        }
-
         return {
             "standingsPage" : page,
             "divisionName" : divisionName,
             "showDivisionName" : showDivisionName,
-            "useSpread" : useSpread,
+            "secondaryRankHeadings" : (standings == null ? null : standings.secondary_rank_headings),
             "teamScores" : teamScores,
             "errorString" : errorString
         };
@@ -129,7 +121,8 @@ class StandingsView extends PagedTableView {
         document.getElementById(rowName + "_name").innerHTML = "&nbsp;";
         document.getElementById(rowName + "_played").innerHTML = "&nbsp;";
         document.getElementById(rowName + "_wins").innerHTML = "&nbsp;";
-        document.getElementById(rowName + "_points").innerHTML = "&nbsp;";
+        document.getElementById(rowName + "_secondary1").innerHTML = "&nbsp;";
+        document.getElementById(rowName + "_secondary2").innerHTML = "&nbsp;";
         document.getElementById(rowName).style.display = null;
     }
 
@@ -138,17 +131,18 @@ class StandingsView extends PagedTableView {
         document.getElementById(rowName).style.display = "none";
     }
 
-    setRow(tableRow, standing, useSpread) {
+    setRow(tableRow, standing) {
         var pos = "";
         var name = "";
         var played = "";
         var wins = "";
         var wins_string = "";
-        var points = "";
-        var spread = "";
+        var secondaryRankValues = [];
         var rowName = "standingsrow" + tableRow.toString();
         var withdrawn = false;
         var finalsForm = standing.finals_form;
+        var secondaryRankValues = [];
+        var secondaryRankValueStrings = [];
 
         while (finalsForm.length > 0 && finalsForm[0] == '-') {
             finalsForm = finalsForm.substring(1);
@@ -172,11 +166,8 @@ class StandingsView extends PagedTableView {
             wins_string = wins.toString();
         }
 
-        points = standing.points;
-        spread = standing.spread;
+        secondaryRankValueStrings = standing.secondary_rank_value_strings
         withdrawn = standing.withdrawn;
-        if (spread > 0)
-            spread = "+" + spread.toString();
 
         var rowElement = document.getElementById(rowName);
         rowElement.style.display = null;
@@ -186,8 +177,9 @@ class StandingsView extends PagedTableView {
             name = makeWithdrawn(name, true);
             played = makeWithdrawn(played.toString(), true);
             wins_string = makeWithdrawn(wins_string.toString(), false);
-            spread = makeWithdrawn(spread.toString(), true);
-            points = makeWithdrawn(points.toString(), true);
+            for (let i = 0; i < secondaryRankValueStrings.length; ++i) {
+                secondaryRankValueStrings[i] = makeWithdrawn(secondaryRankValueStrings[i], true);
+            }
         }
         else {
             name = escapeHTML(name);
@@ -206,12 +198,20 @@ class StandingsView extends PagedTableView {
         document.getElementById(rowName + "_played").innerHTML = played;
         document.getElementById(rowName + "_wins").innerHTML = wins_string;
 
-        var pointsElement = document.getElementById(rowName + "_points");
-        if (useSpread)
-            pointsElement.innerHTML = spread;
-        else
-            pointsElement.innerHTML = points;
-
+        /* Fill in secondary1 and secondary2, which contain whatever we're
+         * ranking on after wins. */
+        for (let secIndex = 0; secIndex < 2; secIndex++) {
+            let secondaryRankElement = document.getElementById(rowName + "_secondary" + (secIndex + 1).toString());
+            if (secIndex < secondaryRankValueStrings.length) {
+                secondaryRankElement.style.display = null;
+                secondaryRankElement.innerHTML = secondaryRankValueStrings[secIndex];
+            }
+            else {
+                /* If this column isn't used, make the cell non-displayed */
+                secondaryRankElement.style.display = "none";
+                secondaryRankElement.innerHTML = "&nbsp;";
+            }
+        }
         if (standing.qualified) {
             document.getElementById(rowName).classList.add("teleoststandingsqualified");
         }
@@ -225,12 +225,45 @@ class StandingsView extends PagedTableView {
     }
 
     redrawHeadings(standingsObject) {
-        var pointsHeading = document.getElementById("teleoststandingspointsheading");
-        if (standingsObject.useSpread) {
-            pointsHeading.innerText = "Spr";
+        let colGroup = document.getElementById("teleoststandingscolgroup");
+        for (let secIndex = 0; secIndex < 2; secIndex++) {
+            let thId = "teleoststandingssecondary" + (secIndex + 1).toString()
+            let colId = "teleoststandingscolgroupsecondary" + (secIndex + 1).toString();
+            let th = document.getElementById(thId);
+            let col = document.getElementById(colId);
+            if (secIndex < standingsObject.secondaryRankHeadings.length) {
+                if (col == null) {
+                    /* Add the col to the colgroup if it isn't there */
+                    col = document.createElement("COL");
+                    col.classList.add("teleoststandingscolpoints");
+                    col.classList.add("teleostnumber");
+                    col.id = colId;
+                    colGroup.appendChild(col);
+                }
+                /* Set the heading text */
+                th.innerHTML = standingsObject.secondaryRankHeadings[secIndex];
+                th.style.display = null;
+            }
+            else {
+                /* We don't need this secondary rank column... */
+                if (col) {
+                    /* Remove the col from colgroup if it's there. */
+                    colGroup.removeChild(col);
+                }
+                th.innerHTML = "&nbsp;";
+                th.style.display = "none";
+            }
+        }
+
+        /* Set the colgroup class appropriately so we get the right
+         * column widths for the number of columns. */
+        if (standingsObject.secondaryRankHeadings.length < 2) {
+            colGroup.classList.remove("teleoststandingstwosecondaries");
+            colGroup.classList.add("teleoststandingsonesecondary");
         }
         else {
-            pointsHeading.innerText = "Pts";
+            colGroup.classList.remove("teleoststandingsonesecondary");
+            colGroup.classList.add("teleoststandingstwosecondaries");
         }
 
         var divisionNameElement = document.getElementById("teleoststandingsdivisionname");
@@ -264,7 +297,7 @@ class StandingsView extends PagedTableView {
 
         if (page != null) {
             if (tableRow < page.length) {
-                this.setRow(tableRow, page[tableRow], standingsObject.useSpread);
+                this.setRow(tableRow, page[tableRow]);
             }
             else {
                 while (tableRow < this.rowsPerPage) {

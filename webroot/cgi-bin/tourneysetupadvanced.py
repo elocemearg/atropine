@@ -80,7 +80,7 @@ else:
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
 
-    cgicommon.writeln(('<form action="%s?tourney=%s" method="post">' % (baseurl, urllib.parse.quote_plus(tourneyname))));
+    cgicommon.writeln(('<form action="%s?tourney=%s" method="POST">' % (baseurl, urllib.parse.quote_plus(tourneyname))));
     cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
 
     cgicommon.writeln("<h2>Team Setup</h2>")
@@ -92,13 +92,30 @@ winner's team. The team scores are displayed alongside the standings.</p>""")
 </p>""" % (urllib.parse.quote_plus(tourneyname)))
 
     cgicommon.writeln("<h2>Ranking order</h2>");
-    rank = tourney.get_rank_method();
     rank_finals = tourney.get_rank_finals()
     cgicommon.writeln("<p>How do you want to rank players in the standings table?</p>");
     cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
-    cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankwinspoints" %s /><label for="rankwinspoints"> Wins, then points. Draws are worth half a win. A win on a tiebreak is a win, not a draw.</label><br />' % (countdowntourney.RANK_WINS_POINTS, "checked" if rank == countdowntourney.RANK_WINS_POINTS else "")));
-    cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankwinsspread" %s /><label for="rankwinsspread"> Wins, then cumulative winning margin (spread). Draws are worth half a win.</label><br />' % (countdowntourney.RANK_WINS_SPREAD, "checked" if rank == countdowntourney.RANK_WINS_SPREAD else "")))
-    cgicommon.writeln(('<input type="radio" name="rank" value="%d" id="rankpoints" %s /><label for="rankpoints"> Points only.</label>' % (countdowntourney.RANK_POINTS, "checked" if rank == countdowntourney.RANK_POINTS else "")));
+    selected_rank_method_id = tourney.get_rank_method_id();
+    rank_method_list = tourney.get_rank_method_list()
+    for (rank_method_id, rank_method) in rank_method_list:
+        cgicommon.writeln("<div class=\"rankmethod\">")
+        cgicommon.writeln("<div>")
+        cgicommon.writeln("<label for=\"rankbutton%d\">" % (rank_method_id))
+        cgicommon.writeln('<input type="radio" name="rank" value="%d" id="rankbutton%d" %s/> <span style=\"font-weight: bold;\">%s</span>. %s' % (
+            rank_method_id, rank_method_id,
+            "checked" if rank_method_id == selected_rank_method_id else "",
+            cgicommon.escape(rank_method.get_name()),
+            cgicommon.escape(rank_method.get_description())
+        ))
+        cgicommon.writeln("</label>")
+        cgicommon.writeln("</div>")
+        cgicommon.writeln("<div class=\"rankmethoddetails\">")
+        cgicommon.writeln("<label for=\"rankbutton%d\">" % (rank_method_id))
+        cgicommon.writeln(rank_method.get_extra_description())
+        cgicommon.writeln("</label>")
+        cgicommon.writeln("</div>")
+        cgicommon.writeln("</div>")
+
     cgicommon.writeln("</div>")
 
     cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")

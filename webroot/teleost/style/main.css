@@ -127,26 +127,34 @@ tr.teleoststandingsqualified {
 
 col.teleoststandingscolpos {
     color: yellow;
-    width: 8vw;
+    width: 8%;
 }
 
 col.teleoststandingscolname {
-    width: 46vw;
+    width: 56%;
 }
 
 col.teleoststandingscolplayed {
     color: cyan;
-    width: 12vw;
+    width: 12%;
 }
 
 col.teleoststandingscolwins {
     color: cyan;
-    width: 10vw;
+    width: 12%;
 }
 
 col.teleoststandingscolpoints {
     color: cyan;
-    width: 12vw;
+    width: 12%;
+}
+
+colgroup.teleoststandingsonesecondary col.teleoststandingscolname {
+    width: 56%;
+}
+
+colgroup.teleoststandingstwosecondaries col.teleoststandingscolname {
+    width: 44%;
 }
 
 td.teleoststandingspos {

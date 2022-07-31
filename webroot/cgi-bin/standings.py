@@ -43,21 +43,13 @@ try:
 
     cgicommon.writeln("<p>")
     rank_method = tourney.get_rank_method();
-    if rank_method == countdowntourney.RANK_WINS_POINTS:
-        cgicommon.writeln("Players are ranked by wins, then points.");
-    elif rank_method == countdowntourney.RANK_WINS_SPREAD:
-        cgicommon.writeln("Players are ranked by wins, then cumulative winning margin.");
-    elif rank_method == countdowntourney.RANK_POINTS:
-        cgicommon.writeln("Players are ranked by points.");
-    else:
-        cgicommon.writeln("Players are ranked somehow. Your guess is as good as mine.");
-        cgicommon.writeln("</p>")
+    cgicommon.writeln(cgicommon.escape(rank_method.get_short_description()))
+    cgicommon.writeln("</p>")
 
     if tourney.are_players_assigned_teams():
         cgicommon.show_team_score_table(tourney.get_team_scores())
         cgicommon.writeln('<br />')
 
-    rank_method = tourney.get_rank_method()
     cgicommon.show_standings_table(tourney, True, True, True, True, True, tourney.get_show_tournament_rating_column(), True)
 
     cgicommon.writeln("</div>"); #mainpane

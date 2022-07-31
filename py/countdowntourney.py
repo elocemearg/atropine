@@ -6,6 +6,7 @@ import re;
 import os;
 import random
 import qualification
+import rank
 
 from cttable import CandidateTable, TableVotingGroup, PhantomTableVotingGroup
 import cttable
@@ -14,9 +15,21 @@ SW_VERSION_SPLIT = (1, 1, 5)
 SW_VERSION = ".".join([str(x) for x in SW_VERSION_SPLIT])
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
-RANK_WINS_POINTS = 0;
-RANK_POINTS = 1;
-RANK_WINS_SPREAD = 2;
+RANK_WINS_POINTS = 0
+RANK_POINTS = 1
+RANK_WINS_SPREAD = 2
+RANK_WINS_NEUSTADTL = 3
+RANK_WINS_SOW = 4
+RANK_WINS_CUMULATIVE = 5
+
+RANK_METHODS = {
+        RANK_WINS_POINTS : rank.RankWinsPoints(),
+        RANK_POINTS : rank.RankPoints(),
+        RANK_WINS_SPREAD : rank.RankWinsSpread(),
+        RANK_WINS_NEUSTADTL : rank.RankWinsNeustadtl(),
+        RANK_WINS_SOW : rank.RankWinsSumOppWins(),
+        RANK_WINS_CUMULATIVE : rank.RankWinsCumulative()
+}
 
 RATINGS_MANUAL = 0
 RATINGS_GRADUATED = 1
@@ -799,6 +812,8 @@ class StandingsRow(object):
         self.qualified = False
         self.finals_form = finals_form
         self.finals_points = finals_points
+        self.secondary_rank_values = []
+        self.secondary_rank_value_strings = []
 
     def __str__(self):
         return "%3d. %-25s %3dw %3dd %4dp%s" % (self.position, self.name, self.wins, self.draws, self.points, " (W)" if self.withdrawn else "")
@@ -812,6 +827,18 @@ class StandingsRow(object):
 
     def is_qualified(self):
         return self.qualified
+
+    def get_secondary_rank_values(self):
+        return self.secondary_rank_values[:]
+
+    def set_secondary_rank_values(self, values, strings=None):
+        if strings is None:
+            strings = [ str(x) for x in values ]
+        self.secondary_rank_values = values[:]
+        self.secondary_rank_value_strings = strings[:]
+
+    def get_secondary_rank_value_strings(self):
+        return self.secondary_rank_value_strings[:]
 
 class Game(object):
     def __init__(self, round_no, seq, table_no, division, game_type, p1, p2, s1=None, s2=None, tb=False):
@@ -881,6 +908,9 @@ class Game(object):
         else:
             return False;
 
+    def has_player_name(self, name):
+        return name in self.get_player_names()
+
     def get_players(self):
         return [ self.p1, self.p2 ]
 
@@ -907,6 +937,14 @@ class Game(object):
         else:
             raise PlayerNotInGameException("Player %s not in the game between %s and %s." % (str(player_name), str(self.p1), str(self.p2)))
 
+    def get_opponent_name(self, player_name):
+        if self.p1.get_name().lower() == player_name.lower() or self.p1.get_name() == player_name:
+            return self.p2.get_name()
+        elif self.p2.get_name().lower() == player_name.lower() or self.p2.get_name() == player_name:
+            return self.p1.get_name()
+        else:
+            raise PlayerNotInGameException("Player %s not in the game between %s and %s." % (str(player_name), str(self.p1), str(self.p2)))
+
     def get_opponent_score(self, player):
         if self.p1 == player:
             score = self.s2;
@@ -915,6 +953,14 @@ class Game(object):
         else:
             raise PlayerNotInGameException("player %s is not in the game between %s and %s." % (str(player), str(self.p1), str(self.p2)));
         return score;
+
+    def get_opponent_name_score(self, player_name):
+        if self.p1.get_name().lower() == player_name.lower() or self.p1.get_name() == player_name:
+            return self.s2
+        elif self.p2.get_name().lower() == player_name.lower() or self.p2.get_name() == player_name:
+            return self.s1
+        else:
+            raise PlayerNotInGameException("Player %s not in the game between %s and %s." % (str(player_name), str(self.p1), str(self.p2)))
 
     def set_player_score(self, player, score):
         if self.p1 == player:
@@ -1113,6 +1159,9 @@ class Tourney(object):
 
     def get_software_version(self):
         return get_software_version()
+
+    def get_rank_method_list(self, exclude_incompatible=True):
+        return [ (i, RANK_METHODS[i]) for i in RANK_METHODS if self.db_version >= RANK_METHODS[i].get_min_db_version() ]
 
     # Number of games in the GAME table - that is, number of games played
     # or in progress.
@@ -2253,20 +2302,26 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def get_auto_current_round_must_have_games_in_all_divisions(self):
         return self.get_int_attribute("autocurrentroundmusthavegamesinalldivisions", 1) != 0
 
-    def get_rank_method(self):
+    def get_rank_method_id(self):
         return self.get_int_attribute("rankmethod", RANK_WINS_POINTS);
 
-    def is_ranking_by_wins(self):
-        return self.get_rank_method() in [ RANK_WINS_POINTS, RANK_WINS_SPREAD ]
+    def get_rank_method(self):
+        return RANK_METHODS[self.get_rank_method_id()]
 
-    def is_ranking_by_points(self):
-        return self.get_rank_method() in [ RANK_WINS_POINTS, RANK_POINTS ]
+    def is_ranked_by_wins(self):
+        return self.get_rank_method().uses_wins()
 
-    def is_ranking_by_spread(self):
-        return self.get_rank_method() == RANK_WINS_SPREAD
+    def is_ranked_by_points(self):
+        return self.get_rank_method().uses_points()
+
+    def is_ranked_by_spread(self):
+        return self.get_rank_method().uses_spread()
+
+    def is_ranked_by_neustadtl(self):
+        return self.get_rank_method().uses_neustadtl()
 
     def set_rank_method(self, method):
-        if method not in [RANK_WINS_POINTS, RANK_WINS_SPREAD, RANK_POINTS]:
+        if method not in RANK_METHODS:
             raise UnknownRankMethodException("Can't rank tourney by method %d because I don't know what that is." % method);
         self.set_attribute("rankmethod", method);
 
@@ -2334,27 +2389,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         return get_general_short_division_name(num)
 
     def get_standings(self, division=None, exclude_withdrawn_with_no_games=False, calculate_qualification=True):
-        method = self.get_rank_method();
-        if method == RANK_WINS_POINTS:
-            orderby = "s.wins * 2 + s.draws desc, s.points desc, p.name";
-            rankcols = [10, 4];
-        elif method == RANK_WINS_SPREAD:
-            orderby = "s.wins * 2 + s.draws desc, s.points - s.points_against desc, p.name"
-            rankcols = [10, 6]
-        elif method == RANK_POINTS:
-            orderby = "s.points desc, p.name";
-            rankcols = [4];
-        else:
-            raise UnknownRankMethodException("This tourney's standings are ranked by method %d, which I don't recognise." % method);
-
-        # If we're also taking account of any finals matches, then finals
-        # performance has a higher sorting priority than anything else.
-        rank_finals = self.get_rank_finals()
-        if rank_finals:
-            rankcols = [13] + rankcols
-            orderby = "13 desc, " + orderby
-
-        orderby = "order by " + orderby
+        rank_method_id = self.get_rank_method_id();
+        rank_method = RANK_METHODS[rank_method_id]
 
         conditions = []
 
@@ -2368,12 +2404,17 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         else:
             where_clause = ""
 
-        results = self.ranked_query("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws, p.withdrawn, %s, %s from player_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id %s %s " % (
+        cur = self.db.cursor()
+        cur.execute("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws, p.withdrawn, %s, %s from player_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id %s " % (
             "s.finals_form" if self.db_version >= (1, 0, 7) else "''",
             "s.finals_points" if self.db_version >= (1, 0, 7) else "0",
-            where_clause, orderby), rankcols);
+            where_clause))
+        standings = []
+        for x in cur:
+            standings.append(StandingsRow(0, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], bool(x[10]), x[11], x[12]))
+        cur.close()
 
-        standings = [ StandingsRow(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], bool(x[11]), x[12], x[13]) for x in results ]
+        rank_method.sort_standings_rows(standings, self.get_games(game_type="P"), self.get_rank_finals())
 
         # If anyone has played any finals matches, don't calculate
         # qualification because we're already past that and it wouldn't make
@@ -2391,7 +2432,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             num_games_per_player = self.get_int_attribute("div%d_numgamesperplayer" % (division), 0)
             draws_expected = self.get_show_draws_column()
 
-            if qual_places > 0 and num_games_per_player > 0:
+            if qual_places > 0 and num_games_per_player > 0 and rank_method_id == RANK_WINS_POINTS:
                 qualification_standings = [
                         {
                             "pos" : x.position,

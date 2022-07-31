@@ -725,7 +725,10 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
     html = []
 
     num_divisions = tourney.get_num_divisions()
-    ranking_by_wins = tourney.is_ranking_by_wins()
+    ranking_by_wins = tourney.is_ranked_by_wins()
+    rank_method = tourney.get_rank_method()
+
+    secondary_rank_headings = rank_method.get_secondary_rank_headings()
 
     if linkify_players:
         linkfn = lambda x : player_to_link(x, tourney.get_name(), open_in_new_window=True)
@@ -755,14 +758,24 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
 
         if div_index > 0:
             html.append("<tr class=\"standingstabledivspacer\"><td></td></tr>")
-        html.append("<tr><th colspan=\"2\">%s</th>%s<th>Played</th><th>Wins</th>%s%s%s%s%s</tr>" % (
-                escape(div_string),
-                "<th>Finals</th>" if show_finals_column else "",
-                "<th>Draws</th>" if show_draws_column else "",
-                "<th>Points</th>" if show_points_column else "",
-                "<th>Spread</th>" if show_spread_column else "",
-                "<th>1st/2nd</th>" if show_first_second_column else "",
-                "<th>Tournament Rating</th>" if show_tournament_rating_column else ""));
+        html.append("<tr><th colspan=\"2\">%s</th>" % (escape(div_string)))
+        if show_finals_column:
+            html.append("<th>Finals</th>")
+        html.append("<th>Played</th><th>Wins</th>")
+        if show_draws_column:
+            html.append("<th>Draws</th>")
+        for heading in secondary_rank_headings:
+            html.append("<th>" + escape(heading) + "</th>")
+        if show_points_column and "Points" not in secondary_rank_headings:
+            html.append("<th>Points</th>")
+        if show_spread_column and "Spread" not in secondary_rank_headings:
+            html.append("<th>Spread</th>")
+        if show_first_second_column:
+            html.append("<th>1st/2nd</th>")
+        if show_tournament_rating_column:
+            html.append("<th>Tournament Rating</th>")
+        html.append("</tr>")
+
         last_wins_inc_draws = None;
         tr_bgcolours = ["#ffdd66", "#ffff88" ];
         bgcolour_index = 0;
@@ -809,11 +822,11 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             else:
                 wins_style = ""
                 draws_style = ""
-            if tourney.is_ranking_by_points():
+            if tourney.is_ranked_by_points():
                 points_style = bold_style
             else:
                 points_style = ""
-            if tourney.is_ranking_by_spread():
+            if tourney.is_ranked_by_spread():
                 spread_style = bold_style
             else:
                 spread_style = ""
@@ -826,10 +839,12 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             html.append("<td class=\"standingswins\" %s >%d</td>" % (wins_style, wins));
             if show_draws_column:
                 html.append("<td class=\"standingsdraws\" %s >%d</td>" % (draws_style, draws));
-            if show_points_column:
-                html.append("<td class=\"standingspoints\" %s >%d</td>" % (points_style, points));
-            if show_spread_column:
-                html.append("<td class=\"standingsspread\" %s >%+d</td>" % (spread_style, spread));
+            for sec_value in s.get_secondary_rank_value_strings():
+                html.append("<td class=\"standingspoints\" style=\"font-weight: bold;\">%s</td>" % (sec_value))
+            if show_points_column and "Points" not in secondary_rank_headings:
+                html.append("<td class=\"standingspoints\">%d</td>" % (points))
+            if show_spread_column and "Spread" not in secondary_rank_headings:
+                html.append("<td class=\"standingsspread\">%+d</td>" % (spread))
             if show_first_second_column:
                 html.append("<td class=\"standingsfirstsecond\">%d/%d</td>" % (num_first, played - num_first))
             if show_tournament_rating_column:

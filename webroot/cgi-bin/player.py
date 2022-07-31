@@ -449,6 +449,7 @@ if player:
     cgicommon.writeln("<hr />")
     cgicommon.writeln("<h2>Stats Corner</h2>")
     standings = tourney.get_standings(player.get_division())
+    rank_method = tourney.get_rank_method()
     standing = None
     for s in standings:
         if s.name == player.get_name():
@@ -528,6 +529,17 @@ if player:
         cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Played 1st/2nd</td>")
         cgicommon.writeln("<td class=\"statsnumvalue\">%d/%d</td></tr>" % (standing.played_first, standing.played - standing.played_first))
 
+        # Anything else which isn't covered above but is something we're using
+        # to rank the standings table, put that here.
+        sec_rank_headings = rank_method.get_secondary_rank_headings()
+        sec_rank_values = standing.get_secondary_rank_value_strings()
+        for i in range(len(sec_rank_headings)):
+            heading = sec_rank_headings[i]
+            if heading not in ("Points", "Spread"):
+                cgicommon.writeln("<tr class=\"statsrow\">")
+                cgicommon.writeln("<td class=\"statsname\">%s</td>" % (cgicommon.escape(heading)))
+                cgicommon.writeln("<td class=\"statsnumvalue\">%s</td>" % (cgicommon.escape(sec_rank_values[i])))
+                cgicommon.writeln("</tr>")
         cgicommon.writeln("</table>")
     cgicommon.writeln("<hr />")
 elif add_player:

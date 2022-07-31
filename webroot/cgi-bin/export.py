@@ -278,8 +278,8 @@ try:
     show_draws_column = tourney.get_show_draws_column()
 
     rank_method = tourney.get_rank_method()
-    show_points_column = (rank_method in [countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_POINTS])
-    show_spread_column = (rank_method == countdowntourney.RANK_WINS_SPREAD)
+    show_points_column = tourney.is_ranked_by_points()
+    show_spread_column = tourney.is_ranked_by_spread()
     show_tournament_rating_column = tourney.get_show_tournament_rating_column()
 
     if export_format == "html":
@@ -302,21 +302,12 @@ try:
         num_divisions = tourney.get_num_divisions()
 
         cgicommon.writeln("<p>")
-        rank_method = tourney.get_rank_method();
-        if rank_method == countdowntourney.RANK_WINS_POINTS:
-            cgicommon.writeln("Players are ranked by wins, then points.")
-        elif rank_method == countdowntourney.RANK_WINS_SPREAD:
-            cgicommon.writeln("Players are ranked by wins, then cumulative winning margin.")
-        elif rank_method == countdowntourney.RANK_POINTS:
-            cgicommon.writeln("Players are ranked by points.");
-        else:
-            cgicommon.writeln("Players are ranked somehow. Your guess is as good as mine.");
+        cgicommon.writeln(cgicommon.escape(rank_method.get_short_description()))
         if show_draws_column:
             cgicommon.writeln("Draws count as half a win.")
         cgicommon.writeln("</p>")
 
-        rank_method = tourney.get_rank_method()
-        cgicommon.show_standings_table(tourney, tourney.get_show_draws_column(), rank_method in (countdowntourney.RANK_WINS_POINTS, countdowntourney.RANK_POINTS), rank_method == countdowntourney.RANK_WINS_SPREAD, False, False, show_tournament_rating_column, True)
+        cgicommon.show_standings_table(tourney, tourney.get_show_draws_column(), show_points_column, show_spread_column, False, False, show_tournament_rating_column, True)
         cgicommon.writeln("</div>")
 
         cgicommon.writeln("<div class=\"exportedresults\">")
@@ -384,15 +375,7 @@ try:
         cgicommon.writeln("")
         cgicommon.writeln("STANDINGS")
         cgicommon.writeln("")
-        rank_method = tourney.get_rank_method();
-        if rank_method == countdowntourney.RANK_WINS_POINTS:
-            cgicommon.writeln("Players are ranked by wins, then points.");
-        elif rank_method == countdowntourney.RANK_WINS_SPREAD:
-            cgicommon.writeln("Players are ranked by wins, then cumulative winning margin.")
-        elif rank_method == countdowntourney.RANK_POINTS:
-            cgicommon.writeln("Players are ranked by points.");
-        else:
-            cgicommon.writeln("Players are ranked somehow. Your guess is as good as mine.");
+        cgicommon.writeln(rank_method.get_short_description())
         if show_draws_column:
             cgicommon.writeln("Draws count as half a win.")
         cgicommon.writeln("")
@@ -413,26 +396,49 @@ try:
             standings = tourney.get_standings(div_index, True)
             if num_divisions > 1:
                 cgicommon.writeln(tourney.get_division_name(div_index))
-            header_format_string = "%%-%ds  P   W%s%s%s%s" % (
-                    max_name_len + 6,
-                    "   D" if show_draws_column else "",
-                    "  Pts" if show_points_column else "",
-                    "   Spr" if show_spread_column else "",
-                    "      TR" if show_tournament_rating_column else "")
-            cgicommon.writeln(header_format_string % "")
+
+            # Show the position, then the name, then games played, then the
+            # number of wins, then the number of draws if applicable, then any
+            # secondary ranking columns, then points if they weren't in the
+            # secondary ranking columns, then tournament rating if applicable.
+            header_line = ("%%%ds" % (max_name_len + 6)) % ("")
+            header_line += "    P   W"
+            row_format = "%(pos)5d %(name)-" + str(max_name_len) + "s  %(played)3d %(wins)3d"
+            if show_draws_column:
+                header_line += "   D"
+                row_format += " %(draws)3d"
+            shown_points = False
+            sec_index = 0
+            sec_rank_headings = rank_method.get_secondary_rank_headings(short=True)
+            for sec_index in range(len(sec_rank_headings)):
+                heading = sec_rank_headings[sec_index]
+                width = max(4, len(heading))
+                header_line += (" %" + str(width) + "s") % (heading)
+                row_format += " %(secondary" + str(sec_index) + ")" + str(width) + "s"
+                if heading == "Pts":
+                    shown_points = True
+            if show_points_column and not shown_points:
+                header_line += "  Pts"
+                row_format += " %(points)4d"
+            if show_tournament_rating_column:
+                header_line += "      TR"
+                row_format += " %(tr)7s"
+
+            cgicommon.writeln(header_line)
             for s in standings:
-                cgicommon.write("%3d %-*s  %3d %3d " % (s[0], max_name_len, s[1], s[2], s[3]))
-                if show_draws_column:
-                    cgicommon.write("%3d " % s[5])
-                if show_points_column:
-                    cgicommon.write("%4d " % s[4])
-                if show_spread_column:
-                    cgicommon.write("%+5d " % s[6])
-                if show_tournament_rating_column:
-                    if s.tournament_rating is not None:
-                        cgicommon.write("%7.2f " % s.tournament_rating)
-                    else:
-                        cgicommon.write("        ")
+                fields = {
+                        "pos" : s.position,
+                        "name" : s.name,
+                        "played" : s.played,
+                        "wins" : s.wins,
+                        "draws" : s.draws,
+                        "points" : s.points,
+                        "tr" : ("" if s.tournament_rating is None else "%7.2f" % (s.tournament_rating))
+                }
+                secondary_rank_value_strings = s.get_secondary_rank_value_strings()
+                for i in range(len(secondary_rank_value_strings)):
+                    fields["secondary" + str(i)] = secondary_rank_value_strings[i]
+                cgicommon.write(row_format % fields)
 
                 # If this player has played in any QF, SF, final or third place
                 # playoff, insert a parenthetical explanatory note as to why
@@ -505,6 +511,7 @@ try:
         cgicommon.writeln("")
         cgicommon.writeln("==Standings==")
         cgicommon.writeln()
+        sec_rank_headings = rank_method.get_secondary_rank_headings()
         for div_index in range(num_divisions):
             if num_divisions > 1:
                 cgicommon.writeln("===%s===" % (tourney.get_division_name(div_index)))
@@ -513,9 +520,11 @@ try:
             cgicommon.write("! Rank !! Name !! Games !! Wins")
             if show_draws_column:
                 cgicommon.write(" !! Draws")
-            if show_points_column:
+            for head in sec_rank_headings:
+                cgicommon.write(" !! " + head)
+            if show_points_column and "Points" not in sec_rank_headings:
                 cgicommon.write(" !! Points")
-            if show_spread_column:
+            if show_spread_column and "Spread" not in sec_rank_headings:
                 cgicommon.write(" !! Spread")
             if show_tournament_rating_column:
                 cgicommon.write(" !! Tournament rating")
@@ -525,9 +534,11 @@ try:
                 cgicommon.write("| %3d || %s || %d || %d" % (s.position, s.name, s.played, s.wins))
                 if show_draws_column:
                     cgicommon.write(" || %d" % (s.draws))
-                if show_points_column:
+                for val in s.get_secondary_rank_value_strings():
+                    cgicommon.write(" || %s" % (val))
+                if show_points_column and "Points" not in sec_rank_headings:
                     cgicommon.write(" || %d" % (s.points))
-                if show_spread_column:
+                if show_spread_column and "Spread" not in sec_rank_headings:
                     cgicommon.write(" || %+d" % (s.spread))
                 if show_tournament_rating_column:
                     cgicommon.write(" || %d" % (s.tournament_rating))
@@ -586,12 +597,20 @@ try:
         cgicommon.writeln("")
 
         if csv_type == "standings":
+            sec_rank_headings = rank_method.get_secondary_rank_headings()
             writer = csv.writer(sys.stdout, delimiter=",", quotechar="\"", quoting=csv.QUOTE_MINIMAL)
             if num_divisions == 1:
                 selected_divisions = [0]
 
             # Write header row
-            writer.writerow(("Position", "Name", "Finals", "Played", "Wins", "Draws", "Points"))
+            header_row = [ "Position", "Name", "Finals", "Played", "Wins", "Draws" ]
+            for heading in sec_rank_headings:
+                header_row.append(heading)
+            if show_points_column and "Points" not in sec_rank_headings:
+                header_row.append("Points")
+            if show_spread_column and "Spread" not in sec_rank_headings:
+                header_row.append("Spread")
+            writer.writerow(tuple(header_row))
             last_div_position = 0
             for div in selected_divisions:
                 standings = tourney.get_standings(division=div, calculate_qualification=False)
@@ -599,8 +618,15 @@ try:
                     finals_form = s.finals_form
                     while finals_form and finals_form[0] == '-':
                         finals_form = finals_form[1:]
-                    writer.writerow((last_div_position + s.position, s.name,
-                            finals_form, s.played, s.wins, s.draws, s.points))
+                    row = [ last_div_position + s.position, s.name, finals_form,
+                            s.played, s.wins, s.draws ]
+                    for val in s.get_secondary_rank_value_strings():
+                        row.append(val)
+                    if show_points_column and "Points" not in sec_rank_headings:
+                        row.append(s.points)
+                    if show_spread_column and "Spread" not in sec_rank_headings:
+                        row.append(s.spread)
+                    writer.writerow(tuple(row))
 
                 if standings:
                     last_div_position = standings[-1].position

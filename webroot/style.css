@@ -1767,6 +1767,17 @@ div.generalsetupcontrolgroup {
     margin-left: 30px;
 }
 
+div.rankmethod {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+div.rankmethoddetails {
+    margin-left: 3em;
+    font-size: 10pt;
+    color: gray;
+}
+
 div.generalsetuptourneydetailslabel {
     display: inline-block;
     width: 8em;
