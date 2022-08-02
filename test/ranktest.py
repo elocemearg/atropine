@@ -253,6 +253,266 @@ tests = [
             1 : [ "Prune II" ],
             2 : [ "Late" ]
         }
+    },
+    {
+        "name" : "ranktest_solkoff",
+        "player_names" : [ "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Prune" ],
+        "rank" : countdowntourney.RANK_WINS_SOW,
+        "games_per_round" : {
+            1 : [
+                (1, "Alpha", 60, "Echo", 40),
+                (1, "Echo", 41, "India", 31),
+                (1, "India", 75, "Alpha", 75),
+                (2, "Bravo", 46, "Foxtrot", 31),
+                (2, "Foxtrot", 37, "Juliet", 30),
+                (2, "Juliet", 60, "Bravo", 55),
+                (3, "Charlie", 45, "Golf", 59),
+                (3, "Golf", 72, "Kilo", 52),
+                (3, "Kilo", 50, "Charlie", 51),
+                (4, "Delta", 60, "Hotel", 30),
+                (4, "Hotel", 66, "Prune", 0),
+                (4, "Prune", 0, "Delta", 70)
+            ],
+            # Opponents faced after round 1:
+            #
+            # Alpha:   Echo, India
+            # Bravo:   Foxtrot, Juliet
+            # Charlie: Golf, Kilo
+            # Delta:   Hotel, Prune
+            # Echo:    Alpha, India
+            # Foxtrot: Bravo, Juliet
+            # Golf:    Charlie, Kilo
+            # Hotel:   Delta, Prune
+            # India:   Alpha, Echo
+            # Juliet:  Bravo, Foxtrot
+            # Kilo:    Charlie, Golf
+            # Prune:   Delta, Hotel
+
+            # Prune withdraws, Late is added. Players who have played Prune
+            # do not get a bonus of 0.5 Solkoff points for each of Prune's
+            # missed games, but players who play Late DO get a bonus of 0.5
+            # Solkoff points for each of Late's two missed games.
+            2 : [
+                (1, "Golf", 50, "Delta", 60),
+                (1, "Delta", 42, "Alpha", 55),
+                (1, "Alpha", 61, "Golf", 30),
+                (2, "Bravo", 55, "Hotel", 50),
+                (2, "Hotel", 41, "Charlie", 57),
+                (2, "Charlie", 48, "Bravo", 38),
+                (3, "Juliet", 56, "Echo", 46),
+                (3, "Echo", 41, "Foxtrot", 35),
+                (3, "Foxtrot", 65, "Juliet", 40),
+                (4, "India", 50, "Kilo", 49 ),
+                (4, "Kilo", 56, "Late", 30),
+                (4, "Late", 45, "India", 41)
+            ],
+
+            # Opponents faced after round 2:
+            #
+            # Alpha:   Echo, India, Delta, Golf
+            # Bravo:   Foxtrot, Juliet, Charlie, Hotel
+            # Charlie: Golf, Kilo, Bravo, Hotel
+            # Delta:   Hotel, Prune, Alpha, Golf
+            # Echo:    Alpha, India, Foxtrot, Juliet
+            # Foxtrot: Bravo, Juliet, Echo, Juliet
+            # Golf:    Charlie, Kilo, Alpha, Delta
+            # Hotel:   Delta, Prune, Bravo, Charlie
+            # India:   Alpha, Echo, Kilo, Late
+            # Juliet:  Bravo, Foxtrot, Echo, Foxtrot
+            # Kilo:    Charlie, Golf, India, Late
+            # Late:                   India, Kilo
+            # Prune:   Delta, Hotel
+
+            3 : [
+                (1, "Alpha", 49, "Delta", 62),
+                (1, "Delta", 55, "Charlie", 57),
+                (1, "Charlie", 41, "Alpha", 70),
+                (2, "Golf", 41, "Echo", 59),
+                (2, "Echo", 37, "Bravo", 60),
+                (2, "Bravo", 72, "Golf", 52),
+                (3, "Juliet", 55, "Foxtrot", 62),
+                (3, "Foxtrot", 51, "India", 59),
+                (3, "India", 58, "Juliet", 45),
+                (4, "Kilo", 50, "Hotel", 66),
+                (4, "Hotel", 52, "Late", 50),
+                (4, "Late", 59, "Kilo", 31)
+            ]
+            # Opponents faced after round 2:
+            #
+            # Alpha:   Echo, India, Delta, Golf, Charlie, Delta
+            # Bravo:   Foxtrot, Juliet, Charlie, Hotel, Echo, Golf
+            # Charlie: Golf, Kilo, Bravo, Hotel, Alpha, Delta
+            # Delta:   Hotel, Prune, Alpha, Golf, Alpha, Charlie
+            # Echo:    Alpha, India, Foxtrot, Juliet, Bravo, Golf
+            # Foxtrot: Bravo, Juliet, Echo, Juliet, India, Juliet
+            # Golf:    Charlie, Kilo, Alpha, Delta, Bravo, Echo
+            # Hotel:   Delta, Prune, Bravo, Charlie, Kilo, Late
+            # India:   Alpha, Echo, Kilo, Late, Foxtrot, Juliet
+            # Juliet:  Bravo, Foxtrot, Echo, Foxtrot, Foxtrot, India
+            # Kilo:    Charlie, Golf, India, Late, Hotel, Late
+            # Late:                   India, Kilo, Hotel, Kilo
+            # Prune:   Delta, Hotel
+        },
+        "standings_per_round" : {
+            1 : [
+                ( 1, "Golf",    2, 2, 1, 131),
+                ( 2, "Delta",   2, 2, 1, 130),
+                ( 3, "Alpha",   2, 1.5, 1.5, 135),
+                ( 4, "Bravo",   2, 1, 2, 101),
+                ( 5, "Charlie", 2, 1, 2, 96),
+                ( 5, "Hotel",   2, 1, 2, 96),
+                ( 7, "Juliet",  2, 1, 2, 90),
+                ( 8, "Echo",    2, 1, 2, 81),
+                ( 9, "Foxtrot", 2, 1, 2, 68),
+                (10, "India",   2, 0.5, 2.5, 106),
+                (11, "Kilo",    2, 0, 3, 102),
+                (12, "Prune",   2, 0, 3, 0),
+            ],
+            2 : [
+                ( 1, "Alpha",   4, 3.5, 8.5, 251),
+                ( 2, "Delta",   4, 3, 6.5, 232),
+                ( 3, "Charlie", 4, 3, 6, 201),
+                ( 4, "Golf",    4, 2, 10.5, 211),
+                ( 5, "Echo",    4, 2, 9, 168),
+                ( 6, "Bravo",   4, 2, 8, 194),
+                ( 7, "Juliet",  4, 2, 8, 186),
+                ( 8, "Foxtrot", 4, 2, 8, 168),
+                ( 9, "India",   4, 1.5, 8.5, 197),  # played Late, bonus 2*0.5
+                (10, "Kilo",    4, 1, 8.5, 207), # played Late, bonus 2*0.5
+                (11, "Hotel",   4, 1, 8, 187),
+                (12, "Late",    2, 1, 2.5, 75),
+                (13, "Prune",   2, 0, 4, 0),
+            ],
+            3 : [
+                ( 1, "Alpha",   6, 4.5, 20.5, 370),
+                ( 2, "Charlie", 6, 4, 18.5, 299),
+                ( 3, "Delta",   6, 4, 18, 349),
+                ( 4, "Bravo",   6, 4, 17, 326),
+                ( 5, "India",   6, 3.5, 16.5, 314),  # played Late, bonus 2*0.5
+                ( 6, "Echo",    6, 3, 19, 264),
+                ( 7, "Foxtrot", 6, 3, 16.5, 281),
+                ( 8, "Hotel",   6, 3, 16, 305), # played Late, bonus 2*0.5
+                ( 9, "Golf",    6, 2, 20.5, 304),
+                (10, "Juliet",  6, 2, 19.5, 286),
+                (11, "Late",    4, 2, 8.5, 184),
+                (12, "Kilo",    6, 1, 18.5, 288), # played Late*2, bonus 2*2*0.5
+                (13, "Prune",   2, 0, 7, 0),
+            ],
+        },
+        "withdrawals_after_round" : {
+            1 : [ "Prune" ]
+        },
+        "additions_after_round" : {
+            1 : [ "Late" ]
+        }
+    },
+    {
+        "name" : "ranktest_cumulative",
+        "player_names" : [ "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Lima" ],
+        "rank" : countdowntourney.RANK_WINS_CUMULATIVE,
+        "games_per_round" : {
+            1 : [
+                (1, "Alpha", 60, "Echo", 40),
+                (1, "Echo", 41, "India", 31),
+                (1, "India", 75, "Alpha", 75),
+                (2, "Bravo", 46, "Foxtrot", 31),
+                (2, "Foxtrot", 37, "Juliet", 30),
+                (2, "Juliet", 60, "Bravo", 55),
+                (3, "Charlie", 45, "Golf", 59),
+                (3, "Golf", 72, "Kilo", 52),
+                (3, "Kilo", 50, "Charlie", 51),
+                (4, "Delta", 60, "Hotel", 30),
+                (4, "Hotel", 66, "Lima", 33),
+                (4, "Lima", 70, "Delta", 50)
+            ],
+            # Foxtrot withdraws, Prune is added
+            2 : [
+                (1, "Golf", 55, "Alpha", 51),
+                (1, "Alpha", 61, "Delta", 40),
+                (1, "Delta", 56, "Golf", 72),
+                (2, "Lima", 50, "Bravo", 51),
+                (2, "Bravo", 59, "Charlie", 35),
+                (2, "Charlie", 64, "Lima", 60),
+                (3, "Hotel", 40, "Juliet", 65),
+                (3, "Juliet", 46, "Echo", 41),
+                (3, "Echo", 56, "Hotel", 51),
+                (4, "Prune", 0, "India", 68),
+                (4, "India", 57, "Kilo", 41),
+                (4, "Kilo", 82, "Prune", 0)
+            ],
+            # Foxtrot returns, Prune withdraws. Foxtrot didn't play in round
+            # 2 so gets no cumulative effect for that round.
+            3 : [
+                (1, "Golf", 50, "Bravo", 60),
+                (1, "Bravo", 63, "Juliet", 51),
+                (1, "Juliet", 41, "Golf", 49),
+                (2, "Alpha", 56, "India", 55),
+                (2, "India", 75, "Charlie", 40),
+                (2, "Charlie", 51, "Alpha", 30),
+                (3, "Echo", 59, "Lima", 52),
+                (3, "Lima", 41, "Delta", 60),
+                (3, "Delta", 55, "Echo", 45),
+                (4, "Hotel", 50, "Kilo", 66),
+                (4, "Kilo", 56, "Foxtrot", 39),
+                (4, "Foxtrot", 61, "Hotel", 41),
+            ]
+        },
+        "standings_per_round" : {
+            1 : [
+                ( 1, "Golf",    2, 2, 2, 131),
+                ( 2, "Alpha",   2, 1.5, 1.5, 135),
+                ( 3, "Delta",   2, 1, 1, 110),
+                ( 4, "Lima",    2, 1, 1, 103),
+                ( 5, "Bravo",   2, 1, 1, 101),
+                ( 6, "Charlie", 2, 1, 1, 96),
+                ( 6, "Hotel",   2, 1, 1, 96),
+                ( 8, "Juliet",  2, 1, 1, 90),
+                ( 9, "Echo",    2, 1, 1, 81),
+                (10, "Foxtrot", 2, 1, 1, 68),
+                (11, "India",   2, 0.5, 0.5, 106),
+                (12, "Kilo",    2, 0, 0, 102)
+            ],
+            2 : [
+                ( 1, "Golf",    4, 4, 6, 258),
+                ( 2, "Bravo",   4, 3, 4, 211),
+                ( 3, "Juliet",  4, 3, 4, 201),
+                ( 4, "Alpha",   4, 2.5, 4, 247),
+                ( 5, "India",   4, 2.5, 3, 231),
+                ( 6, "Charlie", 4, 2, 3, 195),
+                ( 7, "Echo",    4, 2, 3, 178),
+                ( 8, "Lima",    4, 1, 2, 213),
+                ( 9, "Delta",   4, 1, 2, 206),
+                (10, "Hotel",   4, 1, 2, 187),
+                (11, "Kilo",    4, 1, 1, 225),
+                (12, "Foxtrot", 2, 1, 1, 68),
+                (13, "Prune",   2, 0, 0, 0)
+            ],
+            3 : [
+                ( 1, "Golf",    6, 5, 11, 357),
+                ( 2, "Bravo",   6, 5, 9, 334),
+                ( 3, "Alpha",   6, 3.5, 7.5, 333),
+                ( 4, "India",   6, 3.5, 6.5, 361),
+                ( 5, "Juliet",  6, 3, 7, 293),
+                ( 6, "Charlie", 6, 3, 6, 286),
+                ( 7, "Echo",    6, 3, 6, 282),
+                ( 8, "Delta",   6, 3, 5, 321),
+                ( 9, "Kilo",    6, 3, 4, 347),
+                (10, "Foxtrot", 4, 2, 3, 168),
+                (11, "Lima",    6, 1, 3, 306),
+                (12, "Hotel",   6, 1, 3, 278),
+                (13, "Prune",   2, 0, 0, 0)
+            ],
+        },
+        "withdrawals_after_round" : {
+            1 : [ "Foxtrot" ],
+            2 : [ "Prune" ],
+        },
+        "unwithdrawals_after_round" : {
+            2 : [ "Foxtrot" ],
+        },
+        "additions_after_round" : {
+            1 : [ "Prune" ],
+        }
     }
 ]
 
@@ -368,7 +628,11 @@ def run_rank_test(tourney_name, player_names, games_per_round,
             print("Finished round %d." % (round_no))
 
 def main():
+    desired_tests = sys.argv[1:]
+    desired_tests = set(desired_tests)
     for test in tests:
+        if desired_tests and test["name"] not in desired_tests:
+            continue
         print("Test %s..." % (test["name"]))
         run_rank_test(test["name"], test["player_names"],
                 test["games_per_round"], test["standings_per_round"],
