@@ -94,6 +94,7 @@ winner's team. The team scores are displayed alongside the standings.</p>""")
     cgicommon.writeln("<h2>Ranking order</h2>");
     rank_finals = tourney.get_rank_finals()
     cgicommon.writeln("<p>How do you want to rank players in the standings table?</p>");
+    cgicommon.writeln("<p>The standings table is used by some fixture generators, such as the Swiss generator, to decide who plays whom in the next round, and to decide players' finishing positions at the end of the tournament.</p>");
     cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
     selected_rank_method_id = tourney.get_rank_method_id();
     rank_method_list = tourney.get_rank_method_list()
@@ -118,6 +119,7 @@ winner's team. The team scores are displayed alongside the standings.</p>""")
 
     cgicommon.writeln("</div>")
 
+    cgicommon.writeln("<p>Finals games do not affect the number of wins, points etc shown in the standings table, but they do affect the final placings. Enable the following checkbox to reflect that in the standings table order.</p>")
     cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
     cgicommon.writeln("<input type=\"checkbox\" name=\"rankfinals\" value=\"1\" id=\"rankfinals\" %s />" % ("checked" if rank_finals else ""))
     cgicommon.writeln("<label for=\"rankfinals\">Modify standings order according to results of finals, if played</label>")

@@ -83,7 +83,12 @@ class RankWinsPoints(RankMethod):
         return "Players are ranked by number of wins then total points scored."
 
     def get_extra_description(self):
-        return "This is the ranking method used at almost all Countdown events. If unsure, use this one. If draws are allowed, they count as half a win."
+        return """
+<li>This is the ranking method used at almost all Countdown events. If you're unsure, this is the one you want.</li>
+<li>Like all the other ranking methods, points scored on a tiebreak are not
+included in the player's points total.</li>
+<li>Where drawn games are not decided by tiebreaks, a draw counts as half a win.</li>
+"""
 
     def get_secondary_rank_headings(self, short=False):
         if short:
@@ -113,7 +118,7 @@ class RankWinsSpread(RankMethod):
         return "Players are ranked by wins then spread (cumulative winning margin)."
 
     def get_extra_description(self):
-        return "This is intended for Scrabble tournaments. It has never been used for Countdown events. If draws are allowed, they count as half a win."
+        return "This is intended for Scrabble tournaments. It has never been used for Countdown events. A draw counts as half a win."
 
     def get_secondary_rank_headings(self, short=False):
         if short:
@@ -168,10 +173,10 @@ class RankWinsSumOppWins(RankMethod):
 
     def get_extra_description(self):
         return """
-<li>Your Solkoff score is the total win count of all your opponents. Unlike
-with the Neustadtl score, all your opponents count regardless of whether you
-beat them.</li>
-<li>If draws are allowed, they count as half a win.</li>
+<li>Your Solkoff score (also known as Buchholz score) is the total win count of
+all your opponents. Unlike with the Neustadtl score, all your opponents count
+regardless of whether you beat them.</li>
+<li>A draw counts as half a win.</li>
 <li>If one of your opponents plays fewer games than you because they withdrew
 or joined late, their missing games count as draws for the purpose of your
 Solkoff score. However, this does not apply for Prune opponents.</li>"""
@@ -260,9 +265,10 @@ class RankWinsNeustadtl(RankWinsSumOppWins):
 
     def get_extra_description(self):
         return """
-<li>Your Neustadtl score is the total win count of all opponents you beat plus
-half the total win count of all opponents you drew against.</li>
-<li>If draws are allowed, they count as half a win for the win count and the Neustadtl score.</li>
+<li>Your Neustadtl score (also known as Sonneborn-Berger score) is the total
+win count of all opponents you beat plus half the total win count of all
+opponents you drew against.</li>
+<li>A draw counts as half a win for the win count and the Neustadtl score.</li>
 <li>If one of your opponents plays fewer games than you because they withdrew
 or joined late, their missing games count as draws for the purpose of your
 Neustadtl score. However, this does not apply for Prune opponents.</li>"""
@@ -288,16 +294,20 @@ class RankWinsCumulative(RankMethod):
 
     def get_extra_description(self):
         return """
-<li>Your Cumulative Win Count is the sum, for each round, of the number of games
-you had won after that round.
-</li>
-<li>As a result, wins in earlier rounds count more than wins in later rounds,
+<li>Your Cumulative Win Count is the sum, for each round, of the total number
+of wins you had accumulated up to the end of that round.</li>
+<li>For example, suppose that in each of rounds 1, 2, and 3, you win 2 games, 0
+games, and 1 game respectively. Your win count at the end of each round is 2,
+then 2, then 3. The sum of these counts is 7, so your Cumulative Win Count
+after three rounds is 7.</li>
+<li>This ranking method gives earlier wins a greater weight than later wins,
 reflecting the fact that a player who wins early on is likely to face stronger
-opponents in later rounds. For this reason you should only consider using this
-ranking method if you're using the Swiss fixture generator.</li>
-<li>If draws are allowed, they count as half a win.</li>
-<li>If a player does not play any games in a round, their win count so far
-is not added to their cumulative total for that round.</li>
+opponents in later rounds than someone who got their wins later. For this
+reason you should only consider using this ranking method if you're using the
+Swiss or King of the Hill fixture generator for round 2 onwards.</li>
+<li>A draw counts as half a win.</li>
+<li>If a player does not play any games in a round, that round is disregarded
+when calculating that player's cumulative win count.</li>
 """
 
     def get_secondary_rank_headings(self, short=False):
