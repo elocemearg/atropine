@@ -1335,7 +1335,13 @@ class Tourney(object):
         self.db.commit()
 
     # players must be a list of EnteredPlayer objects.
-    # This function removes any players currently registered.
+    # This function removes any players currently registered, and replaces it
+    # with a new list of players, with new player IDs. Old player IDs are not
+    # re-used.
+    # We throw an exception if there are any games in the GAME table.
+    # On success, we delete all rows in the GAME_LOG table, because that may
+    # contain entries for deleted games and those entries will contain old
+    # player IDs.
     def set_players(self, players, auto_rating_behaviour=RATINGS_UNIFORM):
         # If there are any games, in this tournament, it's too late to
         # replace the player list. You can, however, withdraw players or
@@ -1422,6 +1428,7 @@ class Tourney(object):
                     p.get_division(), int(p.get_avoid_prune()),
                     int(p.get_requires_accessible_table()),
                     int(p.get_preferred_table()) if p.get_preferred_table() is not None else -1) for p in players ]);
+        self.db.execute("delete from game_log")
         self.db.commit();
 
     def get_auto_rating_behaviour(self):
