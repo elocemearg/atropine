@@ -17,6 +17,12 @@ var teleostModeOptions = {};
 var teamIndicatorHTML = "&#10022;"
 
 function escapeHTML(str) {
+    if (str === null) {
+        return "(null)";
+    }
+    else if (str === undefined) {
+        return "(undefined)";
+    }
     return str.replace(/&/g, "&amp;")
               .replace(/</g, "&lt;")
               .replace(/>/g, "&gt;")

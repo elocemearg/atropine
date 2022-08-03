@@ -26,7 +26,10 @@ def write(string):
     sys.stdout.buffer.write(string.encode("utf-8"))
 
 def escape(string, quote=True):
-    return html.escape(string, quote)
+    if string is None:
+        return "(None)"
+    else:
+        return html.escape(string, quote)
 
 def print_html_head(title, cssfile="style.css", othercssfiles=[]):
     writeln("<!DOCTYPE html>")
