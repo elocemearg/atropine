@@ -74,7 +74,7 @@ else:
         try:
             tourney.set_show_tournament_rating_column(show_tournament_rating)
             tourney.set_tournament_rating_config(tr_bonus, tr_diff_cap)
-            tourney.set_rank_method(rank)
+            tourney.set_rank_method_id(rank)
             tourney.set_rank_finals(rank_finals)
             cgicommon.show_success_box("Options updated.");
         except countdowntourney.TourneyException as e:

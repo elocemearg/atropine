@@ -2327,7 +2327,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def is_ranked_by_neustadtl(self):
         return self.get_rank_method().uses_neustadtl()
 
-    def set_rank_method(self, method):
+    def set_rank_method_id(self, method):
         if method not in RANK_METHODS:
             raise UnknownRankMethodException("Can't rank tourney by method %d because I don't know what that is." % method);
         self.set_attribute("rankmethod", method);

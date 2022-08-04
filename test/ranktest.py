@@ -637,7 +637,7 @@ def run_rank_test(tourney_name, player_names, games_per_round,
 
     player_list = [ countdowntourney.EnteredPlayer(p, 0 if p.startswith("Prune") else None) for p in player_names ]
     tourney.set_players(player_list, countdowntourney.RATINGS_UNIFORM)
-    tourney.set_rank_method(rank_method_id)
+    tourney.set_rank_method_id(rank_method_id)
 
     rank_method = tourney.get_rank_method()
 
