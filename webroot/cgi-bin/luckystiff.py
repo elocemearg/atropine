@@ -20,7 +20,7 @@ cgicommon.set_module_path()
 
 import countdowntourney
 
-cgicommon.print_html_head("Tuff luck: " + str(tourney_name))
+cgicommon.print_html_head("Lucky Stiff: " + str(tourney_name))
 
 cgicommon.writeln("<body>")
 
@@ -35,20 +35,19 @@ if tourney_name is None:
 try:
     tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir)
     cgicommon.show_sidebar(tourney, show_misc_table_links=True)
-    num_losing_games = cgicommon.int_or_none(form.getfirst("numlosinggames", 3))
-    if num_losing_games is None or num_losing_games <= 0:
-        num_losing_games = 3
+    num_wins = cgicommon.int_or_none(form.getfirst("numwins", 3))
+    if num_wins is None or num_wins <= 0:
+        num_wins = 3
 
     cgicommon.writeln("<div class=\"mainpane\">")
 
-    cgicommon.writeln("<h1>Tuff Luck</h1>")
+    cgicommon.writeln("<h1>Lucky Stiff</h1>")
 
-    cgicommon.writeln("<form action=\"/cgi-bin/tuffluck.py\" method=\"GET\">")
+    cgicommon.writeln("<form action=\"/cgi-bin/luckystiff.py\" method=\"GET\">")
     cgicommon.writeln("<p>")
-    cgicommon.writeln("A player's Tuff Luck is their aggregate losing margin over their")
-    cgicommon.writeln("<input type=\"number\" name=\"numlosinggames\" value=\"%d\" min=\"1\" max=\"999\" size=\"3\" />" % (num_losing_games))
-    cgicommon.writeln("closest losing games, for players who have lost at least that many games.")
-    cgicommon.writeln("It is the opposite of <a href=\"/cgi-bin/luckystiff.py?tourney=%s\">Lucky Stiff</a>." % (cgicommon.escape(tourney_name, True)))
+    cgicommon.writeln("The Lucky Stiff is the player whose")
+    cgicommon.writeln("<input type=\"number\" name=\"numwins\" value=\"%d\" min=\"1\" max=\"999\" size=\"3\" />" % (num_wins))
+    cgicommon.writeln("closest winning games had the lowest aggregate winning margin. It is the opposite of <a href=\"/cgi-bin/tuffluck.py?tourney=%s\">Tuff Luck</a>." % (cgicommon.escape(tourney_name, True)))
     cgicommon.writeln("</p>")
     cgicommon.writeln("<p>")
     cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
@@ -56,20 +55,20 @@ try:
     cgicommon.writeln("</p>")
     cgicommon.writeln("</form>")
 
-    players_tuff_luck = tourney.get_players_tuff_luck(num_losing_games)
+    players_lucky_stiff = tourney.get_players_lucky_stiff(num_wins)
 
     pos = 0
     joint = 1
-    prev_tuffness = None
-    if not players_tuff_luck:
-        cgicommon.writeln("<p>No players have lost %d or more games.</p>" % (num_losing_games))
+    prev_stiffness = None
+    if not players_lucky_stiff:
+        cgicommon.writeln("<p>No players have won %d or more games.</p>" % (num_wins))
     else:
         cgicommon.writeln("<table class=\"miscranktable\">")
         cgicommon.writeln("<tr>")
-        cgicommon.writeln("<th></th><th>Player</th><th>Defeats</th><th>Closest margins</th><th>Total</th>")
+        cgicommon.writeln("<th></th><th>Player</th><th>Wins</th><th>Closest margins</th><th>Total</th>")
         cgicommon.writeln("</tr>")
-        for (player, num_losses, tuffness, margins) in players_tuff_luck:
-            if prev_tuffness is None or prev_tuffness != tuffness:
+        for (player, num_wins, stiffness, margins) in players_lucky_stiff:
+            if prev_stiffness is None or prev_stiffness != stiffness:
                 pos += joint
                 joint = 1
             else:
@@ -77,14 +76,14 @@ try:
             cgicommon.writeln("<tr class=\"tuffluckrow\">")
             cgicommon.writeln("<td class=\"tuffluckpos\">%d</td>" % (pos))
             cgicommon.writeln("<td class=\"tuffluckname\">%s</td>" % (cgicommon.player_to_link(player, tourney_name)))
-            cgicommon.writeln("<td class=\"miscranknumber\">%d</td>" % (num_losses))
+            cgicommon.writeln("<td class=\"miscranknumber\">%d</td>" % (num_wins))
             cgicommon.writeln("<td class=\"tuffluckmargins\">%s</td>" % (", ".join(map(str, margins))))
-            cgicommon.writeln("<td class=\"tufflucktuffness\">%d</td>" % (tuffness))
+            cgicommon.writeln("<td class=\"tufflucktuffness\">%d</td>" % (stiffness))
             cgicommon.writeln("</tr>")
-            prev_tuffness = tuffness
+            prev_stiffness = stiffness
         cgicommon.writeln("</table>")
     cgicommon.writeln("<p>")
-    cgicommon.writeln("For the purpose of Tuff Luck, games lost on a tiebreak have a margin of zero. Games adjudicated as a loss for both players do not count. Only games which count towards the standings are considered.")
+    cgicommon.writeln("For the purpose of Lucky Stiff, games won a tiebreak have a margin of zero. Only games which count towards the standings are considered.")
     cgicommon.writeln("</p>")
     cgicommon.writeln("</div>") #mainpane
 except countdowntourney.TourneyException as e:

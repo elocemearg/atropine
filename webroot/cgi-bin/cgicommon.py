@@ -496,9 +496,11 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
 <br />
 <a href="/cgi-bin/tuffluck.py?tourney=$TOURNEY">Tuff Luck</a>
 <br />
-<a href="/cgi-bin/overachievers.py?tourney=$TOURNEY">Overachievers</a>
-<br />
 <a href="/cgi-bin/timdownaward.py?tourney=$TOURNEY">Tim Down Award</a>
+<br />
+<a href="/cgi-bin/luckystiff.py?tourney=$TOURNEY">Lucky Stiff</a>
+<br />
+<a href="/cgi-bin/overachievers.py?tourney=$TOURNEY">Overachievers</a>
 """
         misc_links_html = misc_links_html.replace("$TOURNEY", urllib.parse.quote_plus(tourney.name))
 

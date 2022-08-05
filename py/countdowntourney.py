@@ -3042,7 +3042,7 @@ and g.game_type = 'P'
 
         return sorted(results, key=lambda x : x[2])
 
-    def get_players_tuff_luck(self, num_losing_games):
+    def get_players_tuff_luck(self, min_losses):
         p_id_to_losing_margins = dict()
         cur = self.db.cursor()
         rows = cur.execute("select case when p1_score > p2_score " +
@@ -3060,25 +3060,59 @@ and g.game_type = 'P'
             p_id_to_losing_margins[p_id] = p_id_to_losing_margins.get(p_id, []) + [margin]
         cur.close()
 
-        new_margin_map = dict()
+        # Sort each list of losing margins with the smallest first.
         for p_id in p_id_to_losing_margins:
-            # Limit each player to a maximum of num_losing_games, and remove
-            # from the list any player who has fewer losses than that
-            margin_list = p_id_to_losing_margins[p_id]
-            if len(margin_list) >= num_losing_games:
-                new_margin_map[p_id] = sorted(margin_list)[0:num_losing_games]
+            p_id_to_losing_margins[p_id].sort()
 
-        p_id_to_losing_margins = new_margin_map
+        # Filter out any player with not enough losses, and return a
+        # sorted list of (player, num_losses, aggregate_margin, margins_list)
+        # tuples containing the others.
+        return sorted(
+                [
+                    ( self.get_player_from_id(p_id),
+                        len(p_id_to_losing_margins[p_id]),
+                        sum(p_id_to_losing_margins[p_id][0:min_losses]),
+                        p_id_to_losing_margins[p_id][0:min_losses]) for p_id in p_id_to_losing_margins if len(p_id_to_losing_margins[p_id]) >= min_losses
+                ],
+                key=lambda x : x[2]
+        )
 
-        # Return a list of tuples of the form (player, tuffness, margin_list)
-        tuffness_list = []
-        for p_id in p_id_to_losing_margins:
-            margin_list = p_id_to_losing_margins[p_id]
-            p = self.get_player_from_id(p_id)
-            if p:
-                tuffness_list.append((p, sum(margin_list), margin_list))
+    def get_players_lucky_stiff(self, min_wins):
+        p_id_to_winning_margins = {}
+        cur = self.db.cursor()
+        rows = cur.execute("""
+select case when p1_score > p2_score then p1 else p2 end p_id,
+case when tiebreak then 0 else abs(p1_score - p2_score) end margin
+from game
+where p1_score is not null and p2_score is not null
+and p1 is not null and p2 is not null
+and p1_score <> p2_score
+and game_type = 'P'
+order by 1""")
+        for row in rows:
+            p_id = row[0]
+            margin = row[1]
+            if p_id not in p_id_to_winning_margins:
+                p_id_to_winning_margins[p_id] = []
+            p_id_to_winning_margins[p_id].append(margin)
+        cur.close()
 
-        return sorted(tuffness_list, key=lambda x : x[1])
+        # Sort each list of winning margins with the smallest first.
+        for p_id in p_id_to_winning_margins:
+            p_id_to_winning_margins[p_id].sort()
+
+        # Filter out any player with fewer than min_wins wins, and return a
+        # sorted list of (player, wins, aggregate_margin, margins_list) tuples
+        # containing the others.
+        return sorted(
+                [
+                    ( self.get_player_from_id(p_id),
+                        len(p_id_to_winning_margins[p_id]),
+                        sum(p_id_to_winning_margins[p_id][0:min_wins]),
+                        p_id_to_winning_margins[p_id][0:min_wins]) for p_id in p_id_to_winning_margins if len(p_id_to_winning_margins[p_id]) >= min_wins
+                ],
+                key=lambda x : x[2]
+        )
 
     def get_players_overachievements(self, div_index):
         # Get every player's standing position in this division

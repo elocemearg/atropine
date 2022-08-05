@@ -228,10 +228,8 @@ def get_tuff_luck(tourney, options):
     joint = 0
     prev_tuffness = None
 
-    for entry in tuffness_list:
-        name = entry[0].get_name()
-        tuffness = entry[1]
-        margin_list = entry[2]
+    for (player, wins, tuffness, margin_list) in tuffness_list:
+        name = player.get_name()
 
         if prev_tuffness is not None and tuffness == prev_tuffness:
             joint += 1
