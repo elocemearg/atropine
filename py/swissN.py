@@ -177,6 +177,13 @@ def generate_all_groupings_aux(group_size_list, possible_opponents, depth, start
         # Out of time
         return
 
+    # If any player has fewer than group_size - 1 possible opponents, then
+    # we know we can't find a complete solution so don't waste time solving
+    # part of the problem a million times...
+    for p in players_ordered:
+        if len(possible_opponents[p]) < group_size - 1:
+            return
+
     if players_ordered:
         p = players_ordered[0]
         opps = possible_opponents[p]
@@ -323,6 +330,16 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
             played_matrix[pi][x] = num_prune_matches
             played_matrix[x][pi] = num_prune_matches
 
+    if log:
+        print("Player / already played:", file=sys.stderr)
+        for (i, p) in enumerate(players):
+            opps = []
+            for (j, opp) in enumerate(players):
+                if played_matrix[i][j] > 0:
+                    opps.append(opp)
+            print("%20s: %s" % (p.get_name(), ", ".join([ opp.get_name() for opp in opps])), file=sys.stderr)
+        print("", file=sys.stderr)
+
     win_diff_matrix = []
     for p in players:
         win_diff_row = []
@@ -402,7 +419,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
         for g in groups:
             sys.stderr.write("[swissN] Table %2d:" % group_no)
             for p in g:
-                sys.stderr.write(" [%d %s (%d, %dw)]" % (p + 1, players[p].name, players[p].position, players[p].wins))
+                sys.stderr.write(" [%s (%d, %dw)]" % (players[p].name, players[p].position, players[p].wins))
             sys.stderr.write("\n")
             group_no += 1
 

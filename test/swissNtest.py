@@ -1,9 +1,15 @@
 #!/usr/bin/python3
 
-import sys;
-import countdowntourney;
-import swissN;
-import random;
+# Test the Swiss Army Blunderbuss fixture generator (swissN.py) and make
+# sure it comes up with some reasonable fixtures.
+
+import sys
+
+sys.path.append("py")
+
+import countdowntourney
+import swissN
+import random
 
 def set_random_score(game):
     r1 = game.p1.rating;
@@ -20,11 +26,10 @@ def set_random_score(game):
     p1_threshold *= 0.8
     p2_threshold = 1 - ((1 - p2_threshold) * 0.8)
 
-    #print "%d %d %.3f %.3f" % (game.p1.rating, game.p2.rating, p1_threshold, p2_threshold);
-
     p1_score = 0;
     p2_score = 0;
 
+    # Attempt to simulate a realistic 9-rounder score...
     for i in range(9):
         x = random.random();
         round_score = random.randint(4, 10);
@@ -147,16 +152,22 @@ def simulate_tourney(num_players, num_rounds, group_size, limit_ms):
         games = games + round_games;
     return num_warnings
 
-num_warnings = 0
-for size in range(18, 49, 3):
-    num_rounds = 3;
-    print("%d players, %d rounds" % (size, num_rounds));
-    num_warnings += simulate_tourney(size, num_rounds, 3, 5000);
-    print()
+def main():
+    num_warnings = 0
+    min_players = 18
+    max_players = 48
+    for size in range(min_players, max_players + 1, 3):
+        num_rounds = 3;
+        print("%d players, %d rounds" % (size, num_rounds));
+        num_warnings += simulate_tourney(size, num_rounds, 3, 5000);
+        print()
 
-if num_warnings > 0:
-    print("%d warning%s, see above." % (num_warnings, "s" if num_warnings != 1 else ""))
-else:
-    print("Finished with no warnings.")
+    if num_warnings > 0:
+        print("%d warning%s, see above." % (num_warnings, "s" if num_warnings != 1 else ""))
+    else:
+        print("Finished with no warnings.")
 
-sys.exit(1 if num_warnings > 0 else 0)
+    sys.exit(1 if num_warnings > 0 else 0)
+
+if __name__ == "__main__":
+    main()
