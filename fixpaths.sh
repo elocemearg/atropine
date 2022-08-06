@@ -3,6 +3,8 @@
 # Interactive script to automate substituting the #!/usr/bin/python3 line at
 # the top of most of Atropine's Python scripts for another #! line containing
 # wherever the Python 3 interpreter is located on your system.
+#
+# Thanks to Jack Hurst for testing this.
 
 INTERACTIVE=1
 QUIET=0
@@ -29,6 +31,8 @@ ask_yes_no() {
     fi
 }
 
+SCRIPT_BASENAME=$(basename "$0")
+
 while [ -n "$1" ]; do
     if [ "$1" = "-y" ]; then
         INTERACTIVE=0
@@ -45,14 +49,14 @@ while [ -n "$1" ]; do
         echo "found in an Atropine installation so that they point to the correct location"
         echo "of the Python 3 interpreter."
         echo
-        echo "Usage: macify.sh [-h] [-p /path/to/python3] [-q] [-t /path/to/atropine] [-y]"
+        echo "Usage: $SCRIPT_BASENAME [-h] [-p /path/to/python3] [-q] [-t /path/to/atropine] [-y]"
         echo "Options:"
         echo "    -h       Show this help."
         echo "    -p path  Specify path to Python 3 interpreter manually rather than"
         echo "             finding it automatically using \"which\"."
         echo "    -q       Quiet. No output unless something goes wrong."
         echo "    -t path  Target installation path. By default we operate on the directory"
-        echo "             containing this macify.sh script."
+        echo "             containing this script."
         echo "    -y       Don't run interactively, automatically say yes to every prompt."
         exit 0
     else
@@ -86,13 +90,12 @@ else
 fi
 
 if [ -z "$OVERRIDE_ATROPINE_DIR" ]; then
-    ABS_PATH=$(readlink -f "$0")
-    ATROPINE_DIR=$(dirname "$ABS_PATH")
+    ATROPINE_DIR=$(dirname "$0")
     if [ ! -d "$ATROPINE_DIR" ]; then
         fail "This script appears to be in $ATROPINE_DIR but that doesn't exist as a directory."
     fi
     if [ ! -e "$ATROPINE_DIR/atropine.py" ]; then
-        fail "This script appears to be in $ATROPINE_DIR but this doesn't appear to be an Atropine installation. Either specify the Atropine installation with -t or put macify.sh in the same folder as atropine.py and run it from there."
+        fail "This script appears to be in $ATROPINE_DIR but this doesn't appear to be an Atropine installation. Either specify the Atropine installation with -t or put $SCRIPT_BASENAME in the same folder as atropine.py and run it from there."
     fi
 else
     ATROPINE_DIR="$OVERRIDE_ATROPINE_DIR"
@@ -101,12 +104,16 @@ else
     fi
 fi
 
+if [ "$ATROPINE_DIR" = "." ]; then
+    ATROPINE_DIR="$(pwd)"
+fi
+
 if [ "$QUIET" -eq 0 -o "$INTERACTIVE" -ne 0 ]; then
     echo "*******************************************************************************"
     echo
-    echo "  Welcome to Atropine's Macify script."
+    echo "  Welcome to Atropine's Python path fixing script."
     echo "  This script modifies the interpreter line at the top of Atropine's .py files"
-    echo "  to point to the correct location of the Python 3 interpreter on your Mac."
+    echo "  to point to the correct location of the Python 3 interpreter."
     echo "  You should only need to run this script once."
     echo
     echo "  Your Atropine installation is at: $ATROPINE_DIR"
@@ -144,13 +151,26 @@ ESCAPED_PYTHON3_PATH=$(echo "$PYTHON3_PATH" | sed 's/[\/\\]/\\&/g')
 
 # For each file, if the first line starts with #!, replace it with #! followed
 # by the correct Python 3 path.
-sed -s -i '1s/^#!.*/#!'"$ESCAPED_PYTHON3_PATH/" "$ATROPINE_DIR/webroot/cgi-bin/"*.py "$ATROPINE_DIR/py/"*.py "$ATROPINE_DIR/generators/"*.py "$ATROPINE_DIR/"*.py
-RESULT=$?
+FILES_DONE=0
+FILES_FAILED=0
+RESULT=0
+for pyfile in "$ATROPINE_DIR/webroot/cgi-bin/"*.py "$ATROPINE_DIR/py/"*.py "$ATROPINE_DIR/generators/"*.py "$ATROPINE_DIR/test/"*.py "$ATROPINE_DIR/"*.py; do
+    sed -i '1s/^#!.*/#!'"$ESCAPED_PYTHON3_PATH/" "$pyfile"
+    FILERESULT=$?
+    if [ $FILERESULT -ne 0 ]; then
+        RESULT=$FILERESULT
+        FILES_FAILED=$(($FILES_FAILED + 1))
+        echo "Failed to modify $pyfile" 1>&2
+    else
+        FILES_DONE=$(($FILES_DONE + 1))
+    fi
+done
 
 if [ "$QUIET" -eq 0 ]; then
     echo
     echo "*******************************************************************************"
     echo
+    echo "$FILES_DONE files done."
 fi
 if [ $RESULT -ne 0 ]; then
     fail "Failed to modify some files. See details above."
