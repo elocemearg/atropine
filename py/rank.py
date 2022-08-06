@@ -84,10 +84,9 @@ class RankWinsPoints(RankMethod):
 
     def get_extra_description(self):
         return """
-<li>This is the ranking method used at almost all Countdown events. If you're unsure, this is the one you want.</li>
-<li>Like all the other ranking methods, points scored on a tiebreak are not
-included in the player's points total.</li>
-<li>Where drawn games are not decided by tiebreaks, a draw counts as half a win.</li>
+This is the ranking method used at almost all Countdown events.
+If you're running a Countdown event and you're unsure which of these options to
+choose, <span style="font-weight: bold;">this is the one you want.</span>
 """
 
     def get_secondary_rank_headings(self, short=False):
@@ -112,13 +111,13 @@ class RankWinsSpread(RankMethod):
         return lambda s : (s.wins * 2 + s.draws, s.spread)
 
     def get_description(self):
-        return "Players are ranked by number of wins then cumulative winning margin, also known as spread, also known as goal difference."
+        return "Players are ranked by number of wins then cumulative winning margin (also known as spread or goal difference)."
 
     def get_short_description(self):
         return "Players are ranked by wins then spread (cumulative winning margin)."
 
     def get_extra_description(self):
-        return "This is intended for Scrabble tournaments. It has never been used for Countdown events. A draw counts as half a win."
+        return "This has never been used at Countdown events but you probably want this one if you're running a Scrabble tournament."
 
     def get_secondary_rank_headings(self, short=False):
         if short:
@@ -144,7 +143,7 @@ class RankPoints(RankMethod):
         return "Wins don't matter. Players are ranked by total points scored."
 
     def get_extra_description(self):
-        return "Don't use this, it's rubbish."
+        return "Don't choose this."
 
     def get_secondary_rank_headings(self, short=False):
         if short:
@@ -176,7 +175,6 @@ class RankWinsSumOppWins(RankMethod):
 <li>Your Solkoff score (also known as Buchholz score) is the total win count of
 all your opponents. Unlike with the Neustadtl score, all your opponents count
 regardless of whether you beat them.</li>
-<li>A draw counts as half a win.</li>
 <li>If one of your opponents plays fewer games than you because they withdrew
 or joined late, their missing games count as draws for the purpose of your
 Solkoff score. However, this does not apply for Prune opponents.</li>"""
@@ -268,7 +266,7 @@ class RankWinsNeustadtl(RankWinsSumOppWins):
 <li>Your Neustadtl score (also known as Sonneborn-Berger score) is the total
 win count of all opponents you beat plus half the total win count of all
 opponents you drew against.</li>
-<li>A draw counts as half a win for the win count and the Neustadtl score.</li>
+<li>Hence, a draw counts as half a win for the win count and the Neustadtl score.</li>
 <li>If one of your opponents plays fewer games than you because they withdrew
 or joined late, their missing games count as draws for the purpose of your
 Neustadtl score. However, this does not apply for Prune opponents.</li>"""
@@ -303,9 +301,8 @@ after three rounds is 7.</li>
 <li>This ranking method gives earlier wins a greater weight than later wins,
 reflecting the fact that a player who wins early on is likely to face stronger
 opponents in later rounds than someone who got their wins later. For this
-reason you should only consider using this ranking method if you're using the
+reason you should not use this ranking method unless you're using the
 Swiss or King of the Hill fixture generator for round 2 onwards.</li>
-<li>A draw counts as half a win.</li>
 <li>If a player does not play any games in a round, that round is disregarded
 when calculating that player's cumulative win count.</li>
 """

@@ -85,16 +85,17 @@ else:
 
     cgicommon.writeln("<h2>Team Setup</h2>")
     cgicommon.writeln("""<p>Atropine can assign each player to one of
-two teams. Every match between players on opposing teams gives a point to the
-winner's team. The team scores are displayed alongside the standings.</p>""")
+two teams. Every match between players on opposing teams gives a team point to
+the winner's team. The team scores are displayed alongside the standings.</p>""")
     cgicommon.writeln("""<p>
 <a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Go to the Team Setup page</a>
 </p>""" % (urllib.parse.quote_plus(tourneyname)))
 
-    cgicommon.writeln("<h2>Ranking order</h2>");
+    cgicommon.writeln("<h2>Standings table ranking order</h2>");
     rank_finals = tourney.get_rank_finals()
+    cgicommon.writeln("<p>The standings table decides players' finishing positions in the tournament. It is also used by some fixture generators, such as the Swiss generator, to decide who plays whom in the next round.</p>");
+    cgicommon.writeln("<p>In all cases, a draw counts as half a win. If a game is won on a tiebreak, it counts as a full win but the points from the tiebreak do not count towards the winner's points total.</p>")
     cgicommon.writeln("<p>How do you want to rank players in the standings table?</p>");
-    cgicommon.writeln("<p>The standings table is used by some fixture generators, such as the Swiss generator, to decide who plays whom in the next round, and to decide players' finishing positions at the end of the tournament.</p>");
     cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
     selected_rank_method_id = tourney.get_rank_method_id();
     rank_method_list = tourney.get_rank_method_list()
@@ -111,9 +112,7 @@ winner's team. The team scores are displayed alongside the standings.</p>""")
         cgicommon.writeln("</label>")
         cgicommon.writeln("</div>")
         cgicommon.writeln("<div class=\"rankmethoddetails\">")
-        cgicommon.writeln("<label for=\"rankbutton%d\">" % (rank_method_id))
         cgicommon.writeln(rank_method.get_extra_description())
-        cgicommon.writeln("</label>")
         cgicommon.writeln("</div>")
         cgicommon.writeln("</div>")
 
