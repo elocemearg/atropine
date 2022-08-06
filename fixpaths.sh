@@ -154,7 +154,7 @@ ESCAPED_PYTHON3_PATH=$(echo "$PYTHON3_PATH" | sed 's/[\/\\]/\\&/g')
 FILES_DONE=0
 FILES_FAILED=0
 RESULT=0
-for pyfile in "$ATROPINE_DIR/webroot/cgi-bin/"*.py "$ATROPINE_DIR/py/"*.py "$ATROPINE_DIR/generators/"*.py "$ATROPINE_DIR/test/"*.py "$ATROPINE_DIR/"*.py; do
+for pyfile in "$ATROPINE_DIR/webroot/cgi-bin/"*.py "$ATROPINE_DIR/py/"*.py "$ATROPINE_DIR/generators/"*.py "$ATROPINE_DIR/"*.py; do
     sed -i '1s/^#!.*/#!'"$ESCAPED_PYTHON3_PATH/" "$pyfile"
     FILERESULT=$?
     if [ $FILERESULT -ne 0 ]; then
