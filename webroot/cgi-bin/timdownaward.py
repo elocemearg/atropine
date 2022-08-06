@@ -73,27 +73,18 @@ try:
         if not td_standings:
             cgicommon.writeln("<p>No players have lost %d or more games.</p>" % (num_losing_games))
         else:
-            cgicommon.writeln("<table class=\"miscranktable\">")
-            cgicommon.writeln("<tr>")
-            cgicommon.writeln("<th></th><th>Player</th><th>Opp. ranks</th><th>Avg. opp. rank</th>")
-            cgicommon.writeln("</tr>")
-
-            for row in td_standings:
-                (player, opp_rank_list, avg_opp_rank) = row[0:3]
-                if prev_avg_opp_rank is None or prev_avg_opp_rank != avg_opp_rank:
-                    pos += joint
-                    joint = 1
-                else:
-                    joint += 1
-                cgicommon.writeln("<tr class=\"miscrankrow\">")
-                cgicommon.writeln("<td class=\"miscrankpos\">%d</td>" % (pos))
-                cgicommon.writeln("<td class=\"miscrankname\">%s</td>" % (cgicommon.player_to_link(player, tourney_name)))
-                cgicommon.writeln("<td class=\"miscranklist\">%s</td>" % (", ".join([ str(x) for x in opp_rank_list ])))
-                cgicommon.writeln("<td class=\"miscranknumbersorted\">%.2f</td>" % (avg_opp_rank))
-                cgicommon.writeln("</tr>")
-
-                prev_avg_opp_rank = avg_opp_rank
-            cgicommon.writeln("</table>")
+            cgicommon.write_ranked_table(
+                    [ "Player", "Opp. ranks", "Avg. opp. rank" ],
+                    [ "rankname", "ranktext", "ranknumber rankhighlight" ],
+                    [
+                        ( cgicommon.player_to_link(row[0], tourney_name),
+                            ", ".join(map(str, row[1])),
+                            row[2] ) for row in td_standings
+                    ],
+                    key_fn=lambda x : x[2],
+                    no_escape_html=[0],
+                    formatters={2 : (lambda x : "%.2f" % (x)) }
+            )
 
     cgicommon.writeln("<p>Only games which count towards the standings are considered.</p>")
     cgicommon.writeln("</div>") # mainpane

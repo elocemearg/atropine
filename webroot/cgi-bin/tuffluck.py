@@ -64,25 +64,18 @@ try:
     if not players_tuff_luck:
         cgicommon.writeln("<p>No players have lost %d or more games.</p>" % (num_losing_games))
     else:
-        cgicommon.writeln("<table class=\"miscranktable\">")
-        cgicommon.writeln("<tr>")
-        cgicommon.writeln("<th></th><th>Player</th><th>Defeats</th><th>Closest margins</th><th>Total</th>")
-        cgicommon.writeln("</tr>")
-        for (player, num_losses, tuffness, margins) in players_tuff_luck:
-            if prev_tuffness is None or prev_tuffness != tuffness:
-                pos += joint
-                joint = 1
-            else:
-                joint += 1
-            cgicommon.writeln("<tr class=\"tuffluckrow\">")
-            cgicommon.writeln("<td class=\"tuffluckpos\">%d</td>" % (pos))
-            cgicommon.writeln("<td class=\"tuffluckname\">%s</td>" % (cgicommon.player_to_link(player, tourney_name)))
-            cgicommon.writeln("<td class=\"miscranknumber\">%d</td>" % (num_losses))
-            cgicommon.writeln("<td class=\"tuffluckmargins\">%s</td>" % (", ".join(map(str, margins))))
-            cgicommon.writeln("<td class=\"tufflucktuffness\">%d</td>" % (tuffness))
-            cgicommon.writeln("</tr>")
-            prev_tuffness = tuffness
-        cgicommon.writeln("</table>")
+        cgicommon.write_ranked_table(
+                [ "Player", "Defeats", "Closest margins", "Total" ],
+                [ "rankname", "ranknumber", "ranktext", "ranknumber rankhighlight" ],
+                [
+                    (cgicommon.player_to_link(player, tourney_name),
+                        num_losses,
+                        ", ".join(map(str, margins)),
+                        tuffness) for (player, num_losses, tuffness, margins) in players_tuff_luck
+                ],
+                lambda x : x[3],
+                no_escape_html=[0]
+        )
     cgicommon.writeln("<p>")
     cgicommon.writeln("For the purpose of Tuff Luck, games lost on a tiebreak have a margin of zero. Games adjudicated as a loss for both players do not count. Only games which count towards the standings are considered.")
     cgicommon.writeln("</p>")

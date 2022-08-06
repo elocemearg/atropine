@@ -391,83 +391,6 @@ td.statsnumvalue {
 	padding-right: 0.5em;
 }
 
-/* STANDINGS */
-
-table.standingstable {
-	border-collapse: collapse;
-}
-
-tr.standingstabledivspacer {
-	height: 2ex;
-}
-
-table.standingstable td {
-	padding-left: 0.3em;
-	padding-right: 0.3em;
-}
-
-tr.standingsrow td {
-	border-bottom: 1px dashed gray;
-}
-
-table.standingstable th {
-	border-bottom: 1px solid black;
-	background-color: #dddddd;
-	padding-left: 0.3em;
-	padding-right: 0.3em;
-}
-
-td.standingspos {
-	text-align: right;
-	vertical-align: middle;
-}
-
-td.standingsname {
-	text-align: left;
-	border-right: 1px solid gray;
-}
-
-td.standingsplayed {
-	text-align: right;
-	border-right: 1px solid gray;
-}
-
-td.standingsfinals {
-    text-align: right;
-    border-right: 1px solid gray;
-    font-weight: bold;
-}
-
-td.standingswins {
-	text-align: right;
-	border-right: 1px solid gray;
-}
-
-td.standingsdraws {
-	text-align: right;
-	border-right: 1px solid gray;
-}
-
-td.standingspoints {
-	text-align: right;
-	border-right: 1px solid gray;
-}
-
-td.standingsspread {
-	text-align: right;
-	border-right: 1px solid gray;
-}
-
-td.standingsfirstsecond {
-	text-align: right;
-	border-right: 1px solid gray;
-}
-
-td.standingstournamentrating {
-	text-align: right;
-	border-right: 1px solid gray;
-}
-
 table.resultstable {
 	border: 1px solid #66ccff;
 	border-collapse: collapse;
@@ -841,72 +764,56 @@ table.tourneylist td.tourneylistlink {
 
 /* Generic definitions for tables that rank things in order */
 
-table.miscranktable {
+table.ranktable {
 	border-collapse: collapse;
 }
 
-table.miscranktable th {
+table.ranktable th {
 	border-bottom: 1px solid black;
 	background-color: #dddddd;
 	padding-left: 0.5em;
 	padding-right: 0.5em;
 }
 
-table.miscranktable td {
-	border-bottom: 1px dashed gray;
-	background-color: #ffdd66;
+table.ranktable td {
+    border: 1px solid gray;
+
+    border-style: solid dotted solid dotted;
 	padding-left: 0.5em;
 	padding-right: 0.5em;
 }
 
-table.miscranktable tr {
+table.ranktable tr {
 	background-color: #ffdd66;
 }
 
-table.miscranktable td.tuffluckpos,td.overachieverspos,td.miscrankpos {
-	text-align: right;
-	vertical-align: middle;
+tr.ranktabledivspacer {
+	height: 2ex;
 }
 
-table.miscranktable td.tuffluckname,td.overachieversname,td.miscrankname {
+table.ranktable td.rankpos {
+    text-align: right;
+    vertical-align: middle;
+}
+
+table.ranktable td.rankname {
 	text-align: left;
-	border-right: 1px solid gray;
 }
 
-table.miscranktable td.tuffluckmargins {
-	text-align: center;
-	border-right: 1px solid gray;
+table.ranktable td.ranktext {
+	text-align: left;
 }
 
-table.miscranktable td.miscranklist {
-    text-align: left;
-	border-right: 1px solid gray;
-}
-
-table.miscranktable td.miscranknumber {
+table.ranktable td.ranknumber {
     text-align: right;
-	border-right: 1px solid gray;
 }
 
-table.miscranktable td.miscranknumbersorted {
+table.ranktable td.rankright {
     text-align: right;
+}
+
+table.ranktable td.rankhighlight {
     font-weight: bold;
-	border-right: 1px solid gray;
-}
-
-table.miscranktable td.tufflucktuffness,td.overachieversoverachievement {
-	text-align: right;
-	font-weight: bold;
-}
-
-table.miscranktable td.overachieversseed {
-	text-align: right;
-	border-right: 1px solid gray;
-}
-
-table.miscranktable td.overachieversstandingspos {
-	text-align: right;
-	border-right: 1px solid gray;
 }
 
 

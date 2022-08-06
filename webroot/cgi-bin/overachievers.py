@@ -108,38 +108,17 @@ try:
                 cgicommon.show_warning_box("<p>All the players have the same rating. This means the Overachievers table won't be meaningful. If when you set up the tournament you pasted the players into the player list in order of rating but forgot to tell Atropine you'd done that, try the \"Rerate players by player ID\" button below.</p>")
                 do_show_rerate_button = True
             else:
-                cgicommon.writeln("<table class=\"miscranktable\">")
-                cgicommon.writeln("<tr>")
-                cgicommon.writeln("<th></th><th>Player</th><th>Seed</th><th>Pos</th><th>+/-</th>")
-                cgicommon.writeln("</tr>")
-                pos = 0
-                joint = 1
-                prev_overachievement = None
-                for row in overachievements:
-                    player = row[0]
-                    seed = row[1]
-                    standings_pos = row[2]
-                    overachievement = row[3]
-                    if prev_overachievement is None or prev_overachievement != overachievement:
-                        pos += joint
-                        joint = 1
-                    else:
-                        joint += 1
-                    cgicommon.writeln("<tr>")
-                    cgicommon.writeln("<td class=\"overachieverspos\">%d</td>" % (pos))
-                    cgicommon.writeln("<td class=\"overachieversname\">%s</td>" % (cgicommon.player_to_link(player, tourney_name)))
-                    cgicommon.writeln("<td class=\"overachieversseed\">%d</td>" % (seed))
-                    cgicommon.writeln("<td class=\"overachieversstandingspos\">%d</td>" % (standings_pos))
-                    cgicommon.writeln("<td class=\"overachieversoverachievement\">")
-                    if overachievement == 0:
-                        cgicommon.writeln("0")
-                    else:
-                        cgicommon.writeln("%+d" % (overachievement))
-                    cgicommon.writeln("</td>")
-
-                    cgicommon.writeln("</tr>")
-                    prev_overachievement = overachievement
-                cgicommon.writeln("</table>")
+                cgicommon.write_ranked_table(
+                        [ "Player", "Seed", "Pos", "+/-" ],
+                        [ "rankname", "ranknumber", "ranknumber", "ranknumber rankhighlight" ],
+                        [
+                            (cgicommon.player_to_link(row[0], tourney_name),
+                                row[1], row[2], row[3]) for row in overachievements
+                        ],
+                        key_fn=lambda x : -x[3],
+                        no_escape_html=[0],
+                        formatters={3 : (lambda x : "0" if x == 0 else ("%+d" % (x)))}
+                )
         if do_show_rerate_button:
             show_rerate_button(tourney)
 

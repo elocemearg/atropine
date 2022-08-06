@@ -542,7 +542,7 @@ function toggleMiscStats() {
 
     writeln("<div class=\"globalprefslink\">")
     writeln("<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" ")
-    writeln("onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=450,height=500'); return false;\" >Preferences... " + new_window_html + "</a>")
+    writeln("onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=700,height=750'); return false;\" >Preferences... " + new_window_html + "</a>")
     writeln("</div>")
 
     writeln("<br />")
@@ -714,6 +714,86 @@ onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.roun
 
     writeln("</table>");
 
+def write_table(headings, td_classes, rows, no_escape_html=[], formatters={}, table_class=None):
+    """Write out an HTML table with the CSS class table_class.
+
+    headings: a list of strings, one per column, for the table headings.
+    td_classes: a list of strings, one per column, for the CSS classes to be
+        applied to each td element in a row. If a td is to have multiple class
+        names they should be separated by a space.
+    rows: a list of tuples, each of which must contain the same number of values
+           as headings and td_classes. These will be converted to strings,
+           escaped for HTML, and made the contents of the row's <td> element.
+    no_escape_html: a list of 0-based field numbers in "rows" in which the
+           usual HTML escaping should be suppressed. This is useful if a row
+           value contains HTML you want to display as-is.
+    formatters: if specified, it is a dict mapping the 0-based column number to
+           a function which takes a column value and returns the string to go in
+           the <td> element. The default if formatters is not given, or if the
+           column number does not appear in the dict, is str().
+    table_class: the CSS class to be given to the <table> element.
+    """
+
+    if table_class:
+        writeln("<table class=\"ranktable\">")
+    else:
+        writeln("<table>")
+    writeln("<tr>")
+    for heading in headings:
+        writeln("<th>")
+        writeln(escape(heading))
+        writeln("</th>")
+    writeln("</tr>")
+    no_escape_html = set(no_escape_html)
+    for row in rows:
+        writeln("<tr>")
+        for (index, value) in enumerate(row):
+            if td_classes[index]:
+                writeln("<td class=\"%s\">" % (td_classes[index]))
+            else:
+                writeln("<td>")
+            formatted_value = formatters.get(index, str)(value)
+            if index in no_escape_html:
+                writeln(formatted_value)
+            else:
+                writeln(escape(formatted_value))
+            writeln("</td>")
+        writeln("</tr>")
+    writeln("</table>")
+
+def write_ranked_table(headings, td_classes, rows, key_fn, no_escape_html=[], formatters={}):
+    """Write out a table with an additional rank column at the start indicating position.
+
+    headings, td_classes, rows, no_escape_html and formatters have the same
+    meaning as in write_table().
+
+    key_fn should be a function translating a row object (an element of rows)
+    to a value suitable for comparing one row against another, for the purpose
+    of deciding whether this row should get a new rank number or be given the
+    same rank number as the previous row.
+    """
+
+    ranked_rows = []
+    pos = 0
+    joint = 0
+    prev_key_value = None
+    for row in rows:
+        key_value = key_fn(row)
+        if prev_key_value is not None and prev_key_value == key_value:
+            joint += 1
+        else:
+            pos += joint + 1
+            joint = 0
+        ranked_rows.append(tuple([pos] + list(row)))
+        prev_key_value = key_value
+    new_formatters = {}
+    for col in formatters:
+        new_formatters[col + 1] = formatters[col]
+    write_table([""] + headings, ["rankpos"] + td_classes, ranked_rows,
+            no_escape_html=[ x + 1 for x in no_escape_html ],
+            formatters=new_formatters, table_class="ranktable")
+
+
 def show_standings_table(tourney, show_draws_column, show_points_column,
         show_spread_column, show_first_second_column=False,
         linkify_players=False, show_tournament_rating_column=False,
@@ -745,7 +825,7 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
     else:
         div_list = [which_division]
 
-    html.append("<table class=\"standingstable\">")
+    html.append("<table class=\"ranktable\">")
     for div_index in div_list:
         standings = tourney.get_standings(div_index)
         if num_divisions > 1:
@@ -762,7 +842,7 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             show_finals_column = False
 
         if div_index > 0:
-            html.append("<tr class=\"standingstabledivspacer\"><td></td></tr>")
+            html.append("<tr class=\"ranktabledivspacer\"><td></td></tr>")
         html.append("<tr><th colspan=\"2\">%s</th>" % (escape(div_string)))
         if show_finals_column:
             html.append("<th>Finals</th>")
@@ -818,42 +898,34 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
                 else:
                     bgcolour = "#ffdd66"
 
-            html.append("<tr class=\"standingsrow\" style=\"background-color: %s\">" % (bgcolour));
+            html.append("<tr style=\"background-color: %s\">" % (bgcolour));
 
-            bold_style = "style=\"font-weight: bold;\""
+            highlight_class = " rankhighlight"
             if ranking_by_wins:
-                wins_style = bold_style
-                draws_style = bold_style
+                wins_class = highlight_class
+                draws_class = highlight_class
             else:
-                wins_style = ""
-                draws_style = ""
-            if tourney.is_ranked_by_points():
-                points_style = bold_style
-            else:
-                points_style = ""
-            if tourney.is_ranked_by_spread():
-                spread_style = bold_style
-            else:
-                spread_style = ""
-            html.append("<td class=\"standingspos\">%d</td>" % pos);
-            html.append("<td class=\"standingsname\">%s</td>" % (linkfn(player)));
+                wins_class = ""
+                draws_class = ""
+            html.append("<td class=\"rankpos\">%d</td>" % pos);
+            html.append("<td class=\"rankname\">%s</td>" % (linkfn(player)));
 
             if show_finals_column:
-                html.append("<td class=\"standingsfinals\">%s</td>" % (finals_form))
-            html.append("<td class=\"standingsplayed\">%d</td>" % played);
-            html.append("<td class=\"standingswins\" %s >%d</td>" % (wins_style, wins));
+                html.append("<td class=\"rankright rankhighlight\"\">%s</td>" % (finals_form))
+            html.append("<td class=\"ranknumber\">%d</td>" % played);
+            html.append("<td class=\"ranknumber%s\">%d</td>" % (wins_class, wins));
             if show_draws_column:
-                html.append("<td class=\"standingsdraws\" %s >%d</td>" % (draws_style, draws));
+                html.append("<td class=\"ranknumber%s\">%d</td>" % (draws_class, draws));
             for sec_value in s.get_secondary_rank_value_strings():
-                html.append("<td class=\"standingspoints\" style=\"font-weight: bold;\">%s</td>" % (sec_value))
+                html.append("<td class=\"ranknumber rankhighlight\">%s</td>" % (sec_value))
             if show_points_column and "Points" not in secondary_rank_headings:
-                html.append("<td class=\"standingspoints\">%d</td>" % (points))
+                html.append("<td class=\"ranknumber\">%d</td>" % (points))
             if show_spread_column and "Spread" not in secondary_rank_headings:
-                html.append("<td class=\"standingsspread\">%+d</td>" % (spread))
+                html.append("<td class=\"ranknumber\">%+d</td>" % (spread))
             if show_first_second_column:
-                html.append("<td class=\"standingsfirstsecond\">%d/%d</td>" % (num_first, played - num_first))
+                html.append("<td class=\"rankright\">%d/%d</td>" % (num_first, played - num_first))
             if show_tournament_rating_column:
-                html.append("<td class=\"standingstournamentrating\">")
+                html.append("<td class=\"ranknumber\">")
                 if tournament_rating is not None:
                     html.append("%.2f" % (tournament_rating))
                 html.append("</td>")

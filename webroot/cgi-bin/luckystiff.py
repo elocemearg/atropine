@@ -63,25 +63,16 @@ try:
     if not players_lucky_stiff:
         cgicommon.writeln("<p>No players have won %d or more games.</p>" % (num_wins))
     else:
-        cgicommon.writeln("<table class=\"miscranktable\">")
-        cgicommon.writeln("<tr>")
-        cgicommon.writeln("<th></th><th>Player</th><th>Wins</th><th>Closest margins</th><th>Total</th>")
-        cgicommon.writeln("</tr>")
-        for (player, num_wins, stiffness, margins) in players_lucky_stiff:
-            if prev_stiffness is None or prev_stiffness != stiffness:
-                pos += joint
-                joint = 1
-            else:
-                joint += 1
-            cgicommon.writeln("<tr class=\"tuffluckrow\">")
-            cgicommon.writeln("<td class=\"tuffluckpos\">%d</td>" % (pos))
-            cgicommon.writeln("<td class=\"tuffluckname\">%s</td>" % (cgicommon.player_to_link(player, tourney_name)))
-            cgicommon.writeln("<td class=\"miscranknumber\">%d</td>" % (num_wins))
-            cgicommon.writeln("<td class=\"tuffluckmargins\">%s</td>" % (", ".join(map(str, margins))))
-            cgicommon.writeln("<td class=\"tufflucktuffness\">%d</td>" % (stiffness))
-            cgicommon.writeln("</tr>")
-            prev_stiffness = stiffness
-        cgicommon.writeln("</table>")
+        cgicommon.write_ranked_table(
+                [ "Player", "Wins", "Closest margins", "Total" ],
+                [ "rankname", "ranknumber", "ranktext", "ranknumber rankhighlight" ],
+                [
+                    ( cgicommon.player_to_link(player, tourney_name),
+                        num_wins, ", ".join(map(str, margins)), stiffness) for (player, num_wins, stiffness, margins) in players_lucky_stiff
+                ],
+                lambda x : x[3],
+                [ 0 ]
+        )
     cgicommon.writeln("<p>")
     cgicommon.writeln("For the purpose of Lucky Stiff, games won a tiebreak have a margin of zero. Only games which count towards the standings are considered.")
     cgicommon.writeln("</p>")
