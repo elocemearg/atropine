@@ -358,5 +358,4 @@ when calculating that player's cumulative win count.</li>
                 name_to_cumul[name] += name_to_wins[name]
 
         for s in standings_rows:
-            s.set_secondary_rank_values([name_to_cumul[s.name], s.points])
-
+            s.set_secondary_rank_values([name_to_cumul[s.name], s.points], [to_quarters(name_to_cumul[s.name]), str(s.points)])
