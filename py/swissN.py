@@ -5,7 +5,62 @@ import time
 import countdowntourney
 import random
 
-HUGE_PENALTY = 1000000000
+# Penalty applied to a game between two players who have already played each
+# other, or between two prunes, or between a player and a prune where the
+# player has already played another prune.
+HUGE_PENALTY_EXPONENT = 10
+HUGE_PENALTY = 10 ** HUGE_PENALTY_EXPONENT
+
+# A fixture between two players with a difference in their standings position
+# of pos_diff is given a penalty of POSITION_DIFFERENCE_PENALTY_BASE^pos_diff.
+POSITION_DIFFERENCE_PENALTY_BASE = 1.6
+
+# A fixture between two players with a difference in their win counts of
+# win_diff is given a penalty of WIN_DIFFERENCE_PENALTY_BASE^win_diff.
+# Let's treat a fixture with a win difference of 1 the same as a position
+# difference of 4.
+WIN_DIFFERENCE_PENALTY_BASE = POSITION_DIFFERENCE_PENALTY_BASE ** 4
+
+# Maximum number of entries in swissN()'s cache of table penalties.
+TABLE_PENALTY_CACHE_MAX_SIZE = 1000000
+
+# Consider this standings table, of people whose names happen to coincide with
+# their standings position...
+#
+#                  W
+# 10 Tenth         1
+# 11 Eleventh      1
+# 12 Twelfth       1
+# 12 Also Twelfth  1
+# 12 Twelfth Again 1
+# 15 Fifteenth     1
+#
+# We would prefer something like:
+# [ (Tenth, Eleventh, Twelfth), (Also Twelfth, Twelfth Again, Fifteenth) ]
+# over something like:
+# [ (Tenth, Eleventh, Fifteenth), (Twelfth, Also Twelfth, Twelfth Again) ]
+#
+# The latter puts all the twelfths on the same table but Fifteenth is put with
+# players more distant in the standings. We want the latter to have a higher
+# penalty.
+#
+# w = WIN_DIFFERENCE_PENALTY_BASE
+# p = POSITION_DIFFERENCE_PENALTY_BASE
+#
+# The penalty for a table is the mean average of all pairs on the table.
+#
+# First arrangement:
+# avg(p^1, p^2, p^1) + avg(p^0, p^3, p^3)
+#    = avg(1.6, 2.56, 1.6) + avg(1, 4.096, 4.096)
+#    = 1.92 + 3.064 = 4.984
+#
+# Second arrangement:
+# avg(p^1, p^5, p^4) + avg(p^0, p^0, p^0)
+#    = avg(1.6, 10.48576, 6.5536) + avg(1, 1, 1)
+#    = 6.21312 + 1 = 7.21312
+#
+# So a POSITION_DIFFERENCE_PENALTY_BASE value of 1.6 favours the first
+# arrangement, which is what we want.
 
 class StandingsPlayer(object):
     def __init__(self, name, rating, wins, position, played, played_first, avoid_prune):
@@ -53,7 +108,7 @@ class PlayerNotInStandingsException(BaseException):
 # into account that they've played before num_played times, and p1's win count
 # differs from p2's win count by win_diff (which is always non-negative).
 # This is also called the "weighting".
-def get_penalty(games, p1, p2, num_played, win_diff, rank_by_wins=True):
+def get_penalty(p1, p2, num_played, win_diff, rank_by_wins=True):
     pen = 0;
 
     # No, you are not allowed to play yourself
@@ -67,24 +122,6 @@ def get_penalty(games, p1, p2, num_played, win_diff, rank_by_wins=True):
     if p1.is_prune and p2.is_prune:
         pen += HUGE_PENALTY;
 
-    # If one of these two players is a prune, then if the other player has
-    # played a prune before, make it unlikely they will play a prune again
-    if p1.get_rating() == 0 or p2.get_rating() == 0 and (p1.get_rating() != 0 or p2.get_rating() != 0):
-        if p1.get_rating() == 0:
-            human = p2
-            prune = p1
-        else:
-            human = p1
-            prune = p2
-
-        for g in games:
-            if g.p1.get_name() == human.get_name():
-                if g.p2.get_rating() == 0:
-                    pen += HUGE_PENALTY
-            elif g.p2.get_name() == human.get_name():
-                if g.p1.get_rating() == 0:
-                    pen += HUGE_PENALTY
-
     # If two players have a different number of wins, apply a penalty.
     # Fixtures between players whose win counts differ by 1 are usually
     # unavoidable, but there should be exponentially harsher penalties for
@@ -92,14 +129,13 @@ def get_penalty(games, p1, p2, num_played, win_diff, rank_by_wins=True):
     # Take the difference in standings position into consideration as well, so
     # that we group together people in roughly the same part of the standings.
     pos_diff = abs(p1.position - p2.position)
-    if rank_by_wins:
-        pen += ( 10 ** min(float(win_diff), 5) ) * ( 10 * (float(pos_diff) / float(pos_diff + 1)))
-    else:
-        pen += 10 * (float(pos_diff) / float(pos_diff + 1))
+    if not rank_by_wins:
+        win_diff = 0
 
-    # Square the penalty, to magnify the difference between a large
-    # penalty and a smaller one.
-    pen = pen ** 2;
+    game_pen = ( WIN_DIFFERENCE_PENALTY_BASE ** float(win_diff) ) + ( POSITION_DIFFERENCE_PENALTY_BASE ** float(pos_diff) )
+    if game_pen >= HUGE_PENALTY:
+        game_pen = HUGE_PENALTY - 1
+    pen += game_pen
 
     return pen;
 
@@ -117,9 +153,9 @@ def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank
 
         for i2 in range(matrix_size):
             p2 = players[i2]
-            pen = max(get_penalty(games, p1, p2, played_matrix[i1][i2],
+            pen = max(get_penalty(p1, p2, played_matrix[i1][i2],
                 win_diff_matrix[i1][i2], rank_by_wins),
-                get_penalty(games, p2, p1, played_matrix[i2][i1],
+                get_penalty(p2, p1, played_matrix[i2][i1],
                     win_diff_matrix[i2][i1], rank_by_wins)
             );
             vector.append(pen);
@@ -129,7 +165,7 @@ def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank
     for i in range(matrix_size):
         for j in range(matrix_size):
             if matrix[i][j] != matrix[j][i]:
-                print("i %d, j %d, matrix[i][j] %f, matrix[j][i] %f!" % (i, j, matrix[i][j], matrix[j][i]));
+                print("i %d, j %d, matrix[i][j] %f, matrix[j][i] %f!" % (i, j, matrix[i][j], matrix[j][i]), file=sys.stderr);
 
     return matrix;
 
@@ -147,10 +183,10 @@ def get_table_penalty(weight_matrix, table, table_penalty_cache):
             for i2 in range(i1 + 1, len(table)):
                 penalty_sum += weight_matrix[table[i1]][table[i2]]
                 num_samples += 1
-        return float(penalty_sum) / num_samples
-    #if table_penalty_cache is not None and len(table) <= 5:
-    #    table_penalty_cache[table] = penalty
-    #return penalty
+        avg_penalty = float(penalty_sum) / num_samples
+        if table_penalty_cache is not None and len(table) <= 5 and len(table_penalty_cache) < TABLE_PENALTY_CACHE_MAX_SIZE:
+            table_penalty_cache[table] = avg_penalty
+        return avg_penalty
 
 def total_penalty(weight_matrix, tables, table_penalty_cache):
     penalty = 0
@@ -158,42 +194,116 @@ def total_penalty(weight_matrix, tables, table_penalty_cache):
         penalty += get_table_penalty(weight_matrix, table, table_penalty_cache)
     return penalty
 
-def generate_sets(l, num):
-    if num == len(l):
-        yield l[:]
+def generate_sets(l, num, l_start=0, l_end=None):
+    if l_end is None:
+        l_end = len(l)
+    l_size = l_end - l_start
+    if num == 0:
+        yield []
+    elif num == l_size:
+        yield l[l_start:l_end]
     elif num == 1:
-        for e in l:
-            yield [e]
-    elif num < len(l):
-        for i in range(len(l) - (num - 1)):
-            for remainder in generate_sets(l[(i+1):], num - 1):
-                yield [l[i]] + remainder
+        for i in range(l_start, l_end):
+            yield [l[i]]
+    elif num < l_size:
+        # Generate the close-together sets first, so fix the last element at
+        # near the start of the list for the first recursive call, then the
+        # next, then the next, etc.
+        for last_index in range(l_start + num - 1, l_end):
+            for first_index in range(l_start, last_index - num + 2):
+                for remainder in generate_sets(l, num - 2, first_index + 1, last_index):
+                    yield [l[first_index]] + remainder + [l[last_index]]
 
-def generate_all_groupings_aux(group_size_list, possible_opponents, depth, start_time, limit_ms):
-    group_size = group_size_list[0]
-    players_ordered = sorted(possible_opponents)
+
+def generate_all_groupings_aux(group_size_list, possible_opponent_matrix,
+        penalty_matrix, limit_ms, depth=0, start_time=None,
+        table_penalty_cache=None, unseated_players=None, known_solutions=None):
+    """ Generate the best groupings of tables along with their penalty values.
+
+    All players are represented by an integer in the range [0, N), where N
+    is the number of players.
+
+    group_size_list: an array of group sizes required, one entry for each
+        group. For example, [3, 3, 3, 3, 3]. The entries must add up to
+        exactly the number of players. Undefined behaviour occurs otherwise.
+    possible_opponent_matrix: a two-dimensional list of boolean values.
+        if possible_opponent_matrix[i][j] is False, we do not consider any
+        grouping in which player i plays player j.
+    penalty_matrix: another two-dimensional N*N list, this time of floats.
+        penalty_matrix[i][j] gives the penalty associated with player i
+        playing player j. This must be completely filled in and symmetric,
+        so for all i and j, penalty_matrix[i][j] == penalty_matrix[j][i].
+    limit_ms: give up and stop yielding results when after this amount of
+        time has passed, in milliseconds.
+    """
+
+    if not group_size_list:
+        # Base case: return an empty list of tables and a zero penalty.
+        yield ([], 0)
+        return
+
+    if start_time is None:
+        start_time = time.time()
 
     if time.time() > start_time + limit_ms / 1000.0:
         # Out of time
         return
 
+    if table_penalty_cache is None:
+        table_penalty_cache = {}
+    if known_solutions is None:
+        known_solutions = {}
+
+    group_size = group_size_list[0]
+
+    if unseated_players is None:
+        unseated_players = set(range(len(possible_opponent_matrix)))
+
+    # In this function players are represented as simple integers from 0 to
+    # N-1, where N is the number of players. Player "0" is at the top of the
+    # standings table. We're more likely to find a good match if we try numbers
+    # close together (trying (0, 1, 2) first is likely to get better results
+    # quicker than (0, 13, 35)), so remaining_players is a sorted list, not a
+    # set.
+    remaining_players = [ p for p in range(len(possible_opponent_matrix)) if p in unseated_players ]
+    remaining_players_bitmask = 0
+    for p in remaining_players:
+        remaining_players_bitmask |= (1 << p)
+
+    # The best solution we find to the problem given to this call, and the
+    # penalty associated with that solution.
+    best_solution = None
+    best_penalty = None
+
     # If any player has fewer than group_size - 1 possible opponents, then
     # we know we can't find a complete solution so don't waste time solving
     # part of the problem a million times...
-    for p in players_ordered:
-        if len(possible_opponents[p]) < group_size - 1:
+    for p in remaining_players:
+        num_possible_opponents = 0
+        for opp in remaining_players:
+            if opp != p and possible_opponent_matrix[p][opp]:
+                num_possible_opponents += 1
+        if num_possible_opponents < group_size - 1:
+            # No solutions
             return
 
-    if players_ordered:
-        p = players_ordered[0]
-        opps = possible_opponents[p]
+    # Have we found the solution to this problem before? Yes? Good, return that.
+    if remaining_players_bitmask in known_solutions:
+        yield known_solutions[remaining_players_bitmask]
+        return
+
+    if remaining_players:
+        p = remaining_players[0]
+        opps = [ opp for opp in remaining_players if opp != p and possible_opponent_matrix[p][opp] ]
         #sys.stderr.write("%*slooking for opponents for %d from %s\n" % (depth, "", p, str(opps)))
         if len(opps) >= group_size - 1:
             for remainder in generate_sets(opps, group_size - 1):
+                # Check that the remaining players in this set could all
+                # play each other...
                 reject = False
                 for i in range(len(remainder) - 1):
                     for j in range(i + 1, len(remainder)):
-                        if remainder[j] not in possible_opponents[remainder[i]]:
+                        if not possible_opponent_matrix[remainder[i]][remainder[j]]:
                             reject = True
                             break
                     if reject:
@@ -201,39 +311,58 @@ def generate_all_groupings_aux(group_size_list, possible_opponents, depth, start
                 if reject:
                     continue
 
+                if time.time() > start_time + limit_ms / 1000.0:
+                    return
+
                 candidate_table = [p] + remainder
-                #print len(remainder)
-                new_possible_opponents = dict()
-                for pp in possible_opponents:
-                    if pp not in candidate_table:
-                        new_opps = possible_opponents[pp][:]
-                        for c in candidate_table:
-                            if c in new_opps:
-                                new_opps.remove(c)
-                        new_possible_opponents[pp] = new_opps
-                if len(new_possible_opponents) == 0:
-                    # This is the last table
-                    yield [candidate_table]
-                else:
-                    for remainder2 in generate_all_groupings_aux(group_size_list[1:], new_possible_opponents, depth + 1, start_time, limit_ms):
-                        yield [candidate_table] + remainder2
+                candidate_table_penalty = get_table_penalty(penalty_matrix, candidate_table, table_penalty_cache)
+
+                # If the penalty for this table alone is higher than the
+                # penalty of the best solution we've found from this point,
+                # this candidate table can't form part of the optimal solution
+                # so there's no point in using it.
+                if best_penalty is not None and candidate_table_penalty > best_penalty:
+                    continue
+
+                # Mark players on this table as already seated for the
+                # next recursive call and those below it...
+                for cp in candidate_table:
+                    unseated_players.remove(cp)
+                for (remaining_tables, rem_penalty) in generate_all_groupings_aux(
+                        group_size_list[1:], possible_opponent_matrix,
+                        penalty_matrix, limit_ms, depth + 1, start_time,
+                        table_penalty_cache, unseated_players, known_solutions):
+                    # If this solution to the remainder, when put together
+                    # with the candidate table we picked, is better than
+                    # any solution we might have yielded so far, then
+                    # yield this new solution.
+                    if best_penalty is None or candidate_table_penalty + rem_penalty < best_penalty:
+                        best_solution = [candidate_table] + remaining_tables
+                        best_penalty = candidate_table_penalty + rem_penalty
+                        yield (best_solution, best_penalty)
+                # Undo what we did to unseated_players before the call
+                for cp in candidate_table:
+                    unseated_players.add(cp)
+
+    if best_penalty is not None:
+        known_solutions[remaining_players_bitmask] = (best_solution, best_penalty)
 
 
-
-def generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, prune_set, start_time, limit_ms):
+def generate_all_groupings(group_size_list, played_matrix, win_diff_matrix,
+        penalty_matrix, max_rematches, max_wins_diff, prune_set, start_time,
+        limit_ms):
     num_players = len(played_matrix)
-    possible_opponents = dict()
+    possible_opponent_matrix = [ [ False for i in range(num_players) ] for j in range(num_players) ]
     if sum(group_size_list) != num_players:
         raise InvalidGroupSizeListException()
     for p in range(num_players):
-        opponents = []
         for opp in range(num_players):
             if p != opp:
                 if played_matrix[p][opp] <= max_rematches and win_diff_matrix[p][opp] <= max_wins_diff and not(p in prune_set and opp in prune_set):
-                    #print "played_matrix[%d][%d] %d" % (p, opp, played_matrix[p][opp])
-                    opponents.append(opp)
-        possible_opponents[p] = opponents
-    return generate_all_groupings_aux(group_size_list, possible_opponents, 0, start_time, limit_ms)
+                    possible_opponent_matrix[p][opp] = True
+    for (solution, penalty) in generate_all_groupings_aux(group_size_list,
+            possible_opponent_matrix, penalty_matrix, limit_ms):
+        yield (solution, penalty)
 
 class PlayerGroup(object):
     def __init__(self, player_list, weight):
@@ -245,6 +374,33 @@ class PlayerGroup(object):
 
     def __len__(self):
         return len(self.player_list);
+
+def shuffle_joint_positioned_players(players):
+    i = 0
+    while i < len(players):
+        pos = players[i].position
+        j = i + 1
+        while j < len(players) and players[j].position == pos:
+            j += 1
+        if j - i > 1:
+            # The chunk of the array in the interval [i, j) must be shuffled
+            chunk = players[i:j]
+            random.shuffle(chunk)
+            for k in range(i, j):
+                players[k] = chunk[k - i]
+        i = j
+
+def to_ordinal(n):
+    if (n // 10) % 10 == 1:
+        return str(n) + "th"
+    elif n % 10 == 1:
+        return str(n) + "st"
+    elif n % 10 == 2:
+        return str(n) + "nd"
+    elif n % 10 == 3:
+        return str(n) + "rd"
+    else:
+        return str(n) + "th"
 
 def swissN_first_round(cdt_players, group_size):
     if group_size > 0 and len(cdt_players) % group_size != 0:
@@ -267,7 +423,62 @@ def swissN_first_round(cdt_players, group_size):
         groups.append(PlayerGroup(player_list, 0));
     return (0, groups);
 
-def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_ms=None, init_max_rematches=0, init_max_win_diff=0, ignore_rematches_before=None):
+def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
+        limit_ms=None, init_max_rematches=0, init_max_win_diff=0,
+        ignore_rematches_before=None):
+    """swissN(): the public entry point to the SwissN generator.
+
+    Generate a number of groups (or "tables"), each with a number of players
+    at the table. Every player plays every other player on their table in a
+    round robin.
+
+    Arguments:
+
+    games: a list of countdowntourney.Game objects, describing the games which
+    have been played so far.
+
+    cdt_players: a list of countdowntourney.Player objects, describing the
+    players we want to include in this round. This should only include active
+    players, not Prunes.
+
+    standings: a list of countdowntourney.StandingsRow objects describing the
+    standings table at the point we want to generate fixtures. Each
+    StandingsRow object contains the position, win count, points scored, and
+    name of a player, along with other information.
+
+    group_size: the number of players to put in each group. Usually this is
+    2 or 3. Valid values are 2, 3, 4 or -5. -5 means to use a mixture of
+    tables of 3 and tables of 5. Each pair on a table of 3 plays twice.
+    If the number of players is not a multiple of the group size, or if there
+    are not at least 8 players if the group size is -5, an exception is thrown.
+
+    rank_by_wins: True if players' win counts are used to rank players in the
+    standings table. This is pretty much always true.
+
+    limit_ms: If we haven't finished after this many milliseconds, terminate
+    and return the best solution found so far, or return (None, None) if no
+    solution was found.
+
+    init_max_rematches: the (initial) number of maximum rematches that should
+    be allowed, after considering the fixtures we generate. Usually this is 0,
+    which means we don't put players on the same table if they've played each
+    other already (according to games). If we can't find a solution and there's
+    still time, swissN() might increase this and try again.
+
+    init_max_win_diff: the (initial) maximum difference allowed between the
+    player with the most wins on a table and the player with the fewest wins
+    on that table. If we can't find a solution according to this constraint and
+    there's still time, swissN() might increase this and try again. The default
+    is 0, but this is usually impossible so we end up trying again with 1,
+    which means players on the same table are allowed to have a difference of
+    up to 1 in their win count.
+
+    ignore_rematches_before: normally we attach a large penalty to generating
+    a fixture between two players who have already played each other. If this
+    is set to a positive integer, matches in the "games" list before that
+    round number are ignored when applying this rule.
+"""
+
     log = True
     players = [];
     for p in cdt_players:
@@ -276,7 +487,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
                 players.append(StandingsPlayer(p.name, p.rating, s.wins + float(s.draws) / 2, s.position, s.played, s.played_first, p.is_avoiding_prune()));
                 break
         else:
-            print(p.name + " not in standings table for this division")
+            print(p.name + " not in standings table for this division", file=sys.stderr)
             raise PlayerNotInStandingsException()
 
     # Sort "players" by their position in the standings table, as that means
@@ -284,23 +495,38 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
     # the combinations we can in a limited time.
     players = sorted(players, key=lambda x : x.position)
 
+    # If any set of two or more players have exactly the same position,
+    # randomly shuffle their positions in that part of the array. This ensures
+    # that when we have such a set of people in joint Nth place, the person
+    # whose name is nearest the beginning of the alphabet doesn't always get
+    # selected first to play on a stronger table.
+    shuffle_joint_positioned_players(players)
+
+    # Check that the group size makes sense for the number of players.
     if group_size == -5:
         if len(players) < 8:
             raise IllegalNumberOfPlayersException()
         group_size_list = countdowntourney.get_5_3_table_sizes(len(players))
     else:
+        if len(players) % group_size != 0:
+            raise IllegalNumberOfPlayersException()
         group_size_list = [ group_size for i in range(len(players) // group_size) ]
 
-    played_matrix = []
-    for p in players:
-        played_row = []
-        for opponent in players:
-            count = 0
-            for g in games:
-                if g.is_between_names(p.name, opponent.name) and (ignore_rematches_before is None or g.round_no >= ignore_rematches_before):
-                    count += 1
-            played_row.append(count)
-        played_matrix.append(played_row)
+    player_name_to_index = {}
+    for (i, p) in enumerate(players):
+        player_name_to_index[p.get_name()] = i
+
+    # Build the matrix of how many times each player has played each other
+    # player.
+    played_matrix = [ [ 0 for p in players ] for q in players ]
+    for g in games:
+        if ignore_rematches_before is not None and g.round_no < ignore_rematches_before:
+            continue
+        i1 = player_name_to_index.get(g.p1.get_name())
+        i2 = player_name_to_index.get(g.p2.get_name())
+        if i1 is not None and i2 is not None:
+            played_matrix[i1][i2] += 1
+            played_matrix[i2][i1] += 1
 
     # Identify the prunes, and put their indices in the prune_set set
     prune_set = set()
@@ -312,7 +538,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
                 a_prune_index = pi
 
     # If there is at least one prune, and any players should be treated as
-    # having played prune even though they haven't, fiddle the matrix
+    # having played prune even though they haven't, fiddle played_matrix
     # accordingly
     pi = 0
     if a_prune_index is not None:
@@ -331,13 +557,13 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
             played_matrix[x][pi] = num_prune_matches
 
     if log:
-        print("Player / already played:", file=sys.stderr)
+        print("[swissN] Player / already played:", file=sys.stderr)
         for (i, p) in enumerate(players):
             opps = []
             for (j, opp) in enumerate(players):
                 if played_matrix[i][j] > 0:
                     opps.append(opp)
-            print("%20s: %s" % (p.get_name(), ", ".join([ opp.get_name() for opp in opps])), file=sys.stderr)
+            print("[swissN] %20s:  %s" % (p.get_name(), ", ".join([ opp.get_name() for opp in opps])), file=sys.stderr)
         print("", file=sys.stderr)
 
     win_diff_matrix = []
@@ -347,8 +573,8 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
             win_diff_row.append(abs(p.wins - opponent.wins))
         win_diff_matrix.append(win_diff_row)
 
-    matrix = calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank_by_wins);
-    matrix_size = len(players);
+    penalty_matrix = calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank_by_wins);
+    penalty_matrix_size = len(players);
 
     best_grouping = None
     best_weight = None
@@ -381,8 +607,9 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
     while best_grouping is None:
         if log:
             sys.stderr.write("[swissN] Trying with max_wins_diff %d, max_rematches %d\n" % (max_wins_diff, max_rematches))
-        for groups in generate_all_groupings(played_matrix, win_diff_matrix, group_size_list, max_rematches, max_wins_diff, prune_set, start_time, limit_ms):
-            weight = total_penalty(matrix, groups, table_penalty_cache)
+        for (groups, weight) in generate_all_groupings(group_size_list,
+                played_matrix, win_diff_matrix, penalty_matrix, max_rematches,
+                max_wins_diff, prune_set, start_time, limit_ms):
             if best_weight is None or weight < best_weight:
                 best_weight = weight
                 best_grouping = groups
@@ -402,8 +629,6 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
                 max_wins_diff = 0
                 max_rematches += 1
 
-    #(weight, groups) = best_grouping(matrix, range(matrix_size), group_size, limit_ms=limit_ms)
-
     if best_grouping is None:
         return (None, None)
 
@@ -416,12 +641,33 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
 
     if log:
         group_no = 1
+        largest_pos_diff = 0
+        largest_pos_diff_groups = []
+        largest_win_diff = 0
+        largest_win_diff_groups = []
         for g in groups:
-            sys.stderr.write("[swissN] Table %2d:" % group_no)
+            min_pos = min([players[p].position for p in g ])
+            max_pos = max([players[p].position for p in g ])
+            min_wins = min([players[p].wins for p in g ])
+            max_wins = max([players[p].wins for p in g ])
+            if max_pos - min_pos >= largest_pos_diff:
+                if max_pos - min_pos > largest_pos_diff:
+                    largest_pos_diff = max_pos - min_pos
+                    largest_pos_diff_groups = [group_no]
+                else:
+                    largest_pos_diff_groups.append(group_no)
+            if max_wins - min_wins >= largest_win_diff:
+                if max_wins - min_wins > largest_win_diff:
+                    largest_win_diff = max_wins - min_wins
+                    largest_win_diff_groups = [group_no]
+                else:
+                    largest_win_diff_groups.append(group_no)
+            print("[swissN] Table %2d, win difference %d, position difference %d, penalty %f:" % (group_no, max_wins - min_wins, max_pos - min_pos, get_table_penalty(penalty_matrix, g, None)), file=sys.stderr)
             for p in g:
-                sys.stderr.write(" [%s (%d, %dw)]" % (players[p].name, players[p].position, players[p].wins))
-            sys.stderr.write("\n")
+                print("[swissN]     [%2d]  %4s  %dW  %s" % (p, to_ordinal(players[p].position), players[p].wins, players[p].name), file=sys.stderr)
             group_no += 1
+        sys.stderr.write("[swissN] Max position difference: %d (table %s)\n" % ( largest_pos_diff, ", ".join(map(str, largest_pos_diff_groups))))
+        sys.stderr.write("[swissN] Max win difference: %d (table %s)\n" % (largest_win_diff, ", ".join(map(str, largest_win_diff_groups))))
 
     player_groups = [];
     for g in groups:
@@ -451,7 +697,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True, limit_m
                     break;
             else:
                 raise UnknownPlayerException();
-        group_weight = get_table_penalty(matrix, g, None)
+        group_weight = get_table_penalty(penalty_matrix, g, None)
         player_groups.append(PlayerGroup(player_group, group_weight));
 
     return (weight, player_groups);

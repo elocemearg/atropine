@@ -10,6 +10,7 @@ sys.path.append("py")
 import countdowntourney
 import swissN
 import random
+import getopt
 
 def set_random_score(game):
     r1 = game.p1.rating;
@@ -105,32 +106,46 @@ def calculate_standings(games, players):
         prev_s = s
     return standings
 
-def simulate_tourney(num_players, num_rounds, group_size, limit_ms):
+def simulate_tourney(num_players, num_rounds, group_size, limit_ms, init_max_win_diff):
     num_warnings = 0
     games = [];
 
     # Generate player list
     players = [];
 
-    top_rating = num_players * 20 + 100;
+    top_rating = 1000 + num_players * 20;
     for i in range(num_players):
         name = "Player %d" % i;
         rating = top_rating - i * 20;
         players.append(countdowntourney.Player(name, rating));
 
+    if group_size > 0:
+        # If num_players is not a multiple of the group size, add prunes
+        # until it is.
+        pn = 0
+        while num_players % group_size != 0:
+            name = "Prune %s" % (chr(ord('A') + pn))
+            players.append(countdowntourney.Player(name, 0))
+            pn += 1
+            num_players += 1
+
     for round_no in range(1, num_rounds + 1):
         print("Generating round %d..." % round_no);
+        standings = calculate_standings(games, players)
         if round_no == 1:
             (weight, groups) = swissN.swissN_first_round(players, group_size);
         else:
-            standings = calculate_standings(games, players)
-            (weight, groups) = swissN.swissN(games, players, standings, group_size, rank_by_wins=True, limit_ms=limit_ms);
+            (weight, groups) = swissN.swissN(games, players, standings, group_size, rank_by_wins=True, limit_ms=limit_ms, init_max_win_diff=init_max_win_diff);
         print("Done.");
 
         round_games = [];
         table_no = 1;
         round_seq = 1;
         division = 0
+        if not groups:
+            print("Unable to find any acceptable groupings in the time limit.")
+            assert(False)
+
         for g in groups:
             for pi1 in range(0, len(g) - 1):
                 for pi2 in range(pi1 + 1, len(g)):
@@ -138,13 +153,58 @@ def simulate_tourney(num_players, num_rounds, group_size, limit_ms):
                     round_seq += 1
             table_no += 1
 
-        # Make sure the penalty for a single table isn't greater than 10000
-        table_no = 1;
+        # Sanity check the groups we've been given.
+        # First, make sure every player appears exactly once.
+        player_names_seen = set()
         for g in groups:
-            if g.weight > 10000:
-                print("Warning: round %d table %d (%s) has penalty %d" % (round_no, table_no, ", ".join([x.name for x in g]), g.weight));
-                num_warnings += 1
-            table_no += 1;
+            for p in g:
+                if p.get_name() in player_names_seen:
+                    print("%s appears more than once!" % (p.get_name()))
+                    assert(False)
+                player_names_seen.add(p.get_name())
+        unseen_players = []
+        for p in players:
+            if p.get_name() not in player_names_seen:
+                unseen_players.append(p.get_name())
+        if unseen_players:
+            print("The following players do not appear in any group!")
+            print(", ".join(unseen_players))
+            assert(False)
+
+        # Find any disgruntled players. A disgruntled player is someone who
+        # has been drawn to play against someone higher in the standings,
+        # where there is at least one other person between them in the
+        # standings who they haven't yet played and aren't drawn to play
+        # in this round.
+        # It's impossible to avoid any disgruntled players - sometimes the
+        # draw has to be shuffled like this to avoid more disgruntling
+        # elsewhere. But we should report the number of disgruntleds.
+        already_played_names = set()
+        for g in games + round_games:
+            already_played_names.add((g.p1.get_name(), g.p2.get_name()))
+            already_played_names.add((g.p2.get_name(), g.p1.get_name()))
+
+        standings_positions = {}
+        for sp in standings:
+            standings_positions[sp.name] = sp.position
+
+        # dict mapping player names to how disgruntled they are
+        disgruntled_players = {}
+        for g in groups:
+            for p in g:
+                for opp in g:
+                    if opp.get_name() == p.get_name():
+                        continue
+                    opp_pos = standings_positions[opp.get_name()]
+                    p_pos = standings_positions[p.get_name()]
+                    if opp_pos < p_pos:
+                        intervening_eligible_opps = [ sp for sp in standings if sp.position > opp_pos and sp.position < p_pos and (p.get_name(), sp.name) not in already_played_names ]
+                        if intervening_eligible_opps:
+                            disgruntled_players[p.get_name()] = disgruntled_players.get(p.get_name(), 0) + len(intervening_eligible_opps)
+        if disgruntled_players:
+            print("%d disgruntled players:" % (len(disgruntled_players)))
+        for pn in sorted(disgruntled_players, key=lambda x : disgruntled_players[x], reverse=True):
+            print("%20s  %2d" % (pn, disgruntled_players[pn]))
 
         for g in round_games:
             set_random_score(g);
@@ -153,14 +213,36 @@ def simulate_tourney(num_players, num_rounds, group_size, limit_ms):
     return num_warnings
 
 def main():
-    num_warnings = 0
-    min_players = 18
-    max_players = 48
-    for size in range(min_players, max_players + 1, 3):
-        num_rounds = 3;
-        print("%d players, %d rounds" % (size, num_rounds));
-        num_warnings += simulate_tourney(size, num_rounds, 3, 5000);
-        print()
+    opts, args = getopt.getopt(sys.argv[1:], "p:t:n:T:w:v")
+    num_players = 24
+    players_per_table = 3
+    num_rounds = 3
+    init_max_win_diff = 0
+    time_limit_ms = 30000
+    for o, a in opts:
+        if o == "-p":
+            num_players = int(a)
+        elif o == "-t":
+            players_per_table = int(a)
+        elif o == "-n":
+            num_rounds = int(a)
+        elif o == "-v":
+            verbose = True
+        elif o == "-T":
+            time_limit_ms = 1000 * int(a)
+        elif o == "-w":
+            init_max_win_diff = int(a)
+        else:
+            print("lol wat")
+            sys.exit(1)
+
+    if players_per_table not in (2, 3, 4, -5):
+        print("-p: players per table must be 2, 3, 4 or -5 (=5&3).")
+        sys.exit(1)
+
+    print("%d players, %d rounds" % (num_players, num_rounds));
+    num_warnings = simulate_tourney(num_players, num_rounds, players_per_table, time_limit_ms, init_max_win_diff);
+    print()
 
     if num_warnings > 0:
         print("%d warning%s, see above." % (num_warnings, "s" if num_warnings != 1 else ""))
