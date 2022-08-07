@@ -64,7 +64,7 @@ def get_user_form(tourney, settings, div_rounds):
 
         init_max_rematches = int_or_none(settings.get("d%d_initmaxrematches" % (div_index), "0"))
 
-        init_max_win_diff = int_or_none(settings.get("d%d_initmaxwindiff" % (div_index), 0))
+        init_max_win_diff = int_or_none(settings.get("d%d_initmaxwindiff" % (div_index), 2))
 
         games = tourney.get_games(game_type='P', division=div_index);
         players = [x for x in tourney.get_active_players() if x.division == div_index];
@@ -198,7 +198,6 @@ function generate_fixtures_clicked() {
     else:
         default_default_group_size = None
 
-
     if num_divisions > 1 and len(table_sizes_valid_for_all_divs) > 0:
         elements.append(htmlform.HTMLFragment("<p>"))
         group_size_choices = [ htmlform.HTMLFormChoice(str(gs),
@@ -208,12 +207,12 @@ function generate_fixtures_clicked() {
         elements.append(htmlform.HTMLFragment("</p>"))
 
     elements.append(htmlform.HTMLFragment("<p>\n"))
-    elements.append(htmlform.HTMLFormTextInput("Fixture generator time limit %s(seconds)" % ("per division " if num_divisions > 1 else ""),
+    elements.append(htmlform.HTMLFormNumberInput("Fixture generator time limit %s(seconds)" % ("per division " if num_divisions > 1 else ""),
         "maxtime", settings.get("maxtime", "30"),
-        other_attrs={"size": "3", "id" : "maxtime"}));
+        other_attrs={"id" : "maxtime", "min" : 1}));
     elements.append(htmlform.HTMLFragment("</p>\n<p>\n"))
-    elements.append(htmlform.HTMLFormTextInput("For the purpose of avoiding rematches, disregard games before round ", "ignorerematchesbefore", str(ignore_rematches_before_round) if ignore_rematches_before_round is not None else "", other_attrs={"size": "3"}));
-    elements.append(htmlform.HTMLFragment(" (leave blank to count all rematches)"))
+    elements.append(htmlform.HTMLFormNumberInput("For the purpose of avoiding rematches, disregard games before round ", "ignorerematchesbefore", str(ignore_rematches_before_round) if ignore_rematches_before_round is not None else "0", other_attrs={"min" : "0"}));
+    elements.append(htmlform.HTMLFragment(" (enter 0 to count all rematches)"))
     elements.append(htmlform.HTMLFormHiddenInput("numdivisions", str(len(div_rounds)), other_attrs={"id" : "numdivisions"}))
     elements.append(htmlform.HTMLFragment("</p>\n"))
     elements.append(htmlform.HTMLFragment("<hr />\n"))
@@ -258,15 +257,15 @@ function generate_fixtures_clicked() {
         elements.append(htmlform.HTMLFragment("<p>Increase the following values if the fixture generator has trouble finding a grouping within the time limit.</p>\n"));
 
         elements.append(htmlform.HTMLFragment("<blockquote>"))
-        elements.append(htmlform.HTMLFormTextInput("Initial maximum rematches between players", div_prefix + "initmaxrematches", str(init_max_rematches), other_attrs={"size" : "3"}))
+        elements.append(htmlform.HTMLFormNumberInput("Initial maximum rematches between players", div_prefix + "initmaxrematches", str(init_max_rematches), other_attrs={"min" : 0}))
         elements.append(htmlform.HTMLFragment("</blockquote>\n<blockquote>"))
-        elements.append(htmlform.HTMLFormTextInput("Initial maximum win count difference between players", div_prefix + "initmaxwindiff", str(init_max_win_diff), other_attrs={"size" : "3"}))
+        elements.append(htmlform.HTMLFormNumberInput("Initial maximum win count difference between players", div_prefix + "initmaxwindiff", str(init_max_win_diff), other_attrs={"min" : "0"}))
         elements.append(htmlform.HTMLFragment("</blockquote>\n"))
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<hr />\n"))
 
     elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures", other_attrs={"onclick": "generate_fixtures_clicked();", "id": "generatefixtures", "class" : "bigbutton"}));
-    elements.append(htmlform.HTMLFragment("<p id=\"progresslabel\">For large numbers of players or unusual formats, fixture generation is not immediate - it can take up to the specified number of seconds, or longer if no permissible configurations are found in that time.</p><hr /><p></p>"));
+    elements.append(htmlform.HTMLFragment("<p id=\"progresslabel\">For large numbers of players or unusual formats, fixture generation is not immediate - it can take up to the specified number of seconds. If no permissible configurations are found in that time, an error occurs.</p><hr /><p></p>"));
     elements.append(htmlform.HTMLFragment("<noscript>Your browser doesn't have Javascript enabled, which means you miss out on progress updates while fixtures are being generated.</noscript>"));
 
     form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py", elements);

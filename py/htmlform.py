@@ -52,7 +52,7 @@ class HTMLFormElement(object):
         s = ""
         if self.other_attrs:
             for name in self.other_attrs:
-                s += "%s=\"%s\" " % (html.escape(name), html.escape(self.other_attrs[name], True));
+                s += "%s=\"%s\" " % (html.escape(name), html.escape(str(self.other_attrs[name]), True));
         return s
 
     def set_attr(self, name, value):
@@ -135,6 +135,23 @@ class HTMLFormTextInput(HTMLFormElement):
     def html(self):
         return "%s <input type=\"text\" name=\"%s\" value=\"%s\" %s />\n" % (self.label, html.escape(self.name, True), html.escape(self.value, True), self.other_attrs_to_html());
 
+class HTMLFormNumberInput(HTMLFormElement):
+    def __init__(self, label, name, value, other_attrs=None):
+        super(HTMLFormNumberInput, self).__init__(name, other_attrs)
+        self.label = label
+        self.value = value
+
+    def get_value(self):
+        return self.value
+
+    def set_value(self, value):
+        self.value = value
+
+    def html(self):
+        return "%s <input type=\"number\" name=\"%s\" value=\"%s\" style=\"width: 4em;\" %s />\n" % (
+                self.label, html.escape(self.name, True),
+                html.escape(str(self.value), True),
+                self.other_attrs_to_html())
 
 class HTMLFormRadioButton(HTMLFormElement):
     def __init__(self, name, label, choices, other_attrs=None):
