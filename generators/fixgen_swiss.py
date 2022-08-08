@@ -82,94 +82,112 @@ def get_user_form(tourney, settings, div_rounds):
     elements = [];
     javascript = """
 <script type="text/javascript">
-var click_time = 0;
-var limit_seconds = 0;
-var noticed_results_overdue = false;
+let click_time = 0;
+let limit_seconds = 0;
+let noticed_results_overdue = false;
+let current_progress_text = "";
 
-var gerunds = ["Reticulating", "Exaggerating", "Refrigerating",
-            "Bisecting", "Reordering", "Unseeding", "Reconstituting",
-            "Inverting", "Convolving", "Reinventing", "Overpopulating",
-            "Unwedging", "Tenderising", "Refactoring", "Frobnicating",
-            "Normalising", "Factorising", "Transforming", "Relaying",
-            "Decoupling", "Randomising", "Ignoring", "Disposing of",
-            "Translating", "Restarting", "Entertaining", "Checking",
-            "Verifying", "Flushing", "Contextualising", "Deconstructing",
-            "Justifying", "Hacking", "Redrawing", "Reimagining",
-            "Reinterpreting", "Reasoning with", "Impersonating",
-            "Abbreviating", "Underestimating", "Misappropriating",
-            "Constructing", "Preparing", "Redelivering", "Arguing over",
-            "Grilling", "Baking", "Poaching", "Washing", "Stealing",
-            "Emulsifying", "Discombobulating", "Correcting", "Extracting",
-            "Unspooling", "Descaling", "Duplicating", "Overwriting" ];
 
-var nouns = ["seeding list", "rule book", "hypergrid",
-            "network services", "timestamps", "multidimensional array",
-            "decision tree", "player list", "weighting matrix",
-            "instrument panel", "database", "videprinter",
-            "standings table", "preclusion rules", "event handlers",
-            "dynamic modules", "hypertext", "fixture generator",
-            "linked lists", "hash tables", "system clock", "file descriptors",
-            "syntax tree", "binary tree", "dictionary", "homework",
-            "breakfast", "contextualiser", "splines", "supercluster",
-            "record books", "sandwiches", "grouping strategy", "reality",
-            "spatula", "Eyebergine", "scripts", "blockchain", "phone charger",
-            "fixtures", "associative arrays", "browser window", "subfolders"
-            ];
+const gerunds = [
+    "Exaggerating", "Refrigerating", "Bisecting", "Reordering", "Unseeding",
+    "Reconstituting", "Inverting", "Convolving", "Reinventing",
+    "Overpopulating", "Unwedging", "Tenderising", "Refactoring",
+    "Frobnicating", "Normalising", "Factorising", "Transforming", "Relaying",
+    "Decoupling", "Randomising", "Ignoring", "Disposing of", "Translating",
+    "Restarting", "Entertaining", "Checking", "Verifying", "Flushing",
+    "Contextualising", "Deconstructing", "Justifying", "Hacking", "Redrawing",
+    "Reimagining", "Reinterpreting", "Reasoning with", "Impersonating",
+    "Abbreviating", "Underestimating", "Misappropriating", "Constructing",
+    "Preparing", "Redelivering", "Arguing over", "Grilling", "Baking",
+    "Poaching", "Washing", "Stealing", "Emulsifying", "Discombobulating",
+    "Correcting", "Extracting", "Unspooling", "Descaling", "Duplicating",
+    "Overwriting", "Containerising", "Resetting", "Evaluating", "Compressing",
+    "Plotting", "Mapping", "Indexing", "Cancelling", "Distributing",
+    "Reconsidering", "Backtracking", "Avoiding", "Collecting", "Downloading",
+    "Decompressing", "Connecting"
+];
 
-var endings = [
-    "Bribing officials", "Talking bollocks", "Feeding cat",
-    "Rewinding tape", "Invading privacy", "Falling off cliff",
+const nouns = [
+    "seeding list", "rule book", "hypergrid", "network services", "timestamps",
+    "multidimensional array", "decision tree", "player list",
+    "weighting matrix", "instrument panel", "database", "videprinter",
+    "standings table", "preclusion rules", "event handlers", "dynamic modules",
+    "hypertext", "fixture generator", "linked lists", "hash tables",
+    "system clock", "file descriptors", "syntax tree", "binary tree",
+    "dictionary", "homework", "breakfast", "contextualiser", "supercluster",
+    "record books", "sandwiches", "grouping strategy", "reality", "spatula",
+    "Eyebergine", "scripts", "blockchain", "phone charger", "fixtures",
+    "associative arrays", "browser window", "subfolders", "scorecard",
+    "references", "ranking order", "to-do list", "column headings", "fonts"
+];
+
+const specials = [
+    "Bribing officials", "Emptying bins", "Feeding cat",
+    "Rewinding tape", "Invading privacy", "Walking plank",
     "Kicking tyres", "Tapping barometer", "Serving hot",
     "Deploying parachute", "Cleaning up mess", "Straightening tie",
     "Seasoning to taste", "Stealing towels", "Reversing polarity",
-    "Untangling headphones", "Compounding misery"
+    "Untangling headphones", "Compounding misery", "Reticulating splines",
+    "Hoisting flag", "Ringing bell", "Clearing paper jam", "Potting black",
+    "Walking dog", "Checking glossary", "Fetching larger tool"
 ];
 
 function spam_progress_label() {
-    var progress = "";
-    var pc = 0;
-    var ms_elapsed = 0;
+    let ms_elapsed = 0;
+    let secs_remaining = 0;
+    let time_text;
 
     if (limit_seconds != NaN) {
         current_time = new Date();
         ms_elapsed = current_time.getTime() - click_time.getTime();
-        pc = Math.floor(ms_elapsed * 100 / (limit_seconds * 1000));
-        if (pc > 100) {
-            pc = 100;
-        }
-        progress = pc.toString() + "%";
+        secs_remaining = limit_seconds - Math.floor(ms_elapsed / 1000.0);
+    }
+    else {
+        secs_remaining = "?";
     }
 
     if (ms_elapsed < 500) {
-        document.getElementById('progresslabel').innerHTML = "Generating fixtures...";
+        current_progress_text = "Generating fixtures...";
     }
-    else if (pc < 100) {
+    else if (secs_remaining > 0) {
         if (Math.random() < 0.4) {
-            var gerund = "";
-            var noun = "";
-
-            gerund = gerunds[Math.floor(Math.random() * gerunds.length)];
-            noun = nouns[Math.floor(Math.random() * nouns.length)];
-
-            document.getElementById('progresslabel').innerHTML = progress + " " + gerund + " " + noun + "...";
+            /* 40% chance of changing the progress text. */
+            if (Math.random() < 0.1) {
+                /* 10% chance of getting one of the special pieces of text... */
+                current_progress_text = specials[Math.floor(Math.random() * specials.length)] + "...";
+            }
+            else {
+                /* 90% chance of getting a random "verbing noun". */
+                let gerund = gerunds[Math.floor(Math.random() * gerunds.length)];
+                let noun = nouns[Math.floor(Math.random() * nouns.length)];
+                current_progress_text = gerund + " " + noun + "...";
+            }
         }
     }
     else if (ms_elapsed < limit_seconds * 1000 + 3000) {
         if (!noticed_results_overdue) {
-            var ending = endings[Math.floor(Math.random() * endings.length)];
-            document.getElementById('progresslabel').innerHTML = "100% " + ending + "...";
+            let ending = specials[Math.floor(Math.random() * specials.length)];
+            current_progress_text = ending + "...";
             noticed_results_overdue = true;
         }
     }
     else {
-        document.getElementById('progresslabel').innerHTML = "We ought to have finished by now.";
+        current_progress_text = "We ought to have finished by now.";
     }
+    if (secs_remaining <= 0) {
+        time_text = "";
+    }
+    else {
+        time_text = "Up to " + secs_remaining.toString() + " seconds remaining.";
+    }
+    document.getElementById('progresstext').innerText = current_progress_text;
+    document.getElementById('progresstime').innerText = time_text;
 }
+
 function generate_fixtures_clicked() {
     click_time = new Date();
     noticed_results_overdue = false;
     limit_seconds = parseInt(document.getElementById('maxtime').value) * parseInt(document.getElementById('numdivisions').value);
-    // document.getElementById('generatefixtures').disabled = true;
     spam_progress_label();
     setInterval(function() { spam_progress_label(); }, 300);
 }
@@ -265,7 +283,7 @@ function generate_fixtures_clicked() {
             elements.append(htmlform.HTMLFragment("<hr />\n"))
 
     elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures", other_attrs={"onclick": "generate_fixtures_clicked();", "id": "generatefixtures", "class" : "bigbutton"}));
-    elements.append(htmlform.HTMLFragment("<p id=\"progresslabel\">For large numbers of players or unusual formats, fixture generation is not immediate - it can take up to the specified number of seconds. If no permissible configurations are found in that time, an error occurs.</p><hr /><p></p>"));
+    elements.append(htmlform.HTMLFragment("<p id=\"progresstext\">For large numbers of players or unusual formats, fixture generation is not immediate - it can take up to the specified number of seconds. If no permissible configurations are found in that time, an error occurs.</p><p id=\"progresstime\"></p><hr /><p></p>"));
     elements.append(htmlform.HTMLFragment("<noscript>Your browser doesn't have Javascript enabled, which means you miss out on progress updates while fixtures are being generated.</noscript>"));
 
     form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py", elements);
