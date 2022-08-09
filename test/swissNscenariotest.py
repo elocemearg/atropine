@@ -161,7 +161,23 @@ def main():
     #     }
     # }
 
-    scenario_files = [ "r3_22players_2prunes.json", "r3_45players.json", "r5_pairs.json" ]
+    scenario_files = [
+            # COLIN 2022 after R2, we're generating R3.
+            # Names anonymised.
+            # This is known to fail if we disable the optimisations - it
+            # doesn't find the best grouping in the time.
+            "colin2022_after_r2.json",
+
+            # 24 players including two Prunes, generate R3 after two rounds
+            # of Lincoln style fixtures.
+            "r3_22players_2prunes.json",
+
+            # Generate R3 after two rounds (4 games each) in a larger event.
+            "r3_45players.json",
+
+            # Generate round 5 after 4 rounds of two-to-a-table.
+            "r5_pairs.json"
+    ]
     num_passed = 0
     num_failed = 0
     for scenario_file in scenario_files:
