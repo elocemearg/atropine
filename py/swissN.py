@@ -24,6 +24,9 @@ WIN_DIFFERENCE_PENALTY_BASE = POSITION_DIFFERENCE_PENALTY_BASE ** 4
 # Maximum number of entries in swissN()'s cache of table penalties.
 TABLE_PENALTY_CACHE_MAX_SIZE = 1000000
 
+ENABLE_PENALTY_CAP_OPTIMISATION = True
+ENABLE_RESULTS_CACHE_OPTIMISATION = True
+
 # Consider this standings table, of people whose names happen to coincide with
 # their standings position...
 #
@@ -321,7 +324,7 @@ def generate_all_groupings_aux(group_size_list, possible_opponent_matrix,
                 # penalty of the best solution we've found from this point,
                 # this candidate table can't form part of the optimal solution
                 # so there's no point in using it.
-                if best_penalty is not None and candidate_table_penalty > best_penalty:
+                if ENABLE_PENALTY_CAP_OPTIMISATION and best_penalty is not None and candidate_table_penalty > best_penalty:
                     continue
 
                 # Mark players on this table as already seated for the
@@ -344,7 +347,7 @@ def generate_all_groupings_aux(group_size_list, possible_opponent_matrix,
                 for cp in candidate_table:
                     unseated_players.add(cp)
 
-    if best_penalty is not None:
+    if best_penalty is not None and ENABLE_RESULTS_CACHE_OPTIMISATION:
         known_solutions[remaining_players_bitmask] = (best_solution, best_penalty)
 
 
