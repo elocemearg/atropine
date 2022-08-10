@@ -563,7 +563,7 @@ function toggleMiscStats() {
 
 def make_team_dot_html(team):
     if team:
-        team_string = '<span style="color: #%s;" class="faintoutline">&#10022;</span>' % team.get_hex_colour()
+        team_string = '<span style="color: #%s;" class="faintoutline">&#x25cf;</span>' % team.get_hex_colour()
     else:
         team_string = ""
     return team_string
@@ -572,12 +572,12 @@ def make_player_dot_html(player):
     return make_team_dot_html(player.get_team())
 
 def show_team_score_table(team_scores):
-    writeln("<table class=\"teamscorestable\">")
+    writeln("<table class=\"ranktable\">")
     writeln('<th colspan="2">Team score</th>')
     for (team, score) in team_scores:
         writeln('<tr>')
-        writeln('<td class="teamscorestablename">%s %s</td>' % (make_team_dot_html(team), escape(team.get_name())))
-        writeln('<td class="teamscorestablescore">%d</td>' % score)
+        writeln('<td class="rankname">%s %s</td>' % (make_team_dot_html(team), escape(team.get_name())))
+        writeln('<td class="ranknumber rankhighlight">%d</td>' % score)
         writeln('</tr>')
     writeln('</table>')
 

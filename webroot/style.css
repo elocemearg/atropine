@@ -450,30 +450,13 @@ div.exportedresults {
 	margin-left: 20px;
 }
 
-/* Team score display */
-
-table.teamscorestable {
-	border: 2px solid grey;
-	border-collapse: collapse;
-}
-
-td.teamscorestablename {
-	border: 1px solid gray;
-	text-align: left;
-}
-
-td.teamscorestablescore {
-	border: 1px solid gray;
-	text-align: right;
-	font-weight: bold;
-}
-
+/* Put a faint grey border round the coloured team dot so it shows up better */
 span.faintoutline {
     text-shadow:
-        -1px -1px 0 #aaa,
-        1px -1px 0 #aaa,
-        -1px 1px 0 #aaa,
-        1px 1px 0 #aaa;
+        -1px -1px 1px #aaa,
+        1px -1px 1px #aaa,
+        -1px 1px 1px #aaa,
+        1px 1px 1px #aaa;
 }
 
 

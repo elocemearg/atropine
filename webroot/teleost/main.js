@@ -14,7 +14,7 @@ var updatesMaxSkip = 5;
 
 var teleostMode = null;
 var teleostModeOptions = {};
-var teamIndicatorHTML = "&#10022;"
+var teamIndicatorHTML = "&#x25cf;"
 
 function escapeHTML(str) {
     if (str === null) {
