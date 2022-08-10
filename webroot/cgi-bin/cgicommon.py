@@ -8,7 +8,9 @@ import sqlite3;
 import html
 import re
 
-dbdir = os.path.join("..", "tourneys");
+dbdir = os.getenv("TOURNEYSPATH")
+if not dbdir:
+    dbdir = os.path.join("..", "tourneys");
 globaldbfile = os.path.join("..", "prefs.db");
 
 def int_or_none(s):
@@ -547,14 +549,15 @@ function toggleMiscStats() {
 
     writeln("<br />")
 
-    writeln("<div class=\"sidebarversioninfo\" title=\"This is the version number of the Atropine installation you're using, and the version which created the database for this tourney.\">");
-    writeln("<div class=\"sidebarversionline\">")
-    writeln("Atropine version: %s" % (tourney.get_software_version()))
-    writeln("</div>")
-    writeln("<div class=\"sidebarversionline\">")
-    writeln("This tourney version: %s" % (tourney.get_db_version()))
-    writeln("</div>")
-    writeln("</div>")
+    if tourney:
+        writeln("<div class=\"sidebarversioninfo\" title=\"This is the version number of the Atropine installation you're using, and the version which created the database for this tourney.\">");
+        writeln("<div class=\"sidebarversionline\">")
+        writeln("Atropine version: %s" % (tourney.get_software_version()))
+        writeln("</div>")
+        writeln("<div class=\"sidebarversionline\">")
+        writeln("This tourney version: %s" % (tourney.get_db_version()))
+        writeln("</div>")
+        writeln("</div>")
 
     writeln("</div>");
 

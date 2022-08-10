@@ -32,7 +32,9 @@ http_delete_path = "/cgi-bin/colive/submit.py"
 
 upload_interval_sec = 10
 
-db_dir = os.path.join(os.getcwd(), "tourneys")
+db_dir = os.getenv("TOURNEYSPATH")
+if not db_dir:
+    db_dir = os.path.join(os.getcwd(), "tourneys")
 
 import tourney2json
 import countdowntourney
