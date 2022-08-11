@@ -1,10 +1,18 @@
 #!/bin/bash
 
-# Interactive script to automate substituting the #!/usr/bin/python3 line at
-# the top of most of Atropine's Python scripts for another #! line containing
-# wherever the Python 3 interpreter is located on your system.
+# If you're using Windows, this is not the file you are looking for. It will
+# not be useful to you.
 #
-# Thanks to Jack Hurst for testing this.
+# If you're using Linux or MacOS, it might be useful. You can run it from a
+# terminal by running ./fixpaths.sh in this folder.
+#
+# This is an interactive script to automate substituting the #!/usr/bin/python3 
+# line at the top of most of Atropine's Python scripts for another #! line
+# containing wherever the Python 3 interpreter is located on your system. It
+# may be useful on Macs where the Python 3 interpreter might not be at
+# /usr/bin/python3.
+#
+# Thanks to Jack Hurst and Jen Steadman for helping to debug this on MacOS.
 
 INTERACTIVE=1
 QUIET=0
@@ -149,13 +157,21 @@ fi
 # it in a sed s/foo/bar/ command...
 ESCAPED_PYTHON3_PATH=$(echo "$PYTHON3_PATH" | sed 's/[\/\\]/\\&/g')
 
+OSNAME=$(uname)
+
 # For each file, if the first line starts with #!, replace it with #! followed
 # by the correct Python 3 path.
 FILES_DONE=0
 FILES_FAILED=0
 RESULT=0
 for pyfile in "$ATROPINE_DIR/webroot/cgi-bin/"*.py "$ATROPINE_DIR/py/"*.py "$ATROPINE_DIR/generators/"*.py "$ATROPINE_DIR/"*.py; do
-    sed -i '1s/^#!.*/#!'"$ESCAPED_PYTHON3_PATH/" "$pyfile"
+    if [ "$OSNAME" = "Linux" ]; then
+        # GNU sed
+        sed -i '1s/^#!.*/#!'"$ESCAPED_PYTHON3_PATH/" "$pyfile"
+    else
+        # MacOS sed
+        sed -i .bak -e '1s/^#!.*/#!'"$ESCAPED_PYTHON3_PATH/" "$pyfile"
+    fi
     FILERESULT=$?
     if [ $FILERESULT -ne 0 ]; then
         RESULT=$FILERESULT
