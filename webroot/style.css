@@ -770,8 +770,13 @@ table.ranktable tr {
 	background-color: #ffdd66;
 }
 
-tr.ranktabledivspacer {
-	height: 2ex;
+table.ranktable tr.ranktabledivspacer {
+    height: 2ex;
+    background-color: transparent;
+}
+
+table.ranktable tr.ranktabledivspacer td {
+    border: none;
 }
 
 table.ranktable td.rankpos {
