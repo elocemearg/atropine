@@ -471,7 +471,7 @@ if fixgen_ask_divisions:
         elements.append(htmlform.HTMLFormCheckBox("_div%d" % (div), tourney.get_division_name(div), True))
         next_free_round_number = tourney.get_next_free_round_number_for_division(div)
         elements.append(htmlform.HTMLFragment("</td><td>"))
-        elements.append(htmlform.HTMLFormTextInput("", "_div%dround" % (div), str(next_free_round_number), other_attrs={"class": "fixdivroundsel"}))
+        elements.append(htmlform.HTMLFormNumberInput("", "_div%dround" % (div), str(next_free_round_number)))
         elements.append(htmlform.HTMLFragment("</td></tr>"))
     elements.append(htmlform.HTMLFragment("</table>"))
     elements.append(htmlform.HTMLFormSubmitButton("_divsubmit", "Next", other_attrs={"class" : "bigbutton"}))

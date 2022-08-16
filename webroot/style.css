@@ -631,10 +631,6 @@ table.fixdivselector td {
     padding: 5px;
 }
 
-input.fixdivroundsel {
-    max-width: 5em;
-}
-
 
 /* Divisions */
 
@@ -1798,6 +1794,11 @@ input[type="checkbox"] {
 
 input[type="radio"] {
     transform: scale(1.25);
+}
+
+input[type="number"] {
+    /* Don't want the default extra-long edit box */
+    width: 5em;
 }
 
 

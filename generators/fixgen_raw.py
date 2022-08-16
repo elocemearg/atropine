@@ -108,7 +108,7 @@ def get_user_form(tourney, settings, div_rounds):
             elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
 
         elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
-        num_games_element = htmlform.HTMLFormTextInput("Number of games to create", num_games_name, "")
+        num_games_element = htmlform.HTMLFormNumberInput("Number of games to create", num_games_name, 1, other_attrs={"min" : 1})
         elements.append(num_games_element)
         elements.append(htmlform.HTMLFragment("</div>"))
 

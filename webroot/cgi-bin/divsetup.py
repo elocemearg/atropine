@@ -234,16 +234,16 @@ else:
 
             cgicommon.writeln("<h3>Assign divisions</h3>")
             cgicommon.writeln("<p>")
-            cgicommon.writeln("Number of divisions: <input type=\"number\" min=\"1\" size=\"4\" name=\"numdivisions\" value=\"%d\" />" % (num_divisions))
+            cgicommon.writeln("Number of divisions: <input type=\"number\" min=\"1\" name=\"numdivisions\" value=\"%d\" />" % (num_divisions))
             cgicommon.writeln("</p><p>")
             cgicommon.writeln("When assigning divisions, ensure the number of active players in a division is a multiple of ")
-            cgicommon.writeln("<input type=\"number\" name=\"divsizemultiple\" min=\"1\" size=\"4\" value=\"%d\" />" % (division_size_multiple))
+            cgicommon.writeln("<input type=\"number\" name=\"divsizemultiple\" min=\"1\" value=\"%d\" />" % (division_size_multiple))
             cgicommon.writeln("</p>")
 
             cgicommon.writeln("<p>")
-            cgicommon.writeln("<input type=\"radio\" name=\"divsort\" value=\"ratings\" %s /> Assign divisions by rating" % ("checked" if div_sort == "ratings" else ""))
+            cgicommon.writeln("<label for=\"divsortrating\"><input type=\"radio\" name=\"divsort\" value=\"ratings\" id=\"divsortrating\" %s /> Assign divisions by rating</label>" % ("checked" if div_sort == "ratings" else ""))
             cgicommon.writeln("<br />")
-            cgicommon.writeln("<input type=\"radio\" name=\"divsort\" value=\"standings\" %s /> Assign divisions by standings position" % ("checked" if div_sort == "standings" else ""))
+            cgicommon.writeln("<label for=\"divsortpos\"><input type=\"radio\" name=\"divsort\" value=\"standings\" id=\"divsortpos\" %s /> Assign divisions by standings position</label>" % ("checked" if div_sort == "standings" else ""))
             cgicommon.writeln("</p>")
 
             cgicommon.writeln("<p>Players will be distributed into divisions. The divisions will be sized as equally as possible subject to the constraints above. If the divisions cannot be equally-sized, higher divisions will be given more players.</p>")

@@ -148,7 +148,7 @@ class HTMLFormNumberInput(HTMLFormElement):
         self.value = value
 
     def html(self):
-        return "%s <input type=\"number\" name=\"%s\" value=\"%s\" style=\"width: 4em;\" %s />\n" % (
+        return "%s <input type=\"number\" name=\"%s\" value=\"%s\" %s />\n" % (
                 self.label, html.escape(self.name, True),
                 html.escape(str(self.value), True),
                 self.other_attrs_to_html())

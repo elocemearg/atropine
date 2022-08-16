@@ -219,7 +219,7 @@ else:
         cgicommon.writeln('<form action="%s?tourney=%s" method="POST">' % (cgicommon.escape(baseurl, True), urllib.parse.quote_plus(tourneyname)))
         cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True))
         cgicommon.writeln('<p>')
-        cgicommon.writeln('Divide players by rating into groups of <input type="text" name="randomgroupsize" value="%d" size="5"> and randomly distribute each group as evenly as possible among the teams. Set to 0 to divide the whole player list randomly into teams, ignoring rating.' % random_group_size)
+        cgicommon.writeln('Divide players by rating into groups of <input type="number" name="randomgroupsize" value="%d" min="0" /> and randomly distribute each group as evenly as possible among the teams. Set to 0 to divide the whole player list randomly into teams, ignoring rating.' % random_group_size)
         cgicommon.writeln('</p>')
         cgicommon.writeln('<p>')
         cgicommon.writeln('<input type="submit" name="randomassignmentsubmit" value="Randomly assign players to teams" />')

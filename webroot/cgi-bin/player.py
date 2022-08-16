@@ -105,7 +105,7 @@ def show_player_form(tourney, player):
         pref = None
     else:
         pref = player.get_preferred_table()
-    cgicommon.writeln("<tr><td>Preferred table number</td><td><input type=\"text\" name=\"setpreferredtable\" style=\"width: 5em;\" value=\"%s\" /> <span class=\"playercontrolhelp\">(player will be assigned this table number if possible - if blank, player has no specific table preference)</span></td></tr>" % (cgicommon.escape(str(pref)) if pref is not None else ""))
+    cgicommon.writeln("<tr><td>Preferred table number</td><td><input type=\"number\" name=\"setpreferredtable\" value=\"%d\" min=\"0\" /> <span class=\"playercontrolhelp\">(player will be assigned this table number if possible; a value of 0 means the player has no specific table preference)</span></td></tr>" % (pref if pref is not None else 0))
 
     cgicommon.writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</span></td></tr>" % ("checked" if player and player.is_avoiding_prune() else ""))
     cgicommon.writeln("</table>")
