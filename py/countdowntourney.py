@@ -1021,6 +1021,32 @@ class Game(object):
         else:
             return False
 
+    def get_player_win_count(self, p):
+        """
+        Return 1 if player p won this game, 0.5 if they drew, or 0 if they
+        lost. Return 0 if the game has no score recorded for it yet. Throw
+        PlayerNotInGameException if the player is not in this game.
+        """
+
+        if not self.contains_player(p):
+            raise PlayerNotInGameException("Player \"%s\" is not in the game between %s and %s." % (p.get_name(), self.p1.get_name(), self.p2.get_name()))
+        if not self.is_complete():
+            return 0
+        if self.get_player_score(p) > self.get_opponent_score(p):
+            return 1
+        elif self.get_player_score(p) < self.get_opponent_score(p):
+            return 0
+        else:
+            return 0.5
+
+    def get_player_name_win_count(self, name):
+        if self.p1.get_name() == name:
+            return self.get_player_win_count(self.p1)
+        elif self.p2.get_name() == name:
+            return self.get_player_win_count(self.p2)
+        else:
+            raise PlayerNotInGameException("Player \"%s\" is not in the game between %s and %s." % (name, self.p1.get_name(), self.p2.get_name()))
+
     # Emulate a list of values
     def __len__(self):
         return 10;
@@ -2421,7 +2447,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             standings.append(StandingsRow(0, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], bool(x[10]), x[11], x[12]))
         cur.close()
 
-        rank_method.sort_standings_rows(standings, self.get_games(game_type="P"), self.get_rank_finals())
+        rank_method.sort_standings_rows(standings, self.get_games(game_type="P"), self.get_players(), self.get_rank_finals())
 
         # If anyone has played any finals matches, don't calculate
         # qualification because we're already past that and it wouldn't make

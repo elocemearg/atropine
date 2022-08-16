@@ -45,16 +45,35 @@ class RankMethod(object):
     def get_standings_row_sort_key_fn(self):
         return lambda s : (s.name,)
 
-    def calculate_secondary_rank_values(self, standings_rows, heat_games):
+    def calculate_secondary_rank_values(self, standings_rows, heat_games, players):
         return
 
-    def sort_standings_rows(self, standings_rows, heat_games, rank_finals=False):
+    def sort_standings_rows(self, standings_rows, heat_games, players, rank_finals=False):
+        """
+        Sort standings_rows according to the subclass rank method.
+
+        standings_rows: a list of StandingsRow objects to sort. In divisioned
+        tourneys this will be one for each player in the division. In
+        undivisioned tourneys there'll be one for each player in the tourney.
+
+        heat_games: a list of Game objects representing all heat games (type P)
+        played or scheduled so far in the tourney, in all divisions. It's
+        important to include all divisions, because the ranking method may need
+        to know about games a player played when they were in another division
+        or before players were split up into divisions.
+
+        players: an array of Player objects representing all the players in
+        the tourney, regardless of division.
+
+        rank_finals: sort by the finals_points field in each StandingsRow
+        object before anything else.
+        """
         non_finals_sort_key_fn = self.get_standings_row_sort_key_fn()
         if rank_finals:
             sort_key_fn = lambda s : (s.finals_points, non_finals_sort_key_fn(s))
         else:
             sort_key_fn = non_finals_sort_key_fn
-        self.calculate_secondary_rank_values(standings_rows, heat_games)
+        self.calculate_secondary_rank_values(standings_rows, heat_games, players)
         standings_rows.sort(key=sort_key_fn, reverse=True)
         prev_s = None
         pos = 0
@@ -95,7 +114,7 @@ choose, <span style="font-weight: bold;">this is the one you want.</span>
         else:
             return [ "Points" ]
 
-    def calculate_secondary_rank_values(self, standings_rows, heat_games):
+    def calculate_secondary_rank_values(self, standings_rows, heat_games, players):
         for s in standings_rows:
             s.set_secondary_rank_values([s.points])
 
@@ -125,7 +144,7 @@ class RankWinsSpread(RankMethod):
         else:
             return [ "Spread" ]
 
-    def calculate_secondary_rank_values(self, standings_rows, heat_games):
+    def calculate_secondary_rank_values(self, standings_rows, heat_games, players):
         for s in standings_rows:
             s.set_secondary_rank_values([s.spread], ["%+d" % (s.spread)])
 
@@ -151,7 +170,7 @@ class RankPoints(RankMethod):
         else:
             return [ "Points" ]
 
-    def calculate_secondary_rank_values(self, standings_rows, heat_games):
+    def calculate_secondary_rank_values(self, standings_rows, heat_games, players):
         for s in standings_rows:
             s.set_secondary_rank_values([s.points])
 
@@ -194,22 +213,36 @@ Solkoff score. However, this does not apply for Prune opponents.</li>"""
     def get_rank_fields(self):
         return ["wins", "sow", "points"]
 
-    def calculate_secondary_rank_values(self, standings_rows, heat_games):
-        name_to_standing = {}
-        for s in standings_rows:
-            name_to_standing[s.name] = s
-        name_to_effective_wins = {}
-        for s in standings_rows:
-            name_to_effective_wins[s.name] = s.wins + 0.5 * s.draws
-        name_to_games_scheduled = {}
-
+    def calculate_secondary_rank_values(self, standings_rows, heat_games, players):
         # Record the number of games scheduled for each player. If someone
         # has played fewer games than the rest then that has special handling
         # (see below).
+        name_to_games_scheduled = {}
         for g in heat_games:
             for name in g.get_player_names():
                 name_to_games_scheduled[name] = name_to_games_scheduled.get(name, 0) + 1
 
+        # Record the win count for each player mentioned in heat_games.
+        # We can't use standings_rows for this because standings_rows contains
+        # only the standings for this division, and players might have played
+        # other players outside their division because the divisions might
+        # have been created mid-tournament.
+        name_to_effective_wins = {}
+        for g in heat_games:
+            for p in g.get_players():
+                name_to_effective_wins[p.get_name()] = name_to_effective_wins.get(p.get_name(), 0) + g.get_player_win_count(p)
+
+        # Finally, work out who the Prunes are, because we treat games against
+        # Prunes differently.
+        prunes = set()
+        for p in players:
+            if p.get_rating() == 0:
+                prunes.add(p.get_name())
+
+        # Now for each player in the standings table we want to sort, work
+        # out the total win counts of all their opponents (or only opponents
+        # they beat, if self.neustadtl). Some of these opponents might not be
+        # in standings_rows.
         for s in standings_rows:
             player_name = s.name
             neustadtl_score = 0
@@ -220,19 +253,11 @@ Solkoff score. However, this does not apply for Prune opponents.</li>"""
                     if self.neustadtl:
                         # Sum of opponents' wins, but only the opponents
                         # you beat.
-                        score = g.get_player_name_score(player_name)
-                        opp_score = g.get_opponent_name_score(player_name)
-                        if score > opp_score:
-                            multiplier = 1
-                        elif score == opp_score:
-                            multiplier = 0.5
-                        else:
-                            multiplier = 0
+                        multiplier = g.get_player_name_win_count(player_name)
                     else:
                         # Simple sum of opponents' wins, regardless of whether
                         # you beat them or not.
                         multiplier = 1
-                    opp_standing = name_to_standing[opp_name]
                     opp_num_games = name_to_games_scheduled.get(opp_name, 0)
 
                     # If this opponent joined late, or retired early, and so
@@ -240,7 +265,7 @@ Solkoff score. However, this does not apply for Prune opponents.</li>"""
                     # not a Prune, behave as if they got draws for the missing
                     # games. This ensures a player is not disadvantaged if an
                     # opponent they beat early on withdraws.
-                    if opp_num_games < player_num_games and opp_standing.rating > 0:
+                    if opp_num_games < player_num_games and opp_name not in prunes:
                         add_opp_draws = player_num_games - opp_num_games
                     else:
                         add_opp_draws = 0
@@ -316,7 +341,7 @@ when calculating that player's cumulative win count.</li>
     def get_standings_row_sort_key_fn(self):
         return lambda s : (s.wins * 2 + s.draws, s.get_secondary_rank_values()[0], s.get_secondary_rank_values()[1])
 
-    def calculate_secondary_rank_values(self, standings_rows, heat_games):
+    def calculate_secondary_rank_values(self, standings_rows, heat_games, players):
         name_to_cumul = {}
         name_to_wins = {}
         for s in standings_rows:
@@ -337,18 +362,14 @@ when calculating that player's cumulative win count.</li>
             # Count wins in each game in this round
             for g in game_list:
                 if g.is_complete() and not g.is_double_loss():
-                    player_names = g.get_player_names()
-                    played_this_round.add(player_names[0])
-                    played_this_round.add(player_names[1])
-                    p1_score = g.get_player_name_score(player_names[0])
-                    p2_score = g.get_player_name_score(player_names[1])
-                    if p1_score > p2_score:
-                        name_to_wins[player_names[0]] += 1
-                    elif p1_score < p2_score:
-                        name_to_wins[player_names[1]] += 1
-                    else:
-                        name_to_wins[player_names[0]] += 0.5
-                        name_to_wins[player_names[1]] += 0.5
+                    for p in g.get_players():
+                        player_name = p.get_name()
+                        if player_name not in name_to_wins:
+                            # Don't need to keep the win count for players
+                            # not listed in standings_rows.
+                            continue
+                        played_this_round.add(player_name)
+                        name_to_wins[player_name] += g.get_player_win_count(p)
             # Only increase the cumulative win count of players who have
             # actually played a game in this round
             for name in played_this_round:
