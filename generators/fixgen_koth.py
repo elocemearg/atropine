@@ -9,7 +9,7 @@ import gencommon
 import fixgen
 
 name = "King of the Hill"
-description = "Players are grouped based on their current position in the standings. If the group size is N, the top N players go on the first table, the next N players go on the second table, and so on. Prunes are kept apart, but no attempt is made to avoid rematches, which is why nobody ever uses this generator. Everyone uses the Swiss one instead.";
+description = "Players are grouped based on their current standings position (or, in round 1, their rating). The top N players are placed on the first table, the next N players on the second table, and so on, where N is the group size. Tied positions are decided randomly. Prunes are kept apart, but rematches are not avoided. To avoid rematches, consider Swiss Army Blunderbuss instead."
 
 def lookup_player(players, name):
     for p in players:
@@ -22,6 +22,34 @@ def get_user_form(tourney, settings, div_rounds):
 
 def check_ready(tourney, div_rounds):
     return gencommon.check_ready_existing_games_and_table_size(tourney, div_rounds)
+
+def randomly_reorder_equals(l, keyfn):
+    """
+    Identify clusters of "equal" elements in a sorted list and randomly reorder their elements.
+
+    l: a list of items, which must already be sorted in order of the key
+    described by keyfn.
+
+    keyfn: a function which takes an element of the list and returns a value.
+    Elements with the same value are considered equal.
+
+    Return a new list containing the same elements as l, but with any clusters
+    of equal elements shuffled randomly.
+    """
+
+    i = 0
+    while i < len(l):
+        j = i + 1
+        while j < len(l) and keyfn(l[i]) == keyfn(l[j]):
+            j += 1
+        # Elements in the range [i, j) have the same value. If this range is
+        # more than a single element, put these elements in a random order.
+        if j - i > 1:
+            cluster = l[i:j]
+            random.shuffle(cluster)
+            l = l[0:i] + cluster + l[j:]
+        i = j
+    return l
 
 def generate(tourney, settings, div_rounds):
     (ready, excuse) = check_ready(tourney, div_rounds)
@@ -42,6 +70,12 @@ def generate(tourney, settings, div_rounds):
             standings = tourney.get_standings(div_index);
             ordered_players = []
             prunes = []
+
+            # If there are clusters of players on exactly the same standings
+            # position, reorder them randomly so that each of them has an equal
+            # chance of ending up on a stronger table.
+            standings = randomly_reorder_equals(standings, lambda x : x.position)
+
             for s in standings:
                 p = lookup_player(players, s.name)
                 if p:
@@ -55,6 +89,7 @@ def generate(tourney, settings, div_rounds):
             ordered_players = sorted(players, key=lambda x : x.rating, reverse=True)
             prunes = [x for x in ordered_players if x.rating == 0]
             ordered_players = [x for x in ordered_players if x.rating != 0]
+            ordered_players = randomly_reorder_equals(ordered_players, lambda x : x.rating)
 
         if group_size == -5:
             group_sizes = countdowntourney.get_5_3_table_sizes(len(players))
