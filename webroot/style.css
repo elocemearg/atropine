@@ -1788,6 +1788,10 @@ span.playerlisttablepreficon {
     font-size: 10pt;
 }
 
+h2.withdrawnplayer {
+    background-color: #dddddd;
+}
+
 input[type="checkbox"] {
     transform: scale(1.5);
 }

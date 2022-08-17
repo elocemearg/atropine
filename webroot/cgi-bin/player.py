@@ -73,6 +73,30 @@ def fatal_exception(exc, tourney=None):
     cgicommon.writeln("</body></html>")
     sys.exit(1)
 
+def write_h2(player, text):
+    classes = ""
+    if player.is_withdrawn():
+        classes = " class=\"withdrawnplayer\""
+    cgicommon.writeln("<h2%s>%s</h2>" % (classes, cgicommon.escape(text)))
+
+def show_player_withdrawal_form(tourney, player):
+    player_id = player.get_id()
+    player_name = player.get_name()
+    tourneyname = tourney.get_name()
+    if player.is_withdrawn():
+        cgicommon.writeln('<p>%s is currently <span style="font-weight: bold; color: red;">withdrawn</span>, which means newly-generated rounds will not include this player.</p>' % (cgicommon.escape(player_name)))
+        cgicommon.writeln('<p>If you reinstate them as an active player, they will be included in any subsequent fixtures you generate.</p>')
+    else:
+        cgicommon.writeln('<p>%s is currently an <span style="font-weight: bold; color: #008800"">active player</span>, which means they will be included when fixtures are generated.</p>' % (cgicommon.escape(player_name)))
+        cgicommon.writeln('<p>If you withdraw this player, they will be excluded from later rounds. You can reinstate a withdrawn player at any time.</p>')
+    cgicommon.writeln('<form method="POST" action="%s?tourney=%s">' % (cgicommon.escape(baseurl), urllib.parse.quote_plus(tourneyname)))
+    cgicommon.writeln('<input type="hidden" name="id" value="%d">' % (player_id))
+    if player.is_withdrawn():
+        cgicommon.writeln('<input type="submit" name="reinstateplayer" class="bigbutton" value="Reinstate %s">' % (cgicommon.escape(player_name)))
+    else:
+        cgicommon.writeln('<input type="submit" name="withdrawplayer" class="bigbutton" value="Withdraw %s">' % (cgicommon.escape(player_name)))
+    cgicommon.writeln('</form>')
+
 def show_player_form(tourney, player):
     num_divisions = tourney.get_num_divisions()
     tourneyname = tourney.get_name()
@@ -95,7 +119,12 @@ def show_player_form(tourney, player):
         cgicommon.writeln("<td>")
         show_division_drop_down_box("setdivision", tourney, player)
         cgicommon.writeln("</td></tr>")
-    cgicommon.writeln("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will not include this player)</span></td></tr>" % ("checked" if player and player.is_withdrawn() else ""))
+
+    # Only show withdrawn checkbox for "add new player..." form. For the "edit
+    # player" form, we have a specific form to withdraw or reinstate.
+    if not player:
+        cgicommon.writeln("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will not include this player)</span></td></tr>" % ("checked" if player and player.is_withdrawn() else ""))
+
     cgicommon.writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>)</span></td></tr>" % (
         "checked" if player and player.is_requiring_accessible_table() else "",
         urllib.parse.quote_plus(tourneyname)
@@ -109,16 +138,14 @@ def show_player_form(tourney, player):
 
     cgicommon.writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</span></td></tr>" % ("checked" if player and player.is_avoiding_prune() else ""))
     cgicommon.writeln("</table>")
-    cgicommon.writeln("<p>")
     cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname, True)))
     if player:
         cgicommon.writeln("<input type=\"hidden\" name=\"id\" value=\"%d\" />" % (player_id))
 
     if player:
-        cgicommon.writeln("<input type=\"submit\" name=\"editplayer\" class=\"bigbutton\" value=\"Save Changes\" />")
+        cgicommon.writeln("<input type=\"submit\" name=\"editplayer\" class=\"bigbutton\" style=\"margin-top: 10px;\" value=\"Save Changes\" />")
     else:
-        cgicommon.writeln("<input type=\"submit\" name=\"newplayersubmit\" class=\"bigbutton\" value=\"Create Player\" />")
-    cgicommon.writeln("</p>")
+        cgicommon.writeln("<input type=\"submit\" name=\"newplayersubmit\" class=\"bigbutton\" style=\"margin-top: 10px\" value=\"Create Player\" />")
     cgicommon.writeln("</form>")
 
 cgicommon.writeln("Content-Type: text/html; charset=utf-8");
@@ -162,133 +189,141 @@ exceptions_to_show = []
 edit_notifications = []
 
 
+if cgicommon.is_client_from_localhost() and request_method == "POST":
+    if form.getfirst("editplayer"):
+        new_rating = float_or_none(form.getfirst("setrating"))
+        new_name = form.getfirst("setname")
 
-if cgicommon.is_client_from_localhost() and request_method == "POST" and form.getfirst("reratebyplayerid") and form.getfirst("reratebyplayeridconfirm"):
-    try:
-        tourney.rerate_players_by_id()
-        edit_notifications.append("Players rerated by player ID")
-    except countdowntourney.TourneyException as e:
-        exceptions_to_show.append(("<p>Failed to rerate players...</p>", e))
+        # Withdrawn checkbox might not be present for editplayer. If it isn't,
+        # leave the player's withdrawn status as it is.
+        if form.getfirst("setwithdrawn") is None:
+            new_withdrawn = 1 if player.is_withdrawn() else 0
+        else:
+            new_withdrawn = int_or_zero(form.getfirst("setwithdrawn"))
 
-if cgicommon.is_client_from_localhost() and request_method == "POST" and form.getfirst("editplayer"):
-    new_rating = float_or_none(form.getfirst("setrating"))
-    new_name = form.getfirst("setname")
-    new_withdrawn = int_or_zero(form.getfirst("setwithdrawn"))
-    new_avoid_prune = int_or_zero(form.getfirst("setavoidprune"))
-    new_division = int_or_none(form.getfirst("setdivision"))
-    new_requires_accessible_table = int_or_zero(form.getfirst("setrequiresaccessibletable"))
-    new_preferred_table = int_or_none(form.getfirst("setpreferredtable"))
-    if new_preferred_table is not None and new_preferred_table <= 0:
-        new_preferred_table = None
+        new_avoid_prune = int_or_zero(form.getfirst("setavoidprune"))
+        new_division = int_or_none(form.getfirst("setdivision"))
+        new_requires_accessible_table = int_or_zero(form.getfirst("setrequiresaccessibletable"))
+        new_preferred_table = int_or_none(form.getfirst("setpreferredtable"))
+        if new_preferred_table is not None and new_preferred_table <= 0:
+            new_preferred_table = None
 
-    if new_rating is not None and player.get_rating() != new_rating:
-        try:
-            tourney.rerate_player(player.get_name(), new_rating)
-            edit_notifications.append("%s's rating changed to %g" % (player.get_name(), new_rating))
-        except countdowntourney.TourneyException as e:
-            exceptions_to_show.append(("<p>Failed to set player rating...</p>", e))
+        if new_rating is not None and player.get_rating() != new_rating:
+            try:
+                tourney.rerate_player(player.get_name(), new_rating)
+                edit_notifications.append("%s's rating changed to %g" % (player.get_name(), new_rating))
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Failed to set player rating...</p>", e))
 
-    # Set player withdrawn status
-    if player.is_withdrawn() != (new_withdrawn != 0):
-        try:
-            if new_withdrawn:
-                tourney.withdraw_player(player.get_name())
-                edit_notifications.append("%s withdrawn" % (player.get_name()))
-            else:
-                tourney.unwithdraw_player(player.get_name())
-                edit_notifications.append("%s is now active" % (player.get_name()))
-        except countdowntourney.TourneyException as e:
-            exceptions_to_show.append(("<p>Failed to change player withdrawn status...</p>", e))
+        # Set player withdrawn status
+        if player.is_withdrawn() != (new_withdrawn != 0):
+            try:
+                if new_withdrawn:
+                    tourney.withdraw_player(player.get_name())
+                    edit_notifications.append("%s withdrawn" % (player.get_name()))
+                else:
+                    tourney.unwithdraw_player(player.get_name())
+                    edit_notifications.append("%s is now active" % (player.get_name()))
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Failed to change player withdrawn status...</p>", e))
 
-    # Set player requires-accessible-table status
-    if player.is_requiring_accessible_table() != (new_requires_accessible_table != 0):
-        try:
-            tourney.set_player_requires_accessible_table(player.get_name(), new_requires_accessible_table != 0)
-            if new_requires_accessible_table != 0:
-                edit_notifications.append("%s now requires an accessible table" % player.get_name())
-            else:
-                edit_notifications.append("%s no longer requires an accessible table" % player.get_name())
-        except countdowntourney.TourneyException as e:
-            exceptions_to_show.append(("<p>Failed to change player accessibility status...</p>", e))
+        # Set player requires-accessible-table status
+        if player.is_requiring_accessible_table() != (new_requires_accessible_table != 0):
+            try:
+                tourney.set_player_requires_accessible_table(player.get_name(), new_requires_accessible_table != 0)
+                if new_requires_accessible_table != 0:
+                    edit_notifications.append("%s now requires an accessible table" % player.get_name())
+                else:
+                    edit_notifications.append("%s no longer requires an accessible table" % player.get_name())
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Failed to change player accessibility status...</p>", e))
 
-    # Set player's preferred table, if any
-    if (player.get_preferred_table() is None) != (new_preferred_table is None) or (new_preferred_table is not None and player.get_preferred_table() is not None and new_preferred_table != player.get_preferred_table()):
-        try:
-            tourney.set_player_preferred_table(player.get_name(), new_preferred_table)
-            if new_preferred_table is None:
-                edit_notifications.append("%s now has no specific table preference" % (player.get_name()))
-            else:
-                edit_notifications.append("%s's preferred table is now %d" % (player.get_name(), new_preferred_table))
-        except countdowntourney.TourneyException as e:
-            exceptions_to_show.append(("<p>Failed to change player's preferred table...</p>", e))
+        # Set player's preferred table, if any
+        if (player.get_preferred_table() is None) != (new_preferred_table is None) or (new_preferred_table is not None and player.get_preferred_table() is not None and new_preferred_table != player.get_preferred_table()):
+            try:
+                tourney.set_player_preferred_table(player.get_name(), new_preferred_table)
+                if new_preferred_table is None:
+                    edit_notifications.append("%s now has no specific table preference" % (player.get_name()))
+                else:
+                    edit_notifications.append("%s's preferred table is now %d" % (player.get_name(), new_preferred_table))
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Failed to change player's preferred table...</p>", e))
 
-    # Set whether player should be made to avoid prune
-    if player.is_avoiding_prune() != (new_avoid_prune != 0):
-        try:
-            tourney.set_player_avoid_prune(player.get_name(), new_avoid_prune)
-            edit_notifications.append("%s is now %savoiding Prune" % (player.get_name(), "not " if not new_avoid_prune else ""))
-        except countdowntourney.TourneyException as e:
-            exceptions_to_show.append(("<p>Failed to change player avoiding-prune status...</p>", e))
+        # Set whether player should be made to avoid prune
+        if player.is_avoiding_prune() != (new_avoid_prune != 0):
+            try:
+                tourney.set_player_avoid_prune(player.get_name(), new_avoid_prune)
+                edit_notifications.append("%s is now %savoiding Prune" % (player.get_name(), "not " if not new_avoid_prune else ""))
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Failed to change player avoiding-prune status...</p>", e))
 
-    # Set player's division
-    if new_division is not None and player.get_division() != new_division:
-        try:
-            tourney.set_player_division(player.get_name(), new_division)
-            edit_notifications.append("%s moved to %s" % (player.get_name(), tourney.get_division_name(new_division)))
-        except countdowntourney.TourneyException as e:
-            exceptions_to_show.append(("<p>Failed to change player's division...</p>", e))
+        # Set player's division
+        if new_division is not None and player.get_division() != new_division:
+            try:
+                tourney.set_player_division(player.get_name(), new_division)
+                edit_notifications.append("%s moved to %s" % (player.get_name(), tourney.get_division_name(new_division)))
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Failed to change player's division...</p>", e))
 
-    # Set player's name
-    if new_name is not None and new_name != "" and player.get_name() != new_name:
-        try:
-            tourney.rename_player(player.get_name(), new_name)
-            edit_notifications.append("%s renamed to %s" % (player_name, new_name))
-            player_name = new_name
-        except countdowntourney.TourneyException as e:
-            exceptions_to_show.append(("<p>Failed to change player's name...</p>", e))
-    player = tourney.get_player_from_id(player_id)
-elif cgicommon.is_client_from_localhost() and request_method == "POST" and form.getfirst("newplayersubmit"):
-    new_player_name = form.getfirst("setname")
+        # Set player's name
+        if new_name is not None and new_name != "" and player.get_name() != new_name:
+            try:
+                tourney.rename_player(player.get_name(), new_name)
+                edit_notifications.append("%s renamed to %s" % (player_name, new_name))
+                player_name = new_name
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Failed to change player's name...</p>", e))
+        player = tourney.get_player_from_id(player_id)
+    elif form.getfirst("newplayersubmit"):
+        new_player_name = form.getfirst("setname")
 
-    # If no rating has been entered, default to 1000
-    rating_str = form.getfirst("setrating")
-    if rating_str is None or rating_str.strip() == "":
-        new_player_rating = 1000.0
-    else:
-        new_player_rating = float_or_none(rating_str)
-    new_player_division = int_or_none(form.getfirst("setdivision"))
-    try_to_add_player = True
+        # If no rating has been entered, default to 1000
+        rating_str = form.getfirst("setrating")
+        if rating_str is None or rating_str.strip() == "":
+            new_player_rating = 1000.0
+        else:
+            new_player_rating = float_or_none(rating_str)
+        new_player_division = int_or_none(form.getfirst("setdivision"))
+        try_to_add_player = True
 
-    if not new_player_name:
-        exceptions_to_show.append(("<p>Can't add new player...</p>", countdowntourney.TourneyException("Player name may not be blank.")))
-        try_to_add_player = False
-    if new_player_rating is None:
-        exceptions_to_show.append(("<p>Can't add new player...</p>", countdowntourney.TourneyException("A new player's rating, if specified, must be a number.")))
-        try_to_add_player = False
-    if new_player_division is None:
-        new_player_division = 0
+        if not new_player_name:
+            exceptions_to_show.append(("<p>Can't add new player...</p>", countdowntourney.TourneyException("Player name may not be blank.")))
+            try_to_add_player = False
+        if new_player_rating is None:
+            exceptions_to_show.append(("<p>Can't add new player...</p>", countdowntourney.TourneyException("A new player's rating, if specified, must be a number.")))
+            try_to_add_player = False
+        if new_player_division is None:
+            new_player_division = 0
 
-    new_withdrawn = int_or_zero(form.getfirst("setwithdrawn"))
-    new_avoid_prune = int_or_zero(form.getfirst("setavoidprune"))
-    new_requires_accessible_table = int_or_zero(form.getfirst("setrequiresaccessibletable"))
+        new_withdrawn = int_or_zero(form.getfirst("setwithdrawn"))
+        new_avoid_prune = int_or_zero(form.getfirst("setavoidprune"))
+        new_requires_accessible_table = int_or_zero(form.getfirst("setrequiresaccessibletable"))
 
-    if try_to_add_player:
-        try:
-            tourney.add_player(new_player_name, new_player_rating, new_player_division)
-        except countdowntourney.TourneyException as e:
-            exceptions_to_show.append(("<p>Failed to add new player \"%s\"...</p>" % (cgicommon.escape(new_player_name)), e))
+        if try_to_add_player:
+            try:
+                tourney.add_player(new_player_name, new_player_rating, new_player_division)
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Failed to add new player \"%s\"...</p>" % (cgicommon.escape(new_player_name)), e))
 
-        try:
-            if new_withdrawn:
-                tourney.set_player_withdrawn(new_player_name, True)
-            if new_avoid_prune:
-                tourney.set_player_avoid_prune(new_player_name, True)
-            if new_requires_accessible_table:
-                tourney.set_player_requires_accessible_table(new_player_name, True)
-        except countdowntourney.TourneyException as e:
-            exceptions_to_show.append(("<p>Added player \"%s\" but failed to set attributes...</p>" % (cgicommon.escape(new_player_name)), e))
+            try:
+                if new_withdrawn:
+                    tourney.set_player_withdrawn(new_player_name, True)
+                if new_avoid_prune:
+                    tourney.set_player_avoid_prune(new_player_name, True)
+                if new_requires_accessible_table:
+                    tourney.set_player_requires_accessible_table(new_player_name, True)
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Added player \"%s\" but failed to set attributes...</p>" % (cgicommon.escape(new_player_name)), e))
+    elif form.getfirst("reinstateplayer"):
+        if player_name:
+            tourney.unwithdraw_player(player_name)
+            player = tourney.get_player_from_id(player_id)
+    elif form.getfirst("withdrawplayer"):
+        if player_name:
+            tourney.withdraw_player(player_name)
+            player = tourney.get_player_from_id(player_id)
 
-elif request_method == "GET" and form.getfirst("searchsubmit"):
+if request_method == "GET" and form.getfirst("searchsubmit"):
     player_name = form.getfirst("searchname")
     try:
         player = tourney.get_player_from_name(player_name)
@@ -391,7 +426,7 @@ for (html, exc) in exceptions_to_show:
         cgicommon.show_tourney_exception(exc)
 
 if edit_notifications:
-    cgicommon.writeln("<h2>Player details changed</h2>")
+    write_h2(player, "Player details changed")
     cgicommon.writeln("<blockquote>")
 
 for item in edit_notifications:
@@ -432,12 +467,17 @@ if player:
             acc_list_preamble, acc_list
             ), wide=True)
 
-    cgicommon.writeln("<h2>Edit player</h2>")
+    write_h2(player, "Edit player")
     show_player_form(tourney, player)
 
     cgicommon.writeln("<hr />")
 
-    cgicommon.writeln("<h2>Games</h2>")
+    write_h2(player, '%s player' % ("Reinstate" if player.is_withdrawn() else "Withdraw"))
+    show_player_withdrawal_form(tourney, player)
+
+    cgicommon.writeln("<hr />")
+
+    write_h2(player, "Games")
     games = tourney.get_games()
     games = [x for x in games if x.contains_player(player)]
 
@@ -447,7 +487,7 @@ if player:
         cgicommon.show_games_as_html_table(games, False, None, True, lambda x : tourney.get_short_round_name(x), player_to_link)
 
     cgicommon.writeln("<hr />")
-    cgicommon.writeln("<h2>Stats Corner</h2>")
+    write_h2(player, "Stats Corner")
     standings = tourney.get_standings(player.get_division())
     rank_method = tourney.get_rank_method()
     standing = None
