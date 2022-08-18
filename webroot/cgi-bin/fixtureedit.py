@@ -214,7 +214,7 @@ function add_game_checkbox_click(div_index) {
 //]]>
 </script>
 """)
-    players = sorted(tourney.get_players(), key=lambda x : x.get_name());
+    players = sorted(tourney.get_players(include_prune=True), key=lambda x : x.get_name());
 
     remarks = dict();
     remarks_add_game = dict()

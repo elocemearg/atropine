@@ -228,16 +228,12 @@ Solkoff score. However, this does not apply for Prune opponents.</li>"""
         # other players outside their division because the divisions might
         # have been created mid-tournament.
         name_to_effective_wins = {}
+        prunes = set()
         for g in heat_games:
             for p in g.get_players():
+                if p.is_prune():
+                    prunes.add(p.get_name())
                 name_to_effective_wins[p.get_name()] = name_to_effective_wins.get(p.get_name(), 0) + g.get_player_win_count(p)
-
-        # Finally, work out who the Prunes are, because we treat games against
-        # Prunes differently.
-        prunes = set()
-        for p in players:
-            if p.get_rating() == 0:
-                prunes.add(p.get_name())
 
         # Now for each player in the standings table we want to sort, work
         # out the total win counts of all their opponents (or only opponents

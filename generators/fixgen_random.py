@@ -96,8 +96,8 @@ def random_without_rematches(players, table_sizes, previous_games, time_limit_ms
     for pi in range(len(players)):
         potential_opponents[pi] = set([ opp for opp in range(len(players)) if opp != pi ])
 
-    prunes = [ p for p in players if p.rating == 0 ]
-    non_prunes = [ p for p in players if p.rating != 0 ]
+    prunes = [ p for p in players if p.is_prune() ]
+    non_prunes = [ p for p in players if not p.is_prune() ]
 
     for g in previous_games:
         game_players = g.get_players()
@@ -110,7 +110,7 @@ def random_without_rematches(players, table_sizes, previous_games, time_limit_ms
 
             # If a player has played a prune, behave as if they've played all
             # the prunes
-            if game_players[0].rating == 0 or game_players[1].rating == 0:
+            if game_players[0].is_prune() or game_players[1].is_prune():
                 for p in prunes:
                     prune_index = id_to_index.get(p.get_id())
                     potential_opponents[pi0].discard(prune_index)
@@ -142,14 +142,12 @@ def generate(tourney, settings, div_rounds):
     for div_index in div_rounds:
         round_no = div_rounds[div_index]
         players = [x for x in tourney.get_active_players() if x.get_division() == div_index];
-        prunes = [ p for p in players if p.rating == 0 ]
-        non_prunes = [ p for p in players if p.rating != 0 ]
-
         tables = [];
-
         table_size = int(settings.get("d%d_groupsize" % (div_index)))
+        (table_sizes, prunes_required) = gencommon.get_table_sizes(len(players), table_size)
 
-        table_sizes = gencommon.get_table_sizes(len(players), table_size)
+        for i in range(prunes_required):
+            players.append(tourney.get_auto_prune())
 
         if avoid_rematches:
             tables = random_without_rematches(players, table_sizes, tourney.get_games(game_type="P"), 10000)
@@ -162,47 +160,37 @@ def generate(tourney, settings, div_rounds):
         else:
             # Randomly shuffle the player list, but always put any prunes at the
             # end of the list. This will ensure they all go on separate tables
-            # if possible.
+            # if possible, if the tables are the same size. If we're using the
+            # weird 5&3 thing then we don't need Prunes anyway.
+            prunes = [ p for p in players if p.is_prune() ]
+            non_prunes = [ p for p in players if not p.is_prune() ]
             random.shuffle(non_prunes);
             players = non_prunes + prunes
 
-            if table_size > 0:
-                # Distribute the players across the tables
-                num_tables = len(players) // table_size;
-                tables = [ [] for i in range(num_tables) ]
-                table_no = 0
-                for p in players:
-                    tables[table_no].append(p)
-                    table_no = (table_no + 1) % num_tables
-            elif table_size == -5:
-                # Have as many tables of 3 as required to take the number of
-                # players remaining to a multiple of 5, then put the remaining
-                # players on tables of 5.
-                table_sizes = []
-                players_left = len(players)
-                while players_left % 5 != 0:
-                    table_sizes.append(3)
-                    players_left -= 3
-                for i in range(players_left // 5):
-                    table_sizes.append(5)
-                tables = [ [] for x in table_sizes ]
+            tables = []
+            for x in table_sizes:
+                tables.append([])
 
-                # Reverse the list so we use the prunes first, and they can go
-                # on the 3-tables
-                players.reverse()
+            # If the tables are of unequal size, put the large tables first.
+            table_sizes.sort(reverse=True)
 
-                table_pos = 0
-                for p in players:
-                    iterations = 0
-                    while len(tables[table_pos]) >= table_sizes[table_pos]:
-                        table_pos = (table_pos + 1) % len(tables)
-                        iterations += 1
-                        assert(iterations <= len(tables))
-                    tables[table_pos].append(p)
-                    table_pos = (table_pos + 1) % len(tables)
-
-                # Reverse the table list so the 5-tables are first
-                tables.reverse()
+            # Distribute the players amongst the tables. Deal them like cards
+            # rather than cutting the pack, otherwise we'll end up with all
+            # the prunes on the last table.
+            ti = 0
+            for p in players:
+                orig_ti = ti
+                # Put this player on the next table which has space
+                while len(tables[ti]) >= table_sizes[ti]:
+                    ti = (ti + 1) % len(table_sizes)
+                    if ti == orig_ti:
+                        # We shouldn't go into an infinite loop, but if we
+                        # do, then it means the sum of all the values in
+                        # table_sizes is less than the number of players we
+                        # have, which shouldn't have happened.
+                        raise countdowntourney.FixtureGeneratorException("I didn't set up the tables correctly and now I don't have enough spaces for the players. This is my problem. It's a bug in Atropine. Please report it.")
+                tables[ti].append(p)
+                ti = (ti + 1) % len(table_sizes)
 
         for tab in tables:
             generated_groups.add_group(round_no, div_index, tab)

@@ -6,6 +6,7 @@ import swissN;
 import cgicommon
 import fixgen
 import urllib
+import gencommon
 
 name = "Swiss Army Blunderbuss";
 description = "Players are matched against opponents who have performed similarly to them so far in the tourney, but repeats of previous fixtures are avoided. This is the most commonly-used fixture generator for the second round onwards.";
@@ -18,14 +19,14 @@ def int_or_none(s):
     except:
         return None
 
-def get_valid_group_sizes(num_players, num_rounds):
-    sizes = [ gs for gs in valid_group_sizes if gs > 0 and num_players % gs == 0 ]
+def get_valid_group_sizes(num_players, num_rounds, has_auto_prune):
+    sizes = [ gs for gs in valid_group_sizes if gs > 0 and (has_auto_prune or num_players % gs == 0) ]
     if num_players >= 8 and num_rounds > 0:
         sizes.append(-5)
     return sizes
 
-def get_default_group_size(num_players, num_rounds):
-    valid_sizes = get_valid_group_sizes(num_players, num_rounds)
+def get_default_group_size(num_players, num_rounds, has_auto_prune):
+    valid_sizes = get_valid_group_sizes(num_players, num_rounds, has_auto_prune)
     for size in (3, 2, 5, -5, 4):
         if size in valid_sizes:
             return size
@@ -69,7 +70,7 @@ def get_user_form(tourney, settings, div_rounds):
         games = tourney.get_games(game_type='P', division=div_index);
         players = [x for x in tourney.get_active_players() if x.division == div_index];
 
-        if max_time is not None and max_time > 0 and group_size in valid_group_sizes and (group_size == -5 or len(players) % group_size == 0):
+        if max_time is not None and max_time > 0 and group_size in valid_group_sizes and (group_size == -5 or tourney.has_auto_prune() or len(players) % group_size == 0):
             div_ready[div_index] = True
 
         div_group_size[div_index] = group_size
@@ -199,7 +200,7 @@ function generate_fixtures_clicked() {
     div_valid_table_sizes = []
     for div_index in sorted(div_rounds):
         div_players = [x for x in tourney.get_active_players() if x.get_division() == div_index]
-        sizes = get_valid_group_sizes(len(div_players), len(rounds))
+        sizes = get_valid_group_sizes(len(div_players), len(rounds), tourney.has_auto_prune())
         div_valid_table_sizes.append(sizes)
 
     table_sizes_valid_for_all_divs = []
@@ -255,14 +256,14 @@ function generate_fixtures_clicked() {
 
         elements.append(htmlform.HTMLFragment("<p>"))
 
-        div_valid_sizes = get_valid_group_sizes(len(players), len(rounds))
+        div_valid_sizes = get_valid_group_sizes(len(players), len(rounds), tourney.has_auto_prune())
         ticked_group_size = int_or_none(settings.get(div_prefix + "groupsize"))
         if ticked_group_size is None:
             if len(table_sizes_valid_for_all_divs) > 0 and num_divisions > 1:
                 # There is a "default table size" option
                 ticked_group_size = 0
             else:
-                ticked_group_size = get_default_group_size(len(players), len(rounds))
+                ticked_group_size = get_default_group_size(len(players), len(rounds), tourney.has_auto_prune())
         if not div_valid_sizes:
             raise countdowntourney.FixtureGeneratorException("Can't use Swiss fixture generator: number of players%s is not compatible with any supported table size." % (" in a division" if num_divisions > 1 else ""))
 
@@ -270,7 +271,11 @@ function generate_fixtures_clicked() {
         if num_divisions > 1 and len(table_sizes_valid_for_all_divs) > 0:
             group_size_choices = [ htmlform.HTMLFormChoice("0", "Round default (above)", ticked_group_size == 0) ] + group_size_choices
 
-        elements.append(htmlform.HTMLFormRadioButton(div_prefix + "groupsize", "How many players per table? This must exactly divide the number of active players in the %s." % ("division" if num_divisions > 1 else "tournament"), group_size_choices))
+        if tourney.has_auto_prune():
+            format_str = "If this does not exactly divide the number of active players in the %s, prunes will automatically take up the empty slots."
+        else:
+            format_str = "This must exactly divide the number of active players in the %s."
+        elements.append(htmlform.HTMLFormRadioButton(div_prefix + "groupsize", ("How many players per table? " + format_str) % ("division" if num_divisions > 1 else "tournament"), group_size_choices))
         elements.append(htmlform.HTMLFragment("</p>\n"))
         elements.append(htmlform.HTMLFragment("<p>Increase the following values if the fixture generator has trouble finding a grouping within the time limit.</p>\n"));
 
@@ -303,7 +308,7 @@ def check_ready(tourney, div_rounds):
             return (False, "%s: there are already %d games for this division in round %d." % (tourney.get_division_name(div_index), len(existing_games), round_no))
 
         for size in valid_group_sizes:
-            if len(players) % size == 0:
+            if tourney.has_auto_prune() or len(players) % size == 0:
                 break
         else:
             if len(players) < 8:
@@ -384,11 +389,15 @@ def generate(tourney, settings, div_rounds):
         if group_size < 2 and group_size != -5:
             raise countdowntourney.FixtureGeneratorException("%s: The table size is less than 2 (%d)" % (tourney.get_division_name(div_index), group_size))
 
-        if group_size > 0 and len(players) % group_size != 0:
+        if group_size > 0 and not tourney.has_auto_prune() and len(players) % group_size != 0:
             raise countdowntourney.FixtureGeneratorException("%s: Number of players (%d) is not a multiple of the table size (%d)" % (tourney.get_division_name(div_index), len(players), group_size));
 
         if group_size == -5 and len(players) < 8:
             raise countdowntourney.FixtureGeneratorException("%s: Number of players (%d) is not valid for the 5&3 fixture generator - you need at least 8 players" % (tourney.get_division_name(div_index), len(players)))
+
+        # Top up the player list with automatic prunes if necessary.
+        if group_size > 0 and tourney.has_auto_prune():
+            gencommon.add_auto_prunes(tourney, players, group_size)
 
         # Set a sensible cap of five minutes, in case the user has entered a
         # huge number to be clever

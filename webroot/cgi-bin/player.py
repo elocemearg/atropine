@@ -397,7 +397,7 @@ for div in range(num_divisions):
         cgicommon.writeln("</td>")
 
         cgicommon.writeln("<td class=\"playerlistflags\">")
-        if p.get_rating() == 0:
+        if p.is_prune():
             cgicommon.write("&nbsp;<span title=\"Prune\">&#9898;</span>")
         if p.is_avoiding_prune():
             cgicommon.write("&nbsp;<span title=\"Swiss fixture generator will behave as if this player has already played a Prune\">&#9899;</span>")

@@ -69,10 +69,6 @@ class StandingsPlayer(object):
     def __init__(self, name, rating, wins, position, played, played_first, avoid_prune):
         self.name = name;
         self.rating = rating
-        if rating == 0:
-            self.is_prune = True;
-        else:
-            self.is_prune = False;
         self.wins = wins
         self.position = position
         self.games_played = played
@@ -84,6 +80,9 @@ class StandingsPlayer(object):
 
     def get_rating(self):
         return self.rating
+
+    def is_prune(self):
+        return self.rating == 0
 
     def get_played_first_pc(self):
         if self.games_played == 0:
@@ -122,7 +121,7 @@ def get_penalty(p1, p2, num_played, win_diff, rank_by_wins=True):
     pen += HUGE_PENALTY * num_played
 
     # Don't want two prunes drawn against each other
-    if p1.is_prune and p2.is_prune:
+    if p1.is_prune() and p2.is_prune():
         pen += HUGE_PENALTY;
 
     # If two players have a different number of wins, apply a penalty.
@@ -442,7 +441,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
 
     cdt_players: a list of countdowntourney.Player objects, describing the
     players we want to include in this round. This should only include active
-    players, not Prunes.
+    players.
 
     standings: a list of countdowntourney.StandingsRow objects describing the
     standings table at the point we want to generate fixtures. Each
@@ -484,14 +483,25 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
 
     log = True
     players = [];
+
+    # If we have auto-prunes, we'll need to invent a standings position for
+    # them because they won't be in the standings. Put all auto-prunes in joint
+    # last place, which is one more than the number of non-auto-prunes.
+    num_auto_prunes = len([p for p in cdt_players if p.is_auto_prune()])
+    last_place = len(cdt_players) - num_auto_prunes + 1
     for p in cdt_players:
-        for s in standings:
-            if s.name == p.name:
-                players.append(StandingsPlayer(p.name, p.rating, s.wins + float(s.draws) / 2, s.position, s.played, s.played_first, p.is_avoiding_prune()));
-                break
+        if p.is_auto_prune():
+            # Make up a standings row for the auto-prune
+            players.append(StandingsPlayer(p.name, 0, 0, last_place, 0, 0, True))
         else:
-            print(p.name + " not in standings table for this division", file=sys.stderr)
-            raise PlayerNotInStandingsException()
+            # Look up this player in the standings
+            for s in standings:
+                if s.name == p.name:
+                    players.append(StandingsPlayer(p.name, p.rating, s.wins + float(s.draws) / 2, s.position, s.played, s.played_first, p.is_avoiding_prune()));
+                    break
+            else:
+                print(p.name + " not in standings table for this division", file=sys.stderr)
+                raise PlayerNotInStandingsException()
 
     # Sort "players" by their position in the standings table, as that means
     # we try the most likely combinations first when later on we generate all
@@ -505,7 +515,10 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     # selected first to play on a stronger table.
     shuffle_joint_positioned_players(players)
 
-    # Check that the group size makes sense for the number of players.
+    # Check that the group size makes sense for the number of players. By
+    # this point we should have added any required auto-prunes, so the number
+    # of StandingsPlayer objects in "players" must be a multiple of the
+    # group size.
     if group_size == -5:
         if len(players) < 8:
             raise IllegalNumberOfPlayersException()
@@ -535,7 +548,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     prune_set = set()
     a_prune_index = None
     for pi in range(len(players)):
-        if players[pi].rating == 0:
+        if players[pi].is_prune():
             prune_set.add(pi)
             if a_prune_index is None:
                 a_prune_index = pi

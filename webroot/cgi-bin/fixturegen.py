@@ -131,7 +131,9 @@ def show_fixtures_to_accept(tourney, generator_name, fixtures, fixgen_settings):
                 for player in [f.p1, f.p2]:
                     name = player.name
                     standings_row = standings_dict.get(name, None)
-                    if standings_row is None:
+                    if player.is_auto_prune():
+                        player_td_html.append(cgicommon.player_to_non_link(player, emboldenise=True))
+                    elif standings_row is None:
                         player_td_html.append(cgicommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True) + " ?")
                     else:
                         player_td_html.append(cgicommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True) +

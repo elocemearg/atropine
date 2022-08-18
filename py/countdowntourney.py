@@ -11,7 +11,7 @@ import rank
 from cttable import CandidateTable, TableVotingGroup, PhantomTableVotingGroup
 import cttable
 
-SW_VERSION_SPLIT = (1, 2, 0)
+SW_VERSION_SPLIT = (1, 2, 1)
 SW_VERSION = ".".join([str(x) for x in SW_VERSION_SPLIT])
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
@@ -46,6 +46,8 @@ LOG_TYPE_CORRECTION = 2
 LOG_TYPE_COMMENT = 96
 LOG_TYPE_COMMENT_VIDEPRINTER_FLAG = 1
 LOG_TYPE_COMMENT_WEB_FLAG = 4
+
+PRUNE_PLAYER_ID = -1
 
 # At the start of a round, we can either show the name-to-table index or the
 # fixtures table on the public display. If the name-to-table index is enabled,
@@ -216,6 +218,7 @@ create table if not exists player (
     preferred_table int not null default -1,
     unique(name), unique(short_name)
 );
+insert into player (id, name, rating, team_id, short_name) values (-1, 'Prune', 0, null, 'Prune');
 
 -- TEAM table
 create table if not exists team (
@@ -434,7 +437,8 @@ and p.id = points.id
 and p.id = draws.id
 and p.id = points_against.id
 and p.id = ppf.id
-and p.id = pff.id;
+and p.id = pff.id
+and p.id >= 0;
 
 -- Tables for controlling the display system Teleost
 create table if not exists teleost(current_mode int);
@@ -594,6 +598,10 @@ class QualificationTimeoutException(TourneyException):
     description = "In calculating the standings table, we took too long to work out which players, if any, have qualified for the final. This may be due to an unusually large number of players, or an unusual tournament setup. In this case it is strongly recommended go to General Setup and disable qualification analysis by setting the number of places in the qualification zone to zero."
     pass
 
+class AutoPruneNotSupportedException(TourneyException):
+    description = "This tourney database file was created with a pre-1.2.1 version of Atropine so does not support automatic prunes. However, we should never have tried to use automatic prunes. So if you see this message, it's a bug in Atropine."
+    pass
+
 class InvalidDateException(TourneyException):
     def __init__(self, reason):
         self.description = reason
@@ -661,6 +669,9 @@ class Player(object):
     def get_rating(self):
         return self.rating
 
+    def is_prune(self):
+        return self.get_rating() == 0
+
     def get_id(self):
         return self.player_id
 
@@ -700,6 +711,12 @@ class Player(object):
         else:
             return self.preferred_table
 
+    def is_auto_prune(self):
+        return self.player_id == PRUNE_PLAYER_ID
+
+class PrunePlayer(Player):
+    def __init__(self, name):
+        super().__init__(name, rating=0, player_id=-1)
 
 def get_first_name(name):
     return name.split(" ", 1)[0]
@@ -839,6 +856,9 @@ class StandingsRow(object):
 
     def get_secondary_rank_value_strings(self):
         return self.secondary_rank_value_strings[:]
+
+    def is_prune(self):
+        return self.rating == 0
 
 class Game(object):
     def __init__(self, round_no, seq, table_no, division, game_type, p1, p2, s1=None, s2=None, tb=False):
@@ -1446,7 +1466,7 @@ class Tourney(object):
 
         self.set_attribute("autoratingbehaviour", auto_rating_behaviour);
 
-        self.db.execute("delete from player");
+        self.db.execute("delete from player where id >= 0");
 
         self.db.executemany("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed, avoid_prune, require_accessible_table, preferred_table) values (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)",
                 [ (p.get_name(), p.get_rating(), p.get_team_id(),
@@ -1468,7 +1488,7 @@ class Tourney(object):
     def get_withdrawn_players(self):
         return [x for x in self.get_players() if x.withdrawn]
 
-    def get_players(self, exclude_withdrawn=False):
+    def get_players(self, exclude_withdrawn=False, include_prune=False):
         cur = self.db.cursor();
         if self.db_version < (0, 7, 7):
             avoid_prune_value = "0"
@@ -1485,8 +1505,13 @@ class Tourney(object):
         else:
             preferred_table_value = "p.preferred_table"
 
+        conditions = []
         if exclude_withdrawn:
-            condition = "where p.withdrawn = 0"
+            conditions.append("p.withdrawn = 0")
+        if not include_prune:
+            conditions.append("p.id >= 0")
+        if conditions:
+            condition = "where " + " and ".join(conditions)
         else:
             condition = ""
 
@@ -1497,7 +1522,10 @@ class Tourney(object):
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
-            players.append(Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8], row[9], row[10], row[11], row[12]));
+            if row[9] == PRUNE_PLAYER_ID:
+                players.append(PrunePlayer(row[0]))
+            else:
+                players.append(Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8], row[9], row[10], row[11], row[12]));
         cur.close();
         return players;
 
@@ -1514,11 +1542,33 @@ class Tourney(object):
         cur.close();
         self.db.commit();
 
+    def get_auto_prune_name(self):
+        cur = self.db.cursor()
+        cur.execute("select name from player where id = ?", (PRUNE_PLAYER_ID,))
+        row = cur.fetchone()
+        if row is None or row[0] is None:
+            name = None
+        else:
+            name = row[0]
+        cur.close()
+        return name
+
+    def set_auto_prune_name(self, name):
+        if self.player_name_exists(name):
+            raise PlayerExistsException("Cannot rename the prune player to \"%s\" because a player with that name already exists." % (name))
+        self.db.execute("update player set name = ? where id = ?", (name, PRUNE_PLAYER_ID))
+        self.db.commit()
+
+    def get_auto_prune(self):
+        if self.has_auto_prune():
+            return PrunePlayer(self.get_auto_prune_name())
+        else:
+            raise AutoPruneNotSupportedException("Internal error: this tourney database is from version %s, and automatic prunes are only supported from 1.2.1 onwards. If you ever actually see this error it is a bug in Atropine." % (".".join([str(x) for x in self.db_version])))
+
     def rename_player(self, oldname, newname):
         newname = newname.strip();
         if newname == "":
             raise InvalidPlayerNameException()
-
         if self.player_name_exists(newname):
             raise PlayerExistsException("Cannot rename player \"%s\" to \"%s\" because there's already another player with that name." % (oldname, newname));
         cur = self.db.cursor();
@@ -2385,9 +2435,9 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def get_num_active_players(self, div_index=None):
         cur = self.db.cursor()
         if div_index is not None:
-            cur.execute("select count(*) from player where division = %d and withdrawn = 0" % (div_index))
+            cur.execute("select count(*) from player where division = %d and withdrawn = 0 and id >= 0" % (div_index))
         else:
-            cur.execute("select count(*) from player where withdrawn = 0")
+            cur.execute("select count(*) from player where withdrawn = 0 and id >= 0")
         row = cur.fetchone()
         value = int(row[0])
         cur.close()
@@ -2398,7 +2448,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             return 0
 
         cur = self.db.cursor()
-        cur.execute("select count(*) from player where require_accessible_table != 0 and withdrawn = 0")
+        cur.execute("select count(*) from player where require_accessible_table != 0 and withdrawn = 0 and id >= 0")
         row = cur.fetchone()
         if row and row[0] is not None:
             count = row[0]
@@ -2431,6 +2481,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             conditions.append("s.division = %d " % (division))
         if exclude_withdrawn_with_no_games:
             conditions.append("(p.withdrawn = 0 or s.played > 0)")
+        conditions.append("p.id >= 0")
 
         if conditions:
             where_clause = "where " + " and ".join(conditions)
@@ -2784,7 +2835,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         self.db.commit()
 
     def get_player_teams(self):
-        sql = "select p.id, t.id from player p left outer join team t on p.team_id = t.id order by p.name"
+        sql = "select p.id, t.id from player p left outer join team t on p.team_id = t.id where p.id >= 0 order by p.name"
         cur = self.db.cursor()
         cur.execute(sql)
         player_team_ids = []
@@ -2894,7 +2945,7 @@ and g.game_type = 'P'
             return 0
 
         cur = self.db.cursor()
-        cur.execute("select count(*) from player where require_accessible_table != 0 and withdrawn = 0 and division in (%s)" % (",".join([str(x) for x in div_set])))
+        cur.execute("select count(*) from player where require_accessible_table != 0 and withdrawn = 0 and division in (%s) and id >= 0" % (",".join([str(x) for x in div_set])))
         row = cur.fetchone()
         if row is None or row[0] is None:
             count = 0
@@ -3015,7 +3066,7 @@ and g.game_type = 'P'
 
         # Get the set of all players who have lost at least num_losing_games
         # games of type P
-        rows = cur.execute("select p.id, sum(case when (p.id = g.p1 and g.p1_score < g.p2_score) or (p.id = g.p2 and g.p2_score < g.p1_score) then 1 else 0 end) losses from player p, game g where g.game_type = 'P' and p.division = ? and (g.p1 = p.id or g.p2 = p.id) group by p.id", (division,))
+        rows = cur.execute("select p.id, sum(case when (p.id = g.p1 and g.p1_score < g.p2_score) or (p.id = g.p2 and g.p2_score < g.p1_score) then 1 else 0 end) losses from player p, game g where g.game_type = 'P' and p.division = ? and (g.p1 = p.id or g.p2 = p.id) and p.rating > 0 group by p.id", (division,))
         eligible_player_ids = set()
         for row in rows:
             if row[1] >= num_losing_games:
@@ -3047,6 +3098,15 @@ and g.game_type = 'P'
             p_id = player_name_to_id.get(s.name)
             if p_id is not None:
                 p_id_to_standings_pos[p_id] = s.position
+
+        # If there are any auto-prunes, they won't have an entry in the
+        # standings but we need to assign them a standings position for the
+        # purpose of this award, so put them in joint last place. If the
+        # last-placed player is another prune, put them joint with that.
+        if standings and standings[-1].is_prune():
+            p_id_to_standings_pos[PRUNE_PLAYER_ID] = standings[-1].position
+        else:
+            p_id_to_standings_pos[PRUNE_PLAYER_ID] = len(standings) + 1
 
         # For each eligible player, return a tuple containing
         # (player object, list of opponent ranks, average opponent ranks)
@@ -3090,15 +3150,19 @@ and g.game_type = 'P'
         for p_id in p_id_to_losing_margins:
             p_id_to_losing_margins[p_id].sort()
 
+        p_id_to_player = {}
+        for p_id in p_id_to_losing_margins:
+            p_id_to_player[p_id] = self.get_player_from_id(p_id)
+
         # Filter out any player with not enough losses, and return a
         # sorted list of (player, num_losses, aggregate_margin, margins_list)
         # tuples containing the others.
         return sorted(
                 [
-                    ( self.get_player_from_id(p_id),
+                    ( p_id_to_player[p_id],
                         len(p_id_to_losing_margins[p_id]),
                         sum(p_id_to_losing_margins[p_id][0:min_losses]),
-                        p_id_to_losing_margins[p_id][0:min_losses]) for p_id in p_id_to_losing_margins if len(p_id_to_losing_margins[p_id]) >= min_losses
+                        p_id_to_losing_margins[p_id][0:min_losses]) for p_id in p_id_to_losing_margins if not p_id_to_player[p_id].is_prune() and len(p_id_to_losing_margins[p_id]) >= min_losses
                 ],
                 key=lambda x : x[2]
         )
@@ -3127,15 +3191,19 @@ order by 1""")
         for p_id in p_id_to_winning_margins:
             p_id_to_winning_margins[p_id].sort()
 
+        p_id_to_player = {}
+        for p_id in p_id_to_winning_margins:
+            p_id_to_player[p_id] = self.get_player_from_id(p_id)
+
         # Filter out any player with fewer than min_wins wins, and return a
         # sorted list of (player, wins, aggregate_margin, margins_list) tuples
         # containing the others.
         return sorted(
                 [
-                    ( self.get_player_from_id(p_id),
+                    ( p_id_to_player[p_id],
                         len(p_id_to_winning_margins[p_id]),
                         sum(p_id_to_winning_margins[p_id][0:min_wins]),
-                        p_id_to_winning_margins[p_id][0:min_wins]) for p_id in p_id_to_winning_margins if len(p_id_to_winning_margins[p_id]) >= min_wins
+                        p_id_to_winning_margins[p_id][0:min_wins]) for p_id in p_id_to_winning_margins if not p_id_to_player[p_id].is_prune() and len(p_id_to_winning_margins[p_id]) >= min_wins
                 ],
                 key=lambda x : x[2]
         )
@@ -3490,6 +3558,9 @@ order by 1""")
 
     def set_rank_finals(self, rank_finals):
         return self.set_attribute("rankfinals", 1 if rank_finals else 0)
+
+    def has_auto_prune(self):
+        return self.db_version >= (1, 2, 1)
 
 
 def get_5_3_table_sizes(num_players):

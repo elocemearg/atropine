@@ -545,7 +545,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
                     writer.writerow(("-",))
                 row = []
                 row.append(cgicommon.escape(p.get_name()))
-                if auto_rating == countdowntourney.RATINGS_MANUAL or p.get_rating() == 0:
+                if auto_rating == countdowntourney.RATINGS_MANUAL or p.is_prune():
                     row.append("%g" % (p.get_rating()))
                 if p.get_team_id() is not None:
                     row.append("T%d" % (p.get_team_id()))

@@ -12,7 +12,7 @@ verbose = False
 tests = [
     {
         "name" : "ranktest_wins_points",
-        "player_names" : [ "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Prune" ],
+        "player_names" : [ "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo" ],
         "games_per_round" : {
             1 : [
                 (1, "Alpha", 60, "Echo", 40),
@@ -70,7 +70,6 @@ tests = [
                 ( 9, "Foxtrot", 2, 1,  68),
                 (10, "Kilo",    2, 0, 102),
                 (11, "India",   2, 0,  89),
-                (12, "Prune",   2, 0,   0),
             ],
             2 : [
                 ( 1, "Delta",   4, 4, 255),
@@ -84,7 +83,6 @@ tests = [
                 ( 9, "Hotel",   4, 2, 186),
                 (10, "India",   4, 1, 192),
                 (11, "Foxtrot", 4, 1, 137),
-                (12, "Prune",   4, 0,   0),
             ],
             3 : [
                 ( 1, "Delta",   6, 6, 395),
@@ -98,14 +96,13 @@ tests = [
                 ( 9, "Foxtrot", 6, 3, 250),
                 (10, "India",   6, 2, 302),
                 (11, "Kilo",    6, 2, 280),
-                (12, "Prune",   6, 0,   0),
             ]
         },
         "rank" : countdowntourney.RANK_WINS_POINTS
     },
     {
         "name" : "ranktest_neustadtl",
-        "player_names" : [ "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Prune" ],
+        "player_names" : [ "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo" ],
         "rank" : countdowntourney.RANK_WINS_NEUSTADTL,
         "games_per_round" : {
             1 : [
@@ -135,7 +132,7 @@ tests = [
             # Juliet:   Bravo
             # Kilo:
             # Prune:
-            # Hotel withdraws, Prune II is added.
+            # Hotel withdraws.
             # Anyone who beat Hotel in the first round has their Neustadtl
             # score calculated as if Hotel drew their missing games.
             2 : [
@@ -149,8 +146,8 @@ tests = [
                 (3, "Charlie", 65, "Prune", 0),
                 (3, "Prune", 0, "Echo", 59),
                 (4, "India", 52, "Kilo", 39),
-                (4, "Kilo", 70, "Prune II", 0),
-                (4, "Prune II", 0, "India", 69)
+                (4, "Kilo", 70, "Prune", 0),
+                (4, "Prune", 0, "India", 69)
             ],
             # Defeated opponents after round 2:
             #           R1                R2
@@ -211,7 +208,6 @@ tests = [
                 ( 8, "Hotel",   2, 1, 0, 96),
                 (10, "India",   2, 0.5, 0.75, 106),
                 (11, "Kilo",    2, 0, 0, 102),
-                (12, "Prune",   2, 0, 0, 0),
             ],
             2 : [
                 ( 1, "Delta",   4, 4, 6.5, 263),
@@ -225,8 +221,6 @@ tests = [
                 ( 9, "Foxtrot", 4, 1, 2, 148),
                 (10, "Kilo",    4, 1, 0, 211),
                 (11, "Hotel",   2, 1, 0, 96),
-                (12, "Prune",   4, 0, 0, 0),
-                (12, "Prune II",2, 0, 0, 0),
             ],
             3 : [
                 ( 1, "Delta",   6, 6, 15, 392),
@@ -241,22 +235,18 @@ tests = [
                 (10, "Foxtrot", 6, 1, 3, 240),
                 (11, "Hotel",   2, 1, 0, 96),
                 (12, "Late",    2, 1, 0, 89),
-                (13, "Prune",   6, 0, 0, 0),
-                (13, "Prune II",2, 0, 0, 0),
             ],
         },
         "withdrawals_after_round" : {
             1 : [ "Hotel" ],
-            2 : [ "Prune II" ]
         },
         "additions_after_round" : {
-            1 : [ "Prune II" ],
             2 : [ "Late" ]
         }
     },
     {
         "name" : "ranktest_solkoff",
-        "player_names" : [ "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Prune" ],
+        "player_names" : [ "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo" ],
         "rank" : countdowntourney.RANK_WINS_SOW,
         "games_per_round" : {
             1 : [
@@ -337,7 +327,7 @@ tests = [
                 (4, "Hotel", 52, "Late", 50),
                 (4, "Late", 59, "Kilo", 31)
             ]
-            # Opponents faced after round 2:
+            # Opponents faced after round 3:
             #
             # Alpha:   Echo, India, Delta, Golf, Charlie, Delta
             # Bravo:   Foxtrot, Juliet, Charlie, Hotel, Echo, Golf
@@ -366,7 +356,6 @@ tests = [
                 ( 9, "Foxtrot", 2, 1, 2, 68),
                 (10, "India",   2, 0.5, 2.5, 106),
                 (11, "Kilo",    2, 0, 3, 102),
-                (12, "Prune",   2, 0, 3, 0),
             ],
             2 : [
                 ( 1, "Alpha",   4, 3.5, 8.5, 251),
@@ -381,7 +370,6 @@ tests = [
                 (10, "Kilo",    4, 1, 8.5, 207), # played Late, bonus 2*0.5
                 (11, "Hotel",   4, 1, 8, 187),
                 (12, "Late",    2, 1, 2.5, 75),
-                (13, "Prune",   2, 0, 4, 0),
             ],
             3 : [
                 ( 1, "Alpha",   6, 4.5, 20.5, 370),
@@ -396,11 +384,9 @@ tests = [
                 (10, "Juliet",  6, 2, 19.5, 286),
                 (11, "Late",    4, 2, 8.5, 184),
                 (12, "Kilo",    6, 1, 18.5, 288), # played Late*2, bonus 2*2*0.5
-                (13, "Prune",   2, 0, 7, 0),
             ],
         },
         "withdrawals_after_round" : {
-            1 : [ "Prune" ]
         },
         "additions_after_round" : {
             1 : [ "Late" ]
@@ -425,7 +411,7 @@ tests = [
                 (4, "Hotel", 66, "Lima", 33),
                 (4, "Lima", 70, "Delta", 50)
             ],
-            # Foxtrot withdraws, Prune is added
+            # Foxtrot withdraws, Prune is added automatically
             2 : [
                 (1, "Golf", 55, "Alpha", 51),
                 (1, "Alpha", 61, "Delta", 40),
@@ -485,7 +471,6 @@ tests = [
                 (10, "Hotel",   4, 1, 2, 187),
                 (11, "Kilo",    4, 1, 1, 225),
                 (12, "Foxtrot", 2, 1, 1, 68),
-                (13, "Prune",   2, 0, 0, 0)
             ],
             3 : [
                 ( 1, "Golf",    6, 5, 11, 357),
@@ -500,19 +485,14 @@ tests = [
                 (10, "Foxtrot", 4, 2, 3, 168),
                 (11, "Lima",    6, 1, 3, 306),
                 (12, "Hotel",   6, 1, 3, 278),
-                (13, "Prune",   2, 0, 0, 0)
             ],
         },
         "withdrawals_after_round" : {
             1 : [ "Foxtrot" ],
-            2 : [ "Prune" ],
         },
         "unwithdrawals_after_round" : {
             2 : [ "Foxtrot" ],
         },
-        "additions_after_round" : {
-            1 : [ "Prune" ],
-        }
     },
     {
         "name" : "ranktest_spread",

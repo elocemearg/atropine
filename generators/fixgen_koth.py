@@ -79,7 +79,7 @@ def generate(tourney, settings, div_rounds):
             for s in standings:
                 p = lookup_player(players, s.name)
                 if p:
-                    if p.rating == 0:
+                    if p.is_prune():
                         prunes.append(p)
                     else:
                         ordered_players.append(p)
@@ -87,14 +87,17 @@ def generate(tourney, settings, div_rounds):
             # This is the first round. Put the top rated players on the top
             # table, and so on.
             ordered_players = sorted(players, key=lambda x : x.rating, reverse=True)
-            prunes = [x for x in ordered_players if x.rating == 0]
-            ordered_players = [x for x in ordered_players if x.rating != 0]
+            prunes = [x for x in ordered_players if x.is_prune()]
+            ordered_players = [x for x in ordered_players if not x.is_prune()]
             ordered_players = randomly_reorder_equals(ordered_players, lambda x : x.rating)
 
         if group_size == -5:
             group_sizes = countdowntourney.get_5_3_table_sizes(len(players))
         else:
-            group_sizes = [ group_size for i in range(len(players) // group_size) ]
+            (group_sizes, prunes_required) = gencommon.get_table_sizes(len(players), group_size)
+            for i in range(prunes_required):
+                prune = tourney.get_auto_prune()
+                prunes.append(prune)
 
         groups = [ [] for i in group_sizes ]
 

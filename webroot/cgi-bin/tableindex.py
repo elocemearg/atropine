@@ -101,10 +101,11 @@ else:
         names = []
         current_player_list = table_to_player_list.get(g.table_no, [])
         for p in [g.p1, g.p2]:
-            names.append(p.get_name())
-            player_name_to_player[p.get_name()] = p
-            if p not in current_player_list:
-                current_player_list.append(p)
+            if not p.is_prune():
+                names.append(p.get_name())
+                player_name_to_player[p.get_name()] = p
+                if p not in current_player_list:
+                    current_player_list.append(p)
         table_to_player_list[g.table_no] = current_player_list
         for name in names:
             current_table_list = player_name_to_table_list.get(name, [])

@@ -25,7 +25,16 @@ def int_or_none(s):
     except:
         return None
 
-def lookup_player(players, name):
+def to_bool(value, default):
+    i = int_or_none(value)
+    if i is None:
+        return default
+    else:
+        return bool(i)
+
+def lookup_player(players, name, prune_name, prune):
+    if prune_name is not None and name == prune_name:
+        return prune
     for p in players:
         if p.get_name().lower() == name.lower():
             return p;
@@ -92,7 +101,7 @@ def get_user_form(tourney, settings, div_rounds):
                 raise countdowntourney.FixtureGeneratorException("%s: invalid table size for fully-manual setup." % (tourney.get_division_name(div_index)))
         else:
             for size in (2,3,4,5):
-                if num_groups or len(div_players) % size == 0:
+                if num_groups or tourney.has_auto_prune() or len(div_players) % size == 0:
                     choices.append(htmlform.HTMLFormChoice(str(size), str(size), size == div_table_sizes[div_index]))
             if len(div_players) >= 8:
                 choices.append(htmlform.HTMLFormChoice("-5", "5&3", div_table_sizes[div_index] == -5))
@@ -136,8 +145,12 @@ def get_user_form(tourney, settings, div_rounds):
                 num_slots = table_size * num_groups
         else:
             # If num_groups is not specified, then the number if slots is
-            # simply the number of active players in this division.
+            # simply the number of active players in this division. If the
+            # database supports automatic Prunes, round up to the nearest
+            # multiple of the group size.
             num_slots = len(div_players)
+            if table_size > 0 and tourney.has_auto_prune() and num_slots % table_size != 0:
+                num_slots += table_size - (num_slots % table_size)
 
         div_num_slots[div_index] = num_slots
 
@@ -157,7 +170,16 @@ def get_user_form(tourney, settings, div_rounds):
     div_count_in_standings = dict()
     div_set_text = dict()
     div_game_type = dict()
-    all_filled = True
+    div_unselected_names = dict()
+    finished = True
+
+    if tourney.has_auto_prune():
+        prune = tourney.get_auto_prune()
+        prune_name = tourney.get_auto_prune_name()
+    else:
+        prune = None
+        prune_name = None
+
     for div_index in div_rounds:
         div_players = [x for x in players if x.get_division() == div_index];
         num_groups = int_or_none(settings.get("d%d_num_groups" % (div_index)))
@@ -184,25 +206,26 @@ def get_user_form(tourney, settings, div_rounds):
         # Slot numbers which contain text that doesn't match any player name
         invalid_slots = []
 
-        allow_player_repetition = int_or_none(settings.get("d%d_allow_player_repetition" % (div_index)))
-        if allow_player_repetition is None:
-            allow_player_repetition = False
-        else:
-            allow_player_repetition = bool(allow_player_repetition)
+        allow_player_repetition = to_bool(settings.get("d%d_allow_player_repetition" % (div_index)), False)
+        allow_unselected_players = to_bool(settings.get("d%d_allow_unselected_players" % (div_index)), False)
+
+        unselected_names = [x.get_name() for x in div_players]
 
         # Ask the user to fill in N little drop-down boxes, where N is the
         # number of players, to decide who's going on what table.
-        for player_index in range(0, num_slots):
-            name = settings.get("d%d_player%d" % (div_index, player_index));
+        for slot_index in range(0, num_slots):
+            name = settings.get("d%d_player%d" % (div_index, slot_index));
             if name is None:
                 name = ""
-            set_text[player_index] = name
+            set_text[slot_index] = name
             if name:
-                set_players[player_index] = lookup_player(div_players, name);
-                if set_players[player_index] is None:
-                    invalid_slots.append(player_index)
+                set_players[slot_index] = lookup_player(div_players, name, prune_name, prune);
+                if set_players[slot_index] is None:
+                    invalid_slots.append(slot_index)
+                if name in unselected_names:
+                    unselected_names.remove(name)
             else:
-                set_players[player_index] = None
+                set_players[slot_index] = None
 
         # Slot numbers which contain a player already contained in another slot
         duplicate_slots = [];
@@ -210,23 +233,25 @@ def get_user_form(tourney, settings, div_rounds):
         # Slot numbers which don't contain a player
         empty_slots = [];
 
-        player_index = 0;
+        slot_index = 0;
         for p in set_players:
-            if player_index in invalid_slots:
-                all_filled = False
+            if slot_index in invalid_slots:
+                finished = False
             elif p is None:
-                empty_slots.append(player_index);
-                all_filled = False;
+                empty_slots.append(slot_index);
+                finished = False;
             else:
-                if not allow_player_repetition:
+                if not allow_player_repetition and not p.is_auto_prune():
                     count = 0;
                     for q in set_players:
                         if q is not None and q.get_name() == p.get_name():
                             count += 1;
                     if count > 1:
-                        duplicate_slots.append(player_index);
-                        all_filled = False;
-            player_index += 1;
+                        duplicate_slots.append(slot_index);
+                        finished = False;
+            slot_index += 1;
+        if not allow_unselected_players and unselected_names:
+            finished = False
 
         div_set_players[div_index] = set_players
         div_duplicate_slots[div_index] = duplicate_slots
@@ -235,10 +260,11 @@ def get_user_form(tourney, settings, div_rounds):
         div_count_in_standings[div_index] = count_in_standings
         div_set_text[div_index] = set_text
         div_game_type[div_index] = game_type
+        div_unselected_names[div_index] = unselected_names
 
     interface_type = int_or_none(settings.get("interfacetype", INTERFACE_AUTOCOMPLETE))
 
-    if all_filled and settings.get("submitplayers"):
+    if finished and settings.get("submitplayers"):
         # All slots filled, don't need to ask the user anything more
         return None
 
@@ -294,6 +320,8 @@ function unset_unsaved_data_warning() {
     div_player_names = {}
     for div_index in div_rounds:
         name_list = [ x.get_name() for x in players if x.get_division() == div_index ]
+        if tourney.has_auto_prune():
+            name_list.append(prune_name)
         div_player_names[div_index] = name_list
     autocomplete_script += json.dumps(div_player_names, indent=4) + ";\n"
 
@@ -391,6 +419,9 @@ function editBoxEdit(divIndex, controlId) {
         set_text = div_set_text[div_index]
         num_slots = div_num_slots[div_index]
         game_type = div_game_type[div_index]
+        unselected_names = div_unselected_names[div_index]
+
+        allow_unselected_players = to_bool(settings.get("d%d_allow_unselected_players" % (div_index)), False)
 
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
@@ -405,16 +436,11 @@ function editBoxEdit(divIndex, controlId) {
         # Show the table of groups for the user to fill in
         elements.append(htmlform.HTMLFragment("<table class=\"seltable\">\n"));
         prev_table_no = None;
-        unselected_names = [x.get_name() for x in div_players];
 
         if table_size > 0:
             table_sizes = [table_size for i in range(0, num_slots // table_size)]
         else:
             table_sizes = countdowntourney.get_5_3_table_sizes(num_slots)
-
-        for p in set_players:
-            if p and p.get_name() in unselected_names:
-                unselected_names.remove(p.get_name())
 
         for table_size in table_sizes:
             elements.append(htmlform.HTMLFragment("<tr>\n"))
@@ -453,9 +479,9 @@ function editBoxEdit(divIndex, controlId) {
                     name_list = [ x.get_name() for x in div_players ]
                 else:
                     if p:
-                        name_list = sorted(unselected_names + [p.get_name()])
+                        name_list = sorted(unselected_names + [p.get_name()] + ([prune_name] if tourney.has_auto_prune() and not p.is_auto_prune() else []))
                     else:
-                        name_list = unselected_names
+                        name_list = sorted(unselected_names + ([prune_name] if tourney.has_auto_prune() else []))
 
                 for q in name_list:
                     if p is not None and q == p.get_name():
@@ -514,13 +540,26 @@ function editBoxEdit(divIndex, controlId) {
             elements.append(htmlform.HTMLFragment("<p>You have slots with unrecognised player names; these are highlighted in <span style=\"color: red; font-weight: bold;\">red</span>.</p>"));
         if duplicate_slots:
             elements.append(htmlform.HTMLFragment("<p>You have players in multiple slots; these are highlighted in <span style=\"color: violet; font-weight: bold;\">violet</span>.</p>"));
+        if not allow_unselected_players and unselected_names and not invalid_slots and not empty_slots:
+            elements.append(htmlform.HTMLFragment("<p>You have filled all the slots but not all players have not been assigned to a table. See below. Have you put a Prune into too many slots?</p>"))
 
         if unselected_names:
             elements.append(htmlform.HTMLFragment("<p>Players still to be given a table:\n"));
+            if not allow_unselected_players and not invalid_slots and not empty_slots:
+                # All slots are filled validly but some players don't have a
+                # slot (perhaps you used an automatic Prune too many times).
+                # Write the unslotted players in red to highlight that this is
+                # now the problem.
+                span_style = "style=\"color: red; font-weight: bold;\""
+            else:
+                span_style = ""
             for i in range(len(unselected_names)):
                 name = unselected_names[i]
-                elements.append(htmlform.HTMLFragment("%s%s" % (cgicommon.escape(name, True), "" if i == len(unselected_names) - 1 else ", ")));
+                elements.append(htmlform.HTMLFragment("<span %s>%s%s</span>" % (span_style, cgicommon.escape(name, True), "" if i == len(unselected_names) - 1 else ", ")));
             elements.append(htmlform.HTMLFragment("</p>\n"));
+
+        if tourney.has_auto_prune():
+            elements.append(htmlform.HTMLFragment("<p>Automatic prune player name: %s</p>" % (cgicommon.escape(tourney.get_auto_prune_name()))))
 
         elements.append(htmlform.HTMLFormHiddenInput("d%d_groupsize" % (div_index), str(div_table_sizes[div_index])))
 
@@ -582,10 +621,13 @@ def check_ready(tourney, div_rounds):
         if existing_games:
             return (False, "%s: round %d already has %d games in it." % (tourney.get_division_name(div), round_no, len(existing_games)))
 
-        possible_sizes = []
-        for size in (2,3,4,5):
-            if len(div_players) % size == 0:
-                possible_sizes.append(size)
+        if tourney.has_auto_prune():
+            possible_sizes = [2, 3, 4, 5]
+        else:
+            possible_sizes = []
+            for size in (2,3,4,5):
+                if len(div_players) % size == 0:
+                    possible_sizes.append(size)
         if len(div_players) >= 8:
             possible_sizes.append(-5)
         if not possible_sizes:
@@ -622,11 +664,12 @@ def generate(tourney, settings, div_rounds, check_ready_fn=None):
             # No number of groups specified, so the number of players is all
             # the active players in this division.
             num_slots = len(div_players)
+            if table_size > 0 and tourney.has_auto_prune() and num_slots % table_size != 0:
+                num_slots += table_size - (num_slots % table_size)
         else:
             if table_size <= 1:
                 raise countdowntourney.FixtureGeneratorException("%s: invalid number of players per table for fully-manual setup." % (tourney.get_division_name(div_ikndeX)))
             num_slots = num_groups * table_size
-
 
         if table_size > 0:
             if num_slots % table_size != 0:
@@ -646,6 +689,14 @@ def generate(tourney, settings, div_rounds, check_ready_fn=None):
         raise countdowntourney.FixtureGeneratorException(excuse);
 
     generated_groups = fixgen.GeneratedGroups()
+
+    if tourney.has_auto_prune():
+        prune = tourney.get_auto_prune()
+        prune_name = tourney.get_auto_prune_name()
+    else:
+        prune = None
+        prune_name = None
+
     for div_index in div_rounds:
         round_no = div_rounds[div_index]
         groups = [];
@@ -672,7 +723,10 @@ def generate(tourney, settings, div_rounds, check_ready_fn=None):
             else:
                 raise countdowntourney.FixtureGeneratorException("%s: Player %d not specified. This is probably a bug, as the form should have made you fill in all the boxes." % (tourney.get_division_name(div_index), i));
 
-        selected_players = [lookup_player(div_players, x) for x in player_names];
+        selected_players = []
+        for name in player_names:
+            player = lookup_player(div_players, name, prune_name, prune)
+            selected_players.append(player)
 
         player_index = 0
         groups = []

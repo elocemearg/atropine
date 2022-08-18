@@ -94,7 +94,11 @@ class TableNumberIndexView extends PagedTableView {
                         continue;
 
                     var playerNames = [ game.name1, game.name2 ];
+                    var playersArePrunes = [ game.prune1, game.prune2 ];
                     for (var i = 0; i < playerNames.length; ++i) {
+                        if (playersArePrunes[i]) {
+                            continue;
+                        }
                         /* Find the list of tables this player is playing
                          * on in this round */
                         var name = playerNames[i];

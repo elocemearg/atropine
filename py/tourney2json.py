@@ -88,6 +88,8 @@ def get_games(tourney, options):
             names = g.get_player_names()
             game_dict["name1"] = names[0]
             game_dict["name2"] = names[1]
+            game_dict["prune1"] = g.p1.is_prune()
+            game_dict["prune2"] = g.p2.is_prune()
             game_dict["score1"] = g.s1
             game_dict["score2"] = g.s2
             game_dict["teamcolour1"] = teams[0]

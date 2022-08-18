@@ -21,7 +21,7 @@ def check_ready(tourney, div_rounds):
         prev_rating = None
         for p in div_players:
             rating = p.get_rating()
-            if rating != 0:
+            if not p.is_prune():
                 if prev_rating is None:
                     prev_rating = rating
                 elif rating != prev_rating:
@@ -55,7 +55,10 @@ def generate(tourney, settings, div_rounds):
         players = sorted(players, key=lambda x : (x.get_rating(), -x.get_id()), reverse=True)
 
         if len(players) % table_size != 0:
-            raise countdowntourney.FixtureGeneratorException("Well, this is awkward... Division \"%s\" has %d active players, which isn't a multiple of %d." % (tourney.get_division_name(div_index), len(players), table_size))
+            if tourney.has_auto_prune():
+                gencommon.add_auto_prunes(tourney, players, table_size)
+            else:
+                raise countdowntourney.FixtureGeneratorException("Well, this is awkward... Division \"%s\" has %d active players, which isn't a multiple of %d." % (tourney.get_division_name(div_index), len(players), table_size))
 
         pots = [ players[(pot_num * len(players) // table_size):((pot_num+1) * len(players) // table_size)] for pot_num in range(table_size) ]
 
@@ -65,8 +68,8 @@ def generate(tourney, settings, div_rounds):
         # prunes go at the end of the list, so they end up on the
         # highest-numbered tables.
         for pot_num in range(table_size):
-            prunes = [ p for p in pots[pot_num] if p.get_rating() == 0 ]
-            non_prunes = [ p for p in pots[pot_num] if p.get_rating() != 0 ]
+            prunes = [ p for p in pots[pot_num] if p.is_prune() ]
+            non_prunes = [ p for p in pots[pot_num] if not p.is_prune() ]
             random.shuffle(non_prunes)
             pots[pot_num] = non_prunes + prunes
 
