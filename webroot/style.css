@@ -232,7 +232,7 @@ table.scorestable td.gameremarks {
 
 table.fixturetable td.gamescore {
 	background-color: #ffffcc;
-    text-align: left;
+    text-align: center;
 }
 
 table.fixturetable td.gameplayer2 {
