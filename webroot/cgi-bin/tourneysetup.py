@@ -588,7 +588,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("</p>")
 
         cgicommon.writeln("<p>")
-        cgicommon.writeln("Don't worry if the number of players isn't a multiple of the desired group size. Fixture generators will automatically add prunes if required. It is no longer necessary to include prunes in the player list yourself.")
+        cgicommon.writeln("Don't worry if the number of players isn't a multiple of the desired group size. Fixture generators will automatically add prunes if required. It is no longer necessary for you to add prunes manually.")
         cgicommon.writeln("</p>")
 
         cgicommon.writeln("<p>")

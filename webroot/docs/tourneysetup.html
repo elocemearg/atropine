@@ -41,12 +41,11 @@
     by itself to indicate where the splits are.
     </p>
     <p>
-    <em>N.B.</em> If you need to add a prune (an imaginary player who always
-    scores zero) to take the number of players up to a multiple of two or
-    three, give them a rating of zero by adding a comma and a zero after their
-    name. This is important because some of the fixture generators treat
-    prunes specially to avoid drawing prunes against each other, and to avoid
-    players playing two different prunes twice.
+    Don't worry if the number of players isn't an exact multiple of your
+    desired group size (usually 2 or 3). The fixture generators will
+    automatically generate games against Prune if required. In earlier versions
+    of Atropine the user had to add Prunes manually with a rating of 0, but as
+    of 1.2.1 this is no longer required.
     </p>
     <p>
     Here's an example list of players you can copy and paste into the player
@@ -62,8 +61,7 @@
     Trilby Battenberg
     Blancmange McTaggart
     Sincerity Sandwich
-    Salzburg Pound-Quedgeley
-    Apterous Prune,0</pre>
+    Salzburg Pound-Quedgeley</pre>
     <p>
     Then click <em>Save Player List</em>.
     </p>
