@@ -40,6 +40,7 @@ tr_bonus = float_or_none(form.getfirst("tournamentratingbonus"))
 tr_diff_cap = float_or_none(form.getfirst("tournamentratingdiffcap"))
 rank = int_or_none(form.getfirst("rank"))
 rank_finals = int_or_none(form.getfirst("rankfinals"))
+set_prune_name = form.getfirst("prunename")
 
 tourney = None;
 request_method = os.environ.get("REQUEST_METHOD", "");
@@ -76,6 +77,10 @@ else:
             tourney.set_tournament_rating_config(tr_bonus, tr_diff_cap)
             tourney.set_rank_method_id(rank)
             tourney.set_rank_finals(rank_finals)
+            if tourney.has_auto_prune() and set_prune_name:
+                existing_prune_name = tourney.get_auto_prune_name()
+                if set_prune_name != existing_prune_name:
+                    tourney.set_auto_prune_name(set_prune_name)
             cgicommon.show_success_box("Options updated.");
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(e);
@@ -123,6 +128,20 @@ the winner's team. The team scores are displayed alongside the standings.</p>"""
     cgicommon.writeln("<input type=\"checkbox\" name=\"rankfinals\" value=\"1\" id=\"rankfinals\" %s />" % ("checked" if rank_finals else ""))
     cgicommon.writeln("<label for=\"rankfinals\">Modify standings order according to results of finals, if played</label>")
     cgicommon.writeln("</div>")
+
+    if tourney.has_auto_prune():
+        prune_name = tourney.get_auto_prune_name()
+        cgicommon.writeln("<h2>Automatic Prune</h2>")
+        cgicommon.writeln("""<p>
+Fixture generators will automatically add a virtual Prune player where
+required if the number of players isn't a multiple of the group size.
+It is no longer necessary for you to add a Prune player yourself for
+this purpose. This virtual player can appear in a fixture but does not
+appear in the standings table or in any player lists.</p>
+<p>You can give this automatic prune a custom name, which will appear in
+results and fixture lists. This name must not be blank or the same as any
+player's name.</p>""")
+        cgicommon.writeln('<label for="prunename">Automatic Prune name: <input type="text" name="prunename" id="prunename" value="%s" /></label>' % (cgicommon.escape(prune_name, True)))
 
     cgicommon.writeln("<h2>Tournament Ratings</h2>")
     cgicommon.writeln("<p>If you don't know what tournament ratings are, you can safely leave these as the defaults and they won't affect anything.</p>")

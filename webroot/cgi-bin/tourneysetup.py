@@ -55,21 +55,21 @@ Cymbelina Spatchcock
 Compton Spongeworthy
 Plungemaster Thompson
 Flopsbourne McJumble
-Prune,0"""
+Sincerity Sandwich"""
 
 player_list_example_graduated = """Lavinia Splatterbury
 Cymbelina Spatchcock
 Compton Spongeworthy
 Plungemaster Thompson
 Flopsbourne McJumble
-Prune,0"""
+Sincerity Sandwich"""
 
 player_list_example_manual = """Lavinia Splatterbury,1953
 Cymbelina Spatchcock,1901
 Compton Spongeworthy,1874
 Plungemaster Thompson,1640
 Flopsbourne McJumble,1559
-Prune,0"""
+Sincerity Sandwich,1551"""
 
 player_list_rating_help = "To give a player a rating, put a comma after the player's name and put the rating number after that, e.g. <span class=\"fixedwidth\">Harry Peters,1860</span>"
 
@@ -505,12 +505,12 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
 
         cgicommon.writeln(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" id=\"autoratingbehaviourgraduated\" %s />" % (countdowntourney.RATINGS_GRADUATED, countdowntourney.RATINGS_GRADUATED, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_GRADUATED else "")))
         cgicommon.writeln("<label for=\"autoratingbehaviourgraduated\"><strong>The player list is in rating order with the highest-rated player at the top.</strong></label>")
-        cgicommon.writeln("Ratings will be assigned automatically, with the player at the top of the list receiving a rating of 2000, and the player at the bottom 1000. If you select this option, it is an error to specify any ratings manually in the player list except a rating of zero to indicate a prune.")
+        cgicommon.writeln("Ratings will be assigned automatically, with the player at the top of the list receiving a rating of 2000, and the player at the bottom 1000. If you select this option, it is an error to specify any ratings manually in the player list.")
         cgicommon.writeln("<br />")
 
         cgicommon.writeln(("<input type=\"radio\" name=\"autoratingbehaviour\" value=\"%d\" onclick=\"set_player_list_example(%d);\" id=\"autoratingbehaviouruniform\" %s />" % (countdowntourney.RATINGS_UNIFORM, countdowntourney.RATINGS_UNIFORM, "checked" if auto_rating_behaviour == countdowntourney.RATINGS_UNIFORM else "")))
         cgicommon.writeln("<label for=\"autoratingbehaviouruniform\"><strong>This tournament is not seeded.</strong></label>")
-        cgicommon.writeln("Assign every non-prune player a rating of 1000. If you select this option, it is an error to specify any ratings manually in the player list except a rating of zero to indicate a prune. If unsure, select this option.")
+        cgicommon.writeln("Assign every player a rating of 1000. If you select this option, it is an error to specify any ratings manually in the player list. If unsure, select this option.")
         cgicommon.writeln("</blockquote>")
 
         cgicommon.writeln("<p>")
@@ -588,7 +588,7 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("</p>")
 
         cgicommon.writeln("<p>")
-        cgicommon.writeln("To indicate that a player is a prune or bye, which affects how the fixture generators assign fixtures, give them a rating of zero: <span class=\"fixedwidth\">Prune,0</span>")
+        cgicommon.writeln("Don't worry if the number of players isn't a multiple of the desired group size. Fixture generators will automatically add prunes if required. It is no longer necessary to include prunes in the player list yourself.")
         cgicommon.writeln("</p>")
 
         cgicommon.writeln("<p>")

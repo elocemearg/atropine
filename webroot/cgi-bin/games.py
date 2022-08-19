@@ -1142,7 +1142,7 @@ try:
                             last_entry_error = "There is no game in this round between %s and %s." % (name1, name2)
                         elif len(matching_games) > 1:
                             control_with_error = "entryname1"
-                            last_entry_error = "There are %d games in this round between %s and %s. Please use the game list (see link at bottom of page) to enter results for these matches." % (len(matching_games), name1, name2)
+                            last_entry_error = "There are %d games in this round between %s and %s. Please use the old results interface (see link at bottom of page) to enter results for these matches." % (len(matching_games), name1, name2)
                         else:
                             # There is exactly one game in this round between
                             # these two players.

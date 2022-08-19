@@ -75,9 +75,16 @@ def fatal_exception(exc, tourney=None):
 
 def write_h2(player, text):
     classes = ""
-    if player.is_withdrawn():
+    if player and player.is_withdrawn():
         classes = " class=\"withdrawnplayer\""
     cgicommon.writeln("<h2%s>%s</h2>" % (classes, cgicommon.escape(text)))
+
+def show_player_delete_form(tourney, player):
+    cgicommon.writeln('<p>If you delete this player, they will be removed from the database entirely. The only way to undo this is to add a new player with that name.</p>')
+    cgicommon.writeln('<form method="POST" action="%s?tourney=%s">' % (cgicommon.escape(baseurl), urllib.parse.quote_plus(tourney.get_name())))
+    cgicommon.writeln('<input type="hidden" name="id" value="%d">' % (player.get_id()))
+    cgicommon.writeln('<input type="submit" name="deleteplayer" class="bigbutton destroybutton" value="Delete %s">' % (cgicommon.escape(player.get_name())))
+    cgicommon.writeln('</form>')
 
 def show_player_withdrawal_form(tourney, player):
     player_id = player.get_id()
@@ -112,7 +119,7 @@ def show_player_form(tourney, player):
     cgicommon.writeln("<table>")
     cgicommon.writeln("<tr><td>Name</td><td><input type=\"text\" name=\"setname\" value=\"%s\" /></td></tr>" % ("" if not player else cgicommon.escape(player.get_name(), True)))
     cgicommon.writeln("<tr><td>Rating</td><td><input style=\"width: 5em;\" type=\"text\" name=\"setrating\" value=\"%g\"/>" % (1000 if not player else player.get_rating()))
-    cgicommon.writeln("<span class=\"playercontrolhelp\">(1000 is the default; use 0 to indicate this player is a Prune)</span>")
+    cgicommon.writeln("<span class=\"playercontrolhelp\">(1000 is the default; 0 will make this player a Prune)</span>")
     cgicommon.writeln("</td></tr>")
     if num_divisions > 1:
         cgicommon.writeln("<tr><td>Division</td>")
@@ -161,6 +168,7 @@ if add_player is None:
     add_player = False
 else:
     add_player = bool(add_player)
+player_name_deleted = None
 
 request_method = os.environ.get("REQUEST_METHOD", "")
 
@@ -175,6 +183,11 @@ except countdowntourney.TourneyException as e:
 
 if player_id is not None:
     try:
+        if player_id < 0:
+            # Don't let the player view or try to edit information for the
+            # automatic Prune player.
+            e = countdowntourney.TourneyException("Can't view player with ID < 0. If you followed a link to get here, that is a bug.")
+            fatal_exception(e, tourney)
         player = tourney.get_player_from_id(player_id)
         player_name = player.get_name()
         player_id = player.get_id()
@@ -316,12 +329,28 @@ if cgicommon.is_client_from_localhost() and request_method == "POST":
                 exceptions_to_show.append(("<p>Added player \"%s\" but failed to set attributes...</p>" % (cgicommon.escape(new_player_name)), e))
     elif form.getfirst("reinstateplayer"):
         if player_name:
-            tourney.unwithdraw_player(player_name)
+            try:
+                tourney.unwithdraw_player(player_name)
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Failed to reinstate player \"%s\"...</p>" % (cgicommon.escape(player_name)), e))
             player = tourney.get_player_from_id(player_id)
     elif form.getfirst("withdrawplayer"):
         if player_name:
-            tourney.withdraw_player(player_name)
+            try:
+                tourney.withdraw_player(player_name)
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Failed to withdraw player \"%s\"...</p>" % (cgicommon.escape(player_name)), e))
             player = tourney.get_player_from_id(player_id)
+    elif form.getfirst("deleteplayer"):
+        if player_name:
+            try:
+                tourney.delete_player(player_name)
+                player_name_deleted = player_name
+            except countdowntourney.TourneyException as e:
+                exception_to_show.append(("<p>Failed to delete player \"%s\"...</p>" % (cgicommon.escape(player_name)), e))
+            player = None
+            player_id = None
+            player_name = ""
 
 if request_method == "GET" and form.getfirst("searchsubmit"):
     player_name = form.getfirst("searchname")
@@ -441,6 +470,20 @@ if edit_notifications:
         cgicommon.writeln("<a href=\"%s?tourney=%s\">OK</a>" % (cgicommon.escape(baseurl, True), urllib.parse.quote_plus(tourney.get_name())))
     cgicommon.writeln("</blockquote>")
 
+if player_name_deleted:
+    cgicommon.writeln("<h1>Player deleted</h1>")
+    cgicommon.writeln("<blockquote>")
+    cgicommon.writeln(("<li>%s has been deleted. If you didn't mean to do " +
+            "this, you can add them again on the " +
+            "<a href=\"%s?tourney=%s&addplayer=1\">Add New Player</a> page.</li>") % (
+                cgicommon.escape(player_name_deleted),
+                cgicommon.escape(baseurl, True),
+                urllib.parse.quote_plus(tourney.get_name())
+            )
+    )
+    cgicommon.writeln("</blockquote>")
+
+
 if player:
     cgicommon.writeln("<hr />")
     def player_to_link(p):
@@ -477,13 +520,15 @@ if player:
 
     cgicommon.writeln("<hr />")
 
-    write_h2(player, "Games")
     games = tourney.get_games()
+
     games = [x for x in games if x.contains_player(player)]
 
     if not games:
-        cgicommon.writeln("<p>None.</p>")
+        write_h2(player, "Delete player")
+        show_player_delete_form(tourney, player)
     else:
+        write_h2(player, "Games")
         cgicommon.show_games_as_html_table(games, False, None, True, lambda x : tourney.get_short_round_name(x), player_to_link)
 
     cgicommon.writeln("<hr />")

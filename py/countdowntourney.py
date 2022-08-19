@@ -1345,7 +1345,7 @@ class Tourney(object):
         if self.db_version < (0, 7, 7):
             return
         cur = self.db.cursor()
-        cur.execute("update player set avoid_prune = ? where lower(name) = ? or name = ?", (1 if value else 0, name.lower(), name))
+        cur.execute("update player set avoid_prune = ? where (lower(name) = ? or name = ?) and id >= 0", (1 if value else 0, name.lower(), name))
         cur.close()
         self.db.commit()
 
@@ -1535,7 +1535,7 @@ class Tourney(object):
         except ValueError:
             raise InvalidRatingException("Cannot set %s's rating - invalid rating." % name);
         cur = self.db.cursor();
-        cur.execute("update player set rating = ? where (lower(name) = ? or name = ?)", (rating, name.lower(), name));
+        cur.execute("update player set rating = ? where (lower(name) = ? or name = ?) and id >= 0", (rating, name.lower(), name));
         if cur.rowcount < 1:
             self.db.rollback();
             raise PlayerDoesNotExistException("Cannot change the rating of player \"" + name + "\" because no player by that name exists.");
@@ -1554,6 +1554,9 @@ class Tourney(object):
         return name
 
     def set_auto_prune_name(self, name):
+        name = name.strip()
+        if name == "":
+            raise InvalidPlayerNameException()
         if self.player_name_exists(name):
             raise PlayerExistsException("Cannot rename the prune player to \"%s\" because a player with that name already exists." % (name))
         self.db.execute("update player set name = ? where id = ?", (name, PRUNE_PLAYER_ID))
@@ -1720,10 +1723,16 @@ class Tourney(object):
     def set_player_withdrawn(self, name, withdrawn):
         withdrawn = bool(withdrawn)
         cur = self.db.cursor()
-        cur.execute("update player set withdrawn = ? where name = ?", (1 if withdrawn else 0, name))
+        cur.execute("update player set withdrawn = ? where name = ? and id >= 0", (1 if withdrawn else 0, name))
         if cur.rowcount < 1:
             self.db.rollback()
             raise PlayerDoesNotExistException("Cannot change withdrawn status for player \"%s\" because no player by that name exists." % (name))
+        cur.close()
+        self.db.commit()
+
+    def delete_player(self, name):
+        cur = self.db.cursor()
+        cur.execute("delete from player where name = ? and id >= 0", (name,))
         cur.close()
         self.db.commit()
 
@@ -1741,7 +1750,7 @@ class Tourney(object):
             return
 
         cur = self.db.cursor()
-        cur.execute("update player set require_accessible_table = ? where name = ?", (value, name))
+        cur.execute("update player set require_accessible_table = ? where name = ? and id >= 0", (value, name))
         cur.close()
         self.db.commit()
 
@@ -1761,7 +1770,7 @@ class Tourney(object):
         if self.db_version < (1, 0, 5):
             return
         cur = self.db.cursor()
-        cur.execute("update player set preferred_table = ? where name = ?", (value if value is not None else -1, name))
+        cur.execute("update player set preferred_table = ? where name = ? and id >= 0", (value if value is not None else -1, name))
         cur.close()
         self.db.commit()
 
@@ -2827,7 +2836,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
     def set_player_teams(self, player_teams):
         # argument is list of 2-tuples, containing player name and team ID
-        sql = "update player set team_id = ? where name = ?"
+        sql = "update player set team_id = ? where name = ? and id >= 0"
         params = []
         for pt in player_teams:
             params.append((None if pt[1] is None or pt[1] < 0 else pt[1], pt[0]))
@@ -3365,7 +3374,7 @@ order by 1""")
 
     def rerate_players_by_id(self):
         cur = self.db.cursor()
-        cur.execute("select id, rating from player where rating != 0 order by id")
+        cur.execute("select id, rating from player where rating != 0 and id >= 0 order by id")
         player_ids = []
         for row in cur:
             player_ids.append(row[0])
