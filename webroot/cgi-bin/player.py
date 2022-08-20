@@ -434,7 +434,7 @@ for div in range(num_divisions):
             cgicommon.write("&nbsp;<span title=\"Requires accessible table\">&#9855;</span>");
         pref_table = p.get_preferred_table()
         if pref_table is not None:
-            cgicommon.write("&nbsp;<span title=\"Prefers table %d\" class=\"playerlisttablepreficon\">%d</span>" % (pref_table, pref_table))
+            cgicommon.write("&nbsp;<span title=\"Prefers table %d\"><div class=\"tablebadgenaturalsize\">%d</div></span>" % (pref_table, pref_table))
         cgicommon.writeln("</td>")
         cgicommon.writeln("</tr>")
 cgicommon.writeln("</table>")

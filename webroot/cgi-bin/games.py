@@ -1028,14 +1028,12 @@ function set_blinkenlights_mouseover(text) {
         cgicommon.writeln("<div class=\"blinkenlightsdivision\">")
         cgicommon.writeln(cgicommon.escape(division_letters_string))
         cgicommon.writeln("</div>")
-        cgicommon.writeln("<div class=\"blinkenlightstablenumber\" onmouseover=\"%s\" onmouseout=\"set_blinkenlights_mouseover(&quot;&quot;)\">" % (mouseover_event))
-
         num_games_left = len([ x for x in table_games if not x.is_complete() ])
-        if num_games_left == 0:
-            cgicommon.writeln("<span style=\"color: gray;\">%d</span>" % (table_no))
-        else:
-            cgicommon.writeln("%d" % (table_no))
-        cgicommon.writeln("</div>")
+        cgicommon.writeln("<div class=\"blinkenlightstablenumber%s\" onmouseover=\"%s\" onmouseout=\"set_blinkenlights_mouseover(&quot;&quot;);\">%d</div>" % (
+            " blinkenlightstablenumbernomoregames" if num_games_left == 0 else "",
+            mouseover_event,
+            table_no
+        ))
 
         cgicommon.writeln("<div class=\"blinkenlightsgamesleft\">")
         cgicommon.writeln("<table><tr>")

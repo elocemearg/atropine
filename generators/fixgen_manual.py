@@ -483,11 +483,7 @@ table.seltable {
     border: 2px solid white;
 }
 td.tablenumber {
-    font-family: "Cabin";
-    background-color: blue;
-    color: white;
     text-align: center;
-    min-width: 1.5em;
 }
 .duplicateplayer {
     background-color: violet;
@@ -660,7 +656,7 @@ function editBoxEdit(divIndex, controlId) {
             # cell is a slot.
             elements.append(htmlform.HTMLFragment("<tr>\n"))
             elements.append(htmlform.HTMLFragment(
-                "<td>%s</td><td class=\"tablenumber\">%d</td>\n" % (
+                "<td>%s</td><td class=\"tablenumber\"><div class=\"tablebadgenaturalsize\" style=\"padding-top: 2px; padding-bottom: 2px;\">%d</div></td>\n" % (
                     " &#9855;" if (table_no in acc_tables) != acc_default else "",
                     table_no
                 )

@@ -124,7 +124,7 @@ def show_fixtures_to_accept(tourney, generator_name, fixtures, fixgen_settings):
                     cgicommon.writeln("<tr>");
 
                 if first_game_on_table:
-                    cgicommon.writeln("<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, f.table_no));
+                    cgicommon.writeln("<td class=\"tableno\" rowspan=\"%d\"><div class=\"tablebadge\">%d</div></td>" % (num_games_on_table, f.table_no));
 
                 cgicommon.writeln("<td class=\"gametype\">%s</td>" % cgicommon.escape(f.game_type));
                 player_td_html = []

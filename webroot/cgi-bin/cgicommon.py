@@ -659,7 +659,7 @@ def show_games_as_html_table(games, editable=True, remarks=None,
         if first_game_in_round and include_round_column:
             writeln("<td class=\"roundno\" rowspan=\"%d\">%s</td>" % (num_games_in_round, round_namer(g.round_no)))
         if first_game_in_table:
-            writeln("<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, g.table_no));
+            writeln("<td class=\"tableno\" rowspan=\"%d\"><div class=\"tablebadge\">%d</div></td>" % (num_games_on_table, g.table_no));
 
         if show_game_type:
             writeln("<td class=\"gametype\">%s</td>" % (

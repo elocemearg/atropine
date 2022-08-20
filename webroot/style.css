@@ -268,17 +268,35 @@ table.scorestable td.roundno {
 }
 
 table.fixturetable td.tableno {
-	font-size: 1.5em;
-	vertical-align: middle;
-	text-align: center;
-    font-family: "Cabin", sans-serif;
+    text-align: center;
 }
 
 table.scorestable td.tableno {
-	font-size: 1.5em;
-	vertical-align: middle;
-	text-align: center;
+    text-align: center;
+}
+
+div.tablebadge {
+    display: inline-block;
+    background-color: hsl(240, 100%, 90%);
+    color: black;
+    font-size: 14pt;
+    height: 22pt;
+    line-height: 22pt;
+    text-align: center;
+    margin-left: 10px;
+    margin-right: 10px;
     min-width: 2em;
+    border-radius: 5px;
+    font-family: "Cabin", sans-serif;
+}
+
+div.tablebadgenaturalsize {
+    display: inline-block;
+    text-align: center;
+    background-color: hsl(240, 100%, 90%);
+    color: black;
+    min-width: 2em;
+    border-radius: 5px;
     font-family: "Cabin", sans-serif;
 }
 
@@ -1231,6 +1249,7 @@ div.blinkenlights {
 table.blinkenlightstable {
     border: 2px solid navy;
     border-collapse: collapse;
+	background-color: black;
 }
 
 tr.blinkenlightsrow {
@@ -1241,6 +1260,7 @@ td.blinkenlightscell {
     height: 60px;
     min-width: 72px;
     border: 1px solid gray;
+	text-align: center;
 }
 
 td.blinkenlightspaddingcell {
@@ -1251,6 +1271,7 @@ td.blinkenlightspaddingcell {
 }
 
 div.blinkenlightsdivision {
+    display: block;
     height: 10px;
     font-size: 10pt;
     color: silver;
@@ -1258,15 +1279,24 @@ div.blinkenlightsdivision {
 }
 
 div.blinkenlightstablenumber {
-    height: 40px;
-    line-height: 40px;
-    font-size: 20pt;
-    color: yellow;
+    display: inline-block;
+    height: 36px;
+    line-height: 36px;
+    font-size: 16pt;
+    color: white;
+    background-color: blue;
+    width: 55px;
+    border-radius: 5px;
     text-align: center;
     vertical-align: middle;
-    background-color: black;
     cursor: pointer;
     font-family: "Cabin", sans-serif;
+    margin-bottom: 10px;
+}
+
+div.blinkenlightstablenumbernomoregames {
+    background-color: navy;
+    color: gray;
 }
 
 div.blinkenlightsgamesleft {
