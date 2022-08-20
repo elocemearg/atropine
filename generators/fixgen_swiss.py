@@ -249,10 +249,11 @@ function generate_fixtures_clicked() {
             elements.append(htmlform.HTMLFragment("<h2>Fixture generation</h2>"))
         elements.append(htmlform.HTMLFragment("<p>%s contains <strong>%d active players</strong>.</p>" % ("This division" if num_divisions > 1 else "The tournament", len(players))))
 
-        if len(players) % 2 != 0 and len(players) % 3 != 0:
-            elements.append(htmlform.HTMLWarningBox("swissunusualplayercount", "The number of active players is not a multiple of 2 or 3. Do you want to add one or more Prune players on the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page?</p>" % (
-                urllib.parse.quote_plus(tourney.get_name())
-            )))
+        if not tourney.has_auto_prune():
+            if len(players) % 2 != 0 and len(players) % 3 != 0:
+                elements.append(htmlform.HTMLWarningBox("swissunusualplayercount", "The number of active players is not a multiple of 2 or 3. Do you want to add one or more Prune players on the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page?</p>" % (
+                    urllib.parse.quote_plus(tourney.get_name())
+                )))
 
         elements.append(htmlform.HTMLFragment("<p>"))
 
