@@ -192,6 +192,7 @@ function textAreaChange() {
     var withdrawnPlayersThisDivision = 0;
     var divisionPlayerCounts = [];
     var divisionWithdrawnPlayerCounts = [];
+    var numPrunes = 0;
 
     var lastRecord = false;
     var prevName = "-";
@@ -221,6 +222,12 @@ function textAreaChange() {
                     if (fields[i].trim().toUpperCase() == "W") {
                         isWithdrawn = true;
                         break;
+                    }
+                    else {
+                        var rating = parseInt(fields[i].trim());
+                        if (!isNaN(rating) && rating == 0) {
+                            numPrunes++;
+                        }
                     }
                 }
                 if (isWithdrawn) {
@@ -263,6 +270,16 @@ function textAreaChange() {
     var summaryElement = document.getElementById("playerlistsummary");
     if (summaryElement != null) {
         summaryElement.innerHTML = summary;
+    }
+
+    let pruneWarningElement = document.getElementById("prunewarning");
+    if (pruneWarningElement) {
+        if (numPrunes > 0) {
+            pruneWarningElement.className = "prunewarninghighlight";
+        }
+        else {
+            pruneWarningElement.className = "prunewarningnormal";
+        }
     }
 }
 
@@ -563,13 +580,12 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
         cgicommon.writeln("</textarea>");
 
         cgicommon.writeln("<div class=\"playerlistclear\"></div>")
+        cgicommon.writeln("<div class=\"playerlistsubmitpanel\">")
         cgicommon.writeln("<div class=\"playerlistsubmitdiv\">")
         cgicommon.writeln('<input type="submit" class="bigbutton" name="playerlistsubmit" id="playerlistsubmit" value="Save Player List" />')
         cgicommon.writeln("</div>")
-        cgicommon.writeln("<div class=\"playerlistsummarydiv\" id=\"playerlistsummary\">")
+        cgicommon.writeln("<div class=\"playerlistsummarydiv\" id=\"playerlistsummary\"></div>")
         cgicommon.writeln("</div>")
-
-
         cgicommon.writeln("</div>")
 
         cgicommon.writeln("<div class=\"playerlisthelp\">")
@@ -587,9 +603,10 @@ add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
             cgicommon.writeln(player_list_rating_help);
         cgicommon.writeln("</p>")
 
-        cgicommon.writeln("<p>")
-        cgicommon.writeln("Don't worry if the number of players isn't a multiple of the desired group size. Fixture generators will automatically add prunes if required. It is no longer necessary for you to add prunes manually.")
-        cgicommon.writeln("</p>")
+        if tourney.has_auto_prune():
+            cgicommon.writeln("<p id=\"prunewarning\">")
+            cgicommon.writeln("The number of players does not need to be a multiple of the desired group size. It is no longer necessary for you to add Prune players. Fixture generators will introduce them automatically if required.")
+            cgicommon.writeln("</p>")
 
         cgicommon.writeln("<p>")
         cgicommon.writeln("To divide the players into divisions, put a line containing only a dash (<span class=\"fixedwidth\">-</span>) between the desired divisions.")

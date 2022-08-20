@@ -866,18 +866,39 @@ div.playerlistclear {
     font-size: 10pt;
 }
 
+@keyframes highlightnoprune {
+    from { background-color: transparent; color: black; }
+    to { background-color: yellow; color: black; }
+}
+
+p.prunewarninghighlight {
+    animation-name: highlightnoprune;
+    animation-duration: 0.25s;
+    animation-iteration-count: 7;
+    animation-direction: alternate;
+    background-color: yellow;
+}
+
+div.playerlistsubmitpanel {
+    display: block;
+    width: 100%;
+}
+
 div.playerlistsubmitdiv {
+    display: inline-block;
     padding-top: 10px;
     padding-bottom: 10px;
     float: left;
 }
 
 div.playerlistsummarydiv {
+    display: inline-block;
     padding-top: 10px;
     padding-bottom: 10px;
     float: right;
     max-width: 200px;
     color: gray;
+    text-align: right;
 }
 
 

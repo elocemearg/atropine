@@ -1397,14 +1397,18 @@ class Tourney(object):
 
         # Make sure no player names are blank
         for p in players:
-            if not p.get_name():
+            if not p.get_name().strip():
                 raise InvalidPlayerNameException()
 
-        # Make sure all the player names are case-insensitively unique
+        # Make sure all the player names are case-insensitively unique, and
+        # also do not match the Prune player's name.
+        prune_name = self.get_auto_prune_name().lower()
         for pi in range(len(players)):
             for opi in range(pi + 1, len(players)):
                 if players[pi].get_name().lower() == players[opi].get_name().lower():
                     raise DuplicatePlayerException("No two players are allowed to have the same name, and you've got more than one %s." % (players[pi].get_name()))
+            if players[pi].get_name().lower() == prune_name:
+                raise DuplicatePlayerException("The player name \"%s\" is not allowed because it is reserved for the automatic Prune player. If required, you can change the automatic Prune player's name in Advanced Setup." % (players[pi].get_name()))
 
         teams = self.get_teams()
         team_ids = [t.get_id() for t in teams]
