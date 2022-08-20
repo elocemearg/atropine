@@ -388,7 +388,7 @@ function add_game_checkbox_click(div_index) {
             # Table number and sequence number. The sequence number uniquely
             # identifies a game within a round.
             if first_game_in_table:
-                cgicommon.writeln("<td class=\"tableno\" rowspan=\"%d\">%d</td>" % (num_games_on_table, g.table_no));
+                cgicommon.writeln("<td class=\"tableno\" rowspan=\"%d\"><div class=\"tablebadge\">%d</div></td>" % (num_games_on_table, g.table_no));
             cgicommon.writeln("<td class=\"gameseq\">%d</td>" % g.seq);
 
             # Dropdown box for player 1
