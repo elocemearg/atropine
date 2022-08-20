@@ -41,7 +41,29 @@ def write_autocomplete_scripts(tourney, games):
     players_dict = dict()
     players_tables = dict()
 
-    cgicommon.writeln("var players = ")
+    # players_Cased_names
+    # Dictionary which maps lowercased player names back to their original
+    # case. In the other dictionaries below, the key is always the lowercased
+    # player name, so that we treat player names case-insensitively.
+    cgicommon.writeln("const players_cased_names = ")
+    players_cased_names = {}
+    for p in tourney.get_players(include_prune=True):
+        players_cased_names[p.get_name().lower()] = p.get_name()
+    cgicommon.writeln(json.dumps(players_cased_names, indent=4))
+    cgicommon.writeln(";")
+    cgicommon.writeln()
+
+    # players
+    # Dictionary mapping lowercased player names to a list of their opponents
+    # in this round.
+    # lowercase player name -> {
+    #     "opponent_name" : opponent name (original case),
+    #     "score" : player's score in this game,
+    #     "opponent_score" : opponent's score in this game,
+    #     "tb" : tiebreak (true/false)
+    #     "seq" : this game's sequence number within the round
+    # }
+    cgicommon.writeln("const players = ")
 
     if not games:
         cgicommon.writeln("{}")
@@ -49,7 +71,7 @@ def write_autocomplete_scripts(tourney, games):
         for g in games:
             names = g.get_player_names()
             for idx in range(2):
-                name = names[idx]
+                name = names[idx].lower()
                 opponent_name = names[1 - idx]
                 opponent_list = players_dict.get(name, [])
                 if opponent_name not in opponent_list:
@@ -70,17 +92,23 @@ def write_autocomplete_scripts(tourney, games):
         cgicommon.writeln(json.dumps(players_dict, indent=4))
     cgicommon.writeln(";")
 
-    cgicommon.writeln("var player_snapshots = ")
+    # player_snapshots
+    # Another dictionary mapping lowercased player names to a snapshot string
+    # suitable for the link text which appears above the edit box. A snapshot
+    # string looks like "T6 B 7th P4 W1 L3 178pts".
+    # lowercase player name -> snapshot string
+    cgicommon.writeln("const player_snapshots = ")
 
     players_summaries = dict()
     num_divisions = tourney.get_num_divisions()
     div_standings = [ tourney.get_standings(div) for div in range(num_divisions) ]
     for div in range(len(div_standings)):
         for row in div_standings[div]:
-            if row.name not in players_tables:
+            lname = row.name.lower()
+            if lname not in players_tables:
                 table_field = "Tx"
             else:
-                table_field = "T" + ",".join([str(x) for x in players_tables[row.name]])
+                table_field = "T" + ",".join([str(x) for x in players_tables[lname]])
             if num_divisions > 1:
                 division_field = tourney.get_short_division_name(div) + " "
             else:
@@ -90,7 +118,7 @@ def write_autocomplete_scripts(tourney, games):
                 draw_string = ""
             else:
                 draw_string = " D%d" % (row.draws)
-            players_summaries[row.name] = "%s %s%d%s P%d W%d%s L%d %dpts" % (
+            players_summaries[lname] = "%s %s%d%s P%d W%d%s L%d %dpts" % (
                     table_field, division_field, row.position,
                     ordinal_suffix(row.position), row.played, row.wins,
                     draw_string, row.played - row.wins - row.draws, row.points)
@@ -98,6 +126,9 @@ def write_autocomplete_scripts(tourney, games):
     cgicommon.writeln(json.dumps(players_summaries, indent=4))
     cgicommon.writeln(";")
 
+    # player_links
+    # A dictionary mapping lowercase player names to "<a href=...>" HTML.
+    cgicommon.writeln("const player_links = ")
     player_links = dict()
     tourney_name = tourney.get_name()
     for name in players_summaries:
@@ -106,23 +137,46 @@ def write_autocomplete_scripts(tourney, games):
             player_links[name] = cgicommon.player_to_link(p, tourney_name, False, False, True, players_summaries[name])
         except PlayerDoesNotExistException:
             pass
-
-    cgicommon.writeln("var player_links = ")
     cgicommon.writeln(json.dumps(player_links, indent=4))
     cgicommon.writeln(";")
     cgicommon.writeln()
 
+    # prunes
+    # A dictionary which is really just a set. Its keys are only the lowercased
+    # names of prunes. Ordinary players do not appear in this dictionary at all.
+    # lowercase player name -> true
+    cgicommon.writeln("const prunes = ")
+    prune_dict = {}
+    for p in tourney.get_players(include_prune=True):
+        if p.is_prune():
+            prune_dict[p.get_name().lower()] = True
+    cgicommon.writeln(json.dumps(prune_dict, indent=4))
+    cgicommon.writeln(";")
+    cgicommon.writeln()
+
+
     cgicommon.writeln("""
 var tiebreak_prev_state = false;
 var tiebreak_visible = false;
+
+function restore_player_case(name) {
+    let lname = name.toLowerCase()
+    if (lname in players_cased_names) {
+        return players_cased_names[lname];
+    }
+    else {
+        return name;
+    }
+}
 
 function set_infobox(name_control_id, info_control_id) {
     var name_control = document.getElementById(name_control_id);
     var info_control = document.getElementById(info_control_id);
 
     if (name_control != null && info_control != null) {
-        if (name_control.value in player_links) {
-            info_control.innerHTML = player_links[name_control.value];
+        let name_key = name_control.value.toLowerCase();
+        if (name_key in player_links) {
+            info_control.innerHTML = player_links[name_key];
         }
         else {
             info_control.innerHTML = "";
@@ -181,6 +235,7 @@ function entry_name_change(control_id, opponent_control_id) {
     if (!opponent_name) {
         opponent_name = "";
     }
+    opponent_name = opponent_name.toLowerCase();
 
     if (opponent_name in players) {
         possible_players = []
@@ -223,14 +278,14 @@ function entry_name_change(control_id, opponent_control_id) {
 
     if (num_matches == 1) {
         control.focus();
-        control.value = last_match;
+        control.value = restore_player_case(last_match);
         control.setSelectionRange(head.length, last_match.length);
     }
     set_infobox(control_id, player_info_control_id);
 }
 
 function is_valid_player(player_name) {
-    return player_name in players;
+    return player_name.toLowerCase() in players;
 }
 
 function entry_name_change_finished(control_id, opponent_control_id) {
@@ -258,7 +313,7 @@ function entry_name_change_finished(control_id, opponent_control_id) {
     var player_name = edited_control.value.trim();
 
     if (is_valid_player(player_name) && (opponent_control.value.trim().length == 0 || !opponent_last_modified_manually)) {
-        var possible_opponents = players[player_name];
+        var possible_opponents = players[player_name.toLowerCase()];
         if (possible_opponents.length == 1) {
             opponent_control.value = possible_opponents[0]["opponent_name"];
             control_last_change_was_manual[opponent_control_id] = false;
@@ -279,7 +334,7 @@ function entry_name_change_finished(control_id, opponent_control_id) {
             ((player_score_control.value == "" && opponent_score_control.value == "") ||
                !("scores" in control_last_change_was_manual) ||
                !control_last_change_was_manual["scores"])) {
-        var player_games = players[player_name];
+        var player_games = players[player_name.toLowerCase()];
         var last_match = null;
         var num_matches = 0;
         for (var i = 0; i < player_games.length; ++i) {
@@ -292,8 +347,18 @@ function entry_name_change_finished(control_id, opponent_control_id) {
 
         if (num_matches == 1) {
             if (last_match["score"] == null || last_match["opponent_score"] == null) {
-                player_score_control.value = "";
-                opponent_score_control.value = "";
+                if (player_name.toLowerCase() in prunes) {
+                    player_score_control.value = "0";
+                }
+                else {
+                    player_score_control.value = "";
+                }
+                if (opponent_name.toLowerCase() in prunes) {
+                    opponent_score_control.value = "0";
+                }
+                else {
+                    opponent_score_control.value = "";
+                }
                 tiebreak_control.checked = false;
             }
             else {
@@ -399,6 +464,16 @@ function entry_score_change(was_user_input) {
 function load_data_entry_form(name1, name2, score1, score2, tb) {
     document.getElementById("entryname1").value = name1;
     document.getElementById("entryname2").value = name2;
+
+    /* If the game has not yet been played and one of the players is a prune,
+       automatically load 0 into that box. */
+    if (score1 == null && name1.toLowerCase() in prunes) {
+        score1 = 0;
+    }
+    if (score2 == null && name2.toLowerCase() in prunes) {
+        score2 = 0;
+    }
+
     if (score1 == null) {
         document.getElementById("entryscore1").value = "";
     }
@@ -891,10 +966,19 @@ function select_game(game_seq, from_videprinter) {
         load_data_entry_form(game["name1"], game["name2"], game["score1"], game["score2"], game["tb"]);
     }
 
-    /* Give the score1 field focus */
-    var score1element = document.getElementById("entryscore1");
-    score1element.focus();
-    score1element.select();
+    /* Give the score1 field focus, unless that's a prune with a zero or
+       empty score, in which case give score2 focus. */
+    let scoreElement;
+    let nameKey = (select_repeat_parity % 2 == 0 ? "name1" : "name2");
+    let scoreKey = (select_repeat_parity % 2 == 0 ? "score1" : "score2");
+    if (game[nameKey].toLowerCase() in prunes && (game[scoreKey] == 0 || game[scoreKey] == null)) {
+        scoreElement = document.getElementById("entryscore2");
+    }
+    else {
+        scoreElement = document.getElementById("entryscore1");
+    }
+    scoreElement.focus();
+    scoreElement.select();
 }
 
 function set_blinkenlights_mouseover(text) {
