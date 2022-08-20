@@ -419,6 +419,7 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
 
     writeln("<a href=\"/cgi-bin/home.py\"><img src=\"/images/eyebergine128.png\" alt=\"Eyebergine\" /></a><br />");
     if tourney:
+        players = tourney.get_players()
         writeln("<p><strong>%s</strong></p>" % escape(tourney.name));
         writeln(("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\"><strong>General Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
 
@@ -427,9 +428,10 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
             writeln("<div>")
             writeln(("<a href=\"/cgi-bin/player.py?tourney=%s\">Players...</a>" % (urllib.parse.quote_plus(tourney.name))))
             writeln("</div>")
-            writeln("<div>")
-            writeln(("<a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions...</a>" % (urllib.parse.quote_plus(tourney.name))))
-            writeln("</div>")
+            if players:
+                writeln("<div>")
+                writeln(("<a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions...</a>" % (urllib.parse.quote_plus(tourney.name))))
+                writeln("</div>")
             writeln("<div>")
             writeln(("<a href=\"/cgi-bin/tourneysetupadvanced.py?tourney=%s\">Advanced...</a>" % (urllib.parse.quote_plus(tourney.name))))
             writeln("</div>")
@@ -437,14 +439,15 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
         else:
             writeln("<div style=\"clear: both;\"></div>")
 
-        writeln("<br />")
-        writeln("<div>")
-        writeln(("<a href=\"/cgi-bin/uploadsetup.py?tourney=%s\"><strong>Broadcast Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
-        writeln("</div>")
+        if players:
+            writeln("<br />")
+            writeln("<div>")
+            writeln(("<a href=\"/cgi-bin/uploadsetup.py?tourney=%s\"><strong>Broadcast Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
+            writeln("</div>")
 
-        writeln(("<a class=\"widgetlink\" href=\"/cgi-bin/uploadsetup.py?tourney=%s\">" % urllib.parse.quote_plus(tourney.name)));
-        write_live_upload_widget(tourney.name)
-        writeln("</a>")
+            writeln(("<a class=\"widgetlink\" href=\"/cgi-bin/uploadsetup.py?tourney=%s\">" % urllib.parse.quote_plus(tourney.name)));
+            write_live_upload_widget(tourney.name)
+            writeln("</a>")
 
         writeln("<br />")
 
@@ -483,17 +486,18 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
             writeln("<a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\">%s</a>" % (urllib.parse.quote_plus(tourney.name), urllib.parse.quote_plus(str(round_no)), escape(round_name)));
             writeln("</div>");
         writeln("</div>")
-        writeln("<br />");
-        writeln("<div class=\"genroundlink\">");
-        writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\"><strong>Generate fixtures...</strong></a>" % (urllib.parse.quote_plus(tourney.name)));
-        writeln("</div>");
-        writeln("<br />")
+        if players:
+            writeln("<br />");
+            writeln("<div class=\"genroundlink\">");
+            writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\"><strong>Generate fixtures...</strong></a>" % (urllib.parse.quote_plus(tourney.name)));
+            writeln("</div>");
+            writeln("<br />")
 
-        writeln("<div class=\"misclinks\">")
-        writeln("<a href=\"/cgi-bin/standings.py?tourney=%s\">Standings</a>" % (urllib.parse.quote_plus(tourney.name)));
-        writeln("</div>")
+            writeln("<div class=\"misclinks\">")
+            writeln("<a href=\"/cgi-bin/standings.py?tourney=%s\">Standings</a>" % (urllib.parse.quote_plus(tourney.name)));
+            writeln("</div>")
 
-        misc_links_html = """
+            misc_links_html = """
 <a href="/cgi-bin/tableindex.py?tourney=$TOURNEY">Name-table index</a>
 <br />
 <a href="/cgi-bin/tuffluck.py?tourney=$TOURNEY">Tuff Luck</a>
@@ -504,37 +508,37 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
 <br />
 <a href="/cgi-bin/overachievers.py?tourney=$TOURNEY">Overachievers</a>
 """
-        misc_links_html = misc_links_html.replace("$TOURNEY", urllib.parse.quote_plus(tourney.name))
+            misc_links_html = misc_links_html.replace("$TOURNEY", urllib.parse.quote_plus(tourney.name))
 
-        writeln("<div class=\"misclinks\">")
-        writeln("<a href=\"/cgi-bin/export.py?tourney=%s\">Export results...</a>" % (urllib.parse.quote_plus(tourney.name)))
-        writeln("</div>")
+            writeln("<div class=\"misclinks\">")
+            writeln("<a href=\"/cgi-bin/export.py?tourney=%s\">Export results...</a>" % (urllib.parse.quote_plus(tourney.name)))
+            writeln("</div>")
 
-        writeln("<noscript><div class=\"misclinks\">")
-        writeln(misc_links_html)
-        writeln("</div></noscript>")
+            writeln("<noscript><div class=\"misclinks\">")
+            writeln(misc_links_html)
+            writeln("</div></noscript>")
 
-        writeln("""<script>
-function toggleMiscStats() {
-    var miscStatsLink = document.getElementById("miscstatslink");
-    var miscStatsDiv = document.getElementById("miscstats");
-    if (miscStatsDiv.style.display == "block") {
-        miscStatsDiv.style.display = "none";
-        miscStatsLink.innerText = "[Expand]";
+            writeln("""<script>
+    function toggleMiscStats() {
+        var miscStatsLink = document.getElementById("miscstatslink");
+        var miscStatsDiv = document.getElementById("miscstats");
+        if (miscStatsDiv.style.display == "block") {
+            miscStatsDiv.style.display = "none";
+            miscStatsLink.innerText = "[Expand]";
+        }
+        else {
+            miscStatsDiv.style.display = "block";
+            miscStatsLink.innerText = "[Collapse]";
+        }
     }
-    else {
-        miscStatsDiv.style.display = "block";
-        miscStatsLink.innerText = "[Collapse]";
-    }
-}
-</script>""")
+    </script>""")
 
-        writeln("More")
-        writeln("<a id=\"miscstatslink\" class=\"fakelink\" onclick=\"toggleMiscStats();\">%s</a>" % ("[Collapse]" if show_misc_table_links else "[Expand]"))
-        writeln("<div style=\"clear: both\"></div>")
-        writeln("<div class=\"misclinks\" id=\"miscstats\" style=\"display: %s;\">" % ("block" if show_misc_table_links else "none"))
-        writeln(misc_links_html)
-        writeln("</div>")
+            writeln("More")
+            writeln("<a id=\"miscstatslink\" class=\"fakelink\" onclick=\"toggleMiscStats();\">%s</a>" % ("[Collapse]" if show_misc_table_links else "[Expand]"))
+            writeln("<div style=\"clear: both\"></div>")
+            writeln("<div class=\"misclinks\" id=\"miscstats\" style=\"display: %s;\">" % ("block" if show_misc_table_links else "none"))
+            writeln(misc_links_html)
+            writeln("</div>")
 
     writeln("<br />")
 
@@ -542,10 +546,11 @@ function toggleMiscStats() {
     writeln("<a href=\"/docs/\" target=\"_blank\">Help " + new_window_html + "</a>")
     writeln("</div>")
 
-    writeln("<div class=\"globalprefslink\">")
-    writeln("<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" ")
-    writeln("onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=700,height=750'); return false;\" >Preferences... " + new_window_html + "</a>")
-    writeln("</div>")
+    if players:
+        writeln("<div class=\"globalprefslink\">")
+        writeln("<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" ")
+        writeln("onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=700,height=750'); return false;\" >Preferences... " + new_window_html + "</a>")
+        writeln("</div>")
 
     writeln("<br />")
 
