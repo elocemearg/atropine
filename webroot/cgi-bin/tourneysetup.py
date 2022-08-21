@@ -431,8 +431,9 @@ if request_method == "POST" and rules_submit:
             raise countdowntourney.TourneyException("The accessible table list, if set, must be a comma-separated list of positive integers.")
 
         # Full name
-        if full_name is not None:
-            tourney.set_full_name(full_name)
+        if full_name is None:
+            full_name = ""
+        tourney.set_full_name(full_name)
 
         if venue is not None:
             tourney.set_venue(venue)
@@ -531,7 +532,7 @@ if tourney.get_players():
     cgicommon.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
 
     cgicommon.writeln("<h3>Event details</h3>")
-    cgicommon.writeln("<p>These details will appear at the top of exported tournament reports, and on the webpage if you enable the broadcast feature.</p>")
+    cgicommon.writeln("<p>These details will appear at the top of exported tournament reports, on the public-facing welcome screen, and on the event's webpage if you use the broadcast feature.</p>")
 
     cgicommon.writeln("<div class=\"generalsetupcontrolgroup generalsetuptourneydetails\">")
     cgicommon.writeln("<div class=\"generalsetuptourneydetailslabel\"><label for=\"fullname\">Event name </label></div><div class=\"generalsetuptourneydetailsbox\"><input type=\"text\" name=\"fullname\" value=\"%s\" id=\"fullname\" /></div>" % (cgicommon.escape(tourney.get_full_name(), True)))

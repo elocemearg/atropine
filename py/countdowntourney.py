@@ -62,7 +62,7 @@ teleost_modes = [
         {
             "id" : "TELEOST_MODE_AUTO",
             "name" : "Auto",
-            "desc" : "Automatic control. This will show Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played.",
+            "desc" : "Automatic control. Show the Welcome screen before any games are generated, Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played.",
             "menuorder" : 0,
             "image" : "/images/screenthumbs/auto.png",
             "fetch" : [ "all" ]
@@ -96,7 +96,7 @@ teleost_modes = [
             "name" : "Technical Difficulties",
             "desc" : "Ceci n'est pas un probleme technique.",
             "image" : "/images/screenthumbs/technical_difficulties.png",
-            "menuorder" : 10,
+            "menuorder" : 11,
             "fetch" : []
         },
         {
@@ -138,7 +138,15 @@ teleost_modes = [
             "image" : "/images/screenthumbs/high_scores.jpg",
             "menuorder" : 8,
             "fetch" : [ "highscores" ]
-        }
+        },
+        {
+            "id" : "TELEOST_MODE_WELCOME",
+            "name" : "Welcome",
+            "desc" : "A welcome screen for the start of the event.",
+            "image" : "/images/screenthumbs/welcome.png",
+            "menuorder" : 10,
+            "fetch" : [ "tourney" ]
+        },
         #{
         #    "id" : "TELEOST_MODE_FASTEST_FINISHERS",
         #    "name" : "Fastest Finishers",
@@ -1144,7 +1152,7 @@ class Tourney(object):
         return self.name
 
     def get_full_name(self):
-        return self.get_attribute("fullname", self.name)
+        return self.get_attribute("fullname", "")
 
     def set_full_name(self, name):
         self.set_attribute("fullname", name)
@@ -2676,8 +2684,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         mode_name = None
 
         if not current_round:
-            # There are no rounds yet, so just default to the standings table
-            mode_name = "TELEOST_MODE_STANDINGS"
+            # There are no rounds yet, so show the welcome screen
+            mode_name = "TELEOST_MODE_WELCOME"
         else:
             round_no = current_round["num"]
             (played, unplayed) = self.get_played_unplayed_counts(round_no=round_no)

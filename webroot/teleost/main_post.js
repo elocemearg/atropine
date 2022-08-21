@@ -94,6 +94,10 @@ function createHighScoresScreen(tourneyName, options) {
     return new HighScoresView(tourneyName, 0, 0, 100, 100);
 }
 
+function createWelcomeScreen(tourneyName, options) {
+    return new WelcomeView(tourneyName, 0, 0, 100, 100);
+}
+
 /*function createClockScreen(tourneyName, options) {
     return new ClockView(tourneyName, 0, 0, 100, 100);
 }*/
@@ -326,6 +330,7 @@ function displaySetup() {
     teleostModesToCreateFunctions[TELEOST_MODE_OVERACHIEVERS] = createOverachieversScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_TUFF_LUCK] = createTuffLuckScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_HIGH_SCORES] = createHighScoresScreen;
+    teleostModesToCreateFunctions[TELEOST_MODE_WELCOME] = createWelcomeScreen;
     //teleostModesToCreateFunctions[TELEOST_MODE_FASTEST_FINISHERS] = createPlaceholderScreen;
     //teleostModesToCreateFunctions[TELEOST_MODE_CLOCK] = createClockScreen;
 
