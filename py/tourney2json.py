@@ -297,6 +297,19 @@ def get_overachievers(tourney, options):
     reply["divisions"] = divisions
     return reply
 
+def get_players(tourney, options):
+    reply = dict()
+    reply["success"] = True
+    player_dicts = []
+    players = tourney.get_players()
+    for player in players:
+        player_dicts.append({
+            "name" : player.get_name(),
+            "rating" : player.get_rating(),
+            "withdrawn" : player.is_withdrawn()
+        })
+    reply["players"] = player_dicts
+    return reply
 
 def get_teleost_state(tourney, options):
     reply = dict()
@@ -440,4 +453,5 @@ valid_requests["tourney"] = get_tourney_details
 valid_requests["all"] = get_all
 valid_requests["default"] = get_info_required_by_mode
 valid_requests["uploader"] = get_uploader_status
+valid_requests["players"] = get_players
 

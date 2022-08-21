@@ -3,6 +3,7 @@ class TableNumberIndexView extends PagedTableView {
         super(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerColumn, scrollPeriod);
         this.rowsPerColumn = rowsPerColumn;
         this.colsPerPage = colsPerPage;
+        this.numPages = 0;
     }
 
     setup(container) {
@@ -45,8 +46,8 @@ class TableNumberIndexView extends PagedTableView {
 
             html += "</div>";
         }
-        html += "</div>"
-
+        html += "</div>";
+        html += "<div id=\"tabindexpagenumber\" class=\"viewpagenumber\"></div>";
 
         container.innerHTML = html;
     }
@@ -153,6 +154,8 @@ class TableNumberIndexView extends PagedTableView {
             pages = [ [ { "errorString" : gameState.description } ] ];
         }
 
+        this.numPages = pages.length;
+
         if (this.currentPageIndex >= pages.length)
             this.currentPageIndex = 0;
         if (this.currentPageIndex >= pages.length)
@@ -199,6 +202,15 @@ class TableNumberIndexView extends PagedTableView {
                 else {
                     element.innerText = "Table Numbers";
                 }
+            }
+        }
+        let pageNumberElement = document.getElementById("tabindexpagenumber");
+        if (pageNumberElement) {
+            if (this.numPages > 1) {
+                pageNumberElement.innerText = "Page " + (this.currentPageIndex + 1).toString() + " of " + this.numPages.toString();
+            }
+            else {
+                pageNumberElement.innerText = "";
             }
         }
     }

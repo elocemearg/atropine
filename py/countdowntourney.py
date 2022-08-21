@@ -142,10 +142,10 @@ teleost_modes = [
         {
             "id" : "TELEOST_MODE_WELCOME",
             "name" : "Welcome",
-            "desc" : "A welcome screen for the start of the event.",
+            "desc" : "A welcome screen for the start of the event, showing a list of registered and active players.",
             "image" : "/images/screenthumbs/welcome.png",
             "menuorder" : 10,
-            "fetch" : [ "tourney" ]
+            "fetch" : [ "tourney", "players" ]
         },
         #{
         #    "id" : "TELEOST_MODE_FASTEST_FINISHERS",

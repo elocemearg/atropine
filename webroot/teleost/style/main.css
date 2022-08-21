@@ -701,6 +701,7 @@ div.welcomebackground {
     background: linear-gradient(-45deg, black, navy, black);
     background-size: 400% 400%;
     animation: welcomeBackgroundAnimate 20s ease infinite;
+    z-index: -1;
 }
 
 div.welcomeheading {
@@ -715,6 +716,14 @@ div.welcomeheading {
     font-variant-numeric: normal;
 }
 
+div.welcomescreenmode {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
 #welcomeheading1 {
     top: 33vh;
 }
@@ -723,4 +732,55 @@ div.welcomeheading {
     top: 43vh;
     font-size: 7vmin;
     line-height: 14vmin;
+}
+
+div.welcomeregistrationblurb {
+    position: absolute;
+    top: 20%;
+    left: 5%;
+    width: 90%;
+    text-align: center;
+    font-size: 2.5vmin;
+}
+
+#welcomeregistrationcount {
+    position: absolute;
+    bottom: 7%;
+    left: 5%;
+    text-align: left;
+    font-size: 2.5vmin;
+}
+
+div.viewpagenumber {
+    position: absolute;
+    bottom: 7%;
+    right: 5%;
+    text-align: right;
+    font-size: 2.5vmin;
+}
+
+div.welcomeplayerlist {
+    position: absolute;
+    top: 30%;
+    left: 5%;
+    width: 90vw;
+}
+
+table.welcomeplayertable {
+    width: 100%;
+    font-size: 3vmin;
+    border-collapse: separate;
+    border-spacing: 0.8vmin;
+    table-layout: fixed;
+}
+
+table.welcomeplayertable td {
+    background-color: navy;
+    padding-left: 0.5vw;
+    padding-right: 0.5vw;
+}
+
+table.welcomeplayertable td.welcomeplayercolumnspace {
+    background-color: transparent;
+    width: 3vw;
 }

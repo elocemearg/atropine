@@ -95,7 +95,7 @@ function createHighScoresScreen(tourneyName, options) {
 }
 
 function createWelcomeScreen(tourneyName, options) {
-    return new WelcomeView(tourneyName, 0, 0, 100, 100);
+    return new WelcomeView(tourneyName, 0, 0, 100, 100, 12, 10000);
 }
 
 /*function createClockScreen(tourneyName, options) {
