@@ -50,26 +50,26 @@ def make_double_quoted_string(s):
     new_string.append('\"')
     return "".join(new_string)
 
-player_list_example_uniform = """Lavinia Splatterbury
-Cymbelina Spatchcock
-Compton Spongeworthy
-Plungemaster Thompson
-Flopsbourne McJumble
-Sincerity Sandwich"""
+player_list_example_uniform = """Sleve McDichael
+Darryl Archideld
+Kevin Nogilny
+Bobson Dugnutt
+Willie Dustice
+Todd Bonzalez"""
 
-player_list_example_graduated = """Lavinia Splatterbury
-Cymbelina Spatchcock
-Compton Spongeworthy
-Plungemaster Thompson
-Flopsbourne McJumble
-Sincerity Sandwich"""
+player_list_example_graduated = """Sleve McDichael
+Darryl Archideld
+Kevin Nogilny
+Bobson Dugnutt
+Willie Dustice
+Todd Bonzalez"""
 
-player_list_example_manual = """Lavinia Splatterbury,1953
-Cymbelina Spatchcock,1901
-Compton Spongeworthy,1874
-Plungemaster Thompson,1640
-Flopsbourne McJumble,1559
-Sincerity Sandwich,1551"""
+player_list_example_manual = """Sleve McDichael,1953
+Darryl Archideld,1901
+Kevin Nogilny,1874
+Bobson Dugnutt,1640
+Willie Dustice,1559
+Todd Bonzalez,1551"""
 
 player_list_rating_help = "To give a player a rating, put a comma after the player's name and put the rating number after that, e.g. <span class=\"fixedwidth\">Harry Peters,1860</span>"
 
@@ -493,7 +493,7 @@ cgicommon.writeln("<p>")
 if tourney.get_num_games() > 0:
     cgicommon.writeln("The tournament has started.")
 if len(players) == 0:
-    cgicommon.writeln("There are no players in the tourney yet.")
+    cgicommon.writeln("This isn't much of a tourney yet. It hasn't got any players.")
 else:
     cgicommon.writeln("There are <a href=\"player.py?tourney=%s\">%d players</a>," % (urllib.parse.quote_plus(tourney.get_name()), len(players)))
     num_active = len([x for x in players if not x.is_withdrawn()])
@@ -517,7 +517,11 @@ to generate the first games. Once you've generated the first games, you won't
 be able to delete players, but you can always withdraw them, edit names and
 ratings, or add new players.</p>""".format(tourneyname=urllib.parse.quote_plus(tourney.get_name())))
     else:
-        cgicommon.show_info_box("<p>This tourney has no players defined yet. Before doing anything else, enter the list of player names below. You can always add more players, or withdraw them, later on if necessary.</p>");
+        cgicommon.show_info_box("""
+<p>First, enter or paste a list of player names into the text box below.</p>
+<p>Don't worry, this isn't final. For now, just include everyone you're
+expecting to play. You can add new players or withdraw existing players
+at any time.</p>""")
 
 if num_divisions > 1:
     cgicommon.writeln("<p>The players are distributed into <a href=\"divsetup.py?tourney=%s\">%d divisions</a>.</p>" % (urllib.parse.quote_plus(tourney.get_name()), num_divisions))
@@ -740,7 +744,7 @@ if tourney.get_num_games() == 0:
         cgicommon.writeln("</p>")
 
     cgicommon.writeln("<p>")
-    cgicommon.writeln("To divide the players into divisions, put a line containing only a dash (<span class=\"fixedwidth\">-</span>) between the desired divisions.")
+    cgicommon.writeln("To split the players into divisions, put a line containing only a dash (<span class=\"fixedwidth\">-</span>) between the desired divisions.")
     cgicommon.writeln("</p>")
 
     cgicommon.writeln("<div id=\"playerlistextrahelp\">")

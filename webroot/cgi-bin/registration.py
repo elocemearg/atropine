@@ -376,7 +376,10 @@ for row in range(rows_per_column):
 
         if player:
             # Small button to delete this player
-            cgicommon.writeln("<td class=\"playerregcolspace\"><button type=\"button\" class=\"playerregdeletebutton\" onclick=\"showDeletePlayerConfirm(%d, &quot;%s&quot;);\">%s</button></td>" % (player.get_id(), cgicommon.escape(cgicommon.escape(player.get_name())), HTML_TRASHCAN_SYMBOL))
+            cgicommon.writeln("<td class=\"playerregcolspace\"><button type=\"button\" class=\"playerregdeletebutton\" title=\"Delete %s\" onclick=\"showDeletePlayerConfirm(%d, &quot;%s&quot;);\">%s</button></td>" % (
+                cgicommon.escape(player.get_name()), player.get_id(),
+                cgicommon.escape(cgicommon.escape(player.get_name())),
+                HTML_TRASHCAN_SYMBOL))
         else:
             cgicommon.writeln("<td class=\"playerregcolspace\"></td>")
     cgicommon.writeln("</tr>")
