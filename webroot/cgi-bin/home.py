@@ -103,7 +103,7 @@ if cgicommon.is_client_from_localhost():
 
         cgicommon.writeln("<h2>Create new tourney</h2>");
         cgicommon.writeln('<form action="%s" method="POST">' % cgicommon.escape(baseurl, True));
-        cgicommon.writeln("<div>Enter the name for your new tourney.</div>")
+        cgicommon.writeln("<div>Enter the name for your new tourney. This name may consist only of letters, numbers and underscores, with no spaces.</div>")
         cgicommon.writeln("<div class=\"createtourneynamebox\">")
         cgicommon.writeln('<input style=\"font-size: 12pt;\" type="text" name="name" value="%s" /> <br />' % cgicommon.escape(tourneyname, True));
         cgicommon.writeln("</div>");
