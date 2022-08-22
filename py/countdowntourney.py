@@ -610,6 +610,10 @@ class AutoPruneNotSupportedException(TourneyException):
     description = "This tourney database file was created with a pre-1.2.1 version of Atropine so does not support automatic prunes. However, we should never have tried to use automatic prunes. So if you see this message, it's a bug in Atropine."
     pass
 
+class CannotDeletePlayerException(TourneyException):
+    description = "Failed to delete player because the player does not exist or they appear in one or more games."
+    pass
+
 class InvalidDateException(TourneyException):
     def __init__(self, reason):
         self.description = reason
@@ -1745,6 +1749,7 @@ class Tourney(object):
         cur = self.db.cursor()
         cur.execute("update player set withdrawn = ? where name = ? and id >= 0", (1 if withdrawn else 0, name))
         if cur.rowcount < 1:
+            cur.close()
             self.db.rollback()
             raise PlayerDoesNotExistException("Cannot change withdrawn status for player \"%s\" because no player by that name exists." % (name))
         cur.close()
@@ -1752,9 +1757,12 @@ class Tourney(object):
 
     def delete_player(self, name):
         cur = self.db.cursor()
-        cur.execute("delete from player where name = ? and id >= 0", (name,))
+        cur.execute("delete from player where name = ? and id >= 0 and not exists(select p1, p2 from game where p1 = player.id or p2 = player.id)", (name,))
+        count = cur.rowcount
         cur.close()
         self.db.commit()
+        if count == 0:
+            raise CannotDeletePlayerException("Failed to delete player \"%s\". This player either already appears in one or more games or does not exist." % (name))
 
     def delete_all_withdrawn_players(self):
         cur = self.db.cursor()
