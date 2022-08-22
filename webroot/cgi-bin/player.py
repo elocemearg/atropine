@@ -484,41 +484,41 @@ if player:
         else:
             indiv_string = ""
 
-        cgicommon.writeln("<table class=\"statscorner\">")
-        cgicommon.writeln("<tr class=\"statsrow\"><th colspan=\"2\">%s</th></tr>" % (cgicommon.escape(player.get_name())))
-        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Rating</td>")
-        cgicommon.writeln("<td class=\"statsnumvalue\">%g</td></tr>" % (player.get_rating()))
-        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Tournament rating</td>")
+        cgicommon.writeln("<table class=\"misctable\">")
+        cgicommon.writeln("<tr><th colspan=\"2\">%s</th></tr>" % (cgicommon.escape(player.get_name())))
+        cgicommon.writeln("<tr><td class=\"text\">Rating</td>")
+        cgicommon.writeln("<td class=\"number\">%g</td></tr>" % (player.get_rating()))
+        cgicommon.writeln("<tr><td class=\"text\">Tournament rating</td>")
         if standing.tournament_rating is not None:
-            cgicommon.writeln("<td class=\"statsnumvalue\">%.2f</td></tr>" % (standing.tournament_rating))
+            cgicommon.writeln("<td class=\"number\">%.2f</td></tr>" % (standing.tournament_rating))
         else:
-            cgicommon.writeln("<td class=\"statsnumvalue\"></td></tr>")
-        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Position%s</td>" % (indiv_string))
-        cgicommon.writeln("<td class=\"statsnumvalue\">%s</td></tr>" % (cgicommon.ordinal_number(standing.position)))
+            cgicommon.writeln("<td class=\"number\"></td></tr>")
+        cgicommon.writeln("<tr><td class=\"text\">Position%s</td>" % (indiv_string))
+        cgicommon.writeln("<td class=\"number\">%s</td></tr>" % (cgicommon.ordinal_number(standing.position)))
         if seed is not None:
-            cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Rating rank%s</td>" % (indiv_string))
-            cgicommon.writeln("<td class=\"statsnumvalue\">%s</td></tr>" % (cgicommon.ordinal_number(seed)))
+            cgicommon.writeln("<tr><td class=\"text\">Rating rank%s</td>" % (indiv_string))
+            cgicommon.writeln("<td class=\"number\">%s</td></tr>" % (cgicommon.ordinal_number(seed)))
 
-        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Games played</td>")
-        cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.played))
-        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Wins</td>")
-        cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.wins))
-        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Draws</td>")
-        cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.draws))
+        cgicommon.writeln("<tr><td class=\"text\">Games played</td>")
+        cgicommon.writeln("<td class=\"number\">%d</td></tr>" % (standing.played))
+        cgicommon.writeln("<tr><td class=\"text\">Wins</td>")
+        cgicommon.writeln("<td class=\"number\">%d</td></tr>" % (standing.wins))
+        cgicommon.writeln("<tr><td class=\"text\">Draws</td>")
+        cgicommon.writeln("<td class=\"number\">%d</td></tr>" % (standing.draws))
         if highest_score is not None:
-            cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Highest score</td>")
-            cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (highest_score))
+            cgicommon.writeln("<tr><td class=\"text\">Highest score</td>")
+            cgicommon.writeln("<td class=\"number\">%d</td></tr>" % (highest_score))
         if lowest_score is not None:
-            cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Lowest score</td>")
-            cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (lowest_score))
-        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Points scored</td>")
-        cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (standing.points))
-        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Points against</td>")
-        cgicommon.writeln("<td class=\"statsnumvalue\">%d</td></tr>" % (-(standing.spread - standing.points)))
-        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Spread</td>")
-        cgicommon.writeln("<td class=\"statsnumvalue\">%+d</td></tr>" % (standing.spread))
-        cgicommon.writeln("<tr class=\"statsrow\"><td class=\"statsname\">Played 1st/2nd</td>")
-        cgicommon.writeln("<td class=\"statsnumvalue\">%d/%d</td></tr>" % (standing.played_first, standing.played - standing.played_first))
+            cgicommon.writeln("<tr><td class=\"text\">Lowest score</td>")
+            cgicommon.writeln("<td class=\"number\">%d</td></tr>" % (lowest_score))
+        cgicommon.writeln("<tr><td class=\"text\">Points scored</td>")
+        cgicommon.writeln("<td class=\"number\">%d</td></tr>" % (standing.points))
+        cgicommon.writeln("<tr><td class=\"text\">Points against</td>")
+        cgicommon.writeln("<td class=\"number\">%d</td></tr>" % (-(standing.spread - standing.points)))
+        cgicommon.writeln("<tr><td class=\"text\">Spread</td>")
+        cgicommon.writeln("<td class=\"number\">%+d</td></tr>" % (standing.spread))
+        cgicommon.writeln("<tr><td class=\"text\">Played 1st/2nd</td>")
+        cgicommon.writeln("<td class=\"number\">%d/%d</td></tr>" % (standing.played_first, standing.played - standing.played_first))
 
         # Anything else which isn't covered above but is something we're using
         # to rank the standings table, put that here.
@@ -527,9 +527,9 @@ if player:
         for i in range(len(sec_rank_headings)):
             heading = sec_rank_headings[i]
             if heading not in ("Points", "Spread"):
-                cgicommon.writeln("<tr class=\"statsrow\">")
-                cgicommon.writeln("<td class=\"statsname\">%s</td>" % (cgicommon.escape(heading)))
-                cgicommon.writeln("<td class=\"statsnumvalue\">%s</td>" % (cgicommon.escape(sec_rank_values[i])))
+                cgicommon.writeln("<tr>")
+                cgicommon.writeln("<td class=\"text\">%s</td>" % (cgicommon.escape(heading)))
+                cgicommon.writeln("<td class=\"number\">%s</td>" % (cgicommon.escape(sec_rank_values[i])))
                 cgicommon.writeln("</tr>")
         cgicommon.writeln("</table>")
     cgicommon.writeln("<hr />")

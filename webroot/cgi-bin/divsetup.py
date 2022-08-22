@@ -166,9 +166,9 @@ else:
                     div_players[div_index] = sorted(div_players[div_index], key=lambda x : (x.get_rating()), reverse=True)
 
             cgicommon.writeln("<h2>Summary</h2>")
-            cgicommon.writeln("<table class=\"divsummarytable\">")
-            cgicommon.writeln("<tr><th></th><th colspan=\"2\">Players</th><th></th></tr>")
-            cgicommon.writeln("<tr><th>Division</th><th>Active</th><th>Withdrawn</th><th></th></tr>")
+            cgicommon.writeln("<table class=\"misctable\">")
+            cgicommon.writeln("<tr><th rowspan=\"2\">Division</th><th colspan=\"2\">Players</th><th rowspan=\"2\"></th></tr>")
+            cgicommon.writeln("<tr><th>Active</th><th>Withdrawn</th></tr>")
 
             div_active_player_count = [ len([p for p in div_players[div_index] if not p.is_withdrawn()]) for div_index in range(num_divisions) ]
             div_withdrawn_player_count = [ len([p for p in div_players[div_index] if p.is_withdrawn()]) for div_index in range(num_divisions) ]
@@ -176,10 +176,10 @@ else:
             for div_index in range(num_divisions):
                 div_name = tourney.get_division_name(div_index)
                 cgicommon.writeln("<tr>")
-                cgicommon.writeln("<td class=\"divsummaryname\">%s</td>" % (cgicommon.escape(div_name)))
-                cgicommon.writeln("<td class=\"divsummaryactiveplayers\">%d</td>" % (div_active_player_count[div_index]))
-                cgicommon.writeln("<td class=\"divsummarywithdrawnplayers\">%d</td>" % (div_withdrawn_player_count[div_index]))
-                cgicommon.writeln("<td class=\"divsummaryrename\">")
+                cgicommon.writeln("<td class=\"text\">%s</td>" % (cgicommon.escape(div_name)))
+                cgicommon.writeln("<td class=\"number\">%d</td>" % (div_active_player_count[div_index]))
+                cgicommon.writeln("<td class=\"number\">%d</td>" % (div_withdrawn_player_count[div_index]))
+                cgicommon.writeln("<td class=\"control\" style=\"text-align: left\">")
                 cgicommon.writeln("<div class=\"divrenamecontrols\" id=\"divrenamecontrols%d\">" % (div_index))
                 cgicommon.writeln("<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourneyname)))
                 cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname, True)))
@@ -209,7 +209,7 @@ else:
             for div_index in range(0, num_divisions):
                 div_name = tourney.get_division_name(div_index)
                 cgicommon.writeln("<h3>%s</h3>" % (cgicommon.escape(div_name)))
-                cgicommon.writeln("<table class=\"divtable\">")
+                cgicommon.writeln("<table class=\"misctable\">")
                 cgicommon.writeln("<tr>")
                 cgicommon.writeln("<th rowspan=\"2\">Name</th>")
                 cgicommon.writeln("<th rowspan=\"2\">Rating</th>")
@@ -221,11 +221,11 @@ else:
                 cgicommon.writeln("</tr>")
                 for p in div_players[div_index]:
                     cgicommon.writeln("<tr>")
-                    cgicommon.writeln("<td class=\"divtablename divtable\">%s%s</td>" % (cgicommon.player_to_link(p, tourney.get_name()), " (withdrawn)" if p.is_withdrawn() else ""))
-                    cgicommon.writeln("<td class=\"divtablerating divtable\">%g</td>" % (p.get_rating()))
-                    cgicommon.writeln("<td class=\"divtabledivpos divtable\">%d</td>" % (name_to_div_position[p.get_name()]))
-                    cgicommon.writeln("<td class=\"divtablepos divtable\">%d</td>" % (name_to_position[p.get_name()]))
-                    cgicommon.writeln("<td class=\"divtablepromote divtable\"><input type=\"checkbox\" name=\"promote%d\" value=\"1\" %s />" % (
+                    cgicommon.writeln("<td class=\"text\">%s%s</td>" % (cgicommon.player_to_link(p, tourney.get_name()), " (withdrawn)" if p.is_withdrawn() else ""))
+                    cgicommon.writeln("<td class=\"number\">%g</td>" % (p.get_rating()))
+                    cgicommon.writeln("<td class=\"number\">%d</td>" % (name_to_div_position[p.get_name()]))
+                    cgicommon.writeln("<td class=\"number\">%d</td>" % (name_to_position[p.get_name()]))
+                    cgicommon.writeln("<td class=\"control\"><input type=\"checkbox\" name=\"promote%d\" value=\"1\" %s />" % (
                             player_seq, "checked" if p.is_division_fixed() else ""))
                     cgicommon.writeln("<input type=\"hidden\" name=\"promotename%d\" value=\"%s\" />" % (player_seq, cgicommon.escape(p.get_name(), True)))
                     cgicommon.writeln("</tr>")

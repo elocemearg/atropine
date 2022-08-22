@@ -134,7 +134,7 @@ else:
             num_columns = max_columns
             names_per_column = (num_names + num_columns - 1) // num_columns
 
-        cgicommon.writeln("<table class=\"tableindex\">")
+        cgicommon.writeln("<table class=\"misctable\">")
         columns = [ [] for i in range(num_columns) ]
         sorted_names = sorted(player_name_to_table_list)
         for position_in_column in range(0, names_per_column):
@@ -145,30 +145,30 @@ else:
                     name = sorted_names[position_in_list]
                     player = player_name_to_player.get(name, None)
                     if player:
-                        cgicommon.writeln(("<td class=\"tableindexname\">%s</td>" % (cgicommon.player_to_link(player, tourney.get_name()))))
+                        cgicommon.writeln(("<td class=\"text tableindexname\">%s</td>" % (cgicommon.player_to_link(player, tourney.get_name()))))
                     else:
-                        cgicommon.writeln(("<td class=\"tableindexname\">%s</td>" % (cgicommon.escape(name))))
+                        cgicommon.writeln(("<td class=\"text tableindexname\">%s</td>" % (cgicommon.escape(name))))
 
                     # Show the list of tables this player is on in this round.
                     # This will almost always be one table, but it is possible
                     # to construct a round in which a player has to be in
                     # two places.
-                    cgicommon.writeln("<td class=\"tableindextable\">")
+                    cgicommon.writeln("<td class=\"tableindexnumber\" style=\"border-left: none\" >")
                     table_list = player_name_to_table_list[name]
                     for index in range(len(table_list)):
                         # Print the table number, with a mouseover-text listing
                         # all the players on that table.
                         player_list = table_to_player_list.get(table_list[index], [])
                         title = "Table %d: %s" % (table_list[index], ", ".join(sorted([x.get_name() for x in player_list])))
-                        cgicommon.writeln(("<span title=\"%s\">" % cgicommon.escape(title, True)));
+                        cgicommon.writeln(("<div class=\"tablebadgenaturalsize\" style=\"margin-top: 2px; margin-bottom: 2px;\" title=\"%s\">" % cgicommon.escape(title, True)));
                         cgicommon.writeln(("%d" % (table_list[index])))
-                        cgicommon.writeln("</span>")
+                        cgicommon.writeln("</div>")
                         if index < len(table_list) - 1:
                             cgicommon.writeln(", ");
                     cgicommon.writeln("</td>")
 
                     if column < num_columns - 1:
-                        cgicommon.writeln("<td class=\"tableindexspacer\"> </td>")
+                        cgicommon.writeln("<td class=\"columnspacer\"> </td>")
 
             cgicommon.writeln("</tr>")
         cgicommon.writeln("</table>")

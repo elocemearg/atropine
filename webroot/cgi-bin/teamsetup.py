@@ -187,7 +187,7 @@ else:
         cgicommon.writeln('<h2>Players</h2>')
         cgicommon.writeln('<form action="%s?tourney=%s" method="POST">' % (cgicommon.escape(baseurl, True), urllib.parse.quote_plus(tourneyname)))
         cgicommon.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True))
-        cgicommon.writeln('<table class="teamtable">')
+        cgicommon.writeln('<table class="misctable">')
         cgicommon.writeln('<tr><th>Player</th>')
         cgicommon.writeln('<th>No team</th>')
         for team in teams:
@@ -200,12 +200,12 @@ else:
             team = player_team[1]
 
             cgicommon.writeln('<tr>')
-            cgicommon.writeln('<td class="teamtableplayername">%s<input type="hidden" name="player%d" value="%s" /></td>' % (cgicommon.escape(player.get_name()), index, cgicommon.escape(player.get_name())))
+            cgicommon.writeln('<td class="text">%s<input type="hidden" name="player%d" value="%s" /></td>' % (cgicommon.escape(player.get_name()), index, cgicommon.escape(player.get_name())))
 
             # Radio button for "no team"
-            cgicommon.writeln('<td class="teamtablebuttoncell"><input type="radio" name="team%d" value="%d" %s /></td>' % (index, -1, "checked" if team is None else ""))
+            cgicommon.writeln('<td class="control"><input type="radio" name="team%d" value="%d" %s /></td>' % (index, -1, "checked" if team is None else ""))
             for t in teams:
-                cgicommon.writeln('<td class="teamtablebuttoncell" style="background-color: #%s;"><input type="radio" name="team%d" value="%d" %s /></td>' % (t.get_hex_colour(), index, t.get_id(), "checked" if team is not None and team.get_id() == t.get_id() else ""))
+                cgicommon.writeln('<td class="control" style="background-color: #%s;"><input type="radio" name="team%d" value="%d" %s /></td>' % (t.get_hex_colour(), index, t.get_id(), "checked" if team is not None and team.get_id() == t.get_id() else ""))
             cgicommon.writeln('</tr>')
             index += 1
         cgicommon.writeln('</table>')

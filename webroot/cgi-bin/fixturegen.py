@@ -466,13 +466,13 @@ if fixgen_ask_divisions:
     elements = []
     elements.append(htmlform.HTMLFragment("<p>Which divisions do you want to generate fixtures for, starting from which rounds? By default, a division's fixtures will go in the round after the latest round which has games for that division.</p>"))
     num_divisions = tourney.get_num_divisions()
-    elements.append(htmlform.HTMLFragment("<table class=\"fixdivselector\">"))
+    elements.append(htmlform.HTMLFragment("<table class=\"misctable\" style=\"margin-bottom: 20px;\">"))
     elements.append(htmlform.HTMLFragment("<tr><th>Division</th><th>Round number</th></tr>"))
     for div in range(num_divisions):
-        elements.append(htmlform.HTMLFragment("<tr><td>"))
-        elements.append(htmlform.HTMLFormCheckBox("_div%d" % (div), tourney.get_division_name(div), True))
+        elements.append(htmlform.HTMLFragment("<tr><td class=\"control\">"))
+        elements.append(htmlform.HTMLFormCheckBox("_div%d" % (div), tourney.get_division_name(div), True, other_attrs={"style" : "margin-right: 10px;"}))
         next_free_round_number = tourney.get_next_free_round_number_for_division(div)
-        elements.append(htmlform.HTMLFragment("</td><td>"))
+        elements.append(htmlform.HTMLFragment("</td><td class=\"control\">"))
         elements.append(htmlform.HTMLFormNumberInput("", "_div%dround" % (div), str(next_free_round_number)))
         elements.append(htmlform.HTMLFragment("</td></tr>"))
     elements.append(htmlform.HTMLFragment("</table>"))
