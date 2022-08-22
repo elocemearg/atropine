@@ -420,15 +420,20 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
     writeln("<a href=\"/cgi-bin/home.py\"><img src=\"/images/eyebergine128.png\" alt=\"Eyebergine\" /></a><br />");
     if tourney:
         players = tourney.get_players()
+        num_games = tourney.get_num_games()
         writeln("<p><strong>%s</strong></p>" % escape(tourney.name));
         writeln(("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\"><strong>General Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
 
         if show_setup_links:
             writeln("<div class=\"sidebarlinklist\">")
             writeln("<div>")
-            writeln(("<a href=\"/cgi-bin/player.py?tourney=%s\">Players...</a>" % (urllib.parse.quote_plus(tourney.name))))
+            writeln("<a href=\"/cgi-bin/player.py?tourney=%s\">Players...</a>" % (urllib.parse.quote_plus(tourney.name)))
             writeln("</div>")
             if players:
+                if num_games == 0:
+                    writeln("<div>")
+                    writeln("<a href=\"/cgi-bin/registration.py?tourney=%s\">Registration...</a>" % (urllib.parse.quote_plus(tourney.name)))
+                    writeln("</div>")
                 writeln("<div>")
                 writeln(("<a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions...</a>" % (urllib.parse.quote_plus(tourney.name))))
                 writeln("</div>")
@@ -977,6 +982,124 @@ def ordinal_number(n):
         return "%drd" % (n)
     else:
         return "%dth" % (n)
+
+def show_division_drop_down_box(control_name, tourney, player):
+    num_divisions = tourney.get_num_divisions()
+    writeln("<select name=\"%s\">" % (escape(control_name, True)))
+    for div in range(num_divisions):
+        writeln("<option value=\"%d\" %s >%s (%d active players)</option>" % (div,
+                "selected" if (player is not None and div == player.get_division()) or (player is None and div == 0) else "",
+                escape(tourney.get_division_name(div)),
+                tourney.get_num_active_players(div)))
+    writeln("</select>")
+
+def show_player_form(baseurl, tourney, player, custom_query_string=""):
+    # Output HTML for a form for adding a new player (if player is None) or
+    # editing an existing player (if player is not None).
+    num_divisions = tourney.get_num_divisions()
+    tourneyname = tourney.get_name()
+    if player:
+        player_id = player.get_id()
+    else:
+        player_id = None
+
+    if player:
+        writeln("<form method=\"POST\" action=\"%s?tourney=%s&id=%d\">" % (escape(baseurl), urllib.parse.quote_plus(tourney.get_name()), player_id))
+    else:
+        writeln("<form method=\"POST\" action=\"%s?tourney=%s%s%s\">" % (
+            escape(baseurl),
+            urllib.parse.quote_plus(tourney.get_name()),
+            "&" if custom_query_string else "",
+            custom_query_string
+        ))
+    writeln("<table>")
+    writeln("<tr><td>Name</td><td><input type=\"text\" name=\"setname\" value=\"%s\" /></td></tr>" % ("" if not player else escape(player.get_name(), True)))
+    writeln("<tr><td>Rating</td><td><input style=\"width: 5em;\" type=\"text\" name=\"setrating\" value=\"%g\"/>" % (1000 if not player else player.get_rating()))
+    writeln("<span class=\"playercontrolhelp\">(1000 is the default; 0 will make this player a Prune)</span>")
+    writeln("</td></tr>")
+    if num_divisions > 1:
+        writeln("<tr><td>Division</td>")
+        writeln("<td>")
+        show_division_drop_down_box("setdivision", tourney, player)
+        writeln("</td></tr>")
+
+    # Only show withdrawn checkbox for "add new player..." form. For the "edit
+    # player" form, we have a specific form to withdraw or reinstate.
+    if not player:
+        writeln("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will not include this player)</span></td></tr>" % ("checked" if player and player.is_withdrawn() else ""))
+
+    writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>)</span></td></tr>" % (
+        "checked" if player and player.is_requiring_accessible_table() else "",
+        urllib.parse.quote_plus(tourneyname)
+    ))
+
+    if player is None:
+        pref = None
+    else:
+        pref = player.get_preferred_table()
+    writeln("<tr><td>Preferred table number</td><td><input type=\"number\" name=\"setpreferredtable\" value=\"%d\" min=\"0\" /> <span class=\"playercontrolhelp\">(player will be assigned this table number if possible; a value of 0 means the player has no specific table preference)</span></td></tr>" % (pref if pref is not None else 0))
+
+    writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</span></td></tr>" % ("checked" if player and player.is_avoiding_prune() else ""))
+    writeln("</table>")
+    writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (escape(tourney.get_name(), True)))
+    if player:
+        writeln("<input type=\"hidden\" name=\"id\" value=\"%d\" />" % (player_id))
+
+    if player:
+        writeln("<input type=\"submit\" name=\"editplayer\" class=\"bigbutton\" style=\"margin-top: 10px;\" value=\"Save Changes\" />")
+    else:
+        writeln("<input type=\"submit\" name=\"newplayersubmit\" class=\"bigbutton\" style=\"margin-top: 10px\" value=\"Create Player\" />")
+    writeln("</form>")
+
+def int_or_none(s):
+    if s is None:
+        return None;
+    try:
+        return int(s);
+    except ValueError:
+        return None;
+
+def int_or_zero(s):
+    if s is None:
+        return 0
+    try:
+        return int(s)
+    except ValueError:
+        return 0
+
+def float_or_none(s):
+    if s is None:
+        return None;
+    try:
+        return float(s);
+    except ValueError:
+        return None;
+
+def add_new_player_from_form(tourney, form):
+    new_player_name = form.getfirst("setname")
+
+    # If no rating has been entered, default to 1000
+    rating_str = form.getfirst("setrating")
+    if rating_str is None or rating_str.strip() == "":
+        new_player_rating = 1000.0
+    else:
+        new_player_rating = float_or_none(rating_str)
+    new_player_division = int_or_none(form.getfirst("setdivision"))
+    if new_player_division is None:
+        new_player_division = 0
+    new_withdrawn = int_or_zero(form.getfirst("setwithdrawn"))
+    new_avoid_prune = int_or_zero(form.getfirst("setavoidprune"))
+    new_requires_accessible_table = int_or_zero(form.getfirst("setrequiresaccessibletable"))
+    new_preferred_table = int_or_none(form.getfirst("setpreferredtable"))
+    tourney.add_player(new_player_name, new_player_rating, new_player_division)
+    if new_withdrawn:
+        tourney.set_player_withdrawn(new_player_name, True)
+    if new_avoid_prune:
+        tourney.set_player_avoid_prune(new_player_name, True)
+    if new_requires_accessible_table:
+        tourney.set_player_requires_accessible_table(new_player_name, True)
+    if new_preferred_table:
+        tourney.set_player_preferred_table(new_player_name, new_preferred_table)
 
 class GlobalPreferences(object):
     def __init__(self, names_values):

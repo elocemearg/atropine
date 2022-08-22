@@ -552,7 +552,7 @@ class InvalidDBNameException(TourneyException):
     pass;
 
 class InvalidRatingException(TourneyException):
-    description = "Invalid rating. Rating must be an integer."
+    description = "Invalid rating. Rating must be a number."
     pass;
 
 class TooManyPlayersException(TourneyException):
@@ -1372,6 +1372,14 @@ class Tourney(object):
         return retval
 
     def add_player(self, name, rating, division=0):
+        if not name or not name.strip():
+            raise InvalidPlayerNameException()
+        try:
+            rating = float(rating)
+        except:
+            rating = None
+        if rating is None:
+            raise InvalidRatingException()
         if self.player_name_exists(name):
             raise PlayerExistsException("Can't add player \"%s\" because there is already a player with that name." % (name))
         cur = self.db.cursor()
@@ -1748,14 +1756,34 @@ class Tourney(object):
         cur.close()
         self.db.commit()
 
+    def delete_all_withdrawn_players(self):
+        cur = self.db.cursor()
+        cur.execute("delete from player where id >= 0 and withdrawn > 0 and not exists(select p1, p2 from game where p1 = player.id or p2 = player.id)")
+        count = cur.rowcount
+        cur.close()
+        self.db.commit()
+        return count
+
     def withdraw_player(self, name):
         # Set a player as withdrawn, so that the player is not included in the
         # player list supplied to the fixture generator for future rounds.
         self.set_player_withdrawn(name, 1)
 
+    def withdraw_all_players(self):
+        cur = self.db.cursor()
+        cur.execute("update player set withdrawn = 1 where id >= 0")
+        cur.close()
+        self.db.commit()
+
     def unwithdraw_player(self, name):
         # Change a players withdrawn status to 0
         self.set_player_withdrawn(name, 0)
+
+    def unwithdraw_all_players(self):
+        cur = self.db.cursor()
+        cur.execute("update player set withdrawn = 0 where id >= 0")
+        cur.close()
+        self.db.commit()
 
     def set_player_requires_accessible_table(self, name, value):
         if self.db_version < (1,0,4):
@@ -1808,7 +1836,7 @@ class Tourney(object):
             raise PlayerDoesNotExistException();
         cur.close();
         self.db.commit();
-        return rows[0];
+        return rows[0][0]
 
     def get_player_tournament_rating(self, name):
         cur = self.db.cursor()

@@ -36,15 +36,6 @@ cgitb.enable();
 cgicommon.set_module_path();
 import countdowntourney;
 
-def show_division_drop_down_box(control_name, tourney, player):
-    num_divisions = tourney.get_num_divisions()
-    cgicommon.writeln("<select name=\"%s\">" % (cgicommon.escape(control_name, True)))
-    for div in range(num_divisions):
-        cgicommon.writeln("<option value=\"%d\" %s >%s (%d active players)</option>" % (div,
-                "selected" if (player is not None and div == player.get_division()) or (player is None and div == 0) else "",
-                cgicommon.escape(tourney.get_division_name(div)),
-                tourney.get_num_active_players(div)))
-    cgicommon.writeln("</select>")
 
 def show_player_search_form(tourney):
     cgicommon.writeln("<form method=\"GET\" action=\"%s\">" % (cgicommon.escape(baseurl, True)))
@@ -104,56 +95,6 @@ def show_player_withdrawal_form(tourney, player):
         cgicommon.writeln('<input type="submit" name="withdrawplayer" class="bigbutton" value="Withdraw %s">' % (cgicommon.escape(player_name)))
     cgicommon.writeln('</form>')
 
-def show_player_form(tourney, player):
-    num_divisions = tourney.get_num_divisions()
-    tourneyname = tourney.get_name()
-    if player:
-        player_id = player.get_id()
-    else:
-        player_id = None
-
-    if player:
-        cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&id=%d\">" % (cgicommon.escape(baseurl), urllib.parse.quote_plus(tourneyname), player_id))
-    else:
-        cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s\">" % (cgicommon.escape(baseurl), urllib.parse.quote_plus(tourneyname)))
-    cgicommon.writeln("<table>")
-    cgicommon.writeln("<tr><td>Name</td><td><input type=\"text\" name=\"setname\" value=\"%s\" /></td></tr>" % ("" if not player else cgicommon.escape(player.get_name(), True)))
-    cgicommon.writeln("<tr><td>Rating</td><td><input style=\"width: 5em;\" type=\"text\" name=\"setrating\" value=\"%g\"/>" % (1000 if not player else player.get_rating()))
-    cgicommon.writeln("<span class=\"playercontrolhelp\">(1000 is the default; 0 will make this player a Prune)</span>")
-    cgicommon.writeln("</td></tr>")
-    if num_divisions > 1:
-        cgicommon.writeln("<tr><td>Division</td>")
-        cgicommon.writeln("<td>")
-        show_division_drop_down_box("setdivision", tourney, player)
-        cgicommon.writeln("</td></tr>")
-
-    # Only show withdrawn checkbox for "add new player..." form. For the "edit
-    # player" form, we have a specific form to withdraw or reinstate.
-    if not player:
-        cgicommon.writeln("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will not include this player)</span></td></tr>" % ("checked" if player and player.is_withdrawn() else ""))
-
-    cgicommon.writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>)</span></td></tr>" % (
-        "checked" if player and player.is_requiring_accessible_table() else "",
-        urllib.parse.quote_plus(tourneyname)
-    ))
-
-    if player is None:
-        pref = None
-    else:
-        pref = player.get_preferred_table()
-    cgicommon.writeln("<tr><td>Preferred table number</td><td><input type=\"number\" name=\"setpreferredtable\" value=\"%d\" min=\"0\" /> <span class=\"playercontrolhelp\">(player will be assigned this table number if possible; a value of 0 means the player has no specific table preference)</span></td></tr>" % (pref if pref is not None else 0))
-
-    cgicommon.writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</span></td></tr>" % ("checked" if player and player.is_avoiding_prune() else ""))
-    cgicommon.writeln("</table>")
-    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname, True)))
-    if player:
-        cgicommon.writeln("<input type=\"hidden\" name=\"id\" value=\"%d\" />" % (player_id))
-
-    if player:
-        cgicommon.writeln("<input type=\"submit\" name=\"editplayer\" class=\"bigbutton\" style=\"margin-top: 10px;\" value=\"Save Changes\" />")
-    else:
-        cgicommon.writeln("<input type=\"submit\" name=\"newplayersubmit\" class=\"bigbutton\" style=\"margin-top: 10px\" value=\"Create Player\" />")
-    cgicommon.writeln("</form>")
 
 cgicommon.writeln("Content-Type: text/html; charset=utf-8");
 cgicommon.writeln("");
@@ -288,45 +229,10 @@ if cgicommon.is_client_from_localhost() and request_method == "POST":
                 exceptions_to_show.append(("<p>Failed to change player's name...</p>", e))
         player = tourney.get_player_from_id(player_id)
     elif form.getfirst("newplayersubmit"):
-        new_player_name = form.getfirst("setname")
-
-        # If no rating has been entered, default to 1000
-        rating_str = form.getfirst("setrating")
-        if rating_str is None or rating_str.strip() == "":
-            new_player_rating = 1000.0
-        else:
-            new_player_rating = float_or_none(rating_str)
-        new_player_division = int_or_none(form.getfirst("setdivision"))
-        try_to_add_player = True
-
-        if not new_player_name:
-            exceptions_to_show.append(("<p>Can't add new player...</p>", countdowntourney.TourneyException("Player name may not be blank.")))
-            try_to_add_player = False
-        if new_player_rating is None:
-            exceptions_to_show.append(("<p>Can't add new player...</p>", countdowntourney.TourneyException("A new player's rating, if specified, must be a number.")))
-            try_to_add_player = False
-        if new_player_division is None:
-            new_player_division = 0
-
-        new_withdrawn = int_or_zero(form.getfirst("setwithdrawn"))
-        new_avoid_prune = int_or_zero(form.getfirst("setavoidprune"))
-        new_requires_accessible_table = int_or_zero(form.getfirst("setrequiresaccessibletable"))
-
-        if try_to_add_player:
-            try:
-                tourney.add_player(new_player_name, new_player_rating, new_player_division)
-            except countdowntourney.TourneyException as e:
-                exceptions_to_show.append(("<p>Failed to add new player \"%s\"...</p>" % (cgicommon.escape(new_player_name)), e))
-
-            try:
-                if new_withdrawn:
-                    tourney.set_player_withdrawn(new_player_name, True)
-                if new_avoid_prune:
-                    tourney.set_player_avoid_prune(new_player_name, True)
-                if new_requires_accessible_table:
-                    tourney.set_player_requires_accessible_table(new_player_name, True)
-            except countdowntourney.TourneyException as e:
-                exceptions_to_show.append(("<p>Added player \"%s\" but failed to set attributes...</p>" % (cgicommon.escape(new_player_name)), e))
+        try:
+            cgicommon.add_new_player_from_form(tourney, form)
+        except countdowntourney.TourneyException as e:
+            exceptions_to_show.append(("<p>Error when adding new player...</p>", e))
     elif form.getfirst("reinstateplayer"):
         if player_name:
             try:
@@ -511,7 +417,7 @@ if player:
             ), wide=True)
 
     write_h2(player, "Edit player")
-    show_player_form(tourney, player)
+    cgicommon.show_player_form(baseurl, tourney, player)
 
     cgicommon.writeln("<hr />")
 
@@ -628,7 +534,7 @@ if player:
         cgicommon.writeln("</table>")
     cgicommon.writeln("<hr />")
 elif add_player:
-    show_player_form(tourney, None)
+    cgicommon.show_player_form(baseurl, tourney, None)
 
 cgicommon.writeln("</div>") # end form pane
 cgicommon.writeln("</div>") # end form pane container

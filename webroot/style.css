@@ -157,7 +157,7 @@ div.sidebarbanner {
 	background-color: purple;
 }
 
-input.bigbutton {
+.bigbutton {
     padding: 10px;
     font-size: 12pt;
 }
@@ -2018,4 +2018,92 @@ div.uploadconsolediag {
 
 div.shareablelinkbox {
     margin: 5px;
+}
+
+table.playerreg {
+    border-collapse: separate;
+    border-spacing: 6px;
+    table-layout: fixed;
+}
+
+table.playerreg td.playerregcol {
+    min-width: 180px;
+}
+
+table.playerreg td.playerregcolspace {
+    min-width: none;
+    text-align: left;
+    width: 60px;
+}
+
+button.playerregbutton {
+    width: 100%;
+    font-size: 10pt;
+    text-align: left;
+    padding: 5px;
+    cursor: pointer;
+}
+
+button.playerregbuttonactive {
+    background-color: hsl(120, 60%, 90%);
+    color: gray;
+}
+
+button.playerregbuttonactive:hover {
+    background-color: hsl(120, 100%, 80%);
+}
+
+button.playerregbuttonwithdrawn {
+    background-color: hsl(0, 80%, 20%);
+    color: white;
+}
+
+button.playerregbuttonwithdrawn:hover {
+    background-color: hsl(0, 80%, 40%);
+}
+
+button.playerregdeletebutton {
+    font-size: 10pt;
+    width: 25px;
+    padding: 0;
+    cursor: pointer;
+}
+
+#popupdiv {
+    position: fixed;
+    text-align: center;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 75%);
+    z-index: 1;
+}
+
+div.popupwindow {
+    position: relative;
+    display: inline-block;
+    text-align: left;
+    max-width: min(50vw, 600px);
+    top: 20%;
+    border: 5px solid black;
+    border-radius: 10px;
+    background-color: white;
+    padding: 20px;
+    z-index: 2;
+}
+
+div.popupwindowcontrols {
+    width: 100%;
+    text-align: right;
+}
+
+div.popupwindowcontrols button {
+    margin-left: 10px;
+    min-width: 100px;
+}
+
+div.popupwindowcontrols input[type="submit"] {
+    margin-left: 10px;
+    min-width: 100px;
 }

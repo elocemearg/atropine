@@ -506,12 +506,16 @@ cgicommon.writeln("</p>")
 if tourney.get_num_games() == 0:
     if players:
         cgicommon.show_info_box("""<p>
-When you're happy with the player list and the
-<a href="#tourneyprops">tourney properties</a> below, head to
-<a href="/cgi-bin/fixturegen.py?tourney=%s">Generate fixtures</a> to generate
-the first games. Once you've generated the first games, you won't be able to
-delete players, but you can always withdraw them, edit names and ratings, or
-add new players.</p>""" % (urllib.parse.quote_plus(tourney.get_name())))
+Set the <a href="#tourneyprops">tourney properties</a> below, then you can
+optionally go to the
+<a href="/cgi-bin/registration.py?tourney={tourneyname}">Player Registration</a>
+page to mark people as present or withdrawn.
+</p><p>
+If you're happy with the player list, head to
+<a href="/cgi-bin/fixturegen.py?tourney={tourneyname}">Generate fixtures</a>
+to generate the first games. Once you've generated the first games, you won't
+be able to delete players, but you can always withdraw them, edit names and
+ratings, or add new players.</p>""".format(tourneyname=urllib.parse.quote_plus(tourney.get_name())))
     else:
         cgicommon.show_info_box("<p>This tourney has no players defined yet. Before doing anything else, enter the list of player names below. You can always add more players, or withdraw them, later on if necessary.</p>");
 
