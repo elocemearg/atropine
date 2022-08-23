@@ -48,5 +48,6 @@ class WelcomeView extends View {
             }
             this.latestGameRevisionSeen = gameStateRevision;
         }
+        return false;
     }
 }
