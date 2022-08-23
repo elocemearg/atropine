@@ -508,15 +508,15 @@ div.tourneyexceptionmessage {
 
 div.infoboxcontainer {
     background-color: #ccccff;
-    border: 5px solid blue;
     max-width: 750px;
+    border-radius: 10px;
     display: table;
 	vertical-align: middle;
 }
 
 div.infoboximage {
 	float: left;
-	padding: 10px;
+	padding: 5px;
 	width: 90px;
 	vertical-align: middle;
 }
@@ -535,7 +535,12 @@ div.infoboxmessagecontainer {
 
 div.successinfoboxcontainer {
     background-color: #ccffcc;
-    border: 5px solid green;
+    border: none;
+    border-radius: 10px;
+}
+
+div.successinfoboxcontainer div.infoboximage {
+    width: 45px;
 }
 
 
