@@ -62,7 +62,7 @@ teleost_modes = [
         {
             "id" : "TELEOST_MODE_AUTO",
             "name" : "Auto",
-            "desc" : "Automatic control. Show the Welcome screen before any games are generated, Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played.",
+            "desc" : "Automatic control. Show the Registration screen before any games are generated, Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played.",
             "menuorder" : 0,
             "image" : "/images/screenthumbs/auto.png",
             "fetch" : [ "all" ]
@@ -96,7 +96,7 @@ teleost_modes = [
             "name" : "Technical Difficulties",
             "desc" : "Ceci n'est pas un probleme technique.",
             "image" : "/images/screenthumbs/technical_difficulties.png",
-            "menuorder" : 11,
+            "menuorder" : 10,
             "fetch" : []
         },
         {
@@ -142,9 +142,17 @@ teleost_modes = [
         {
             "id" : "TELEOST_MODE_WELCOME",
             "name" : "Welcome",
-            "desc" : "A welcome screen for the start of the event, showing a list of registered and active players.",
+            "desc" : "A welcome screen for the start of the event.",
             "image" : "/images/screenthumbs/welcome.png",
-            "menuorder" : 10,
+            "menuorder" : 11,
+            "fetch" : [ "tourney" ]
+        },
+        {
+            "id" : "TELEOST_MODE_REGISTRATION",
+            "name" : "Registration",
+            "desc" : "A list of all currently-registered and non-withdrawn players.",
+            "image" : "/images/screenthumbs/registration.png",
+            "menuorder" : 12,
             "fetch" : [ "tourney", "players" ]
         },
         #{
@@ -1512,6 +1520,14 @@ class Tourney(object):
     def get_withdrawn_players(self):
         return [x for x in self.get_players() if x.withdrawn]
 
+    def get_num_players(self):
+        cur = self.db.cursor()
+        cur.execute("select count(*) from player where id >= 0")
+        row = cur.fetchone()
+        count = row[0]
+        cur.close()
+        return count
+
     def get_players(self, exclude_withdrawn=False, include_prune=False):
         cur = self.db.cursor();
         if self.db_version < (0, 7, 7):
@@ -2720,8 +2736,12 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         mode_name = None
 
         if not current_round:
-            # There are no rounds yet, so show the welcome screen
-            mode_name = "TELEOST_MODE_WELCOME"
+            # There are no rounds yet, so show the welcome screen, or the
+            # player registration page if there are players.
+            if self.get_num_players() > 0:
+                mode_name = "TELEOST_MODE_REGISTRATION"
+            else:
+                mode_name = "TELEOST_MODE_WELCOME"
         else:
             round_no = current_round["num"]
             (played, unplayed) = self.get_played_unplayed_counts(round_no=round_no)

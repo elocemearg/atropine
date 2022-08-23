@@ -692,7 +692,7 @@ img.teleostclockminutehand {
     }
 }
 
-div.welcomebackground {
+div.movingbackground {
     position: absolute;
     left: 0;
     top: 0;
@@ -716,14 +716,6 @@ div.welcomeheading {
     font-variant-numeric: normal;
 }
 
-div.welcomescreenmode {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-
 #welcomeheading1 {
     top: 33vh;
 }
@@ -734,7 +726,7 @@ div.welcomescreenmode {
     line-height: 14vmin;
 }
 
-div.welcomeregistrationblurb {
+div.registrationblurb {
     position: absolute;
     top: 20%;
     left: 5%;
@@ -743,9 +735,9 @@ div.welcomeregistrationblurb {
     font-size: 2.5vmin;
 }
 
-#welcomeregistrationcount {
+#registrationcount {
     position: absolute;
-    bottom: 7%;
+    bottom: 6%;
     left: 5%;
     text-align: left;
     font-size: 2.5vmin;
@@ -753,20 +745,20 @@ div.welcomeregistrationblurb {
 
 div.viewpagenumber {
     position: absolute;
-    bottom: 7%;
+    bottom: 6%;
     right: 5%;
     text-align: right;
     font-size: 2.5vmin;
 }
 
-div.welcomeplayerlist {
+div.registrationlist {
     position: absolute;
     top: 30%;
     left: 5%;
     width: 90vw;
 }
 
-table.welcomeplayertable {
+table.registrationtable {
     width: 100%;
     font-size: 3vmin;
     border-collapse: separate;
@@ -774,13 +766,13 @@ table.welcomeplayertable {
     table-layout: fixed;
 }
 
-table.welcomeplayertable td {
+table.registrationtable td {
     background-color: navy;
     padding-left: 0.5vw;
     padding-right: 0.5vw;
 }
 
-table.welcomeplayertable td.welcomeplayercolumnspace {
+table.registrationtable td.registrationcolumnspace {
     background-color: transparent;
     width: 3vw;
 }
