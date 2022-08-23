@@ -162,7 +162,7 @@ class RankPoints(RankMethod):
         return "Wins don't matter. Players are ranked by total points scored."
 
     def get_extra_description(self):
-        return "Don't choose this."
+        return "This is only here for legacy reasons and isn't a great way to rank a standings table."
 
     def get_secondary_rank_headings(self, short=False):
         if short:
