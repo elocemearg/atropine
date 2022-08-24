@@ -201,6 +201,10 @@ function destroyCurrentView() {
         viewUpdateInterval = null;
     }
 
+    if (currentView != null) {
+        currentView.notifyClosed();
+    }
+
     var mainpane = document.getElementById("displaymainpane");
 
     /* Get rid of anything from the previous view */
@@ -278,6 +282,8 @@ function fetchGameStateCallback() {
                 if (teleostMode == null || teleostMode != newTeleostMode ||
                         !teleostOptionsEqual(teleostModeOptions, newTeleostModeOptions)) {
                     currentViewDrawn = false;
+                    if (currentView != null)
+                        currentView.notifyClosed();
                     currentView = null;
                     teleostMode = newTeleostMode;
                     teleostModeOptions = newTeleostModeOptions;

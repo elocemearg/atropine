@@ -40,4 +40,14 @@ class View {
         }
         return gameState;
     }
+
+    /* Subclasses may override this to be told when we've moved to a different
+     * view. This is useful if the current view has timeouts which may fire
+     * long after the view is no longer displayed, so the view has a chance to
+     * cancel the timeouts or handle them in a different way.
+     *
+     * When we switch back to this view, the view's setup() method will be
+     * called again. */
+    notifyClosed() {
+    }
 }

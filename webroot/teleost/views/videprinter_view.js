@@ -63,26 +63,78 @@ class VideprinterView extends View {
         super(tourneyName, leftPc, topPc, widthPc, heightPc);
         this.numRows = numRows;
         this.latestGameRevisionSeen = null;
-        this.latestLogSeqShown = null;
         this.scoreBracketThreshold = scoreBracketThreshold;
+
+        /* Milliseconds taken for the videprinter's scroll-up animation */
+        this.scrollAnimateTime = 500;
+
+        /* Milliseconds taken to horizontally animate a "typing" line of text */
+        this.rowAnimateTime = 1000;
+
+        /* List of all the applicable log entries in the tourney. "applicable"
+         * means "we print this on the videprinter". */
+        this.logList = [];
+
+        /* An index to the next entry in logList yet to be printed. If
+         * logListPrintPosition == logList.length, we're up to date and nothing
+         * else is waiting to be printed. */
+        this.logListPrintPosition = 0;
+
+        /* Initially false - the first time we display anything, we just fill
+         * the visible videprinter rows with the last N log entries. Then we
+         * set animateVideprinter to true, and later log entries will be
+         * animated. */
+        this.animateVideprinter = false;
+
+        /* If true, redraw() returns having done nothing, because we're still
+         * waiting for some animation to complete after which we'll call
+         * redraw() again. */
+        this.redrawInProgress = false;
+
+        /* <table> element */
+        this.videprinterTable = null;
+
+        /* Array of <td> elements in the videprinter, count = this.numRows */
+        this.videprinterRows = [];
+
+        /* Set by setup(), cleared by notifyClosed(). Handy if a timeout
+         * fires after the view is no longer in use. */
+        this.active = false;
     }
 
     setup(container) {
         super.setup(container);
-        var html = "";
 
-        html += "<div class=\"videprintercontainer\">"
-        html += "<table class=\"teleostvideprinter\">";
+        let videprinterContainer = document.createElement("DIV");
+        videprinterContainer.className = "videprintercontainer";
+        this.videprinterTable = document.createElement("TABLE");
+        this.videprinterTable.className = "teleostvideprinter";
+        this.videprinterRows = [];
 
-        for (var row = 0; row < this.numRows; ++row) {
-            html += "<tr class=\"teleostvideprinterrow\">";
-            html += "<td class=\"teleostvideprinterentry\" id=\"videprinterrow" + row.toString() + "_main\">-</td>";
-            html += "</tr>";
+        for (let row = 0; row < this.numRows; ++row) {
+            let tr = document.createElement("TR");
+            let td = document.createElement("TD");
+            tr.className = "teleostvideprinterrow";
+            td.className = "teleostvideprinterentry";
+            td.id = "videprinterrow" + row.toString() + "_main";
+            td.innerHTML = "&nbsp;";
+            this.videprinterRows.push(td);
+            tr.appendChild(td);
+            this.videprinterTable.appendChild(tr);
         }
-        html += "</table>";
-        html += "</div>";
 
-        container.innerHTML = html;
+        videprinterContainer.appendChild(this.videprinterTable);
+
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+        container.appendChild(videprinterContainer);
+
+        this.logList = [];
+        this.logListPrintPosition = 0;
+        this.animateVideprinter = false;
+        this.redrawInProgress = false;
+        this.active = true;
     }
 
     format_videprinter_preamble(entry) {
@@ -179,58 +231,134 @@ class VideprinterView extends View {
         return false;
     }
 
+    /* Called externally. We ignore it if we're still animating a previous
+     * redraw. */
     redraw() {
-        this.latestGameRevisionSeen = gameStateRevision;
-        var gameState = this.getGameState();
-        var log_entries = [];
-        var maxLogSeq = null;
+        if (!this.redrawInProgress) {
+            this.redrawInternal();
+        }
+    }
 
-        if (gameState.success) {
-            var applicable_logs = []
-            /* We only want the log types we're interested in */
-            for (var i = 0; i < gameState.logs.logs.length; ++i) {
-                var lt = gameState.logs.logs[i].log_type;
-                if (lt == 1 || lt == 2 || ((lt & 96) != 0 && (lt & 1) != 0)) {
-                    applicable_logs.push(gameState.logs.logs[i])
-                }
-            }
-            var start = applicable_logs.length - this.numRows;
-            if (start < 0) {
-                start = 0;
-            }
-            for (var i = start; i < applicable_logs.length; ++i) {
-                log_entries.push(applicable_logs[i]);
-                if (maxLogSeq == null || applicable_logs[i].seq > maxLogSeq)
-                    maxLogSeq = applicable_logs[i].seq;
+    redrawInternal() {
+        this.latestGameRevisionSeen = gameStateRevision;
+        let gameState = this.getGameState();
+        let applicableLogs = [];
+
+        if (!gameState || !gameState.success || !gameState.logs || !this.active) {
+            return;
+        }
+
+        /* We only want the log types we're interested in */
+        for (var i = 0; i < gameState.logs.logs.length; ++i) {
+            var lt = gameState.logs.logs[i].log_type;
+            if (lt == 1 || lt == 2 || ((lt & 96) != 0 && (lt & 1) != 0)) {
+                applicableLogs.push(gameState.logs.logs[i])
             }
         }
 
-        for (var row = 0; row < this.numRows; ++row) {
-            var entry_preamble = "&nbsp;";
-            var entry_main = "&nbsp;";
-            var animate_entry = false;
-            if (row < log_entries.length) {
-                entry_preamble = this.format_videprinter_preamble(log_entries[row]);
-                if (this.latestLogSeqShown != null && log_entries[row].seq > this.latestLogSeqShown) {
-                    animate_entry = true;
+        this.logList = applicableLogs;
+        if (!this.animateVideprinter || this.logListPrintPosition >= this.logList.length) {
+            /* Refresh the whole videprinter without animating, and show the
+             * last numRows rows. */
+            let applicableLogsStart = applicableLogs.length - this.numRows;
+            for (let row = 0; row < this.numRows; ++row) {
+                let logRow = applicableLogsStart + row;
+                if (logRow >= 0 && logRow < applicableLogs.length) {
+                    this.populateRow(row, applicableLogs[logRow], false);
                 }
-                entry_main = this.format_videprinter_entry(log_entries[row]);
+                else {
+                    this.clearRow(row);
+                }
             }
+            this.animateVideprinter = true;
+            this.redrawInProgress = false;
+            this.logListPrintPosition = this.logList.length;
+        }
+        else {
+            /* There's at least one new log entry in logList which we haven't
+             * printed yet. Set the animation wheels in motion. */
+            this.redrawInProgress = true;
+            this.servicePrintQueue();
+        }
+    }
 
-            var main_td = document.getElementById("videprinterrow" + row.toString() + "_main");
+    servicePrintQueue() {
+        if (this.active && this.logListPrintPosition < this.logList.length) {
+            let videprinter = this;
+            this.startScrollAnimate();
+            setTimeout(function() {
+                videprinter.addRowAfterScrollAnimate();
+            }, this.scrollAnimateTime);
+        }
+        else {
+            this.redrawInProgress = false;
+        }
+    }
 
+    addRowAfterScrollAnimate() {
+        if (!this.active) {
+            cancelScrollAnimate();
+            this.redrawInProgress = false;
+            return;
+        }
+        /* Set the first N-1 rows of the videprinter to the last N-1
+         * rows in the complete log list which are before this entry, and
+         * the Nth row of the videprinter to the new entry. */
+        let logListPos = this.logListPrintPosition - this.numRows + 1;
+        let videprinter = this;
+        for (let row = 0; row < this.numRows; row++) {
+            if (logListPos + row >= 0) {
+                this.populateRow(row, this.logList[logListPos + row], logListPos + row >= this.logListPrintPosition);
+            }
+        }
+
+        /* We've now printed this log entry */
+        this.logListPrintPosition++;
+
+        /* Remove the animation class from the videprinter table, which moves
+         * it back down to its original position. */
+        this.cancelScrollAnimate();
+
+        /* When the new row finishes animating itself horizontally, call
+         * redrawInternal() again to check if there is anything more we need
+         * to print. */
+        setTimeout(function() {
+            videprinter.redrawInternal();
+        }, this.rowAnimateTime);
+    }
+
+    populateRow(row, entry, animate) {
+        let entry_preamble = this.format_videprinter_preamble(entry);
+        let entry_main = this.format_videprinter_entry(entry);
+        let main_td = this.videprinterRows[row];
+        if (main_td) {
             /* If this is a new entry and so we're animating it, put it inside
              * an animation div */
-            if (animate_entry) {
+            if (animate) {
                 main_td.innerHTML = "<div class=\"videprinteranimatescoreline\">" + entry_preamble + " " + entry_main + "</div>";
             }
             else {
                 main_td.innerHTML = entry_preamble + " " + entry_main;
             }
         }
-        if (this.latestLogSeqShown == null || (maxLogSeq != null && maxLogSeq > this.latestLogSeqShown)) {
-            this.latestLogSeqShown = maxLogSeq;
+    }
+
+    clearRow(row) {
+        let main_td = this.videprinterRows[row];
+        if (main_td) {
+            main_td.innerHTML + "&nbsp;";
         }
     }
-}
 
+    startScrollAnimate() {
+        this.videprinterTable.classList.add("teleostvideprintertablescroll");
+    }
+
+    cancelScrollAnimate() {
+        this.videprinterTable.classList.remove("teleostvideprintertablescroll");
+    }
+
+    notifyClosed() {
+        this.active = false;
+    }
+}
