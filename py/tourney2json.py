@@ -45,7 +45,7 @@ def get_standings(tourney, options):
             standing["withdrawn"] = p.is_withdrawn()
             standing["qualified"] = s.qualified
             standing["finals_points"] = s.finals_points
-            standing["finals_form"] = s.finals_form
+            standing["finals_form"] = "---" if s.finals_points == 0 else s.finals_form.upper()
             standing["secondary_rank_values"] = s.get_secondary_rank_values()
             standing["secondary_rank_value_strings"] = s.get_secondary_rank_value_strings()
             standings.append(standing)

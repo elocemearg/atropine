@@ -219,10 +219,20 @@ DISPLAY_FONT_PROFILES = [
 create_tables_sql = """
 begin transaction;
 
+-- TEAM table
+create table if not exists team (
+    id integer primary key autoincrement,
+    name text not null,
+    colour int,
+    unique(name)
+);
+insert into team(name, colour) values('White', 255 * 256 * 256 + 255 * 256 + 255);
+insert into team(name, colour) values('Blue', 128 * 256 + 255);
+
 -- PLAYER table
 create table if not exists player (
     id integer primary key autoincrement,
-    name text,
+    name text not null,
     rating float,
     team_id int,
     short_name text,
@@ -232,25 +242,16 @@ create table if not exists player (
     avoid_prune int not null default 0,
     require_accessible_table int not null default 0,
     preferred_table int not null default -1,
-    unique(name), unique(short_name)
+    unique(name),
+    unique(short_name),
+    foreign key (team_id) references team(id)
 );
 insert into player (id, name, rating, team_id, short_name) values (-1, 'Prune', 0, null, 'Prune');
 
--- TEAM table
-create table if not exists team (
-    id integer primary key autoincrement,
-    name text,
-    colour int,
-    unique(name)
-);
-
-insert into team(name, colour) values('White', 255 * 256 * 256 + 255 * 256 + 255);
-insert into team(name, colour) values('Blue', 128 * 256 + 255);
-
 -- GAME table, containing scheduled games and played games
 create table if not exists game (
-    round_no int,
-    seq int,
+    round_no int not null,
+    seq int not null,
     table_no int,
     division int,
     game_type text,
@@ -259,7 +260,9 @@ create table if not exists game (
     p2 integer not null,
     p2_score integer,
     tiebreak int,
-    unique(round_no, seq)
+    unique(round_no, seq),
+    foreign key (p1) references player(id),
+    foreign key (p2) references player(id)
 );
 
 -- game log, never deleted from
@@ -276,7 +279,7 @@ create table if not exists game_log (
     p2 integer,
     p2_score int,
     tiebreak int,
-    log_type int,
+    log_type int not null,
     comment text default null
 );
 
@@ -420,8 +423,8 @@ group by p.id;
 create view if not exists player_standings as
 select p.id, p.name, p.division, played.played, wins.wins, draws.draws,
     points.points, points_against.points_against, ppf.played_first,
-    pff.qf || pff.sf || upper(pff.f) finals_form,
-    case when pff.f = '-' then 0
+    pff.qf || pff.sf || pff.f finals_form,
+    case when pff.f = '-' then 0   -- only award finals points if played final
     else
         case when pff.qf = 'W' then 48
              when pff.qf = 'D' then 32
@@ -438,9 +441,9 @@ select p.id, p.name, p.division, played.played, wins.wins, draws.draws,
                        when pff.f in ('W', 'D', 'L') then 12
                        else 0 end
         end +
-        case when pff.f = 'W' then 3
-             when pff.f = 'D' then 2
-             when pff.f = 'L' then 1
+        case when upper(pff.f) = 'W' then 3
+             when upper(pff.f) = 'D' then 2
+             when upper(pff.f) = 'L' then 1
              else 0
         end
     end finals_points

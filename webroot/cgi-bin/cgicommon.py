@@ -924,7 +924,7 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             html.append("<td class=\"rankname\">%s</td>" % (linkfn(player)));
 
             if show_finals_column:
-                html.append("<td class=\"rankright rankhighlight\"\">%s</td>" % (finals_form))
+                html.append("<td class=\"rankright rankhighlight\">%s</td>" % (finals_form.upper()))
             html.append("<td class=\"ranknumber\">%d</td>" % played);
             html.append("<td class=\"ranknumber%s\">%d</td>" % (wins_class, wins));
             if show_draws_column:

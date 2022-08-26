@@ -1,5 +1,27 @@
 #!/usr/bin/python3
 
+# Treat a draw or an unplayed finals stage (-) as if you won the corresponding
+# finals stage.
+win_letters = frozenset(['W', 'D', '-'])
+
+# Convert finals form from quarter-final to final, e.g. "WLL" to a fixed
+# position, e.g. 4.
+def finals_form_to_position(form):
+    # If form is not three characters or the player has not played in a final
+    # or third place playoff, position is unaffected.
+    if len(form) != 3 or form[2] == '-':
+        return None
+
+    # If you're playing a third-place match, behave as if you lost a semi-final
+    # even if you didn't play one. Convert the string "form" to a list "f" and
+    # make this change if necessary.
+    f = list(form.upper())
+    if form[2].islower():
+        f[1] = 'L'
+
+    # Now just do the obvious bit.
+    return sum([ (0 if v in win_letters else 2 ** (2 - i)) for (i, v) in enumerate(f) ]) + 1
+
 class RankMethod(object):
     def __init__(self):
         pass
@@ -69,12 +91,33 @@ class RankMethod(object):
         object before anything else.
         """
         non_finals_sort_key_fn = self.get_standings_row_sort_key_fn()
+        self.calculate_secondary_rank_values(standings_rows, heat_games, players)
+        standings_rows.sort(key=non_finals_sort_key_fn, reverse=True)
+
+        if rank_finals:
+            # If someone has played in a final or third-place playoff then we
+            # fix their position accordingly.
+            relocate_indices_to = []
+            for (i, s) in enumerate(standings_rows):
+                if len(s.finals_form) >= 3 and s.finals_form[2] != '-':
+                    fixed_pos = finals_form_to_position(s.finals_form)
+                    if fixed_pos:
+                        relocate_indices_to.append((i, fixed_pos))
+
+            relocate_row_to = []
+            for (i, fixed_pos) in reversed(relocate_indices_to):
+                relocate_row_to.append((standings_rows[i], fixed_pos))
+                del standings_rows[i]
+
+            for (s, fixed_pos) in sorted(relocate_row_to, key=lambda x : x[1]):
+                assert(fixed_pos >= 1 and fixed_pos <= 8)
+                standings_rows.insert(fixed_pos - 1, s)
+
         if rank_finals:
             sort_key_fn = lambda s : (s.finals_points, non_finals_sort_key_fn(s))
         else:
             sort_key_fn = non_finals_sort_key_fn
-        self.calculate_secondary_rank_values(standings_rows, heat_games, players)
-        standings_rows.sort(key=sort_key_fn, reverse=True)
+
         prev_s = None
         pos = 0
         joint = 0
