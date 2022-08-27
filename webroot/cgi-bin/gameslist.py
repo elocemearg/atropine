@@ -290,6 +290,8 @@ try:
 
         cgicommon.writeln("<p>");
         cgicommon.writeln("<a href=\"/cgi-bin/fixtureedit.py?tourney=%s&amp;round=%d\">Edit fixtures</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+        cgicommon.writeln("<br>")
+        cgicommon.writeln("<a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%d\">Back to the standard Results Entry interface</a>" % (urllib.parse.quote_plus(tourney_name), round_no))
         cgicommon.writeln("</p>");
 
         cgicommon.writeln("<script>")
