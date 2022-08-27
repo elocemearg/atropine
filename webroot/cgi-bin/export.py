@@ -417,7 +417,10 @@ def export_wikitext(tourney, filename, show_standings_before_finals,
     cgicommon.writeln("==Results==")
     num_tiebreaks = 0
     game_serial_no = 1
-    wikitext_date = "%02d/%02d/%04d" % (date_d, date_m, date_y)
+    if date_d and date_m and date_y:
+        wikitext_date = "%02d/%02d/%04d" % (date_d, date_m, date_y)
+    else:
+        wikitext_date = ""
     games = tourney.get_games()
     for div_index in range(num_divisions):
         if num_divisions > 1:
@@ -710,6 +713,54 @@ function formatDropDownChange() {
         finalsBothOption.disabled = (formatValue == "csv");
     }
 }
+
+function validateDate() {
+    let dayElement = document.getElementById("wikitextday");
+    let monthElement = document.getElementById("wikitextmonth");
+    let yearElement = document.getElementById("wikitextyear");
+    let dateInvalid = false;
+    if (dayElement && monthElement && yearElement) {
+        let day = parseInt(dayElement.value);
+        let month = monthElement.selectedIndex + 1;
+        let year = parseInt(yearElement.value);
+
+        if (!(isNaN(day) || isNaN(month) || isNaN(year))) {
+            if (month < 1 || month > 12) {
+                dateInvalid = true;
+            }
+            else {
+                let dayMax;
+                switch (month) {
+                    case 4:
+                    case 6:
+                    case 9:
+                    case 11:
+                        dayMax = 30;
+                        break;
+                    case 2:
+                        dayMax = 28;
+                        if (year %% 4 == 0 && !(year %% 100 == 0 && year %% 400 != 0)) {
+                            dayMax++;
+                        }
+                        break;
+                    default:
+                        dayMax = 31;
+                }
+                if (day < 1 || day > dayMax) {
+                    dateInvalid = true;
+                }
+            }
+        }
+        else {
+            dateInvalid = true;
+        }
+    }
+
+    let invalidDateElement = document.getElementById("invaliddate");
+    if (invalidDateElement) {
+        invalidDateElement.style.display = dateInvalid ? "inline-block" : "none";
+    }
+}
 </script>
 
 <div class="formbox exportformbox">
@@ -773,11 +824,14 @@ function formatDropDownChange() {
             <label>Event date</label>
         </div>
         <div class="formcontrol">
-            <input type="number" name="wikitextday" value="%(wikitextday)d" min="1" max="31" size="2" placeholder="DD" disabled />
-            <select name="wikitextmonth" disabled>
+            <input type="number" id="wikitextday" name="wikitextday" value="%(wikitextday)d" min="1" max="31" size="2" placeholder="DD" onchange="validateDate();" disabled />
+            <select name="wikitextmonth" id="wikitextmonth" onchange="validateDate();" disabled>
                 %(monthoptions)s
             </select>
-            <input type="number" name="wikitextyear" value="%(wikitextyear)d" min="0" max="9999" size="4" placeholder="YYYY" disabled />
+            <input type="number" id="wikitextyear" name="wikitextyear" value="%(wikitextyear)d" min="0" max="9999" size="4" placeholder="YYYY" onchange="validateDate();" disabled />
+            <div id="invaliddate" style="display: none; background-color: #ffffdd; font-size: 10pt; margin-left: 10px; padding: 2px;">
+                This isn't a valid date. I'll happily put it in the Wikitext anyway, but I just thought I'd let you know.
+            </div>
         </div>
     </div>
 
