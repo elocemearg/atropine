@@ -47,7 +47,7 @@ def show_view_option_controls(tourney, form, options):
             before_control = desc_escaped
             after_control = ""
 
-        cgicommon.writeln(before_control)
+        cgicommon.writeln("<label for=\"%s\">%s</label>" % (name_escaped, before_control))
 
         if o.name in checkbox_to_assoc_field:
             onclick_value = "var numberField = document.getElementById('%s'); var checkboxField = document.getElementById('%s'); numberField.disabled = !checkboxField.checked;" % ("teleost_option_" + checkbox_to_assoc_field[o.name], name_escaped)
@@ -84,7 +84,7 @@ def show_view_option_controls(tourney, form, options):
                    else "onclick=\"" + re.sub("\"", "\\\"", onclick_value, 0) + "\""))
             cgicommon.writeln("<input type=\"hidden\" name=\"%s\" value=\"1\" />" % ("exists_checkbox_" + name_escaped))
 
-        cgicommon.writeln(after_control)
+        cgicommon.writeln("<label for=\"%s\">%s</label>" % (name_escaped, after_control))
 
         cgicommon.writeln("</div>")
 
