@@ -123,10 +123,10 @@ the winner's team. The team scores are displayed alongside the standings.</p>"""
 
     cgicommon.writeln("</div>")
 
-    cgicommon.writeln("<p>Finals games do not affect the number of wins, points etc shown in the standings table, but they do affect the final placings. Enable the following checkbox to reflect that in the standings table order.</p>")
+    cgicommon.writeln("<p>Finals games do not affect the number of wins, points etc shown in the standings table, but they do affect the final placings. Enable the following checkbox to reflect that in the standings table order shown on the public display.</p>")
     cgicommon.writeln("<div class=\"generalsetupcontrolgroup\">")
     cgicommon.writeln("<input type=\"checkbox\" name=\"rankfinals\" value=\"1\" id=\"rankfinals\" %s />" % ("checked" if rank_finals else ""))
-    cgicommon.writeln("<label for=\"rankfinals\">Modify standings order according to results of finals, if played</label>")
+    cgicommon.writeln("<label for=\"rankfinals\">Display standings order modified according to results of finals, if played</label>")
     cgicommon.writeln("</div>")
     cgicommon.writeln('<p><input type="submit" name="submit" value="Save Changes" class="bigbutton" /></p>')
 

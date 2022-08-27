@@ -469,7 +469,7 @@ if fixgen_ask_divisions:
     elements.append(htmlform.HTMLFragment("<table class=\"misctable\" style=\"margin-bottom: 20px;\">"))
     elements.append(htmlform.HTMLFragment("<tr><th>Division</th><th>Round number</th></tr>"))
     for div in range(num_divisions):
-        elements.append(htmlform.HTMLFragment("<tr><td class=\"control\">"))
+        elements.append(htmlform.HTMLFragment("<tr><td class=\"control\" style=\"text-align: left;\">"))
         elements.append(htmlform.HTMLFormCheckBox("_div%d" % (div), tourney.get_division_name(div), True, other_attrs={"style" : "margin-right: 10px;"}))
         next_free_round_number = tourney.get_next_free_round_number_for_division(div)
         elements.append(htmlform.HTMLFragment("</td><td class=\"control\">"))

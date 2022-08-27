@@ -50,7 +50,30 @@ try:
         cgicommon.show_team_score_table(tourney.get_team_scores())
         cgicommon.writeln('<br />')
 
-    cgicommon.show_standings_table(tourney, True, True, True, True, True, tourney.get_show_tournament_rating_column(), True)
+    show_finals_placings = tourney.is_rankable_by_finals()
+
+    if show_finals_placings:
+        cgicommon.writeln("<h2>Before finals</h2>")
+
+    cgicommon.show_standings_table(tourney, True, True, True,
+            show_first_second_column=True,
+            linkify_players=True,
+            show_tournament_rating_column=None,
+            show_qualified=False,
+            which_division=None,
+            show_finals_column=False,
+            rank_finals=False)
+
+    if show_finals_placings:
+        cgicommon.writeln("<h2>After finals</h2>")
+        cgicommon.show_standings_table(tourney, True, True, True,
+                show_first_second_column=True,
+                linkify_players=True,
+                show_tournament_rating_column=None,
+                show_qualified=False,
+                which_division=None,
+                show_finals_column=True,
+                rank_finals=True)
 
     cgicommon.writeln("</div>"); #mainpane
 except countdowntourney.TourneyException as e:

@@ -275,6 +275,14 @@ table.scorestable td.tableno {
     text-align: center;
 }
 
+table.scorestable tr.divisionrow th {
+    padding-top: 15px;
+}
+
+table.scorestable tr.tablenumberrow th {
+    padding-top: 5px;
+}
+
 div.tablebadge {
     display: inline-block;
     background-color: hsl(240, 100%, 90%);
@@ -379,50 +387,6 @@ input.gamescore {
 table.resultstable {
 	border: 1px solid #66ccff;
 	border-collapse: collapse;
-}
-
-td.exportleftplayer {
-	text-align: right;
-	padding-right: 1em;
-}
-
-td.exportrightplayer {
-	text-align: left;
-	padding-left: 1em;
-}
-
-td.exportscore {
-	text-align: center;
-}
-
-tr.exporttablenumber {
-}
-
-tr.exportdivisionnumber {
-}
-
-tr.exportgamerow {
-	background-color: #ccffff;
-}
-
-th.exporttablenumber {
-	background-color: #66ccff;
-	text-align: center;
-	/* border-top: 1ex solid white;*/
-}
-
-th.exportroundnumber {
-	background-color: #22aaff;
-	text-align: center;
-	font-weight: bold;
-	font-size: 16pt;
-}
-
-th.exportdivisionnumber {
-	background-color: #66ccff;
-	text-align: center;
-	font-weight: bold;
-	font-size: 14pt;
 }
 
 div.exportedstandings {
@@ -717,6 +681,10 @@ table.misctable td.control, table.misctable td.tablenumber{
 
 table.ranktable td.rankhighlight, table.misctable td.highlight {
     font-weight: bold;
+}
+
+table.ranktable td.winlossform {
+    font-family: monospace;
 }
 
 /* Special case border removal for name-to-table index page */
@@ -1794,6 +1762,11 @@ div.formbox {
 div.formline {
 }
 
+div.exportformbox div.formlabel {
+    width: 9em;
+    text-align: right;
+}
+
 div.formline label {
     margin-right: 20px;
 }
@@ -1806,6 +1779,11 @@ div.formlabel {
 div.formcontrol {
     display: table-cell;
     padding: 5px;
+}
+
+span.formcontrolhelp {
+    font-size: 10pt;
+    color: gray;
 }
 
 div.submitline {

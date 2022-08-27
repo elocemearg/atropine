@@ -1234,13 +1234,19 @@ class Tourney(object):
 
     # Number of games in the GAME table - that is, number of games played
     # or in progress.
-    def get_num_games(self):
-        cur = self.db.cursor();
-        cur.execute("select count(*) from game");
-        row = cur.fetchone();
-        count = row[0];
-        cur.close();
-        return count;
+    def get_num_games(self, finals_only=False):
+        cur = self.db.cursor()
+        sql = "select count(*) from game"
+        if finals_only:
+            sql += " where game_type in ('QF', 'SF', '3P', 'F')"
+        cur.execute(sql)
+        row = cur.fetchone()
+        if row and row[0] is not None:
+            count = row[0]
+        else:
+            count = 0
+        cur.close()
+        return count
 
     def get_next_free_table_number_in_round(self, round_no):
         cur = self.db.cursor()
@@ -2547,7 +2553,20 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def get_short_division_name(self, num):
         return get_general_short_division_name(num)
 
-    def get_standings(self, division=None, exclude_withdrawn_with_no_games=False, calculate_qualification=True):
+    def is_rankable_by_finals(self):
+        # Return True if any player has played a final or third-place playoff
+        # (game types 3P or F).
+        cur = self.db.cursor()
+        cur.execute("select count(*) from game where game_type in ('3P', 'F')")
+        row = cur.fetchone()
+        if row is None or row[0] is None:
+            result = False
+        else:
+            result = row[0] > 0
+        cur.close()
+        return result
+
+    def get_standings(self, division=None, exclude_withdrawn_with_no_games=False, calculate_qualification=True, rank_finals=None):
         rank_method_id = self.get_rank_method_id();
         rank_method = RANK_METHODS[rank_method_id]
 
@@ -2574,15 +2593,21 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             standings.append(StandingsRow(0, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], bool(x[10]), x[11], x[12]))
         cur.close()
 
-        rank_method.sort_standings_rows(standings, self.get_games(game_type="P"), self.get_players(), self.get_rank_finals())
+        if rank_finals is None:
+            rank_finals = self.get_rank_finals()
+        else:
+            rank_finals = bool(rank_finals)
 
-        # If anyone has played any finals matches, don't calculate
-        # qualification because we're already past that and it wouldn't make
-        # sense anyway.
-        for s in standings:
-            if "W" in s.finals_form or "D" in s.finals_form or "L" in s.finals_form:
-                calculate_qualification = False
-                break
+        rank_method.sort_standings_rows(standings, self.get_games(game_type="P"), self.get_players(), rank_finals)
+
+        if rank_finals:
+            # If anyone has played any finals matches, don't calculate
+            # qualification because we're already past that and it wouldn't
+            # make sense anyway.
+            for s in standings:
+                if "W" in s.finals_form or "D" in s.finals_form or "L" in s.finals_form:
+                    calculate_qualification = False
+                    break
 
         if division is not None and calculate_qualification:
             # If we can, mark already-qualified players as such
@@ -3167,7 +3192,7 @@ and g.game_type = 'P'
 
         # Get the standings table, and for each eligible player, work out the
         # average current standings position of their opponents
-        standings = self.get_standings(division, False, False)
+        standings = self.get_standings(division, False, False, False)
 
         player_name_to_id = {}
         for p in self.get_players():

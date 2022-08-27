@@ -809,17 +809,19 @@ def write_ranked_table(headings, td_classes, rows, key_fn, no_escape_html=[], fo
 
 def show_standings_table(tourney, show_draws_column, show_points_column,
         show_spread_column, show_first_second_column=False,
-        linkify_players=False, show_tournament_rating_column=False,
-        show_qualified=False, which_division=None, show_finals_column=True):
+        linkify_players=False, show_tournament_rating_column=None,
+        show_qualified=False, which_division=None, show_finals_column=True,
+        rank_finals=None):
     writeln(make_standings_table(tourney, show_draws_column, show_points_column,
         show_spread_column, show_first_second_column, linkify_players,
         show_tournament_rating_column, show_qualified, which_division,
-        show_finals_column))
+        show_finals_column, rank_finals))
 
 def make_standings_table(tourney, show_draws_column, show_points_column,
         show_spread_column, show_first_second_column=False,
-        linkify_players=False, show_tournament_rating_column=False,
-        show_qualified=False, which_division=None, show_finals_column=True):
+        linkify_players=False, show_tournament_rating_column=None,
+        show_qualified=False, which_division=None, show_finals_column=True,
+        rank_finals=None):
     html = []
 
     num_divisions = tourney.get_num_divisions()
@@ -838,9 +840,15 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
     else:
         div_list = [which_division]
 
+    if rank_finals is None:
+        rank_finals = tourney.get_rank_finals()
+
+    if show_tournament_rating_column is None:
+        show_tournament_rating_column = tourney.get_show_tournament_rating_column()
+
     html.append("<table class=\"ranktable\">")
     for div_index in div_list:
-        standings = tourney.get_standings(div_index)
+        standings = tourney.get_standings(div_index, rank_finals=rank_finals)
         if num_divisions > 1:
             div_string = tourney.get_division_name(div_index)
         else:
@@ -888,7 +896,7 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
 
             finals_points = s.finals_points
             player = tourney.get_player_from_name(name)
-            if finals_form:
+            if finals_form and show_finals_column:
                 bgcolour = "#aaffaa"
             elif ranking_by_wins:
                 if last_wins_inc_draws is None:
@@ -924,7 +932,7 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             html.append("<td class=\"rankname\">%s</td>" % (linkfn(player)));
 
             if show_finals_column:
-                html.append("<td class=\"rankright rankhighlight\">%s</td>" % (finals_form.upper()))
+                html.append("<td class=\"rankright winlossform\">%s</td>" % (finals_form.upper()))
             html.append("<td class=\"ranknumber\">%d</td>" % played);
             html.append("<td class=\"ranknumber%s\">%d</td>" % (wins_class, wins));
             if show_draws_column:
