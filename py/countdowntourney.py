@@ -62,7 +62,7 @@ teleost_modes = [
         {
             "id" : "TELEOST_MODE_AUTO",
             "name" : "Auto",
-            "desc" : "Automatic control. Show the Welcome or Registration screen before any games are generated, Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played.",
+            "desc" : "Automatic control. Show the Welcome or Check-in screen before any games are generated, Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played.",
             "menuorder" : 0,
             "image" : "/images/screenthumbs/auto.png",
             "fetch" : [ "all" ]
@@ -148,10 +148,10 @@ teleost_modes = [
             "fetch" : [ "tourney" ]
         },
         {
-            "id" : "TELEOST_MODE_REGISTRATION",
-            "name" : "Registration",
+            "id" : "TELEOST_MODE_CHECKIN",
+            "name" : "Player Check-In",
             "desc" : "A list of all currently-registered and non-withdrawn players.",
-            "image" : "/images/screenthumbs/registration.png",
+            "image" : "/images/screenthumbs/checkin.png",
             "menuorder" : 12,
             "fetch" : [ "tourney", "players" ]
         },
@@ -180,7 +180,7 @@ for idx in range(len(teleost_modes)):
     teleost_mode_id_to_num[teleost_modes[idx]["id"]] = idx
 
 teleost_per_view_option_list = [
-    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autouseplayerreg", CONTROL_CHECKBOX, "$CONTROL Show Player Registration screen before first fixtures are generated", 1),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autouseplayercheckin", CONTROL_CHECKBOX, "$CONTROL Show Player Check-In screen before first fixtures are generated", 1),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindex", CONTROL_CHECKBOX, "$CONTROL Show name-to-table index instead of fixture list at start of round if there are at least...", 1),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindexthreshold", CONTROL_NUMBER, "$INDENT $CONTROL active players", AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autocurrentroundmusthavegamesinalldivisions", CONTROL_CHECKBOX, "$CONTROL Only switch to Fixtures display after fixtures are generated for all divisions", 1),
@@ -2468,8 +2468,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def get_auto_current_round_must_have_games_in_all_divisions(self):
         return self.get_int_attribute("autocurrentroundmusthavegamesinalldivisions", 1) != 0
 
-    def get_auto_player_registration(self):
-        return self.get_int_attribute("autouseplayerreg", 1) != 0
+    def get_auto_player_checkin(self):
+        return self.get_int_attribute("autouseplayercheckin", 1) != 0
 
     def get_rank_method_id(self):
         return self.get_int_attribute("rankmethod", RANK_WINS_POINTS);
@@ -2769,10 +2769,10 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         if not current_round:
             # There are no rounds yet, so show the welcome screen, or the
-            # player registration page if there are players and that screen
-            # hasn't been disabled.
-            if self.get_auto_player_registration() and self.get_num_players() > 0:
-                mode_name = "TELEOST_MODE_REGISTRATION"
+            # player checkin page if there are players and that screen hasn't
+            # been disabled.
+            if self.get_auto_player_checkin() and self.get_num_players() > 0:
+                mode_name = "TELEOST_MODE_CHECKIN"
             else:
                 mode_name = "TELEOST_MODE_WELCOME"
         else:

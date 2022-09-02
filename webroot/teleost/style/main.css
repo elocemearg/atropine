@@ -748,7 +748,7 @@ div.welcomeheading {
     line-height: 14vmin;
 }
 
-div.registrationblurb {
+div.checkinblurb {
     position: absolute;
     top: 20%;
     left: 5%;
@@ -757,7 +757,7 @@ div.registrationblurb {
     font-size: 2.5vmin;
 }
 
-#registrationcount {
+#checkincount {
     position: absolute;
     bottom: 6%;
     left: 5%;
@@ -773,14 +773,14 @@ div.viewpagenumber {
     font-size: 2.5vmin;
 }
 
-div.registrationlist {
+div.checkinlist {
     position: absolute;
     top: 30%;
     left: 5%;
     width: 90vw;
 }
 
-table.registrationtable {
+table.checkintable {
     width: 100%;
     font-size: 3vmin;
     border-collapse: separate;
@@ -788,13 +788,13 @@ table.registrationtable {
     table-layout: fixed;
 }
 
-table.registrationtable td {
+table.checkintable td {
     background-color: navy;
     padding-left: 0.5vw;
     padding-right: 0.5vw;
 }
 
-table.registrationtable td.registrationcolumnspace {
+table.checkintable td.checkincolumnspace {
     background-color: transparent;
     width: 3vw;
 }

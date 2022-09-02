@@ -1,5 +1,5 @@
 
-class RegistrationView extends PagedTableView {
+class CheckInView extends PagedTableView {
     constructor(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerColumn, scrollPeriod) {
         super(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerColumn, scrollPeriod);
         this.lastGameStateRevisionSeen = null;
@@ -36,27 +36,27 @@ class RegistrationView extends PagedTableView {
         /* Now put some text below it, reminding people that if they're not
          * on this list then they won't get to play... */
         let playersBlurb = document.createElement("DIV");
-        playersBlurb.className = "registrationblurb";
+        playersBlurb.className = "checkinblurb";
         playersBlurb.innerHTML = "The host has registered the following players so far.<br>" +
             "If your name isn't here and you intend to play, please tell the host.";
         container.appendChild(playersBlurb);
 
         /* Player count */
         this.playersCount = document.createElement("DIV");
-        this.playersCount.id = "registrationcount";
+        this.playersCount.id = "checkincount";
         this.playersCount.innerHTML = "";
         container.appendChild(this.playersCount);
 
         /* Page number */
         this.playersPageNumber = document.createElement("DIV");
-        this.playersPageNumber.id = "registrationpagenumber";
+        this.playersPageNumber.id = "checkinpagenumber";
         this.playersPageNumber.className = "viewpagenumber";
         this.playersPageNumber.innerHTML = "";
         container.appendChild(this.playersPageNumber);
 
         /* Create a container for the table of players... */
         this.playerListContainer = document.createElement("DIV");
-        this.playerListContainer.className = "registrationlist";
+        this.playerListContainer.className = "checkinlist";
         container.appendChild(this.playerListContainer);
 
         /* Build the table of cells, in which we will display player names.
@@ -134,7 +134,7 @@ class RegistrationView extends PagedTableView {
             container.removeChild(container.firstChild);
         }
         let table = document.createElement("TABLE");
-        table.classList.add("registrationtable");
+        table.classList.add("checkintable");
         table.classList.add("condensedtext");
         this.playerNameCells = [];
         for (let r = 0; r < rows; r++) {
@@ -143,14 +143,14 @@ class RegistrationView extends PagedTableView {
                 /* Cells are numbered so that we go down each column first
                  * before moving on to the next column. */
                 let td = document.createElement("TD");
-                td.id = "registrationcell" + (c * rows + r).toString();
+                td.id = "checkincell" + (c * rows + r).toString();
                 this.playerNameCells[c * rows + r] = td;
                 tr.appendChild(td);
                 td.innerText = "&nbsp;";
                 td.style.visibility = "hidden";
                 if (c < columns - 1) {
                     let space = document.createElement("TD");
-                    space.className = "registrationcolumnspace";
+                    space.className = "checkincolumnspace";
                     tr.appendChild(space);
                 }
             }

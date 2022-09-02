@@ -98,8 +98,8 @@ function createWelcomeScreen(tourneyName, options) {
     return new WelcomeView(tourneyName, 0, 0, 100, 100);
 }
 
-function createRegistrationScreen(tourneyName, options) {
-    return new RegistrationView(tourneyName, 0, 0, 100, 100, 12, 10000);
+function createCheckInScreen(tourneyName, options) {
+    return new CheckInView(tourneyName, 0, 0, 100, 100, 12, 10000);
 }
 
 /*function createClockScreen(tourneyName, options) {
@@ -341,7 +341,7 @@ function displaySetup() {
     teleostModesToCreateFunctions[TELEOST_MODE_TUFF_LUCK] = createTuffLuckScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_HIGH_SCORES] = createHighScoresScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_WELCOME] = createWelcomeScreen;
-    teleostModesToCreateFunctions[TELEOST_MODE_REGISTRATION] = createRegistrationScreen;
+    teleostModesToCreateFunctions[TELEOST_MODE_CHECKIN] = createCheckInScreen;
     //teleostModesToCreateFunctions[TELEOST_MODE_FASTEST_FINISHERS] = createPlaceholderScreen;
     //teleostModesToCreateFunctions[TELEOST_MODE_CLOCK] = createClockScreen;
 

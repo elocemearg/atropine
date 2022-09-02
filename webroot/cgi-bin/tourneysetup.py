@@ -508,7 +508,7 @@ if tourney.get_num_games() == 0:
         cgicommon.show_info_box("""<p>
 Set the <a href="#tourneyprops">tourney properties</a> below, then you can
 optionally go to the
-<a href="/cgi-bin/registration.py?tourney={tourneyname}">Player Registration</a>
+<a href="/cgi-bin/checkin.py?tourney={tourneyname}">Player Check-In</a>
 page to mark people as present or withdrawn.
 </p><p>
 If you're happy with the player list, head to

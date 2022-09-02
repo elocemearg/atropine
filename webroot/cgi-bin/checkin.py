@@ -214,7 +214,7 @@ function showDeletePlayerConfirm(playerId, playerName) {
 cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")
 
-baseurl = "/cgi-bin/registration.py"
+baseurl = "/cgi-bin/checkin.py"
 form = cgi.FieldStorage()
 tourneyname = form.getfirst("tourney")
 hide_help = int_or_zero(form.getfirst("hidehelp"))
@@ -254,7 +254,7 @@ if request_method == "POST":
 
 # Now present the current state of the player list to the user...
 
-cgicommon.print_html_head("Player Registration")
+cgicommon.print_html_head("Player Check-In")
 
 cgicommon.writeln("<body onload=\"initPage();\">")
 cgicommon.assert_client_from_localhost()
@@ -277,7 +277,7 @@ players = [ p for p in tourney.get_players() if not p.is_prune() ]
 
 players.sort(key=lambda x : x.get_name())
 
-cgicommon.writeln("<h1>Player Registration</h1>")
+cgicommon.writeln("<h1>Player Check-In</h1>")
 
 # Show the help, unless the user has asked to hide it.
 if hide_help:
@@ -293,7 +293,7 @@ else:
 </p>
 <p>
 This page is intended for before you've generated the first round, to help you
-keep track of who has arrived and who is still missing.
+keep track of who has arrived and who is still missing. Use of it is optional.
 </p>
 <p>
 Each button shows whether a player is currently active {tick}
@@ -340,7 +340,7 @@ else:
 num_active_players = len([p for p in players if not p.is_withdrawn()])
 cgicommon.writeln("<h2>Players</h2>")
 cgicommon.writeln("<p>%d of %d players active.</p>" % (num_active_players, len(players)))
-cgicommon.writeln("<table class=\"playerreg\">")
+cgicommon.writeln("<table class=\"playercheckin\">")
 
 for row in range(rows_per_column):
     cgicommon.writeln("<tr>")
@@ -350,7 +350,7 @@ for row in range(rows_per_column):
             player = None
         else:
             player = players[cell_number]
-        cgicommon.writeln("<td class=\"playerregcol\">")
+        cgicommon.writeln("<td class=\"playercheckincol\">")
         if player:
             cgicommon.writeln("<form method=\"POST\" id=\"formcell%d\" action=\"%s?%s\">" % (
                 cell_number,
@@ -358,10 +358,10 @@ for row in range(rows_per_column):
                 form_query_string
             ))
             # Withdraw/reinstate button
-            cgicommon.writeln("<button type=\"submit\" form=\"formcell%d\" name=\"%s\" class=\"playerregbutton %s\" id=\"regslot%d\" value=\"1\">%s %s</button>" % (
+            cgicommon.writeln("<button type=\"submit\" form=\"formcell%d\" name=\"%s\" class=\"playercheckinbutton %s\" id=\"regslot%d\" value=\"1\">%s %s</button>" % (
                 cell_number,
                 "reinstatesubmit" if player.is_withdrawn() else "withdrawsubmit",
-                "playerregbuttonwithdrawn" if player.is_withdrawn() else "playerregbuttonactive",
+                "playercheckinbuttonwithdrawn" if player.is_withdrawn() else "playercheckinbuttonactive",
                 cell_number,
                 "&#x2716;" if player.is_withdrawn() else "<span style=\"color: green;\">✓</span>",
                 cgicommon.escape(player.get_name())
@@ -376,12 +376,12 @@ for row in range(rows_per_column):
 
         if player:
             # Small button to delete this player
-            cgicommon.writeln("<td class=\"playerregcolspace\"><button type=\"button\" class=\"playerregdeletebutton\" title=\"Delete %s\" onclick=\"showDeletePlayerConfirm(%d, &quot;%s&quot;);\">%s</button></td>" % (
+            cgicommon.writeln("<td class=\"playercheckincolspace\"><button type=\"button\" class=\"playercheckindeletebutton\" title=\"Delete %s\" onclick=\"showDeletePlayerConfirm(%d, &quot;%s&quot;);\">%s</button></td>" % (
                 cgicommon.escape(player.get_name()), player.get_id(),
                 cgicommon.escape(cgicommon.escape(player.get_name())),
                 HTML_TRASHCAN_SYMBOL))
         else:
-            cgicommon.writeln("<td class=\"playerregcolspace\"></td>")
+            cgicommon.writeln("<td class=\"playercheckincolspace\"></td>")
     cgicommon.writeln("</tr>")
 cgicommon.writeln("</table>")
 cgicommon.writeln("<hr>")
