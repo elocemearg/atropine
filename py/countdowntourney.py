@@ -630,6 +630,9 @@ class InvalidDateException(TourneyException):
     def __init__(self, reason):
         self.description = reason
 
+class InvalidTeamException(TourneyException):
+    description = "Attempted to assign a player to a nonexistent team."
+
 def get_teleost_mode_services_to_fetch(mode):
     if mode < 0 or mode >= len(teleost_modes):
         return [ "all" ]
@@ -1726,7 +1729,7 @@ class Tourney(object):
             # evenly as possible while keeping the size of each division a
             # multiple of division_size_multiple.
             if len(remaining_players) < division_size_multiple * (num_divisions - 1):
-                raise ImpossibleDivisionException()
+                raise IllegalDivisionException()
 
             # Number of tables in the divisions after division 1
             num_tables = len(remaining_players) // division_size_multiple
