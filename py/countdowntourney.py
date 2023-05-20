@@ -55,6 +55,9 @@ PRUNE_PLAYER_ID = -1
 # the default value for that number.
 AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT = 36
 
+AUTO_VERTICAL_DURING_ROUND_DEFAULT = 0
+AUTO_VERTICAL_AFTER_ROUND_DEFAULT = 0
+
 # Standard information about each public display ("teleost") mode, such as the
 # name description, preview image, and what game state objects the display
 # page should fetch when in that mode.
@@ -92,11 +95,19 @@ teleost_modes = [
             "fetch" : [ "standings", "games" ]
         },
         {
+            "id" : "TELEOST_MODE_VERTICAL_STANDINGS_RESULTS",
+            "name" : "Standings / Results (Vertical)",
+            "desc" : "The standings table on the left of the screen, and all the round's games and results in a table on the right.",
+            "image" : "/images/screenthumbs/placeholder.png",
+            "menuorder" : 3,
+            "fetch" : [ "standings", "games" ]
+        },
+        {
             "id" : "TELEOST_MODE_TECHNICAL_DIFFICULTIES",
             "name" : "Technical Difficulties",
             "desc" : "Ceci n'est pas un probleme technique.",
             "image" : "/images/screenthumbs/technical_difficulties.png",
-            "menuorder" : 10,
+            "menuorder" : 11,
             "fetch" : []
         },
         {
@@ -104,7 +115,7 @@ teleost_modes = [
             "name" : "Fixtures",
             "desc" : "Table of all fixtures in the next or current round.",
             "image" : "/images/screenthumbs/fixtures.png",
-            "menuorder" : 3,
+            "menuorder" : 4,
             "fetch" : [ "games" ]
         },
         {
@@ -112,7 +123,7 @@ teleost_modes = [
             "name" : "Table Number Index",
             "desc" : "A list of all the player names and their table numbers, in alphabetical order of player name.",
             "image" : "/images/screenthumbs/table_index.png",
-            "menuorder" : 4,
+            "menuorder" : 5,
             "fetch" : [ "games" ]
         },
         {
@@ -120,7 +131,7 @@ teleost_modes = [
             "name" : "Overachievers",
             "desc" : "Table of players ranked by how highly they finish above their seeding position. This is only relevant if the players have different ratings.",
             "image" : "/images/screenthumbs/overachievers.png",
-            "menuorder" : 6,
+            "menuorder" : 7,
             "fetch" : [ "overachievers" ]
         },
         {
@@ -128,7 +139,7 @@ teleost_modes = [
             "name" : "Tuff Luck",
             "desc" : "Players who have lost three or more games, ordered by the sum of their three lowest losing margins.",
             "image" : "/images/screenthumbs/tuff_luck.png",
-            "menuorder" : 7,
+            "menuorder" : 8,
             "fetch" : [ "tuffluck" ]
         },
         {
@@ -136,7 +147,7 @@ teleost_modes = [
             "name" : "High scores",
             "desc" : "Highest winning scores, losing scores and combined scores in all heat games.",
             "image" : "/images/screenthumbs/high_scores.jpg",
-            "menuorder" : 8,
+            "menuorder" : 9,
             "fetch" : [ "highscores" ]
         },
         {
@@ -144,7 +155,7 @@ teleost_modes = [
             "name" : "Welcome",
             "desc" : "A welcome screen for the start of the event.",
             "image" : "/images/screenthumbs/welcome.png",
-            "menuorder" : 11,
+            "menuorder" : 12,
             "fetch" : [ "tourney" ]
         },
         {
@@ -152,7 +163,7 @@ teleost_modes = [
             "name" : "Player Check-In",
             "desc" : "A list of all currently-registered and non-withdrawn players.",
             "image" : "/images/screenthumbs/checkin.png",
-            "menuorder" : 12,
+            "menuorder" : 13,
             "fetch" : [ "tourney", "players" ]
         },
         #{
@@ -184,6 +195,8 @@ teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindex", CONTROL_CHECKBOX, "$CONTROL Show name-to-table index instead of fixture list at start of round if there are at least...", 1),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindexthreshold", CONTROL_NUMBER, "$INDENT $CONTROL active players", AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autocurrentroundmusthavegamesinalldivisions", CONTROL_CHECKBOX, "$CONTROL Only switch to Fixtures display after fixtures are generated for all divisions", 1),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autoverticalduringround", CONTROL_CHECKBOX, "$CONTROL Use vertically-split standings/results display during rounds", AUTO_VERTICAL_DURING_ROUND_DEFAULT),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autoverticalafterround", CONTROL_CHECKBOX, "$CONTROL Use vertically-split standings/results display after all games in round are played", AUTO_VERTICAL_AFTER_ROUND_DEFAULT),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_lines", CONTROL_NUMBER, "Players per page", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_standings_lines", CONTROL_NUMBER, "Players per page", 8),
@@ -195,6 +208,9 @@ teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_results_lines", CONTROL_NUMBER, "Number of results per page", 3),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_results_scroll", CONTROL_NUMBER, "Results scroll interval $CONTROL seconds", 3),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_show_unstarted_round_if_single_game", CONTROL_CHECKBOX, "$CONTROL Show unstarted next round if it only has one game", 1),
+    (teleost_mode_id_to_num["TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"], "vertical_standings_lines", CONTROL_NUMBER, "$CONTROL Players per page on standings table", 12),
+    (teleost_mode_id_to_num["TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"], "vertical_fixtures_lines", CONTROL_NUMBER, "$CONTROL Fixture lines per page", 18),
+    (teleost_mode_id_to_num["TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"], "vertical_standings_results_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_lines", CONTROL_NUMBER, "Lines per page", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_rows", CONTROL_NUMBER, "Rows per page $CONTROL", 12),
@@ -2465,6 +2481,12 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         else:
             return False
 
+    def get_auto_vertical_during_round(self):
+        return self.get_int_attribute("autoverticalduringround", AUTO_VERTICAL_DURING_ROUND_DEFAULT) != 0
+
+    def get_auto_vertical_after_round(self):
+        return self.get_int_attribute("autoverticalafterround", AUTO_VERTICAL_AFTER_ROUND_DEFAULT) != 0
+
     def set_auto_current_round_must_have_games_in_all_divisions(self, value):
         self.set_attribute("autocurrentroundmusthavegamesinalldivisions", str(int(value)))
 
@@ -2802,11 +2824,17 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             elif played > 0 and unplayed == 0:
                 # All the games in this round have been played. Switch to the
                 # standings-and-results screen.
-                mode_name = "TELEOST_MODE_STANDINGS_RESULTS"
+                if self.get_auto_vertical_after_round():
+                    mode_name = "TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"
+                else:
+                    mode_name = "TELEOST_MODE_STANDINGS_RESULTS"
             else:
                 # Otherwise, the round is in progress. Use the standings and
-                # videprinter display.
-                mode_name = "TELEOST_MODE_STANDINGS_VIDEPRINTER"
+                # videprinter display, unless told not to.
+                if self.get_auto_vertical_during_round():
+                    mode_name = "TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"
+                else:
+                    mode_name = "TELEOST_MODE_STANDINGS_VIDEPRINTER"
 
         if not mode_name:
             # Eh?

@@ -19,6 +19,18 @@ function createStandingsAndVideprinterScreen(tourneyName, options) {
     ]);
 }
 
+function createVerticalStandingsAndVideprinterScreen(tourneyName, options) {
+    return new MultipleView(tourneyName, 0, 0, 100, 100, [
+        new StandingsView(tourneyName, 0, 0, 50, 100,
+            dictGet(options, "standings_only_lines", 12),
+            dictGet(options, "standings_videprinter_standings_scroll", 10) * 1000,
+            dictGet(options, "standings_alternate_row_colours", false)),
+        new VideprinterView(tourneyName, 50, 0, 50, 100, 20,
+            getVideprinterScoreBracketThreshold(options), true
+        )
+    ]);
+}
+
 function createStandingsScreen(tourneyName, options) {
     return new StandingsView(tourneyName, 0, 0, 100, 100,
             dictGet(options, "standings_only_lines", 12),
@@ -56,6 +68,21 @@ function createStandingsAndRoundResultsScreen(tourneyName, options) {
     ]);
 }
 
+function createVerticalStandingsAndFixturesScreen(tourneyName, options) {
+    let roundResultsLines = 12;
+    return new MultipleView(tourneyName, 0, 0, 100, 100, [
+            new StandingsView(tourneyName, 0, 0, 50, 100,
+                dictGet(options, "vertical_standings_lines", 12),
+                dictGet(options, "vertical_standings_results_scroll", 10) * 1000,
+                dictGet(options, "standings_alternate_row_colours", false)
+            ),
+            new FixturesView(tourneyName, 50, 0, 50, 100,
+                    dictGet(options, "vertical_fixtures_lines", 18),
+                    dictGet(options, "vertical_standings_results_scroll", 10) * 1000,
+                    -1, -3, true)
+    ]);
+}
+
 function createRoundResultsScreen(tourneyName, options) {
     return new RoundResultsView(tourneyName, 0, 0, 100, 100, 14, 10000, false);
 }
@@ -64,7 +91,7 @@ function createFixturesScreen(tourneyName, options) {
     return new FixturesView(tourneyName, 0, 0, 100, 100,
             dictGet(options, "fixtures_lines", 12),
             dictGet(options, "fixtures_scroll", 10) * 1000,
-            -1, -3);
+            -1, -3, false);
 }
 
 function createTableNumberIndexScreen(tourneyName, options) {
@@ -334,6 +361,7 @@ function displaySetup() {
     teleostModesToCreateFunctions[TELEOST_MODE_STANDINGS] = createStandingsScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_STANDINGS_VIDEPRINTER] = createStandingsAndVideprinterScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_STANDINGS_RESULTS] = createStandingsAndRoundResultsScreen;
+    teleostModesToCreateFunctions[TELEOST_MODE_VERTICAL_STANDINGS_RESULTS] = createVerticalStandingsAndFixturesScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_TECHNICAL_DIFFICULTIES] = createTechnicalDifficultiesScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_FIXTURES] = createFixturesScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_TABLE_NUMBER_INDEX] = createTableNumberIndexScreen;

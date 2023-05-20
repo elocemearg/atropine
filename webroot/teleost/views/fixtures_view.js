@@ -1,5 +1,5 @@
 class FixturesView extends PagedTableView {
-    constructor(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod, whichDivision, whichRound) {
+    constructor(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod, whichDivision, whichRound, narrow) {
         super(tourneyName, leftPc, topPc, widthPc, heightPc, rowsPerPage, scrollPeriod);
 
         /* whichDivision: if it's -1, then it means all divisions. */
@@ -15,6 +15,8 @@ class FixturesView extends PagedTableView {
         this.whichRound = whichRound;
 
         this.numDivisions = 0;
+
+        this.narrowTable = narrow;
     }
 
     setup(container) {
@@ -22,14 +24,14 @@ class FixturesView extends PagedTableView {
         container.style.maxWidth = "100%";
 
         var html = "";
-        html += "<div class=\"fixturescontainer\">";
+        html += "<div class=\"fixturescontainer" + (this.narrowTable ? " fixturescontainernarrow" : "") + "\">";
         html += "<div class=\"headingbar fixturesheading\" id=\"fixturesheading\">";
         html += "<div class=\"fixturesheadingtext\" id=\"fixturesheadingtext\">";
         html += "&nbsp;";
         html += "</div>";
         html += "</div>";
 
-        html += "<table class=\"fixtures\">";
+        html += "<table class=\"fixtures" + (this.narrowTable ? " fixturesnarrow" : "") + "\">";
 
         for (var row = 0; row < this.rowsPerPage; ++row) {
             html += "<tr id=\"fixturesrow" + row.toString() + "\">";
@@ -142,17 +144,17 @@ class FixturesView extends PagedTableView {
 
             /* Now we've got the games grouped by division&round, then by
              * table number, we can separate them out into pages.
-             * 
+             *
              * The rules are:
-             * 
+             *
              * A new round, or a new division, always starts on a new page.
-             * 
+             *
              * Games on the same table, in the same round of the same division,
              * are all shown on the same page if possible. This means if we
              * have two rows of space left on this page, and the next table
              * group has three games in it, the whole table group has to go
              * on a new page.
-             * 
+             *
              * If we start a new page, and the table has so many games in it
              * that they won't even fit on an empty page, then and only
              * then do we split that table across two (or more) pages.
@@ -204,7 +206,10 @@ class FixturesView extends PagedTableView {
                 page = [];
             }
 
-            if (gameState.structure.teams) {
+            /* Don't draw the team scores on the narrow fixture table,
+             * because they end up with the wrong position and size and we
+             * already have them on the standings table anyway. */
+            if (gameState.structure.teams && !this.narrowTable) {
                 teamScores = gameState.structure.teams;
             }
         }
@@ -250,11 +255,14 @@ class FixturesView extends PagedTableView {
         if (headingElement != null) {
             var html = "";
             if (this.numDivisions > 1) {
-                html += "<span class=\"fixturesheadingdivision\">" +
+                html += "<span class=\"fixturesheadingtextleft\">" +
+                    escapeHTML(firstGame.roundName) + " • " +
                     escapeHTML(firstGame.divName) + "</span>";
             }
-            html += "<span class=\"fixturesheadinground\">" +
-                escapeHTML(firstGame.roundName) + "</span>";
+            else {
+                html += "<span class=\"fixturesheadinground\">" +
+                    escapeHTML(firstGame.roundName) + "</span>";
+            }
 
             if (fixturesObject.teamScores) {
                 html += "<span class=\"fixturesheadingteamscore\" style=\"margin-top: 0.6vh;\">";
@@ -341,21 +349,53 @@ class FixturesView extends PagedTableView {
             tr.classList.remove("fixturesrowlastinblock");
 
         /* If this is the first game in a table block, draw the table number,
-         * which spans the appropriate number of rows */
+         * which spans the appropriate number of rows.
+         *
+         * We size the table number so it fits neatly in the block, depending
+         * on whether we're drawing the large or narrow fixtures table, and how
+         * many games are in the block.
+         *
+         * These values are based on the fixture table row heights specified in
+         * webroot/teleost/style/main.css, so if those sizes are changed,
+         * these may have to be changed as well. */
         if (isFirstInBlock) {
-            var td = document.createElement("td");
-            var tabNumPadding = null;
+            let td = document.createElement("td");
+            let tabNumPadding = null;
+            let numSize;
+            let lineHeight;
+
+            /* Table number font sizes for 1, 2, 3+ games per table (large) */
+            let fontSizes = [ "4vmin", "5.5vmin", "7vmin" ];
+
+            /* Table number line heights for 1, 2, 3+ games per table (large) */
+            let lineHeights = [ null, null, null ]; /* accept defaults */
+
+            /* Narrow fixtures table: each line is 4.2vmin high */
+
+            /* Table number font sizes for 1, 2, 3+ games per table (narrow) */
+            let narrowFontSizes = [ "2vmin", "4vmin", "4vmin" ];
+
+            /* Table number line heights for 1, 2, 3+ games/table (narrow) */
+            let narrowLineHeights = [ "3vmin", "6vmin", "8vmin" ];
+
             td.classList.add("fixturestablenumbercell");
             td.setAttribute("rowspan", numGamesInBlock.toString());
-            if (numGamesInBlock <= 1) {
-                td.style.fontSize = "4vmin";
-            }
-            else if (numGamesInBlock == 2) {
-                td.style.fontSize = "5.5vmin";
+
+            let sizeIndex = Math.min(Math.max(1, numGamesInBlock), 3) - 1;
+            if (this.narrowTable) {
+                numSize = narrowFontSizes[sizeIndex];
+                lineHeight = narrowLineHeights[sizeIndex];
             }
             else {
-                td.style.fontSize = "7vmin";
-                tabNumPadding = "1vmin";
+                numSize = fontSizes[sizeIndex];
+                lineHeight = lineHeights[sizeIndex];
+                if (numGamesInBlock >= 3) {
+                    tabNumPadding = "1vmin";
+                }
+            }
+            td.style.fontSize = numSize;
+            if (lineHeight) {
+                td.style.lineHeight = lineHeight;
             }
 
             var tabNumDiv = document.createElement("div");

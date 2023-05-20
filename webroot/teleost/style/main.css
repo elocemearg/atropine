@@ -75,8 +75,9 @@ img.imageviewimage {
 table.teleoststandings {
     position: absolute;
     left: 5%;
-    top: 10%;
-    font-size: 4.8vmin;
+    top: 5%;
+    font-size: 4.2vmin;
+    line-height: 6vmin;
     width: 90%;
     max-width: 90%;
     border-collapse: collapse;
@@ -84,7 +85,6 @@ table.teleoststandings {
 }
 
 table.teleoststandings tr {
-    height: 10%;
     border-top: 0.1vh solid gray;
 }
 
@@ -93,8 +93,8 @@ tr.teleoststandingsheadingrow {
 
 table.teleoststandings th {
     font-family: var(--heading-font-family);
-    padding-left: 1.5vw;
-    padding-right: 1.5vw;
+    padding-left: 0.25em;
+    padding-right: 0.25em;
     font-weight: normal;
 }
 
@@ -107,8 +107,8 @@ th.teleoststandingsheadingnumber {
 }
 
 table.teleoststandings td {
-    padding-left: 1.5vw;
-    padding-right: 1.5vw;
+    padding-left: 0.25em;
+    padding-right: 0.25em;
     border-top: 0.1vh solid gray;
     border-bottom: 0.1vh solid gray;
 }
@@ -127,34 +127,39 @@ tr.teleoststandingsqualified {
 
 col.teleoststandingscolpos {
     color: yellow;
-    width: 8%;
+    width: 10%;
 }
 
 col.teleoststandingscolname {
-    width: 56%;
+    width: 54%;
 }
 
 col.teleoststandingscolplayed {
     color: cyan;
-    width: 12%;
+    width: 10%;
 }
 
 col.teleoststandingscolwins {
     color: cyan;
-    width: 12%;
+    width: 10%;
+}
+
+col.teleoststandingscolsecondary {
+    color: cyan;
+    width: 14%;
 }
 
 col.teleoststandingscolpoints {
     color: cyan;
-    width: 12%;
+    width: 14%;
 }
 
 colgroup.teleoststandingsonesecondary col.teleoststandingscolname {
-    width: 56%;
+    width: 42%;
 }
 
 colgroup.teleoststandingstwosecondaries col.teleoststandingscolname {
-    width: 44%;
+    width: 30%;
 }
 
 td.teleoststandingspos {
@@ -186,6 +191,12 @@ div.videprintercontainer {
     overflow: hidden;
 }
 
+div.videprintercontainervertical {
+    border-top: none;
+    overflow: wrap;
+    font-family: var(--condensed-font-family);
+}
+
 table.teleostvideprinter {
     position: relative;
     left: 5%;
@@ -195,13 +206,31 @@ table.teleostvideprinter {
     color: white;
 }
 
+table.teleostvideprintervertical {
+    font-size: 3vmin;
+    line-height: 4vmin;
+}
+
 @keyframes videprinter_scroll_up {
     from { transform: translate(0, 0); }
     to { transform: translate(0, -6vh); } /* teleostvideprinter td height + padding */
 }
 
+@keyframes videprinter_scroll_up_small {
+    from { transform: translate(0, 0); }
+    to { transform: translate(0, -4.5vh); } /* teleostvideprinter td height + padding */
+}
+
 table.teleostvideprintertablescroll {
     animation: videprinter_scroll_up 0.5s;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: forwards; /* once animated, stay on last frame until we change something */
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+table.teleostvideprintervertical.teleostvideprintertablescroll {
+    animation: videprinter_scroll_up_small 0.5s;
     animation-timing-function: ease-in-out;
     animation-fill-mode: forwards; /* once animated, stay on last frame until we change something */
     overflow: hidden;
@@ -216,6 +245,16 @@ table.teleostvideprinter td {
 
 table.teleostvideprinter tr {
     height: 5vh;
+}
+
+table.teleostvideprintervertical td {
+    padding-top: 0.25vh;
+    padding-bottom: 0.25vh;
+    height: 4vh;
+}
+
+table.teleostvideprintervertical tr {
+    height: 4vh;
 }
 
 td.teleostvideprinterpreamble {
@@ -415,7 +454,8 @@ div.fixturescontainer {
 
 .fixturesheading {
     height: 10%;
-    width: 100%;
+    margin-left: 5%;
+    width: 90%;
 }
 
 .fixturesheadingtext {
@@ -426,7 +466,16 @@ div.fixturescontainer {
     font-size: 5vmin;
 }
 
-.fixturesheadingdivision {
+div.fixturescontainernarrow .fixturesheading {
+    height: 6.16vmin;
+}
+
+div.fixturescontainernarrow .fixturesheadingtext {
+    padding-top: 0.85vh;
+    font-size: 3.5vmin;
+}
+
+.fixturesheadingtextleft {
     position: absolute;
     left: 0%;
     text-align: left;
@@ -456,9 +505,18 @@ table.fixtures {
     table-layout: fixed;
 }
 
+table.fixturesnarrow {
+    font-size: 2.5vmin;
+}
+
 table.fixtures tr {
     height: 6vmin;
     min-height: 6vmin;
+}
+
+table.fixturesnarrow tr {
+    height: 4.2vmin;
+    min-height: 4.2vmin;
 }
 
 tr.fixturesrowlastinblock {
@@ -494,6 +552,18 @@ td.fixturesp2 {
     text-align: left;
     width: 37.5%;
     overflow: hidden;
+}
+
+table.fixturesnarrow td.fixturesp1 {
+    width: 35%;
+}
+
+table.fixturesnarrow td.fixturesscore {
+    width: 20%;
+}
+
+table.fixturesnarrow td.fixturesp2 {
+    width: 35%;
 }
 
 

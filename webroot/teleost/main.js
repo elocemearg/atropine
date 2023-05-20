@@ -8,7 +8,7 @@ var refreshGameStateInterval = null;
 var currentView = null;
 var currentViewDrawn = false;
 var viewRefreshFrameInterval = null;
-var animationFrameMs = 50;
+var animationFrameMs = 40;
 var updatesSkipped = 0;
 var updatesMaxSkip = 5;
 

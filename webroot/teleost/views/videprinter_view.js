@@ -59,7 +59,7 @@ function number_to_words(number) {
 }
 
 class VideprinterView extends View {
-    constructor (tourneyName, leftPc, topPc, widthPc, heightPc, numRows, scoreBracketThreshold) {
+    constructor (tourneyName, leftPc, topPc, widthPc, heightPc, numRows, scoreBracketThreshold, verticalFormat=false) {
         super(tourneyName, leftPc, topPc, widthPc, heightPc);
         this.numRows = numRows;
         this.latestGameRevisionSeen = null;
@@ -100,6 +100,8 @@ class VideprinterView extends View {
         /* Set by setup(), cleared by notifyClosed(). Handy if a timeout
          * fires after the view is no longer in use. */
         this.active = false;
+
+        this.verticalFormat = verticalFormat;
     }
 
     setup(container) {
@@ -109,6 +111,10 @@ class VideprinterView extends View {
         videprinterContainer.className = "videprintercontainer";
         this.videprinterTable = document.createElement("TABLE");
         this.videprinterTable.className = "teleostvideprinter";
+        if (this.verticalFormat) {
+            this.videprinterTable.classList.add("teleostvideprintervertical");
+            videprinterContainer.classList.add("videprintercontainervertical");
+        }
         this.videprinterRows = [];
 
         for (let row = 0; row < this.numRows; ++row) {
