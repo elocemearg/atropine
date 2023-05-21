@@ -198,9 +198,10 @@ div.videprintercontainervertical {
 }
 
 table.teleostvideprinter {
-    position: relative;
+    position: absolute;
     left: 5%;
     width: 90%;
+    bottom: 2vh;
     font-size: 4vmin;
     line-height: 5vmin;
     color: white;
