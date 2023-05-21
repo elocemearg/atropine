@@ -2591,13 +2591,13 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             return False
 
     def is_auto_standings_results_vertical(self):
-        direction = self.get_int_attribute("autostandingsresultssplitdirection")
+        direction = self.get_int_attribute("autostandingsresultssplitdirection", AUTO_SPLIT_DEFAULT)
         if direction == AUTO_SPLIT_DEFAULT:
             direction = AUTO_SPLIT_VERTICAL if self.is_screen_shape_profile_widescreen() else AUTO_SPLIT_HORIZONTAL
         return direction == AUTO_SPLIT_VERTICAL
 
     def is_auto_standings_videprinter_vertical(self):
-        direction = self.get_int_attribute("autostandingsvideprintersplitdirection")
+        direction = self.get_int_attribute("autostandingsvideprintersplitdirection", AUTO_SPLIT_DEFAULT)
         if direction == AUTO_SPLIT_DEFAULT:
             direction = AUTO_SPLIT_VERTICAL if self.is_screen_shape_profile_widescreen() else AUTO_SPLIT_HORIZONTAL
         return direction == AUTO_SPLIT_VERTICAL
@@ -2934,7 +2934,10 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                 # If there's more than one game then show the fixture list
                 # for this round.
                 if played + unplayed == 1:
-                    mode_name = "TELEOST_MODE_STANDINGS_RESULTS"
+                    if self.is_auto_standings_results_vertical():
+                        mode_name = "TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"
+                    else:
+                        mode_name = "TELEOST_MODE_STANDINGS_RESULTS"
                 elif self.get_auto_use_table_index():
                     mode_name = "TELEOST_MODE_TABLE_NUMBER_INDEX"
                 else:
