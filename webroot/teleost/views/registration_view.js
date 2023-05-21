@@ -159,17 +159,17 @@ class CheckInView extends PagedTableView {
         container.appendChild(table);
     }
 
-    getActivePlayerNames(gameState) {
-        let activePlayerNames = [];
+    getActivePlayers(gameState) {
+        let activePlayers = [];
         if (gameState && gameState.players && gameState.players.players) {
             let players = gameState.players.players;
             for (let i = 0; i < players.length; ++i) {
                 if (!players[i].withdrawn && players[i].rating != 0) {
-                    activePlayerNames.push(players[i].name);
+                    activePlayers.push({ "name" : players[i].name, "team_colour" : players[i].team_colour });
                 }
             }
         }
-        return activePlayerNames;
+        return activePlayers;
     }
 
     redrawHeadings(page) {
@@ -179,7 +179,7 @@ class CheckInView extends PagedTableView {
                 gameState.tourney.success && gameState.players &&
                 gameState.players.success) {
             let tourney = gameState.tourney;
-            let players = this.getActivePlayerNames(gameState);
+            let players = this.getActivePlayers(gameState);
             let eventName = tourney.full_name;
             if (eventName && eventName != "") {
                 this.playersHeadingText.innerText = "Welcome to " + eventName;
@@ -207,14 +207,14 @@ class CheckInView extends PagedTableView {
         let pages = [];
         if (gameState != null && gameState.success && gameState.players &&
                     gameState.players.success) {
-            let activePlayerNames = this.getActivePlayerNames(gameState);
+            let activePlayers = this.getActivePlayers(gameState);
 
             /* Sort the names alphabetically */
-            activePlayerNames.sort();
+            activePlayers.sort(function(a, b) { return a.name < b.name ? -1 : (a.name == b.name ? 0 : 1); });
 
             /* Set the optimal column count, which may have changed since the
              * last time we redrew the table */
-            let bestColCount = this.getOptimalColumnCount(activePlayerNames.length, this.rowsPerColumn);
+            let bestColCount = this.getOptimalColumnCount(activePlayers.length, this.rowsPerColumn);
             if (bestColCount != this.columnsPerPage) {
                 /* Redraw the table with a better number of columns */
                 this.columnsPerPage = bestColCount;
@@ -224,12 +224,12 @@ class CheckInView extends PagedTableView {
             /* Divide the names into pages */
             let page = [];
             let maxInPage = this.rowsPerColumn * this.columnsPerPage;
-            for (let i = 0; i < activePlayerNames.length; i++) {
+            for (let i = 0; i < activePlayers.length; i++) {
                 if (page.length >= maxInPage) {
                     pages.push(page);
                     page = [];
                 }
-                page.push({ "name" : activePlayerNames[i] });
+                page.push(activePlayers[i]);
             }
             if (page.length > 0) {
                 pages.push(page);
@@ -279,7 +279,12 @@ class CheckInView extends PagedTableView {
 
     setCell(cellNumber, entry) {
         if (cellNumber >= 0 && cellNumber < this.playerNameCells.length) {
-            this.playerNameCells[cellNumber].innerText = entry["name"];
+            let html = "";
+            if (entry.team_colour != null) {
+                html += "<span style=\"color: " + teamColourToHTML(entry.team_colour) + ";\">" + teamIndicatorHTML + "</span> ";
+            }
+            html += escapeHTML(entry.name);
+            this.playerNameCells[cellNumber].innerHTML = html;
             this.playerNameCells[cellNumber].style.visibility = null;
         }
     }

@@ -306,7 +306,8 @@ def get_players(tourney, options):
         player_dicts.append({
             "name" : player.get_name(),
             "rating" : player.get_rating(),
-            "withdrawn" : player.is_withdrawn()
+            "withdrawn" : player.is_withdrawn(),
+            "team_colour" : player.get_team_colour_tuple()
         })
     reply["players"] = player_dicts
     return reply
