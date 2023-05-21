@@ -1425,11 +1425,11 @@ div.teleostoption {
 
 div.displaysetupview {
     position: relative;
+    display: inline-block;
     top: 0px;
     left: 0px;
     min-height: 315px;
     padding: 5px;
-    float: left;
 }
 
 div.viewnowshowing {
@@ -1509,7 +1509,7 @@ div.viewmenucelllarge {
 }
 
 div.viewmenucellbystander {
-    border: 5px solid transparent;
+    border: 4px solid transparent;
 }
 
 div.viewmenucellbystander img {
@@ -1518,17 +1518,17 @@ div.viewmenucellbystander img {
 
 div.viewmenucellselected {
     background: orange;
-    border: 5px solid orange;
+    border: 4px solid orange;
 }
 
 div.viewmenucellshowing {
     background: green;
-    border: 5px solid green;
+    border: 4px solid green;
     color: white;
 }
 
 div.viewmenucellautoshowing {
-    border: 5px dashed lightgreen;
+    border: 4px dashed lightgreen;
 }
 
 div.opendisplaylink {

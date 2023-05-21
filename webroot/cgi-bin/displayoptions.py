@@ -127,7 +127,6 @@ def show_view_menu(tourney, form, teleost_modes, selected_view, auto_current_vie
     menu_row_size = 6
     teleost_modes_sorted = sorted(teleost_modes, key=lambda x : (x.get("menuorder", 100000), x["num"], x["name"]))
 
-    cgicommon.writeln("<h2 class=\"teleostoptionheading\">Change or configure display modes</h2>")
     cgicommon.writeln("<div>")
     cgicommon.writeln("<div style=\"display: table-cell;\">")
     show_view_thumbnail(teleost_modes_sorted[0], selected_view, auto_current_view, large=True)
@@ -263,6 +262,8 @@ try:
         </a>""" % (urllib.parse.quote_plus(tourney.name)));
     cgicommon.writeln("</div>")
 
+    # Banner text controls
+    cgicommon.writeln("<h2>Configuration</h2>")
     cgicommon.writeln("<div class=\"displayoptsform bannercontrol\">")
     cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
     cgicommon.writeln("Banner text: <input type=\"text\" name=\"bannertext\" id=\"bannereditbox\" value=\"%s\" size=\"50\" onclick=\"this.select();\" />" % (cgicommon.escape(banner_text, True)))
@@ -309,8 +310,9 @@ try:
     else:
         auto_current_view = None
 
+    cgicommon.writeln("<h2>Display window</h2>")
     show_live_and_preview(tourney, form, teleost_modes, showing_view, selected_view)
-    cgicommon.writeln("<div style=\"clear: both;\"></div>")
+    cgicommon.writeln("<div style=\"margin-top: 20px; clear: both;\"></div>")
 
     show_view_menu(tourney, form, teleost_modes, selected_view, auto_current_view)
     cgicommon.writeln("<div style=\"clear: both;\"></div>")
