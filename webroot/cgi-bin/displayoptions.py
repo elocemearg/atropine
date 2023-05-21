@@ -8,14 +8,21 @@ import cgicommon;
 import urllib.request, urllib.parse, urllib.error;
 import re;
 
-def show_now_showing_frame(tourney):
-    cgicommon.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s\" height=\"270\" width=\"480\"></iframe>" % (urllib.parse.quote_plus(tourney.get_name())))
+def show_now_showing_frame(tourney, is_widescreen):
+    cgicommon.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s\" height=\"270\" width=\"%d\"></iframe>" % (
+        urllib.parse.quote_plus(tourney.get_name()),
+        480 if is_widescreen else 360
+    ))
 
-def show_view_preview(tourney, form, selected_view):
-    cgicommon.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s&mode=%d\" height=\"270\" width=\"480\"></iframe>" % (urllib.parse.quote_plus(tourney.get_name()), selected_view))
+def show_view_preview(tourney, form, selected_view, is_widescreen):
+    cgicommon.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s&mode=%d\" height=\"270\" width=\"%d\"></iframe>" % (
+        urllib.parse.quote_plus(tourney.get_name()),
+        selected_view, 480 if is_widescreen else 360
+    ))
 
 def show_live_and_preview(tourney, form, teleost_modes, showing_view, selected_view):
     tourney_name = tourney.get_name()
+    is_widescreen = tourney.is_screen_shape_profile_widescreen()
 
     # Tell the user what mode is being shown, what mode is selected for preview
     # (if different) and if not auto, offer the user a button to return to auto.
@@ -37,14 +44,14 @@ def show_live_and_preview(tourney, form, teleost_modes, showing_view, selected_v
     cgicommon.writeln("<div class=\"viewselection\">")
     cgicommon.writeln("<div class=\"viewpreviewandoptions\">")
     cgicommon.writeln("<div class=\"displaysetupview viewnowshowing\">")
-    show_now_showing_frame(tourney)
+    show_now_showing_frame(tourney, is_widescreen)
     cgicommon.writeln("<div class=\"viewpreviewcurrent\">")
     cgicommon.writeln("Now showing")
     cgicommon.writeln("</div>")
     cgicommon.writeln("</div>")
     if not teleost_modes[selected_view].get("selected", False):
         cgicommon.writeln("<div class=\"displaysetupview viewpreview\" id=\"viewpreview\">")
-        show_view_preview(tourney, form, selected_view)
+        show_view_preview(tourney, form, selected_view, is_widescreen)
 
         cgicommon.writeln("<div class=\"viewpreviewswitch\">")
         cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
@@ -63,38 +70,11 @@ assoc_field_to_checkbox = {
         "standings_videprinter_big_score_min" : "standings_videprinter_spell_big_scores"
 }
 
-def show_view_option_controls(tourney, form, options):
+def show_view_option_controls(options):
     if not options:
         return
     for o in options:
-        cgicommon.writeln("<div class=\"teleostoption\">")
-        name_escaped = "teleost_option_" + cgicommon.escape(o.name, True)
-        if o.value is None:
-            value_escaped = ""
-        else:
-            value_escaped = cgicommon.escape(str(o.value), True)
-
-        desc_escaped = cgicommon.escape(o.desc)
-
-        # If $INDENT exists, replace it with a checkbox-width of empty space
-        desc_escaped = re.sub("\\$INDENT\\b", "<span style=\"visibility: hidden;\"><input type=\"checkbox\" name=\"_placeholder_%s\" /></span>" % (name_escaped), desc_escaped, 0)
-
-        m = re.search("\\$CONTROL\\b", desc_escaped)
-        if m:
-            before_control = desc_escaped[0:m.start()]
-            after_control = desc_escaped[m.end():]
-        else:
-            before_control = desc_escaped
-            after_control = ""
-
-        cgicommon.writeln("<label for=\"%s\">%s</label>" % (name_escaped, before_control))
-
-        if o.name in checkbox_to_assoc_field:
-            onclick_value = "var numberField = document.getElementById('%s'); var checkboxField = document.getElementById('%s'); numberField.disabled = !checkboxField.checked;" % ("teleost_option_" + checkbox_to_assoc_field[o.name], name_escaped)
-        else:
-            onclick_value = None
-
-        disabled_attr = ""
+        disabled = False
         if o.name in assoc_field_to_checkbox:
             for oo in options:
                 if oo.name == assoc_field_to_checkbox[o.name]:
@@ -102,30 +82,15 @@ def show_view_option_controls(tourney, form, options):
                         value = int(oo.value)
                     except ValueError:
                         value = 0
-
-                    if value:
-                        disabled_attr = ""
-                    else:
-                        disabled_attr = "disabled"
+                    if not value:
+                        disabled = True
                     break
-
-        if o.control_type == countdowntourney.CONTROL_NUMBER:
-            cgicommon.writeln("<input type=\"number\" style=\"width: 5em;\" name=\"%s\" id=\"%s\" value=\"%s\" %s />" % (name_escaped, name_escaped, value_escaped, disabled_attr))
-        elif o.control_type == countdowntourney.CONTROL_CHECKBOX:
-            if o.value is not None and int(o.value):
-                checked_str = "checked"
-            else:
-                checked_str = ""
-            cgicommon.writeln("<input type=\"checkbox\" name=\"%s\" id=\"%s\" value=\"1\" %s %s />" % (
-                name_escaped,
-                name_escaped,
-                checked_str,
-                "" if not onclick_value
-                   else "onclick=\"" + re.sub("\"", "\\\"", onclick_value, 0) + "\""))
-            cgicommon.writeln("<input type=\"hidden\" name=\"%s\" value=\"1\" />" % ("exists_checkbox_" + name_escaped))
-
-        cgicommon.writeln("<label for=\"%s\">%s</label>" % (name_escaped, after_control))
-        cgicommon.writeln("</div>")
+        if o.name in checkbox_to_assoc_field:
+            onclick_value = "var numberField = document.getElementById('%s'); var checkboxField = document.getElementById('%s'); numberField.disabled = !checkboxField.checked;" % ("teleost_option_" + checkbox_to_assoc_field[o.name], "teleost_option_" + cgicommon.escape(o.name))
+        else:
+            onclick_value = None
+        html = o.get_html(disabled, onclick_value)
+        cgicommon.writeln(html)
 
 def show_view_thumbnail(mode, selected_view, auto_current_view, large=False):
     classes = ["viewmenucell"]
@@ -254,12 +219,22 @@ try:
                 tourney.set_banner_text(text)
         elif "clearbanner" in form:
             tourney.clear_banner_text()
+
+        # Set various attributes if the user clicked the relevant button
         if "setfontprofile" in form:
             font_profile_id = form.getfirst("fontprofileselect")
             if font_profile_id is not None:
                 try:
                     font_profile_id = int(font_profile_id)
                     tourney.set_display_font_profile_id(font_profile_id)
+                except ValueError:
+                    pass
+        if "setscreenshape" in form:
+            screen_shape_profile = form.getfirst("screenshapeselect")
+            if screen_shape_profile is not None:
+                try:
+                    screen_shape_profile = int(screen_shape_profile)
+                    tourney.set_screen_shape_profile_id(screen_shape_profile)
                 except ValueError:
                     pass
         if "switchview" in form or "setoptionsandswitch" in form:
@@ -296,6 +271,7 @@ try:
     cgicommon.writeln("</form>")
     cgicommon.writeln("</div>")
 
+    # Font profile selector
     display_font_profile = tourney.get_display_font_profile_id()
     font_profile_descs = countdowntourney.DISPLAY_FONT_PROFILES
     cgicommon.writeln("""<div class=\"displayoptsform\">
@@ -306,6 +282,20 @@ try:
         cgicommon.writeln("<option value=\"%d\" %s>%s</option>" % (i, "selected" if i == display_font_profile else "", cgicommon.escape(font_profile_descs[i]["name"])))
     cgicommon.writeln("</select>")
     cgicommon.writeln("<input type=\"submit\" name=\"setfontprofile\" value=\"Set font profile\" />")
+    cgicommon.writeln("</form>")
+    cgicommon.writeln("</div>")
+
+    # Screen shape selector
+    screen_shape_profile = tourney.get_screen_shape_profile_id()
+    screen_shape_descs = countdowntourney.SCREEN_SHAPE_PROFILES
+    cgicommon.writeln("""<div class=\"displayoptsform\">
+<form action=\"%s?tourney=%s&selectedview=%d\" method=\"POST\">
+<label for="screenshapeselect">Optimise for screen shape:</label>
+<select name="screenshapeselect" id="screenshapeselect">""" % (baseurl, urllib.parse.quote_plus(tourney_name), selected_view))
+    for i in range(len(screen_shape_descs)):
+        cgicommon.writeln("<option value=\"%d\" %s>%s</option>" % (i, "selected" if i == screen_shape_profile else "", cgicommon.escape(screen_shape_descs[i]["name"])))
+    cgicommon.writeln("</select>")
+    cgicommon.writeln("<input type=\"submit\" name=\"setscreenshape\" value=\"Set screen shape\" />")
     cgicommon.writeln("</form>")
     cgicommon.writeln("</div>")
 
@@ -342,7 +332,7 @@ try:
         cgicommon.writeln("<div class=\"viewcontrols\">")
         cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
         cgicommon.writeln("<div class=\"viewoptions\" id=\"viewoptions\">")
-        show_view_option_controls(tourney, form, options)
+        show_view_option_controls(options)
         cgicommon.writeln("</div>")
 
         cgicommon.writeln("<div class=\"viewsubmitbuttons\">")

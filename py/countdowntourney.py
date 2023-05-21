@@ -7,6 +7,7 @@ import os;
 import random
 import qualification
 import rank
+import html
 
 from cttable import CandidateTable, TableVotingGroup, PhantomTableVotingGroup
 import cttable
@@ -37,6 +38,11 @@ RATINGS_UNIFORM = 2
 
 CONTROL_NUMBER = 1
 CONTROL_CHECKBOX = 2
+CONTROL_DROPDOWN = 3
+
+AUTO_SPLIT_DEFAULT = 0   # split view horizontally if 4:3, vertically if 16:9
+AUTO_SPLIT_VERTICAL = 1
+AUTO_SPLIT_HORIZONTAL = 2
 
 UPLOAD_FAIL_TYPE_HTTP = 1
 UPLOAD_FAIL_TYPE_REJECTED = 2
@@ -55,8 +61,9 @@ PRUNE_PLAYER_ID = -1
 # the default value for that number.
 AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT = 36
 
-AUTO_VERTICAL_DURING_ROUND_DEFAULT = 0
-AUTO_VERTICAL_AFTER_ROUND_DEFAULT = 0
+# Default value for the option which selects the Standings/Results view during
+# a round rather than Standings/Videprinter.
+AUTO_WIDESCREEN_RESULTS_DURING_ROUND_DEFAULT = 1
 
 # Standard information about each public display ("teleost") mode, such as the
 # name description, preview image, and what game state objects the display
@@ -75,7 +82,7 @@ teleost_modes = [
             "name" : "Standings only",
             "desc" : "The current standings table and nothing else.",
             "image" : "/images/screenthumbs/standings_only.png",
-            "menuorder" : 8,
+            "menuorder" : 9,
             "fetch" : [ "standings" ]
         },
         {
@@ -87,11 +94,19 @@ teleost_modes = [
             "fetch" : [ "standings", "logs" ]
         },
         {
+            "id" : "TELEOST_MODE_VERTICAL_STANDINGS_VIDEPRINTER",
+            "name" : "Standings/Videprinter (V)",
+            "desc" : "Standings table on the left half of the screen, latest results scrolling up the right half.",
+            "image" : "/images/screenthumbs/standings_videprinter_vertical.png",
+            "menuorder" : 4,
+            "fetch" : [ "standings", "logs" ]
+        },
+        {
             "id" : "TELEOST_MODE_STANDINGS_RESULTS",
             "name" : "Standings/Table Results",
             "desc" : "Standings table with the current round's fixtures and results cycling on the lower third of the screen.",
             "image" : "/images/screenthumbs/standings_results.png",
-            "menuorder" : 4,
+            "menuorder" : 5,
             "fetch" : [ "standings", "games" ]
         },
         {
@@ -99,7 +114,7 @@ teleost_modes = [
             "name" : "Standings/Results (Vertical)",
             "desc" : "The standings table on the left of the screen, and all the round's games and results in a table on the right.",
             "image" : "/images/screenthumbs/standings_results_vertical.png",
-            "menuorder" : 5,
+            "menuorder" : 6,
             "fetch" : [ "standings", "games" ]
         },
         {
@@ -107,7 +122,7 @@ teleost_modes = [
             "name" : "Technical Difficulties",
             "desc" : "Ceci n'est pas un probleme technique.",
             "image" : "/images/screenthumbs/technical_difficulties.png",
-            "menuorder" : 13,
+            "menuorder" : 14,
             "fetch" : []
         },
         {
@@ -115,7 +130,7 @@ teleost_modes = [
             "name" : "Fixtures",
             "desc" : "Table of all fixtures in the next or current round.",
             "image" : "/images/screenthumbs/fixtures.png",
-            "menuorder" : 6,
+            "menuorder" : 7,
             "fetch" : [ "games" ]
         },
         {
@@ -123,7 +138,7 @@ teleost_modes = [
             "name" : "Table Number Index",
             "desc" : "A list of all the player names and their table numbers, in alphabetical order of player name.",
             "image" : "/images/screenthumbs/table_index.png",
-            "menuorder" : 7,
+            "menuorder" : 8,
             "fetch" : [ "games" ]
         },
         {
@@ -131,7 +146,7 @@ teleost_modes = [
             "name" : "Overachievers",
             "desc" : "Table of players ranked by how highly they finish above their seeding position. This is only relevant if the players have different ratings.",
             "image" : "/images/screenthumbs/overachievers.png",
-            "menuorder" : 9,
+            "menuorder" : 10,
             "fetch" : [ "overachievers" ]
         },
         {
@@ -139,7 +154,7 @@ teleost_modes = [
             "name" : "Tuff Luck",
             "desc" : "Players who have lost three or more games, ordered by the sum of their three lowest losing margins.",
             "image" : "/images/screenthumbs/tuff_luck.png",
-            "menuorder" : 10,
+            "menuorder" : 11,
             "fetch" : [ "tuffluck" ]
         },
         {
@@ -147,7 +162,7 @@ teleost_modes = [
             "name" : "High scores",
             "desc" : "Highest winning scores, losing scores and combined scores in all heat games.",
             "image" : "/images/screenthumbs/high_scores.jpg",
-            "menuorder" : 11,
+            "menuorder" : 12,
             "fetch" : [ "highscores" ]
         },
         {
@@ -195,24 +210,43 @@ teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindex", CONTROL_CHECKBOX, "$CONTROL Show name-to-table index instead of fixture list at start of round if there are at least...", 1),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindexthreshold", CONTROL_NUMBER, "$INDENT $CONTROL active players", AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autocurrentroundmusthavegamesinalldivisions", CONTROL_CHECKBOX, "$CONTROL Only switch to Fixtures display after fixtures are generated for all divisions", 1),
-    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autoverticalduringround", CONTROL_CHECKBOX, "$CONTROL Use vertically-split standings/results display during rounds", AUTO_VERTICAL_DURING_ROUND_DEFAULT),
-    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autoverticalafterround", CONTROL_CHECKBOX, "$CONTROL Use vertically-split standings/results display after all games in round are played", AUTO_VERTICAL_AFTER_ROUND_DEFAULT),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"],
+        "autowidescreenresultsduringround", CONTROL_CHECKBOX,
+        "$CONTROL While a round is in progress and screen shape profile is widescreen, show results table not videprinter",
+        AUTO_WIDESCREEN_RESULTS_DURING_ROUND_DEFAULT
+    ),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"],
+        "autostandingsvideprintersplitdirection", CONTROL_DROPDOWN,
+        "Preferred Standings/Videprinter split direction $CONTROL", 0,
+        [ "Screen shape profile default", "Always vertical", "Always horizontal" ]
+    ),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"],
+        "autostandingsresultssplitdirection", CONTROL_DROPDOWN,
+        "Preferred Standings/Results split direction $CONTROL", 0,
+        [ "Screen shape profile default", "Always vertical", "Always horizontal" ]
+    ),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_lines", CONTROL_NUMBER, "Players per page", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS"], "standings_only_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
+
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_standings_lines", CONTROL_NUMBER, "Players per page", 8),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_standings_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 6),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_spell_big_scores", CONTROL_CHECKBOX, "$CONTROL Videprinter: repeat unbelievably high scores in words", 0),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_VIDEPRINTER"], "standings_videprinter_big_score_min", CONTROL_NUMBER, "$INDENT An unbelievably high score is $CONTROL or more", 90),
+
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_lines", CONTROL_NUMBER, "Players per standings page", 8),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_standings_scroll", CONTROL_NUMBER, "Standings scroll interval $CONTROL seconds", 6),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_results_lines", CONTROL_NUMBER, "Number of results per page", 3),
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_results_scroll", CONTROL_NUMBER, "Results scroll interval $CONTROL seconds", 3),
+
     (teleost_mode_id_to_num["TELEOST_MODE_STANDINGS_RESULTS"], "standings_results_show_unstarted_round_if_single_game", CONTROL_CHECKBOX, "$CONTROL Show unstarted next round if it only has one game", 1),
+
     (teleost_mode_id_to_num["TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"], "vertical_standings_lines", CONTROL_NUMBER, "$CONTROL Players per page on standings table", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"], "vertical_fixtures_lines", CONTROL_NUMBER, "$CONTROL Fixture lines per page", 18),
     (teleost_mode_id_to_num["TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"], "vertical_standings_results_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
+
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_lines", CONTROL_NUMBER, "Lines per page", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_FIXTURES"], "fixtures_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 10),
+
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_rows", CONTROL_NUMBER, "Rows per page $CONTROL", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_columns", CONTROL_NUMBER, "Columns per page", 3),
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12)
@@ -230,6 +264,21 @@ DISPLAY_FONT_PROFILES = [
         {
             "name" : "Condensed",
             "cssfile" : "fontdefs_condensed.css"
+        }
+]
+
+# The option screenshapeprofile is an index into this array, which gives the
+# display page a hint about how to display information. If the screen shape
+# profile is widescreen (default) then we'll prefer to split multi-view screen
+# modes vertically rather than horizontally.
+SCREEN_SHAPE_WIDESCREEN = 0
+SCREEN_SHAPE_4_3 = 1
+SCREEN_SHAPE_PROFILES = [
+        {
+            "name" : "Widescreen (16:9)",
+        },
+        {
+            "name" : "Old (4:3)"
         }
 ]
 
@@ -1135,13 +1184,63 @@ def get_general_short_division_name(num):
         return chr(ord('A') + num)
 
 class TeleostOption(object):
-    def __init__(self, mode, seq, name, control_type, desc, value):
+    def __init__(self, mode, seq, name, control_type, desc, value, choices):
         self.mode = mode
         self.seq = seq
         self.name = name
         self.control_type = control_type
         self.desc = desc
         self.value = value
+        self.choices = choices
+
+    def get_html(self, disabled=False, onclick_value=None):
+        lines = []
+        lines.append("<div class=\"teleostoption\">")
+        name_escaped = "teleost_option_" + html.escape(self.name, True)
+        if self.value is None:
+            value_escaped = ""
+        else:
+            value_escaped = html.escape(str(self.value), True)
+
+        desc_escaped = html.escape(self.desc)
+
+        # If $INDENT exists, replace it with a checkbox-width of empty space
+        desc_escaped = re.sub("\\$INDENT\\b", "<span style=\"visibility: hidden;\"><input type=\"checkbox\" name=\"_placeholder_%s\" /></span>" % (name_escaped), desc_escaped, 0)
+
+        m = re.search("\\$CONTROL\\b", desc_escaped)
+        if m:
+            before_control = desc_escaped[0:m.start()]
+            after_control = desc_escaped[m.end():]
+        else:
+            before_control = desc_escaped
+            after_control = ""
+
+        lines.append("<label for=\"%s\">%s</label>" % (name_escaped, before_control))
+
+        if self.control_type == CONTROL_NUMBER:
+            lines.append("<input type=\"number\" style=\"width: 5em;\" name=\"%s\" id=\"%s\" value=\"%s\" %s />" % (name_escaped, name_escaped, value_escaped, "disabled" if disabled else ""))
+        elif self.control_type == CONTROL_CHECKBOX:
+            if self.value is not None and int(self.value):
+                checked_str = "checked"
+            else:
+                checked_str = ""
+            lines.append("<input type=\"checkbox\" name=\"%s\" id=\"%s\" value=\"1\" %s %s />" % (
+                name_escaped,
+                name_escaped,
+                checked_str,
+                "" if not onclick_value
+                   else "onclick=\"" + re.sub("\"", "\\\"", onclick_value, 0) + "\""))
+            lines.append("<input type=\"hidden\" name=\"%s\" value=\"1\" />" % ("exists_checkbox_" + name_escaped))
+        elif self.control_type == CONTROL_DROPDOWN:
+            lines.append("<select name=\"%s\">" % (name_escaped))
+            idx = 0
+            for choice in self.choices:
+                lines.append("<option value=\"%d\"%s>%s</option>" % (idx, " selected " if idx == self.value else "", html.escape(choice)))
+                idx += 1
+            lines.append("</select>")
+        lines.append("<label for=\"%s\">%s</label>" % (name_escaped, after_control))
+        lines.append("</div>")
+        return "\n".join(lines)
 
 class Tourney(object):
     def __init__(self, filename, tourney_name, versioncheck=True):
@@ -2466,9 +2565,19 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
     def get_display_font_profile_id(self):
         return self.get_int_attribute("displayfontprofile", 0)
 
+    def get_screen_shape_profile_id(self):
+        return self.get_int_attribute("screenshapeprofile", SCREEN_SHAPE_WIDESCREEN)
+
+    def is_screen_shape_profile_widescreen(self):
+        return self.get_screen_shape_profile_id() == SCREEN_SHAPE_WIDESCREEN
+
     def set_display_font_profile_id(self, font_profile_id):
         if font_profile_id >= 0 and font_profile_id < len(DISPLAY_FONT_PROFILES):
             self.set_attribute("displayfontprofile", str(font_profile_id))
+
+    def set_screen_shape_profile_id(self, value):
+        if value >= 0 and value < len(SCREEN_SHAPE_PROFILES):
+            self.set_attribute("screenshapeprofile", str(value))
 
     def set_auto_use_table_index(self, value):
         self.set_attribute("autousetableindex", str(int(value)))
@@ -2481,11 +2590,20 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         else:
             return False
 
-    def get_auto_vertical_during_round(self):
-        return self.get_int_attribute("autoverticalduringround", AUTO_VERTICAL_DURING_ROUND_DEFAULT) != 0
+    def is_auto_standings_results_vertical(self):
+        direction = self.get_int_attribute("autostandingsresultssplitdirection")
+        if direction == AUTO_SPLIT_DEFAULT:
+            direction = AUTO_SPLIT_VERTICAL if self.is_screen_shape_profile_widescreen() else AUTO_SPLIT_HORIZONTAL
+        return direction == AUTO_SPLIT_VERTICAL
 
-    def get_auto_vertical_after_round(self):
-        return self.get_int_attribute("autoverticalafterround", AUTO_VERTICAL_AFTER_ROUND_DEFAULT) != 0
+    def is_auto_standings_videprinter_vertical(self):
+        direction = self.get_int_attribute("autostandingsvideprintersplitdirection")
+        if direction == AUTO_SPLIT_DEFAULT:
+            direction = AUTO_SPLIT_VERTICAL if self.is_screen_shape_profile_widescreen() else AUTO_SPLIT_HORIZONTAL
+        return direction == AUTO_SPLIT_VERTICAL
+
+    def is_auto_widescreen_results_table_during_round(self):
+        return self.get_int_attribute("autowidescreenresultsduringround", AUTO_WIDESCREEN_RESULTS_DURING_ROUND_DEFAULT) != 0
 
     def set_auto_current_round_must_have_games_in_all_divisions(self, value):
         self.set_attribute("autocurrentroundmusthavegamesinalldivisions", str(int(value)))
@@ -2824,17 +2942,24 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             elif played > 0 and unplayed == 0:
                 # All the games in this round have been played. Switch to the
                 # standings-and-results screen.
-                if self.get_auto_vertical_after_round():
+                if self.is_auto_standings_results_vertical():
                     mode_name = "TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"
                 else:
                     mode_name = "TELEOST_MODE_STANDINGS_RESULTS"
             else:
                 # Otherwise, the round is in progress. Use the standings and
-                # videprinter display, unless told not to.
-                if self.get_auto_vertical_during_round():
-                    mode_name = "TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"
+                # videprinter display, or the standings and results display
+                # if the option values say so.
+                if self.is_screen_shape_profile_widescreen() and self.is_auto_widescreen_results_table_during_round():
+                    if self.is_auto_standings_results_vertical():
+                        mode_name = "TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"
+                    else:
+                        mode_name = "TELEOST_MODE_STANDINGS_RESULTS"
                 else:
-                    mode_name = "TELEOST_MODE_STANDINGS_VIDEPRINTER"
+                    if self.is_auto_standings_videprinter_vertical():
+                        mode_name = "TELEOST_MODE_VERTICAL_STANDINGS_VIDEPRINTER"
+                    else:
+                        mode_name = "TELEOST_MODE_STANDINGS_VIDEPRINTER"
 
         if not mode_name:
             # Eh?
@@ -2869,11 +2994,15 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             if row is None or row[0] is None:
                 value = opt[4] # default value
             else:
-                if opt[2] == CONTROL_NUMBER:
+                if opt[2] == CONTROL_NUMBER or opt[2] == CONTROL_DROPDOWN:
                     value = int(row[0])
                 else:
                     value = row[0]
             cur.close()
+            if len(opt) >= 6:
+                choices = opt[5]
+            else:
+                choices = None
 
             options.append(TeleostOption(
                     opt[0], # teleost mode
@@ -2881,7 +3010,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                     opt[1], # option name
                     opt[2], # control type
                     opt[3], # description
-                    value   # effective value
+                    value,  # effective value
+                    choices, # list of choices (dropdown only)
             ))
         return options
 

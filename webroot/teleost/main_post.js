@@ -360,6 +360,7 @@ function fetchGameState() {
 function displaySetup() {
     teleostModesToCreateFunctions[TELEOST_MODE_STANDINGS] = createStandingsScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_STANDINGS_VIDEPRINTER] = createStandingsAndVideprinterScreen;
+    teleostModesToCreateFunctions[TELEOST_MODE_VERTICAL_STANDINGS_VIDEPRINTER] = createVerticalStandingsAndVideprinterScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_STANDINGS_RESULTS] = createStandingsAndRoundResultsScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_VERTICAL_STANDINGS_RESULTS] = createVerticalStandingsAndFixturesScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_TECHNICAL_DIFFICULTIES] = createTechnicalDifficultiesScreen;
