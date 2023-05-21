@@ -471,6 +471,12 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
             writeln("</div>")
             writeln("</a>")
 
+        current_teleost_mode = tourney.get_current_teleost_mode()
+        if current_teleost_mode != 0:
+            writeln("<div>")
+            writeln("<div style=\"display: inline-block; padding: 5px; border-radius: 5px; font-size: 10pt; background-color: orange; color: black;\" title=\"Display mode is manually overridden.\">Auto OFF</div>")
+            writeln("</div>")
+
         writeln("<br />")
 
         rounds = tourney.get_rounds();

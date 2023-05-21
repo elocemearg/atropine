@@ -1381,12 +1381,10 @@ div.viewselection {
 }
 
 div.viewdetails {
-    max-width: 780px;
 }
 
 div.viewdetailstext {
     padding: 10px;
-    float: left;
 }
 
 div.viewdetailstitle {
@@ -1399,8 +1397,10 @@ div.viewdetailsdescription {
 
 
 input.switchviewbutton {
-    width: 200px;
+    min-width: 200px;
     height: 30px;
+    background-color: green;
+    color: white;
 }
 
 div.viewpreviewandoptions {
@@ -1434,16 +1434,16 @@ div.displaysetupview {
 }
 
 div.viewnowshowing {
-    background-color: orange;
-    border: 2px solid orange;
+    background-color: green;
+    border: 2px solid green;
 }
 
 iframe.displaypreviewframe {
     border: none;
 }
 
-
 div.viewpreview {
+    background-color: orange;
     border: 2px solid orange;
 }
 
@@ -1461,6 +1461,7 @@ div.viewpreviewcurrent {
     padding-top: 5px;
     padding-bottom: 5px;
     font-size: 16pt;
+    color: white;
 }
 
 div.viewcontrols {
@@ -1479,15 +1480,12 @@ div.viewsubmitbuttons {
 
 input.setdisplayoptionsbutton {
     height: 30px;
-    width: 200px;
+    min-width: 200px;
 }
 
 div.viewmenu {
     margin-top: 20px;
-    border: 1px solid gray;
-    background-color: silver;
-    padding: 5px;
-    width: 780px;
+    margin-left: 10px;
 }
 
 div.viewmenuheading {
@@ -1496,30 +1494,42 @@ div.viewmenuheading {
     padding: 10px;
 }
 
-div.viewmenurow {
-    clear: both;
-    height: 120px;
-    width: auto;
+div.viewmenucell {
+    display: inline-block;
+    min-width: 133px;
+    height: 100px + 2ex;
+    text-align: center;
+    vertical-align: top;
+    padding: 3px 3px 0px 3px;
+    font-size: 8pt;
+    margin: 2px;
 }
 
-div.viewmenucell {
-    width: 133px;
-    height: 100px;
-    float: left;
-    margin: 1px;
-    padding: 1px;
+div.viewmenucelllarge {
+    font-size: 12pt;
 }
 
 div.viewmenucellbystander {
-    border: 8px solid transparent;
+    border: 5px solid transparent;
+}
+
+div.viewmenucellbystander img {
+    opacity: 50%;
 }
 
 div.viewmenucellselected {
-    border: 8px solid blue;
+    background: orange;
+    border: 5px solid orange;
 }
 
 div.viewmenucellshowing {
-    border: 8px solid red;
+    background: green;
+    border: 5px solid green;
+    color: white;
+}
+
+div.viewmenucellautoshowing {
+    border: 5px dashed lightgreen;
 }
 
 div.opendisplaylink {

@@ -806,14 +806,12 @@ def write_videprinter(tourney, round_no):
     cgicommon.writeln("</div>") # videprinterwindow
 
     # Form to post a new comment
-    videprinter_showing = tourney.is_videprinter_showing()
     cgicommon.writeln("<div class=\"newsform\" id=\"newspost\">")
     cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no))
     cgicommon.writeln("<div class=\"newsformheading\">")
     cgicommon.writeln("<div class=\"newsformheadingtext\">Post comment</div>")
 
     write_news_form_tick_box_div(tourney, publishing, False)
-    #cgicommon.writeln("Post comment on videprinter%s" % (" (not currently showing)" if not videprinter_showing else ""))
     cgicommon.writeln("</div>")
     cgicommon.writeln("<div class=\"newsformbody\">")
     cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))

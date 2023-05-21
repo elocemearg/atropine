@@ -14,6 +14,47 @@ def show_now_showing_frame(tourney):
 def show_view_preview(tourney, form, selected_view):
     cgicommon.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s&mode=%d\" height=\"270\" width=\"480\"></iframe>" % (urllib.parse.quote_plus(tourney.get_name()), selected_view))
 
+def show_live_and_preview(tourney, form, teleost_modes, showing_view, selected_view):
+    tourney_name = tourney.get_name()
+
+    # Tell the user what mode is being shown, what mode is selected for preview
+    # (if different) and if not auto, offer the user a button to return to auto.
+    # We assume the "auto" display mode is number 0.
+    cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=0\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name)))
+    cgicommon.writeln("<p>")
+    cgicommon.write("You are currently <span style=\"color: green;\">showing</span> the <span style=\"font-weight: bold;\">%s</span> display mode" % (
+            "?" if showing_view is None else teleost_modes[showing_view]["name"]
+        )
+    )
+    if showing_view != selected_view:
+        cgicommon.write(", and <span style=\"color: darkorange;\">previewing</span> the <span style=\"font-weight: bold;\">%s</span> display mode" % (teleost_modes[selected_view]["name"]))
+    cgicommon.writeln(".")
+    if showing_view != 0:
+        cgicommon.writeln(" <input type=\"submit\" name=\"switchview\" value=\"Return to automatic control\" />")
+    cgicommon.writeln("</p>")
+    cgicommon.writeln("</form>")
+
+    cgicommon.writeln("<div class=\"viewselection\">")
+    cgicommon.writeln("<div class=\"viewpreviewandoptions\">")
+    cgicommon.writeln("<div class=\"displaysetupview viewnowshowing\">")
+    show_now_showing_frame(tourney)
+    cgicommon.writeln("<div class=\"viewpreviewcurrent\">")
+    cgicommon.writeln("Now showing")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>")
+    if not teleost_modes[selected_view].get("selected", False):
+        cgicommon.writeln("<div class=\"displaysetupview viewpreview\" id=\"viewpreview\">")
+        show_view_preview(tourney, form, selected_view)
+
+        cgicommon.writeln("<div class=\"viewpreviewswitch\">")
+        cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
+        cgicommon.writeln("<input class=\"switchviewbutton\" type=\"submit\" name=\"switchview\" value=\"Switch to %s\" />" % ("this screen mode" if selected_view != 0 else "automatic control"))
+        cgicommon.writeln("</form>")
+        cgicommon.writeln("</div>") # viewpreviewswitch
+        cgicommon.writeln("</div>") # viewpreview
+    cgicommon.writeln("</div>") # viewpreviewandoptions
+    cgicommon.writeln("</div>") # viewselection
+
 checkbox_to_assoc_field = {
         "standings_videprinter_spell_big_scores" : "standings_videprinter_big_score_min"
 }
@@ -25,7 +66,6 @@ assoc_field_to_checkbox = {
 def show_view_option_controls(tourney, form, options):
     if not options:
         return
-    cgicommon.writeln("<div class=\"teleostoptionheading\">Options for this screen mode</div>")
     for o in options:
         cgicommon.writeln("<div class=\"teleostoption\">")
         name_escaped = "teleost_option_" + cgicommon.escape(o.name, True)
@@ -85,9 +125,57 @@ def show_view_option_controls(tourney, form, options):
             cgicommon.writeln("<input type=\"hidden\" name=\"%s\" value=\"1\" />" % ("exists_checkbox_" + name_escaped))
 
         cgicommon.writeln("<label for=\"%s\">%s</label>" % (name_escaped, after_control))
-
         cgicommon.writeln("</div>")
 
+def show_view_thumbnail(mode, selected_view, auto_current_view, large=False):
+    classes = ["viewmenucell"]
+    if large:
+        classes.append("viewmenucelllarge")
+    if mode.get("selected", False):
+        # This is the view currently showing on the public display
+        classes.append("viewmenucellshowing")
+    elif mode["num"] == selected_view:
+        # This is the view the user has clicked in the display options page
+        classes.append("viewmenucellselected")
+    elif auto_current_view is not None and mode["num"] == auto_current_view:
+        classes.append("viewmenucellautoshowing")
+    else:
+        # This is neither showing nor selected
+        classes.append("viewmenucellbystander")
+    cgicommon.writeln("<div class=\"%s\">" % (" ".join(classes)))
+    cgicommon.writeln("<a href=\"%s?tourney=%s&selectedview=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), mode["num"]))
+    img_src = mode.get("image", None)
+    if img_src:
+        cgicommon.writeln("<img src=\"%s\" alt=\"%s\" title=\"%s\" />" % (
+                cgicommon.escape(img_src, True), cgicommon.escape(mode["name"], True),
+                cgicommon.escape(mode["desc"], True)))
+    cgicommon.writeln("</a>")
+    cgicommon.writeln("<br>")
+    cgicommon.writeln(cgicommon.escape(mode["name"]))
+    cgicommon.writeln("</div>")
+
+# selected_view: the view the user has clicked on and is previewing, not
+# necessarily the one currently showing.
+# auto_current_view: None if not in Auto mode. Otherwise, the number of the
+# actual view being displayed by Auto mode.
+def show_view_menu(tourney, form, teleost_modes, selected_view, auto_current_view):
+    menu_row_size = 6
+    teleost_modes_sorted = sorted(teleost_modes, key=lambda x : (x.get("menuorder", 100000), x["num"], x["name"]))
+
+    cgicommon.writeln("<h2 class=\"teleostoptionheading\">Change or configure display modes</h2>")
+    cgicommon.writeln("<div>")
+    cgicommon.writeln("<div style=\"display: table-cell;\">")
+    show_view_thumbnail(teleost_modes_sorted[0], selected_view, auto_current_view, large=True)
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("<div style=\"display: table-cell;\">")
+    cgicommon.writeln("<div>")
+    for mode in teleost_modes_sorted[1:]:
+        show_view_thumbnail(mode, selected_view, auto_current_view)
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>")
+    cgicommon.writeln("</div>")
+
+###############################################################################
 
 cgitb.enable();
 
@@ -147,7 +235,7 @@ try:
     mode_info = teleost_modes[selected_view]
 
     if request_method == "POST":
-        if "setoptions" in form:
+        if "setoptions" in form or "setoptionsandswitch" in form:
             # Set per-view options
             for name in list(form.keys()):
                 if name.startswith("teleost_option_"):
@@ -174,7 +262,7 @@ try:
                     tourney.set_display_font_profile_id(font_profile_id)
                 except ValueError:
                     pass
-        if "switchview" in form:
+        if "switchview" in form or "setoptionsandswitch" in form:
             tourney.set_teleost_mode(selected_view)
             teleost_modes = tourney.get_teleost_modes();
             mode_info = teleost_modes[selected_view]
@@ -221,38 +309,21 @@ try:
     cgicommon.writeln("</form>")
     cgicommon.writeln("</div>")
 
-    cgicommon.writeln("<div class=\"viewselection\">")
-    cgicommon.writeln("<div class=\"viewpreviewandoptions\">")
-
-    cgicommon.writeln("<div class=\"displaysetupview viewnowshowing\">")
-    show_now_showing_frame(tourney)
-    cgicommon.writeln("<div class=\"viewpreviewcurrent\">")
-    cgicommon.writeln("Now showing")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("</div>")
-
-    cgicommon.writeln("<div class=\"displaysetupview viewpreview\" id=\"viewpreview\">")
-    show_view_preview(tourney, form, selected_view)
-
-    cgicommon.writeln("<div class=\"viewpreviewswitch\">")
-    if teleost_modes[selected_view].get("selected", False):
-        if selected_view == 0:
-            cgicommon.writeln("Automatic view")
-        else:
-            cgicommon.writeln("Selected view");
+    showing_view = None
+    for mode in teleost_modes:
+        if mode.get("selected", False):
+            showing_view = mode["num"]
+    showing_view = tourney.get_current_teleost_mode()
+    if showing_view == 0:
+        auto_current_view = tourney.get_effective_teleost_mode()
     else:
-        cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
-        cgicommon.writeln("<input class=\"switchviewbutton\" type=\"submit\" name=\"switchview\" value=\"Switch to %s\" />" % ("this screen mode" if selected_view != 0 else "automatic control"))
-        cgicommon.writeln("</form>")
-    cgicommon.writeln("</div>") # viewpreviewswitch
+        auto_current_view = None
 
-    cgicommon.writeln("</div>")
-
-    cgicommon.writeln("</div>") # viewpreviewandoptions
-
+    show_live_and_preview(tourney, form, teleost_modes, showing_view, selected_view)
     cgicommon.writeln("<div style=\"clear: both;\"></div>")
 
-    cgicommon.writeln("</div>") # viewselection
+    show_view_menu(tourney, form, teleost_modes, selected_view, auto_current_view)
+    cgicommon.writeln("<div style=\"clear: both;\"></div>")
 
     cgicommon.writeln("<div class=\"viewmenu\">")
     cgicommon.writeln("<div class=\"viewdetails\">")
@@ -263,48 +334,11 @@ try:
     cgicommon.writeln(": </span>");
     cgicommon.writeln(cgicommon.escape(mode_info["desc"]))
     cgicommon.writeln("</div>") # viewdetailstext
-
     cgicommon.writeln("</div>") # viewdetails
-
-
-    menu_row_size = 5
-    teleost_modes_sorted = sorted(teleost_modes, key=lambda x : (x.get("menuorder", 100000), x["num"], x["name"]))
-
-    for idx in range(len(teleost_modes_sorted)):
-        mode = teleost_modes_sorted[idx]
-        if idx % menu_row_size == 0:
-            if idx > 0:
-                cgicommon.writeln("</div>")
-            cgicommon.writeln("<div class=\"viewmenurow\">")
-        classes = ["viewmenucell"]
-        if mode.get("selected", False):
-            # This is the view currently showing on the public display
-            classes.append("viewmenucellshowing")
-        elif mode["num"] == selected_view:
-            # This is the view the user has clicked in the display options page
-            classes.append("viewmenucellselected")
-        else:
-            # This is neither showing nor selected
-            classes.append("viewmenucellbystander")
-        cgicommon.writeln("<div class=\"%s\">" % (" ".join(classes)))
-        cgicommon.writeln("<a href=\"%s?tourney=%s&selectedview=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), mode["num"]))
-        img_src = mode.get("image", None)
-        if img_src:
-            cgicommon.writeln("<img src=\"%s\" alt=\"%s\" title=\"%s\" />" % (
-                    cgicommon.escape(img_src, True), cgicommon.escape(mode["name"], True),
-                    cgicommon.escape(mode["name"], True)))
-        else:
-            cgicommon.writeln(cgicommon.escape(mode["name"]))
-        cgicommon.writeln("</a>")
-        cgicommon.writeln("</div>")
-
-    if len(teleost_modes) > 0:
-        cgicommon.writeln("</div>")
-
-    cgicommon.writeln("</div>") #viewmenu
 
     options = tourney.get_teleost_options(mode=selected_view)
     if options:
+        cgicommon.writeln("<h3>Options for this display mode</h3>")
         cgicommon.writeln("<div class=\"viewcontrols\">")
         cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
         cgicommon.writeln("<div class=\"viewoptions\" id=\"viewoptions\">")
@@ -314,11 +348,14 @@ try:
         cgicommon.writeln("<div class=\"viewsubmitbuttons\">")
         cgicommon.writeln("<div class=\"viewoptionssave\">")
         cgicommon.writeln("<input type=\"submit\" class=\"setdisplayoptionsbutton\" name=\"setoptions\" value=\"Save options\" />")
+        if not teleost_modes[selected_view].get("selected", False):
+            cgicommon.writeln("<input type=\"submit\" class=\"setdisplayoptionsbutton\" name=\"setoptionsandswitch\" value=\"Save options and switch to %s\" />" % (cgicommon.escape(teleost_modes[selected_view]["name"])))
         cgicommon.writeln("</div>")
         cgicommon.writeln("</div>") # viewsubmitbuttons
 
         cgicommon.writeln("</form>")
         cgicommon.writeln("</div>") # viewcontrols
+    cgicommon.writeln("</div>")
 
     cgicommon.writeln("</div>") # mainpane
 

@@ -65,41 +65,41 @@ teleost_modes = [
         {
             "id" : "TELEOST_MODE_AUTO",
             "name" : "Auto",
-            "desc" : "Automatic control. Show the Welcome or Check-in screen before any games are generated, Fixtures at the start of a round, Standings/Videprinter during the round, and Standings/Table Results when all games in the round have been played.",
+            "desc" : "Automatic control. Show the Welcome or Check-in screen before any games are generated, Fixtures at the start of a round, and Standings and/or Results during a round as specified in the options. This is the default. You probably just want to use this and forget about it.",
             "menuorder" : 0,
-            "image" : "/images/screenthumbs/auto.png",
+            "image" : "/images/screenthumbs/auto.jpg",
             "fetch" : [ "all" ]
         },
         {
             "id" : "TELEOST_MODE_STANDINGS",
-            "name" : "Standings",
+            "name" : "Standings only",
             "desc" : "The current standings table and nothing else.",
             "image" : "/images/screenthumbs/standings_only.png",
-            "menuorder" : 5,
+            "menuorder" : 8,
             "fetch" : [ "standings" ]
         },
         {
             "id" : "TELEOST_MODE_STANDINGS_VIDEPRINTER",
-            "name" : "Standings / Videprinter",
+            "name" : "Standings/Videprinter",
             "desc" : "Standings table with latest results appearing in the lower third of the screen.",
             "image" : "/images/screenthumbs/standings_videprinter.png",
-            "menuorder" : 1,
+            "menuorder" : 3,
             "fetch" : [ "standings", "logs" ]
         },
         {
             "id" : "TELEOST_MODE_STANDINGS_RESULTS",
-            "name" : "Standings / Table Results",
+            "name" : "Standings/Table Results",
             "desc" : "Standings table with the current round's fixtures and results cycling on the lower third of the screen.",
             "image" : "/images/screenthumbs/standings_results.png",
-            "menuorder" : 2,
+            "menuorder" : 4,
             "fetch" : [ "standings", "games" ]
         },
         {
             "id" : "TELEOST_MODE_VERTICAL_STANDINGS_RESULTS",
-            "name" : "Standings / Results (Vertical)",
+            "name" : "Standings/Results (Vertical)",
             "desc" : "The standings table on the left of the screen, and all the round's games and results in a table on the right.",
-            "image" : "/images/screenthumbs/placeholder.png",
-            "menuorder" : 3,
+            "image" : "/images/screenthumbs/standings_results_vertical.png",
+            "menuorder" : 5,
             "fetch" : [ "standings", "games" ]
         },
         {
@@ -107,7 +107,7 @@ teleost_modes = [
             "name" : "Technical Difficulties",
             "desc" : "Ceci n'est pas un probleme technique.",
             "image" : "/images/screenthumbs/technical_difficulties.png",
-            "menuorder" : 11,
+            "menuorder" : 13,
             "fetch" : []
         },
         {
@@ -115,7 +115,7 @@ teleost_modes = [
             "name" : "Fixtures",
             "desc" : "Table of all fixtures in the next or current round.",
             "image" : "/images/screenthumbs/fixtures.png",
-            "menuorder" : 4,
+            "menuorder" : 6,
             "fetch" : [ "games" ]
         },
         {
@@ -123,7 +123,7 @@ teleost_modes = [
             "name" : "Table Number Index",
             "desc" : "A list of all the player names and their table numbers, in alphabetical order of player name.",
             "image" : "/images/screenthumbs/table_index.png",
-            "menuorder" : 5,
+            "menuorder" : 7,
             "fetch" : [ "games" ]
         },
         {
@@ -131,7 +131,7 @@ teleost_modes = [
             "name" : "Overachievers",
             "desc" : "Table of players ranked by how highly they finish above their seeding position. This is only relevant if the players have different ratings.",
             "image" : "/images/screenthumbs/overachievers.png",
-            "menuorder" : 7,
+            "menuorder" : 9,
             "fetch" : [ "overachievers" ]
         },
         {
@@ -139,7 +139,7 @@ teleost_modes = [
             "name" : "Tuff Luck",
             "desc" : "Players who have lost three or more games, ordered by the sum of their three lowest losing margins.",
             "image" : "/images/screenthumbs/tuff_luck.png",
-            "menuorder" : 8,
+            "menuorder" : 10,
             "fetch" : [ "tuffluck" ]
         },
         {
@@ -147,7 +147,7 @@ teleost_modes = [
             "name" : "High scores",
             "desc" : "Highest winning scores, losing scores and combined scores in all heat games.",
             "image" : "/images/screenthumbs/high_scores.jpg",
-            "menuorder" : 9,
+            "menuorder" : 11,
             "fetch" : [ "highscores" ]
         },
         {
@@ -155,7 +155,7 @@ teleost_modes = [
             "name" : "Welcome",
             "desc" : "A welcome screen for the start of the event.",
             "image" : "/images/screenthumbs/welcome.png",
-            "menuorder" : 12,
+            "menuorder" : 1,
             "fetch" : [ "tourney" ]
         },
         {
@@ -163,7 +163,7 @@ teleost_modes = [
             "name" : "Player Check-In",
             "desc" : "A list of all currently-registered and non-withdrawn players.",
             "image" : "/images/screenthumbs/checkin.png",
-            "menuorder" : 13,
+            "menuorder" : 2,
             "fetch" : [ "tourney", "players" ]
         },
         #{
@@ -2853,10 +2853,6 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             if teleost_modes[mode]["id"] == "TELEOST_MODE_AUTO":
                 mode = self.get_auto_effective_teleost_mode()
             return mode
-
-    def is_videprinter_showing(self):
-        mode = self.get_effective_teleost_mode()
-        return teleost_modes[mode]["id"] == "TELEOST_MODE_STANDINGS_VIDEPRINTER"
 
     def get_teleost_options(self, mode=None):
         if self.db_version < (0, 7, 7):
