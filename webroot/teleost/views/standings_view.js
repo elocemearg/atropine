@@ -186,7 +186,7 @@ class StandingsView extends PagedTableView {
         }
 
         if (finalsForm.length > 0) {
-            played = played.toString() + "(+" + finalsForm + ")";
+            played = "<span class=\"finalsform\">+" + finalsForm + " </span>" + played.toString();
         }
 
         if (standing.team_colour) {

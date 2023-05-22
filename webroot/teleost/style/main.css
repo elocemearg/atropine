@@ -113,6 +113,13 @@ table.teleoststandings td {
     border-bottom: 0.1vh solid gray;
 }
 
+span.finalsform {
+    font-size: 2.5vmin;
+    line-height: 3vmin;
+    font-family: var(--condensed-font-family);
+    color: yellow;
+}
+
 tr.teleoststandingsevenrow {
     background-color: #000022;
 }
