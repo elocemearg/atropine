@@ -19,6 +19,6 @@ You use Atropine through your web browser, but it does **not** need access to th
 The file `webroot/docs/index.html` contains further information about using Atropine.
 
 # Licence
-Atropine is licensed under the [Creative Commons Attribution 4.0 International License](http://creativecommons.org/licenses/by/4.0/).
+Atropine is free to use, and is released under the [BSD 3-clause licence](https://opensource.org/license/bsd-3-clause/).
 
 The font files under `webroot/fonts/` are from third-party sources and are distributed with Atropine in accordance with their own licences. See `webroot/fonts/FontLicences.txt` for details.

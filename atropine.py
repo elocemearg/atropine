@@ -154,9 +154,9 @@ except Exception as e:
 
 print("*******************************************************************************")
 print("* Atropine " + SW_VERSION)
-print("* Copyright © 2014-2022 by Graeme Cole.")
-print("* Released under the CC BY 4.0 licence. See licence.txt.")
-print("* Visit https://greem.co.uk/atropine/ for updates.")
+print("* Copyright © 2014-2023 by Graeme Cole.")
+print("* Released under the BSD 3-clause licence. See licence.txt.")
+print("* Visit https://greem.uk/atropine/ for updates.")
 print("* Python version is %d.%d.%d." % tuple(sys.version_info[0:3]))
 print("*******************************************************************************")
 print()
