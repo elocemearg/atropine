@@ -202,21 +202,23 @@ div.videprintercontainervertical {
     border-top: none;
     overflow: wrap;
     font-family: var(--condensed-font-family);
+    border-left: 0.5vw ridge silver;
 }
 
 table.teleostvideprinter {
     position: absolute;
     left: 5%;
     width: 90%;
-    bottom: 2vh;
     font-size: 4vmin;
     line-height: 5vmin;
     color: white;
 }
 
 table.teleostvideprintervertical {
-    font-size: 3vmin;
-    line-height: 4vmin;
+    position: absolute;
+    bottom: 3vh;
+    font-size: 3.5vh;
+    line-height: 4.5vh;
 }
 
 @keyframes videprinter_scroll_up {
@@ -226,7 +228,7 @@ table.teleostvideprintervertical {
 
 @keyframes videprinter_scroll_up_small {
     from { transform: translate(0, 0); }
-    to { transform: translate(0, -4.5vh); } /* teleostvideprinter td height + padding */
+    to { transform: translate(0, -5vh); } /* teleostvideprinter td height + padding */
 }
 
 table.teleostvideprintertablescroll {
@@ -258,7 +260,7 @@ table.teleostvideprinter tr {
 table.teleostvideprintervertical td {
     padding-top: 0.25vh;
     padding-bottom: 0.25vh;
-    height: 4vh;
+    height: 4.5vh;
 }
 
 table.teleostvideprintervertical tr {

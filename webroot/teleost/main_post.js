@@ -25,7 +25,7 @@ function createVerticalStandingsAndVideprinterScreen(tourneyName, options) {
             dictGet(options, "standings_only_lines", 12),
             dictGet(options, "standings_videprinter_standings_scroll", 10) * 1000,
             dictGet(options, "standings_alternate_row_colours", false)),
-        new VideprinterView(tourneyName, 50, 0, 50, 100, 22,
+        new VideprinterView(tourneyName, 50, 0, 50, 100, 20,
             getVideprinterScoreBracketThreshold(options), true
         )
     ]);
