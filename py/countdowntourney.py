@@ -12,7 +12,7 @@ import html
 from cttable import CandidateTable, TableVotingGroup, PhantomTableVotingGroup
 import cttable
 
-SW_VERSION_SPLIT = (1, 2, 1)
+SW_VERSION_SPLIT = (1, 2, 2)
 SW_VERSION = ".".join([str(x) for x in SW_VERSION_SPLIT])
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 

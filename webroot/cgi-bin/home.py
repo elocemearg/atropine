@@ -119,13 +119,14 @@ cgicommon.writeln("""
 </script>
 """)
 
-cgicommon.writeln("<h1>Welcome to Atropine</h1>");
-
 if tourney_created:
-    cgicommon.show_success_box("Tourney \"%s\" was created successfully." % cgicommon.escape(tourneyname));
     cgicommon.writeln("<p>");
     cgicommon.writeln('You should be redirected to your new tourney semi-immediately. If not, <a href="/cgi-bin/tourneysetup.py?tourney=%s">click here to continue</a>.' % urllib.parse.quote_plus(tourneyname));
     cgicommon.writeln("</p>");
+    cgicommon.writeln("</body></html>")
+    sys.exit(0)
+
+cgicommon.writeln("<h1>Welcome to Atropine</h1>");
 
 if tourney_create_exception:
     cgicommon.show_tourney_exception(tourney_create_exception)
