@@ -680,7 +680,7 @@ class InvalidEntryException(TourneyException):
     pass
 
 class QualificationTimeoutException(TourneyException):
-    description = "In calculating the standings table, we took too long to work out which players, if any, have qualified for the final. This may be due to an unusually large number of players, or an unusual tournament setup. In this case it is strongly recommended go to General Setup and disable qualification analysis by setting the number of places in the qualification zone to zero."
+    description = "In calculating the standings table, we took too long to work out which players, if any, have qualified for the final. This may be due to an unusually large number of players, or an unusual tournament setup. In this case it is strongly recommended go to Tourney Setup and disable qualification analysis by setting the number of places in the qualification zone to zero."
     pass
 
 class AutoPruneNotSupportedException(TourneyException):

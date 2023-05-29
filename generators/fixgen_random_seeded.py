@@ -34,7 +34,7 @@ def check_ready(tourney, div_rounds):
             reason = ""
             if num_divs > 1:
                 reason += tourney.get_division_name(div_index) + ": "
-            reason += "All players have the same rating, so the Random from Seeded Pots generator isn't much use to you. Try the Random fixture generator instead, or give the players ratings. Perhaps you need to select the option labelled \"This player list is in rating order\" on the General Setup page?"
+            reason += "All players have the same rating, so the Random from Seeded Pots generator isn't much use to you. Try the Random fixture generator instead, or give the players ratings. Perhaps you need to select the option labelled \"This player list is in rating order\" on the Tourney Setup page?"
             return (False, reason)
     return gencommon.check_ready_existing_games_and_table_size(tourney, div_rounds, include_5and3=False)
 

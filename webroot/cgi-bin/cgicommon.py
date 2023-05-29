@@ -422,7 +422,7 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
         players = tourney.get_players()
         num_games = tourney.get_num_games()
         writeln("<p><strong>%s</strong></p>" % escape(tourney.name));
-        writeln(("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\"><strong>General Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
+        writeln(("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\"><strong>Tourney Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
 
         if show_setup_links:
             writeln("<div class=\"sidebarlinklist\">")
@@ -1044,7 +1044,7 @@ def show_player_form(baseurl, tourney, player, custom_query_string=""):
     if not player:
         writeln("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will not include this player)</span></td></tr>" % ("checked" if player and player.is_withdrawn() else ""))
 
-    writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>)</span></td></tr>" % (
+    writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Tourney Setup</a>)</span></td></tr>" % (
         "checked" if player and player.is_requiring_accessible_table() else "",
         urllib.parse.quote_plus(tourneyname)
     ))

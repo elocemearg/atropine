@@ -255,7 +255,7 @@ try:
         num_players_requiring_accessible_table = tourney.get_num_active_players_requiring_accessible_table()
         num_accessible_tables = tourney.get_num_accessible_tables()
         if num_accessible_tables is not None and num_players_requiring_accessible_table > num_accessible_tables:
-            warning_content = "You have %d active player%s who %s, but %s. This means the fixture generator cannot ensure %s. You can define accessible tables in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">General Setup</a>." % (
+            warning_content = "You have %d active player%s who %s, but %s. This means the fixture generator cannot ensure %s. You can define accessible tables in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Tourney Setup</a>." % (
                 num_players_requiring_accessible_table,
                 "s" if num_players_requiring_accessible_table != 1 else "",
                 "requires an accessible table" if num_players_requiring_accessible_table == 1 else "require accessible tables",

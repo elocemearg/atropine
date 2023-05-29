@@ -165,7 +165,7 @@ if cgicommon.is_client_from_localhost():
 <td class="optionnote" colspan="2">
     An optional full name for your event, such as "Co:Mordor %(currentyear)d". This may contain any text.
     <br />
-    You can edit it in the tourney's General Setup page after you've supplied a player list.
+    You can edit it in the Tourney Setup page after you've supplied a player list.
     <br />
     If supplied, this will be used on the Welcome screen and on any exported tournament reports.
 </td>

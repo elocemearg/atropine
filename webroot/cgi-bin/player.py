@@ -410,7 +410,7 @@ if player:
             else:
                 acc_list = ", ".join([str(x) for x in table_list])
 
-        cgicommon.show_warning_box("<p>%s requires an accessible table, but their preferred table is table %d, which is not an accessible table. This player's requirement for an accessible table will be given a higher priority than their specific preference for table %d.</p><p>The accessible table numbers defined in <a href=\"%s?tourney=%s\">General Setup</a> are: %s%s.</p>" % (
+        cgicommon.show_warning_box("<p>%s requires an accessible table, but their preferred table is table %d, which is not an accessible table. This player's requirement for an accessible table will be given a higher priority than their specific preference for table %d.</p><p>The accessible table numbers defined in <a href=\"%s?tourney=%s\">Tourney Setup</a> are: %s%s.</p>" % (
             cgicommon.escape(player.get_name()), pref_table, pref_table,
             "/cgi-bin/tourneysetup.py", urllib.parse.quote_plus(tourney.get_name()),
             acc_list_preamble, acc_list
