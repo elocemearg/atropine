@@ -430,10 +430,6 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
             writeln("<a href=\"/cgi-bin/player.py?tourney=%s\">Players...</a>" % (urllib.parse.quote_plus(tourney.name)))
             writeln("</div>")
             if players:
-                if num_games == 0:
-                    writeln("<div>")
-                    writeln("<a href=\"/cgi-bin/checkin.py?tourney=%s\">Player Check-In...</a>" % (urllib.parse.quote_plus(tourney.name)))
-                    writeln("</div>")
                 writeln("<div>")
                 writeln(("<a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions...</a>" % (urllib.parse.quote_plus(tourney.name))))
                 writeln("</div>")
@@ -443,6 +439,12 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
             writeln("</div>")
         else:
             writeln("<div style=\"clear: both;\"></div>")
+
+        if players and num_games == 0:
+            writeln("<br />")
+            writeln("<div>")
+            writeln("<a href=\"/cgi-bin/checkin.py?tourney=%s\"><strong>Player Check-In</strong></a>" % (urllib.parse.quote_plus(tourney.name)))
+            writeln("</div>")
 
         if players:
             writeln("<br />")

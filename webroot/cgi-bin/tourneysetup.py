@@ -518,6 +518,7 @@ be able to delete players, but you can always withdraw them, edit names and
 ratings, or add new players.</p>""".format(tourneyname=urllib.parse.quote_plus(tourney.get_name())))
     else:
         cgicommon.show_info_box("""
+<p>Welcome to your new tourney!</p>
 <p>First, enter or paste a list of player names into the text box below.</p>
 <p>Don't worry, this isn't final. For now, just include everyone you're
 expecting to play. You can add new players or withdraw existing players

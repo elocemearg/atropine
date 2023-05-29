@@ -75,43 +75,126 @@ cgicommon.print_html_head("Create Tourney" if cgicommon.is_client_from_localhost
 form = cgi.FieldStorage();
 
 tourneyname = form.getfirst("name", "");
+longtourneyname = form.getfirst("longtourneyname", "")
+displayshape = int_or_none(form.getfirst("displayshape", "0"))
+if displayshape is None:
+    displayshape = 0
 order_by = form.getfirst("orderby", "mtime_d")
 request_method = os.environ.get("REQUEST_METHOD", "GET");
 
-cgicommon.writeln("<body>");
-cgicommon.writeln("<h1>Welcome to Atropine</h1>");
+tourney_create_exception = None
+tourney_created = False
 
 if cgicommon.is_client_from_localhost():
-    # Client is from localhost, so serve the administrator's front page, which
-    # produces a menu of tournaments and the ability to create a new one.
-    tourney_created = False;
-
     if request_method == "POST" and tourneyname:
         try:
-            tourney = countdowntourney.tourney_create(tourneyname, cgicommon.dbdir);
-            tourney.close();
-            cgicommon.show_success_box("Tourney \"%s\" was created successfully." % cgicommon.escape(tourneyname));
-            cgicommon.writeln("<p>");
-            cgicommon.writeln('<a href="/cgi-bin/tourneysetup.py?tourney=%s">Click here to continue</a>' % urllib.parse.quote_plus(tourneyname));
-            cgicommon.writeln("</p>");
-            tourney_created = True;
+            tourney = countdowntourney.tourney_create(tourneyname, cgicommon.dbdir)
+            if longtourneyname:
+                tourney.set_full_name(longtourneyname)
+            tourney.set_screen_shape_profile_id(displayshape)
+            tourney.close()
+            tourney_created = True
         except countdowntourney.TourneyException as e:
-            cgicommon.show_tourney_exception(e);
+            tourney_create_exception = e
 
+cgicommon.writeln("<body onload=\"initPage();\">");
+cgicommon.writeln("""
+<script>
+function initPage() {
+    let tourneyNameBox = document.getElementById("tourneyname");
+    if (tourneyNameBox) {
+        tourneyNameBox.focus();
+        tourneyNameBox.select();
+    }
+""")
+if tourney_created:
+    cgicommon.writeln("""
+    /* Redirect the user to the new tourney they just created */
+    setTimeout(function() {
+        window.location.replace("/cgi-bin/tourneysetup.py?tourney=%s");
+    }, 0);
+    """ % (urllib.parse.quote_plus(tourneyname)))
+cgicommon.writeln("""
+}
+</script>
+""")
+
+cgicommon.writeln("<h1>Welcome to Atropine</h1>");
+
+if tourney_created:
+    cgicommon.show_success_box("Tourney \"%s\" was created successfully." % cgicommon.escape(tourneyname));
+    cgicommon.writeln("<p>");
+    cgicommon.writeln('You should be redirected to your new tourney semi-immediately. If not, <a href="/cgi-bin/tourneysetup.py?tourney=%s">click here to continue</a>.' % urllib.parse.quote_plus(tourneyname));
+    cgicommon.writeln("</p>");
+
+if tourney_create_exception:
+    cgicommon.show_tourney_exception(tourney_create_exception)
+
+if cgicommon.is_client_from_localhost():
     if not tourney_created:
-        # If name has been filled in, attempt to create tourney
-
+        # Show the form to create a new tourney
+        display_shape_option_html = ""
+        for (i, d) in enumerate(countdowntourney.SCREEN_SHAPE_PROFILES):
+            display_shape_option_html += "<option value=\"%d\"%s>%s</option>" % (i, " selected" if i == displayshape else "", d["name"])
         cgicommon.writeln("<h2>Create new tourney</h2>");
+
         cgicommon.writeln('<form action="%s" method="POST">' % cgicommon.escape(baseurl, True));
-        cgicommon.writeln("<div>Enter the name for your new tourney. This name may consist only of letters, numbers and underscores, with no spaces.</div>")
-        cgicommon.writeln("<div class=\"createtourneynamebox\">")
-        cgicommon.writeln('<input style=\"font-size: 12pt;\" type="text" name="name" value="%s" /> <br />' % cgicommon.escape(tourneyname, True));
-        cgicommon.writeln("</div>");
+        cgicommon.writeln("""
+<table class="optionstable">
+<col style="width: 12.5em;" />
+<tr>
+<td>
+    <span style="font-weight: bold;">Tourney file name</span> <span class="optionrequired">(required)</span>
+</td>
+<td>
+    <input type="text" id="tourneyname" name="name" value="%(tourneyname)s" />
+</td>
+</tr>
+<tr>
+<td class="optionnote" colspan="2">
+    This name may consist only of letters, numbers, underscores (_) and hyphens (-), with no spaces.
+</td>
+<tr>
+<td>Event name</td>
+<td>
+    <input type="text" name="longtourneyname" value="%(longtourneyname)s" />
+</td>
+</tr>
+<tr>
+<td class="optionnote" colspan="2">
+    An optional full name for your event, such as "Co:Mordor %(currentyear)d". This may contain any text.
+    <br />
+    You can edit it in the tourney's General Setup page after you've supplied a player list.
+    <br />
+    If supplied, this will be used on the Welcome screen and on any exported tournament reports.
+</td>
+</tr>
+<tr>
+<td>Display screen shape</td>
+<td>
+    <select name="displayshape">
+        %(displayshapeoptionhtml)s
+    </select>
+</td>
+</tr>
+<tr>
+<td class="optionnote" colspan="2">
+    If you're using a public-facing display, and it's the old square-ish 4:3
+    shape, you might want to change this accordingly.<br />
+    This affects a few defaults relating to display settings. You can change it at any time in Display Setup.
+</td>
+</tr>
+</table>
+""" % {
+    "tourneyname" : cgicommon.escape(tourneyname, True),
+    "longtourneyname" : cgicommon.escape(longtourneyname, True),
+    "displayshapeoptionhtml" : display_shape_option_html,
+    "currentyear" : time.localtime().tm_year
+})
         cgicommon.writeln("<div class=\"createtourneybuttonbox\">");
         cgicommon.writeln('<input type="submit" name="submit" value="Create Tourney" class=\"bigbutton\" />');
         cgicommon.writeln("</div>");
         cgicommon.writeln("</form>");
-
     cgicommon.writeln("<hr />")
 
 tourney_list = os.listdir(cgicommon.dbdir);

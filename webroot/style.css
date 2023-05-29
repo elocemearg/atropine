@@ -180,6 +180,28 @@ div.createtourneybuttonbox {
     margin-bottom: 20px;
 }
 
+table.optionstable td input {
+    font-size: 12pt;
+    min-width: 15em;
+}
+
+table.optionstable td select {
+    font-size: 12pt;
+    min-width: 15em;
+}
+
+table.optionstable td span.optionrequired {
+    font-style: italic;
+    color: red;
+    font-size: 10pt;
+}
+
+td.optionnote {
+    font-size: 10pt;
+    color: gray;
+    padding-bottom: 10px;
+}
+
 
 /* Fixtures and scores */
 
