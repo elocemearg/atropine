@@ -16,6 +16,27 @@ var teleostMode = null;
 var teleostModeOptions = {};
 var teamIndicatorHTML = "&#x25cf;"
 
+/* Special constants for the whichRnd parameter of findSelectedRoundsPerDivision(). */
+
+/* Select all rounds for each division. */
+const SELECT_ALL_ROUNDS = -1;
+
+/* Select the last round in each division with at least one completed game. */
+const SELECT_LAST_ROUND_IN_DIV_WITH_PLAYED_GAMES = -2;
+
+/* For each division, find the last round in the division which is complete and
+ * select the *next* round, or that round if there is no next round. */
+const SELECT_ROUND_AFTER_LAST_COMPLETED_ROUND = -3;
+
+/* Select the earliest round in each division with no completed games. */
+const SELECT_EARLIEST_UNPLAYED_ROUND = -4;
+
+/* For all divisions, select the last round in the *tourney* with at least one
+ * completed game. Exception: if for any division this would select a round
+ * with no games at all in that division, for that division select the last
+ * round before then with at least one game. */
+const SELECT_LAST_ROUND_IN_TOURNEY_WITH_PLAYED_GAMES = -5;
+
 function escapeHTML(str) {
     if (str === null) {
         return "(null)";
@@ -142,6 +163,7 @@ function findSelectedDivisions(games, whichDiv) {
 function findSelectedRoundsPerDivision(games, whichRnd) {
     var ret = {};
     var divisions = games.divisions;
+    let gameCountsPerDivPerRound = {};
 
     for (var divIndex = 0; divIndex < divisions.length; ++divIndex) {
         var divNum = divisions[divIndex].div_num;
@@ -170,14 +192,15 @@ function findSelectedRoundsPerDivision(games, whichRnd) {
                 }
                 roundGameCounts[game.round].numGames++;
             }
+            gameCountsPerDivPerRound[divNum] = roundGameCounts;
 
-            if (whichRnd == -1) {
+            if (whichRnd == SELECT_ALL_ROUNDS) {
                 /* All rounds */
                 for (var r in roundGameCounts) {
                     selectedRounds.push(r);
                 }
             }
-            else if (whichRnd == -2) {
+            else if (whichRnd == SELECT_LAST_ROUND_IN_DIV_WITH_PLAYED_GAMES || whichRnd == SELECT_LAST_ROUND_IN_TOURNEY_WITH_PLAYED_GAMES) {
                 /* Latest round with at least one completed game, or if
                  * there is no such round, the first round */
                 var latestRound = null;
@@ -195,7 +218,7 @@ function findSelectedRoundsPerDivision(games, whichRnd) {
                 else if (firstRound != null)
                     selectedRounds.push(firstRound);
             }
-            else if (whichRnd == -3) {
+            else if (whichRnd == SELECT_ROUND_AFTER_LAST_COMPLETED_ROUND) {
                 /* The round following the last completed round, or the
                  * last completed round if no round follows that, or the
                  * first round if there is no completed round. */
@@ -225,7 +248,7 @@ function findSelectedRoundsPerDivision(games, whichRnd) {
                     selectedRounds.push(firstRound);
                 }
             }
-            else if (whichRnd == -4) {
+            else if (whichRnd == SELECT_EARLIEST_UNPLAYED_ROUND) {
                 /* The earliest round with no completed games in it, or
                  * if all rounds have completed games, the last round */
                 var earliestUnplayedRound = null;
@@ -247,5 +270,38 @@ function findSelectedRoundsPerDivision(games, whichRnd) {
 
         ret[divNum] = selectedRounds;
     }
+
+    if (whichRnd == SELECT_LAST_ROUND_IN_TOURNEY_WITH_PLAYED_GAMES) {
+        /* We want the last round in the *tourney* with at least one completed
+         * game, not just the last round per division with at least one
+         * completed game. */
+        let maxRound = 0;
+        let newRet = {};
+        for (let divNum in ret) {
+            /* if whichRnd == SELECT_LAST_ROUND_IN_TOURNEY_WITH_PLAYED_GAMES, ret[divNum].length == 1 */
+            if (ret[divNum][0] > maxRound) {
+                maxRound = ret[divNum][0];
+            }
+        }
+
+        /* As a special case, if for any division, the selected round has no
+         * games at all, for that division we'll show the last round before
+         * then that has games. */
+        for (let divNum in ret) {
+            let roundGameCounts = gameCountsPerDivPerRound[divNum];
+            if (roundGameCounts != null) {
+                let lastRoundWithGames = maxRound;
+                while (lastRoundWithGames > 1 && (roundGameCounts[lastRoundWithGames] == null || roundGameCounts[lastRoundWithGames].numGames == 0)) {
+                    lastRoundWithGames--;
+                }
+                newRet[divNum] = [ lastRoundWithGames ];
+            }
+            else {
+                newRet[divNum] = [ 1 ];
+            }
+        }
+        ret = newRet;
+    }
+
     return ret;
 }

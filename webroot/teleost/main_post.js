@@ -79,7 +79,7 @@ function createVerticalStandingsAndFixturesScreen(tourneyName, options) {
             new FixturesView(tourneyName, 50, 0, 50, 100,
                     dictGet(options, "vertical_fixtures_lines", 18),
                     dictGet(options, "vertical_standings_results_scroll", 10) * 1000,
-                    -1, -3, true)
+                    -1, SELECT_LAST_ROUND_IN_TOURNEY_WITH_PLAYED_GAMES, true)
     ]);
 }
 
@@ -91,7 +91,7 @@ function createFixturesScreen(tourneyName, options) {
     return new FixturesView(tourneyName, 0, 0, 100, 100,
             dictGet(options, "fixtures_lines", 12),
             dictGet(options, "fixtures_scroll", 10) * 1000,
-            -1, -3, false);
+            -1, SELECT_ROUND_AFTER_LAST_COMPLETED_ROUND, false);
 }
 
 function createTableNumberIndexScreen(tourneyName, options) {

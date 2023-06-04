@@ -5,13 +5,7 @@ class FixturesView extends PagedTableView {
         /* whichDivision: if it's -1, then it means all divisions. */
         this.whichDivision = whichDivision;
 
-        /* whichRound:
-         * -1: all rounds
-         * -2: the last round in the division with at least one completed game
-         * -3: the round after the last completed round, or the last completed
-         *     round if that is the last round
-         * -4: the earliest round in the division with no completed games
-         */
+        /* whichRound: see SELECT_* constants in main.js */
         this.whichRound = whichRound;
 
         this.numDivisions = 0;
