@@ -2326,9 +2326,14 @@ where round_no = ? and seq = ?""", alterations_reordered);
                 r = self.get_round(next_round_no)
         else:
             if round_exists_when_all_divisions_have_games:
-                if not self.round_contains_games_in_all_divisions(r["num"]):
-                    r = None
-
+                # If this round doesn't have games in all divisions, the
+                # current round is the latest round before it that does.
+                while r is not None and not self.round_contains_games_in_all_divisions(r["num"]):
+                    prev_round_number = r["num"] - 1
+                    if prev_round_number < 1:
+                        r = None
+                    else:
+                        r = self.get_round(prev_round_number)
         return r
 
     def get_latest_round_no(self):
