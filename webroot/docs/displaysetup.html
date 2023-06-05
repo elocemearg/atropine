@@ -29,21 +29,51 @@
     mode". The public-facing window will then show only that screen until you
     specify otherwise.
     </p>
+
+    <h3>Default screen shape: Widescreen (16:9)</h3>
     <p>
-    In <em>Auto</em> mode, Atropine uses the following rules to
-    decide which screen to show:
+    If you don't specify otherwise, Atropine assumes your public-facing display
+    is on a Widescreen (16:9) device. Screen modes which show two different
+    things at once will split the screen vertically. You can change this in
+    Display Setup.
+    </p>
+    <p>
+    In <em>Auto</em> mode, Atropine uses the following rules to decide which screen to show:
     </p>
     <ul>
-        <li>If the latest round has had fixtures generated
-        but no scores have been filled in yet, we display the
-        <em>Fixtures</em> screen.</li>
-        <li>Otherwise, if the latest round has had some but not all of
-        its scores filled in, we display the
-        <em>Standings / Videprinter</em> screen.</li>
-        <li>If in the latest round all games have had their
-        scores filled in, we display the
-        <em>Standings / Table Results</em> screen.</li>
+        <li>If no players are entered yet, we display the <em>Welcome</em> screen</li>
+        <li>If there are players but no fixtures have been generated yet, we
+            display the <em>Player Check-In</em> screen.</li>
+        <li>If the latest round has had fixtures generated but no scores have been filled in yet, we display the <em>Fixtures</em> screen.</li>
+        <li>Otherwise, we display the <em>Standings / Results (Vertical)</em> screen.</li>
     </ul>
+    <p>
+    You can optionally have Auto mode show the Videprinter instead of the
+    Results table when a round is in progress but not completed yet. The
+    relevant checkbox can be found on the Display Setup page under the Auto
+    screen mode.
+    </p>
+
+    <h3>Screen shape: Old (4:3)</h3>
+    <p>
+    If your public-facing display is an old-style 4:3 device, set the screen
+    shape profile to <em>Old (4:3)</em> in Display Setup. Screen modes which
+    display two things at once will split the screen horizontally.
+    </p>
+
+    <p>
+    In <em>Auto</em> mode in the 4:3 screen shape profile, Atropine uses the
+    same rules as for Widescreen above, except that instead of the
+    vertical Standings/Results screen we show the following:
+    </p>
+    <ul>
+        <li>If the latest round has had some but not all of its scores filled
+            in, we display the <em>Standings / Videprinter</em> screen.</li>
+        <li>If the latest round has had all of its scores filled in, we display
+            the <em>Standings / Table Results</em> screen.</li>
+    </ul>
+
+    <h3>Other modes</h3>
     <p>
     <em>Auto</em> mode never shows other screens such as the
     <em>High Scores</em> or <em>Overachievers</em> screens,
