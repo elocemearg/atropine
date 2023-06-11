@@ -2,7 +2,7 @@
 Atropine is a program written in Python which helps with running [FOCAL events](https://focalcountdown.co.uk/). It generates fixtures, takes results, works out the standings, and can display it all in a separate window suitable for showing on a public-facing screen.
 
 # Prerequisites
-To run Atropine (versions 1.0.0 and later) you need to have [Python 3](https://www.python.org/downloads/) installed. Other than a web browser (which I expect you already have, if you're reading this), Python 3 is now the only thing you need to install to be able to run Atropine. You can get it from the [Python downloads page](https://www.python.org/downloads/).
+To run Atropine you need to have [Python 3](https://www.python.org/downloads/) installed. You can get it from the [Python downloads page](https://www.python.org/downloads/).
 
 You use Atropine through your web browser, but it does **not** need access to the internet to run. Atropine is its own web server which runs on your own computer, and your browser connects to that.
 
