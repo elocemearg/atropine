@@ -79,6 +79,7 @@ longtourneyname = form.getfirst("longtourneyname", "")
 displayshape = int_or_none(form.getfirst("displayshape", "0"))
 if displayshape is None:
     displayshape = 0
+display_profile_name = form.getfirst("displayprofile", "")
 order_by = form.getfirst("orderby", "mtime_d")
 request_method = os.environ.get("REQUEST_METHOD", "GET");
 
@@ -87,11 +88,13 @@ tourney_created = False
 
 if cgicommon.is_client_from_localhost():
     if request_method == "POST" and tourneyname:
+        # We've been asked to create a new tourney.
         try:
-            tourney = countdowntourney.tourney_create(tourneyname, cgicommon.dbdir)
+            tourney = countdowntourney.tourney_create(tourneyname, cgicommon.dbdir, load_display_profile_name=display_profile_name)
             if longtourneyname:
                 tourney.set_full_name(longtourneyname)
-            tourney.set_screen_shape_profile_id(displayshape)
+            if not display_profile_name:
+                tourney.set_screen_shape_profile_id(displayshape)
             tourney.close()
             tourney_created = True
         except countdowntourney.TourneyException as e:
@@ -140,6 +143,22 @@ if cgicommon.is_client_from_localhost():
         cgicommon.writeln("<h2>Create new tourney</h2>");
 
         cgicommon.writeln('<form action="%s" method="POST">' % cgicommon.escape(baseurl, True));
+
+        # If at least one display profile is defined, also show a drop-down
+        # box so the user can choose from which display profile to take the
+        # initial settings.
+        display_profiles = countdowntourney.get_display_profiles()
+        most_recently_used_display_profile_name = countdowntourney.get_display_profile_for_last_created_tourney()
+        if display_profiles:
+            display_profile_options = []
+            display_profile_options.append("<option value=\"\"%s>Default settings</option>" % (" selected" if not most_recently_used_display_profile_name else ""))
+            for name in sorted(display_profiles):
+                display_profile_options.append("<option value=\"%s\"%s>%s</option>" % (cgicommon.escape(name), " selected" if name == most_recently_used_display_profile_name else "", cgicommon.escape(name)))
+            display_profile_controls_html = "<tr><td>Display profile</td><td><select name=\"displayprofile\">" + "\n".join(display_profile_options) + "</select></td></tr>"
+            display_profile_controls_html += "<tr><td class=\"optionnote\" colspan=\"2\">Automatically apply the display settings from a previously-defined display profile. If you select a profile here, the screen shape defined in that profile will override what you selected above.</td></tr>"
+        else:
+            display_profile_controls_html = ""
+
         cgicommon.writeln("""
 <table class="optionstable">
 <col style="width: 12.5em;" />
@@ -185,12 +204,14 @@ if cgicommon.is_client_from_localhost():
     This affects a few defaults relating to display settings. You can change it at any time in Display Setup.
 </td>
 </tr>
+%(displayprofilecontrols)s
 </table>
 """ % {
     "tourneyname" : cgicommon.escape(tourneyname, True),
     "longtourneyname" : cgicommon.escape(longtourneyname, True),
     "displayshapeoptionhtml" : display_shape_option_html,
-    "currentyear" : time.localtime().tm_year
+    "currentyear" : time.localtime().tm_year,
+    "displayprofilecontrols" : display_profile_controls_html
 })
         cgicommon.writeln("<div class=\"createtourneybuttonbox\">");
         cgicommon.writeln('<input type="submit" name="submit" value="Create Tourney" class=\"bigbutton\" />');

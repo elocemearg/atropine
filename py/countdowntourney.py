@@ -4037,16 +4037,43 @@ def get_global_preferences():
         for row in cur:
             prefs[row[0]] = row[1]
         cur.close()
+        db.commit()
     return GlobalPreferences(prefs)
 
 def set_global_preferences(prefs):
     with sqlite3.connect(GLOBAL_DB_FILE) as db:
+        db.execute("create table if not exists prefs(name text, value text)")
         db.execute("delete from prefs")
         rows_to_insert = []
         mapping = prefs.get_map()
         for name in mapping:
             rows_to_insert.append((name, mapping[name]))
         db.executemany("insert into prefs values (?, ?)", rows_to_insert)
+        db.commit()
+
+def get_display_profile_for_last_created_tourney():
+    return get_global_pref("defaultdisplayprofile", "")
+
+def get_global_pref(pref_name, default_value):
+    result = default_value
+    with sqlite3.connect(GLOBAL_DB_FILE) as db:
+        cur = db.cursor()
+        cur.execute("create table if not exists prefs(name text, value text)")
+        cur.execute("select value from prefs where name = ?", (pref_name,))
+        row = cur.fetchone()
+        if row is not None:
+            result = row[0]
+        cur.close()
+        db.commit()
+    return result
+
+def set_global_pref(pref_name, value):
+    with sqlite3.connect(GLOBAL_DB_FILE) as db:
+        cur = db.cursor()
+        cur.execute("create table if not exists prefs(name text, value text)")
+        cur.execute("delete from prefs where name = ?", (pref_name,))
+        cur.execute("insert into prefs(name, value) values (?, ?)", (pref_name, value))
+        cur.close()
         db.commit()
 
 def tourney_open(dbname, directory="."):
@@ -4064,7 +4091,7 @@ def tourney_open(dbname, directory="."):
 
     return tourney;
 
-def tourney_create(dbname, directory="."):
+def tourney_create(dbname, directory=".", load_display_profile_name=None):
     if not re.match("^[A-Za-z0-9_-]+$", dbname):
         raise InvalidDBNameException("The tourney database name can only contain letters, numbers, underscores and hyphens.");
     if len(dbname) > 60:
@@ -4087,7 +4114,16 @@ def tourney_create(dbname, directory="."):
     unique_id = generate_unique_id()
     tourney.db.execute("insert into options values ('uniqueid', ?)", (unique_id,))
     tourney.db.commit();
-    return tourney;
+    if load_display_profile_name:
+        # Load the display settings from the named profile
+        tourney.load_display_profile(load_display_profile_name)
+
+        # Default to this profile next time a tourney is created
+        set_global_pref("defaultdisplayprofile", load_display_profile_name)
+    else:
+        set_global_pref("defaultdisplayprofile", "")
+
+    return tourney
 
 def get_software_version():
     return SW_VERSION
