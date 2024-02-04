@@ -660,7 +660,7 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
             "oninput=\"entry_score_change(true);\" />") % (cgicommon.escape(default_scores[1], True))
     score2div += "</div>"
 
-    prefs = cgicommon.get_global_preferences()
+    prefs = countdowntourney.get_global_preferences()
     tab_order = prefs.get_result_entry_tab_order()
     if tab_order == "nsns":
         div_order = [ name1div, score1div, name2div, score2div ]

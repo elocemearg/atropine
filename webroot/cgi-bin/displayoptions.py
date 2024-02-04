@@ -8,6 +8,8 @@ import cgicommon;
 import urllib.request, urllib.parse, urllib.error;
 import re;
 
+import dialog
+
 def show_now_showing_frame(tourney, is_widescreen):
     cgicommon.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s\" height=\"270\" width=\"%d\"></iframe>" % (
         urllib.parse.quote_plus(tourney.get_name()),
@@ -27,7 +29,7 @@ def show_live_and_preview(tourney, form, teleost_modes, showing_view, selected_v
     # Tell the user what mode is being shown, what mode is selected for preview
     # (if different) and if not auto, offer the user a button to return to auto.
     # We assume the "auto" display mode is number 0.
-    cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=0\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name)))
+    cgicommon.writeln("<form action=\"" + baseurl + "?%s\" method=\"POST\">" % (cgicommon.escape(os.getenv("QUERY_STRING", ""))))
     cgicommon.writeln("<p>")
     cgicommon.write("You are currently <span style=\"color: green;\">showing</span> the <span style=\"font-weight: bold;\">%s</span> display mode" % (
             "?" if showing_view is None else teleost_modes[showing_view]["name"]
@@ -54,7 +56,7 @@ def show_live_and_preview(tourney, form, teleost_modes, showing_view, selected_v
         show_view_preview(tourney, form, selected_view, is_widescreen)
 
         cgicommon.writeln("<div class=\"viewpreviewswitch\">")
-        cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
+        cgicommon.writeln("<form action=\"" + baseurl + "?%s\" method=\"POST\">" % (cgicommon.escape(os.getenv("QUERY_STRING", ""))))
         cgicommon.writeln("<input class=\"switchviewbutton\" type=\"submit\" name=\"switchview\" value=\"Switch to %s\" />" % ("this screen mode" if selected_view != 0 else "automatic control"))
         cgicommon.writeln("</form>")
         cgicommon.writeln("</div>") # viewpreviewswitch
@@ -139,6 +141,44 @@ def show_view_menu(tourney, form, teleost_modes, selected_view, auto_current_vie
     cgicommon.writeln("</div>")
     cgicommon.writeln("</div>")
 
+# Make a string containing HTML for form elements to select a profile or
+# enter the name for a new profile to be created. This HTML will be dropped
+# into a form created by dialog.get_html().
+new_profile_name_control_id_serial = 0
+def make_profile_select_html(dropdown_label, profile_names,
+        selected_profile_name, new_profile_option=False, factory_defaults_option=False):
+    # If there are multiple instances of this on a page, give each "new profile
+    # name" box its own distinct ID.
+    global new_profile_name_control_id_serial
+    new_profile_name_control_id = "newprofilenamecontrol" + str(new_profile_name_control_id_serial)
+    new_profile_name_control_id_serial += 1
+    dialog_select_html = "<div class=\"formcontrolrow\">"
+    dialog_select_html += dropdown_label
+
+    # If new_profile_option, selecting the "new profile..." option should make
+    # the new profile name text box appear.
+    if new_profile_option:
+        dialog_select_html += " <select name=\"profilename\" onchange=\"document.getElementById('" + new_profile_name_control_id + "').style.visibility = (this.value == '' ? 'visible' : 'hidden');\">"
+    else:
+        dialog_select_html += " <select name=\"profilename\">"
+
+    # One option for each profile name
+    for profile_name in profile_names:
+        dialog_select_html += "<option value=\"%s\"%s>%s</option>" % (cgicommon.escape(profile_name), " selected" if profile_name == selected_profile_name else "", cgicommon.escape(profile_name))
+    if new_profile_option:
+        dialog_select_html += "<option value=\"\"%s>[new profile]</option>" % (" selected" if not selected_profile_name else "")
+    elif factory_defaults_option:
+        dialog_select_html += "<option value=\"\"%s>[factory defaults]</option>" % (" selected" if not selected_profile_name else "")
+    dialog_select_html += "</select></div>"
+
+    # New profile name box
+    if new_profile_option:
+        dialog_select_html += "<div class=\"formcontrolrow\" id=\"%s\" style=\"visibility: %s;\"><label>New profile name:</label> <input class=\"focusifvisible\" type=\"text\" name=\"newprofilename\" value=\"\"></div>" % (
+                new_profile_name_control_id,
+                "visible" if not selected_profile_name else "hidden"
+        )
+    return dialog_select_html
+
 ###############################################################################
 
 cgitb.enable();
@@ -165,6 +205,18 @@ cgicommon.writeln("<script>")
 cgicommon.writeln("""
 function clearBannerEditBox() {
     document.getElementById("bannereditbox").value = "";
+}
+
+function showDialog(dialogId) {
+    let dialog = document.getElementById(dialogId);
+    dialog.style.display = "block";
+    let elementToFocus = dialog.getElementsByClassName("focusifvisible");
+    for (let i = 0; i < elementToFocus.length; i++) {
+        if (elementToFocus[i].style.visibility != "hidden") {
+            elementToFocus[i].focus();
+            break;
+        }
+    }
 }
 """)
 cgicommon.writeln("</script>")
@@ -197,6 +249,12 @@ try:
         selected_view = tourney.get_current_teleost_mode()
 
     mode_info = teleost_modes[selected_view]
+
+    # Any exceptions that get thrown, or confirmation messages for things we
+    # achieved, before we've displayed the page, will be added here for display
+    # at the top of the page.
+    exceptions = []
+    ok_messages = []
 
     if request_method == "POST":
         if "setoptions" in form or "setoptionsandswitch" in form:
@@ -241,6 +299,33 @@ try:
             teleost_modes = tourney.get_teleost_modes();
             mode_info = teleost_modes[selected_view]
 
+        # Deal with the save, load and delete commands
+        display_profile_name = form.getfirst("profilename")
+        new_profile_name = form.getfirst("newprofilename")
+        if not display_profile_name and new_profile_name:
+            display_profile_name = new_profile_name
+        if not display_profile_name:
+            display_profile_name = ""
+
+        try:
+            if "savetoprofile" in form:
+                tourney.save_display_profile(display_profile_name)
+                ok_messages.append("Display settings saved to profile \"%s\"." % (display_profile_name))
+            elif "loadfromprofile" in form:
+                if not display_profile_name:
+                    # Restore factory defaults
+                    tourney.load_default_display_options()
+                    ok_messages.append("Display settings restored from factory defaults.")
+                else:
+                    tourney.load_display_profile(display_profile_name)
+                    ok_messages.append("Display settings imported from profile \"%s\"." % (display_profile_name))
+            elif "deleteprofile" in form:
+                countdowntourney.delete_display_profile(display_profile_name)
+                ok_messages.append("Deleted display settings profile \"%s\"." % (display_profile_name))
+        except countdowntourney.TourneyException as e:
+            exceptions.append(e)
+
+
     banner_text = tourney.get_banner_text()
     if banner_text is None:
         banner_text = ""
@@ -262,27 +347,33 @@ try:
         </a>""" % (urllib.parse.quote_plus(tourney.name)));
     cgicommon.writeln("</div>")
 
+    for exc in exceptions:
+        cgicommon.show_tourney_exception(exc)
+    for text in ok_messages:
+        cgicommon.show_success_box(cgicommon.escape(text))
+
+
     # Banner text controls
     cgicommon.writeln("<h2>Configuration</h2>")
     cgicommon.writeln("<div class=\"displayoptsform bannercontrol\">")
-    cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
+    cgicommon.writeln("<form action=\"" + baseurl + "?%s\" method=\"POST\">" % (cgicommon.escape(os.getenv("QUERY_STRING", ""))))
     cgicommon.writeln("Banner text: <input type=\"text\" name=\"bannertext\" id=\"bannereditbox\" value=\"%s\" size=\"50\" onclick=\"this.select();\" />" % (cgicommon.escape(banner_text, True)))
     cgicommon.writeln("<input type=\"submit\" style=\"min-width: 60px;\" name=\"setbanner\" value=\"Set\" />")
     cgicommon.writeln("<input type=\"submit\" style=\"min-width: 60px;\" name=\"clearbanner\" value=\"Clear\" />")
     cgicommon.writeln("</form>")
     cgicommon.writeln("</div>")
 
-    # Font profile selector
+    # Font set selector
     display_font_profile = tourney.get_display_font_profile_id()
     font_profile_descs = countdowntourney.DISPLAY_FONT_PROFILES
     cgicommon.writeln("""<div class=\"displayoptsform\">
-<form action=\"%s?tourney=%s&selectedview=%d\" method=\"POST\">
-<label for="fontprofileselect">Font profile:</label>
-<select name="fontprofileselect" id="fontprofileselect">""" % (baseurl, urllib.parse.quote_plus(tourney_name), selected_view))
+<form action=\"%s?%s\" method=\"POST\">
+<label for="fontprofileselect">Font width:</label>
+<select name="fontprofileselect" id="fontprofileselect">""" % (baseurl, cgicommon.escape(os.getenv("QUERY_STRING", ""))))
     for i in range(len(font_profile_descs)):
         cgicommon.writeln("<option value=\"%d\" %s>%s</option>" % (i, "selected" if i == display_font_profile else "", cgicommon.escape(font_profile_descs[i]["name"])))
     cgicommon.writeln("</select>")
-    cgicommon.writeln("<input type=\"submit\" name=\"setfontprofile\" value=\"Set font profile\" />")
+    cgicommon.writeln("<input type=\"submit\" name=\"setfontprofile\" value=\"Set font width\" />")
     cgicommon.writeln("</form>")
     cgicommon.writeln("</div>")
 
@@ -290,9 +381,9 @@ try:
     screen_shape_profile = tourney.get_screen_shape_profile_id()
     screen_shape_descs = countdowntourney.SCREEN_SHAPE_PROFILES
     cgicommon.writeln("""<div class=\"displayoptsform\">
-<form action=\"%s?tourney=%s&selectedview=%d\" method=\"POST\">
+<form action=\"%s?%s\" method=\"POST\">
 <label for="screenshapeselect">Optimise for screen shape:</label>
-<select name="screenshapeselect" id="screenshapeselect">""" % (baseurl, urllib.parse.quote_plus(tourney_name), selected_view))
+<select name="screenshapeselect" id="screenshapeselect">""" % (baseurl, cgicommon.escape(os.getenv("QUERY_STRING", ""))))
     for i in range(len(screen_shape_descs)):
         cgicommon.writeln("<option value=\"%d\" %s>%s</option>" % (i, "selected" if i == screen_shape_profile else "", cgicommon.escape(screen_shape_descs[i]["name"])))
     cgicommon.writeln("</select>")
@@ -330,18 +421,18 @@ try:
 
     options = tourney.get_teleost_options(mode=selected_view)
     if options:
-        cgicommon.writeln("<h3>Options for this display mode</h3>")
+        cgicommon.writeln("<h3>Options for the <span style=\"font-weight: bold;\">%s</span> display mode</h3>" % ("?" if selected_view is None or selected_view < 0 or selected_view >= len(teleost_modes) else cgicommon.escape(teleost_modes[selected_view]["name"])))
         cgicommon.writeln("<div class=\"viewcontrols\">")
-        cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=%d\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name), selected_view))
+        cgicommon.writeln("<form action=\"" + baseurl + "?%s\" method=\"POST\">" % (cgicommon.escape(os.getenv("QUERY_STRING", ""))))
         cgicommon.writeln("<div class=\"viewoptions\" id=\"viewoptions\">")
         show_view_option_controls(options)
         cgicommon.writeln("</div>")
 
         cgicommon.writeln("<div class=\"viewsubmitbuttons\">")
         cgicommon.writeln("<div class=\"viewoptionssave\">")
-        cgicommon.writeln("<input type=\"submit\" class=\"setdisplayoptionsbutton\" name=\"setoptions\" value=\"Save options\" />")
+        cgicommon.writeln("<input type=\"submit\" class=\"displayoptionsbutton\" name=\"setoptions\" value=\"Apply options\" />")
         if not teleost_modes[selected_view].get("selected", False):
-            cgicommon.writeln("<input type=\"submit\" class=\"setdisplayoptionsbutton\" name=\"setoptionsandswitch\" value=\"Save options and switch to %s\" />" % (cgicommon.escape(teleost_modes[selected_view]["name"])))
+            cgicommon.writeln("<input type=\"submit\" class=\"displayoptionsbutton\" name=\"setoptionsandswitch\" value=\"Apply options and switch to %s\" />" % (cgicommon.escape(teleost_modes[selected_view]["name"])))
         cgicommon.writeln("</div>")
         cgicommon.writeln("</div>") # viewsubmitbuttons
 
@@ -349,7 +440,44 @@ try:
         cgicommon.writeln("</div>") # viewcontrols
     cgicommon.writeln("</div>")
 
+    # Display profile save/load controls
+    profile_names = countdowntourney.get_display_profile_names()
+    selected_profile_name = tourney.get_last_loaded_display_profile_name()
+
+    cgicommon.writeln("<h2>Display profiles</h2>")
+    cgicommon.writeln("<p>Atropine can remember your favourite display option settings and apply them to all tourneys you create with this Atropine installation.</p>")
+    cgicommon.writeln("<p>To do this, save the settings to a profile below. If you want to save the current settings to a profile, make sure you've applied them above first.</p>")
+    cgicommon.writeln("<div class=\"displayoptsform\">")
+    cgicommon.writeln("<button id=\"savetoprofile\" class=\"displayoptionsbutton\" onclick=\"showDialog('savetoprofiledialog');\">&#x1F4BE; Save to profile...</button>")
+    cgicommon.writeln("<button id=\"loadfromprofile\" class=\"displayoptionsbutton\" onclick=\"showDialog('loadfromprofiledialog');\">&#x1F4C2; Switch to profile...</button>")
+
+    if profile_names:
+        cgicommon.writeln("<button id=\"deleteprofile\" class=\"displayoptionsbutton\" onclick=\"showDialog('deleteprofiledialog');\">&#x1F5D1; Delete a profile...</button>")
+    cgicommon.writeln("</div>")
+
+    cgicommon.writeln("<div style=\"margin-bottom: 50px;\"></div>")
+
     cgicommon.writeln("</div>") # mainpane
+
+    # Dialog boxes for save, load and delete profile buttons. Usually not
+    # displayed, but triggered by pressing the buttons above. Their background
+    # fills the screen and the dialog box is in the middle of it.
+    cgicommon.writeln(dialog.get_html("savetoprofiledialog",
+        "Save to profile", "Save", "Cancel", "POST", baseurl + "?" + os.getenv("QUERY_STRING", ""), "savetoprofile",
+        "<p>The currently-saved display option settings will be saved to the profile selected below, overwriting any previous settings in that profile.</p>" + \
+        make_profile_select_html("Save to which profile?", profile_names, selected_profile_name, new_profile_option=True)
+    ))
+    cgicommon.writeln(dialog.get_html("loadfromprofiledialog",
+        "Switch to profile", "Switch to profile", "Cancel", "POST", baseurl + "?" + os.getenv("QUERY_STRING", ""), "loadfromprofile",
+        "<p>The currently-saved display option settings will be discarded and replaced with those previously saved in the profile you select below.</p>" + \
+        make_profile_select_html("Switch to which profile?", profile_names, selected_profile_name, factory_defaults_option=True)
+    ))
+    cgicommon.writeln(dialog.get_html("deleteprofiledialog",
+        "Delete a profile", "Delete", "Cancel", "POST", baseurl + "?" + os.getenv("QUERY_STRING", ""), "deleteprofile",
+        "<p>Delete profiles you no longer need. Once you delete a profile it can no longer be used.</p>" + \
+        make_profile_select_html("Select profile to delete:", profile_names, None)
+    ))
+
 
 except countdowntourney.TourneyException as e:
     cgicommon.show_tourney_exception(e);

@@ -20,6 +20,8 @@ request_method = os.environ.get("REQUEST_METHOD", "");
 
 cgicommon.set_module_path();
 
+import countdowntourney
+
 cgicommon.print_html_head("Preferences");
 
 saved_prefs = False
@@ -45,13 +47,13 @@ function change_saved_indicator(on) {
 cgicommon.writeln("<h1>Global preferences</h1>")
 cgicommon.writeln("<p>These preferences will apply to all tournaments administered with this installation of Atropine.</p>")
 
-prefs = cgicommon.get_global_preferences();
+prefs = countdowntourney.get_global_preferences();
 
 if request_method == "POST" and "saveprefs" in form:
     value = form.getfirst("resultstab")
     if value in ("nnss", "nsns", "nssn"):
         prefs.set_result_entry_tab_order(value)
-    cgicommon.set_global_preferences(prefs)
+    countdowntourney.set_global_preferences(prefs)
     saved_prefs = True
 
 tab_order = prefs.get_result_entry_tab_order();

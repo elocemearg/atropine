@@ -137,6 +137,7 @@ try:
     os.environ["GENERATORPATH"] = os.path.join(os.getcwd(), "generators")
     os.environ["CODEPATH"] = os.path.join(os.getcwd(), "py")
     os.environ["TOURNEYSPATH"] = tourneys_path
+    os.environ["ATROPINEROOT"] = os.getcwd()
 except Exception as e:
     fatal_error("Failed to set an environment variable GENERATORPATH or CODEPATH. This is... odd.", e)
 

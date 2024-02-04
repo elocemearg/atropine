@@ -16,6 +16,9 @@ SW_VERSION_SPLIT = (1, 2, 2)
 SW_VERSION = ".".join([str(x) for x in SW_VERSION_SPLIT])
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
+# SQLite3 db file containing installation-wide preferences, applicable to all tourneys.
+GLOBAL_DB_FILE = os.path.join(os.getenv("ATROPINEROOT", ".."), "prefs.db")
+
 RANK_WINS_POINTS = 0
 RANK_POINTS = 1
 RANK_WINS_SPREAD = 2
@@ -250,6 +253,16 @@ teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_rows", CONTROL_NUMBER, "Rows per page $CONTROL", 12),
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_columns", CONTROL_NUMBER, "Columns per page", 3),
     (teleost_mode_id_to_num["TELEOST_MODE_TABLE_NUMBER_INDEX"], "table_index_scroll", CONTROL_NUMBER, "Page scroll interval $CONTROL seconds", 12)
+]
+
+# Other options, not listed in teleost_per_view_option_list above, which should
+# be included when saving display options to a profile and retrieving them.
+# First value is the name of the option as recorded in the options table,
+# second value is a function that takes a Tourney object and returns the
+# current value of that option in that tourney.
+display_profile_general_options = [
+        ("displayfontprofile", lambda tourney : tourney.get_display_font_profile_id()),
+        ("screenshapeprofile", lambda tourney : tourney.get_screen_shape_profile_id())
 ]
 
 # The option displayfontprofile is an index into this array, which tells us
@@ -697,6 +710,15 @@ class InvalidDateException(TourneyException):
 
 class InvalidTeamException(TourneyException):
     description = "Attempted to assign a player to a nonexistent team."
+
+class InvalidDisplayProfileNameException(TourneyException):
+    def __init__(self, profile_name):
+        self.description = "Display profile name \"%s\" is invalid. The profile name is not allowed to be blank." % (profile_name)
+
+class DisplayProfileDoesNotExistException(TourneyException):
+    def __init__(self, profile_name):
+        self.description = "Display profile name \"%s\" does not exist." % (profile_name)
+
 
 def get_teleost_mode_services_to_fetch(mode):
     if mode < 0 or mode >= len(teleost_modes):
@@ -2567,6 +2589,19 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         cur.close();
         self.db.commit();
 
+    def set_attributes(self, name_value_pairs):
+        cur = self.db.cursor()
+        name_value_pairs = [ (name, int(value) if re.match("^ *-?[0-9]+ *$", str(value)) else str(value)) for (name, value) in name_value_pairs ]
+        cur.executemany("insert or replace into options values (?, ?)", name_value_pairs)
+        cur.close()
+        self.db.commit()
+
+    def delete_attribute(self, name):
+        cur = self.db.cursor()
+        cur.execute("delete from options where name = ?", (name,))
+        cur.close()
+        self.db.commit()
+
     def get_display_font_profile_id(self):
         return self.get_int_attribute("displayfontprofile", 0)
 
@@ -3033,6 +3068,77 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                     value = opt[4]
                     break
         return value
+
+    def get_last_loaded_display_profile_name(self):
+        return self.get_attribute("displayprofile", None)
+
+    def set_last_loaded_display_profile_name(self, profile_name):
+        if profile_name is None:
+            self.delete_attribute("displayprofile")
+        else:
+            self.set_attribute("displayprofile", profile_name)
+
+    def save_display_profile(self, profile_name):
+        if not profile_name:
+            raise InvalidDisplayProfileNameException(profile_name)
+        with sqlite3.connect(GLOBAL_DB_FILE) as globaldb:
+            # If we don't have a display_profile table, create that and the
+            # display_profile_option table.
+            if not sqlite3_table_exists(globaldb, "display_profile"):
+                cur = globaldb.cursor()
+                cur.execute("create table display_profile(name text primary key, atropine_version text, last_modified_ts text)")
+                cur.execute("create table display_profile_option(profile_name text not null, option_name text not null, option_value text, foreign key (profile_name) references display_profile(name))")
+                cur.close()
+                globaldb.commit()
+
+            # Delete any existing profile with this name
+            cur = globaldb.cursor()
+            cur.execute("delete from display_profile_option where profile_name = ?", (profile_name,))
+            cur.execute("delete from display_profile where name = ?", (profile_name,))
+
+            # Add the new profile
+            cur.execute("insert into display_profile(name, atropine_version, last_modified_ts) values (?, ?, current_timestamp)", (profile_name, SW_VERSION))
+            option_rows = [ (profile_name, opt.name, str(opt.value)) for opt in self.get_teleost_options() ]
+            for (general_opt_name, value_fn) in display_profile_general_options:
+                value = value_fn(self)
+                option_rows.append((profile_name, general_opt_name, value))
+            cur.executemany("insert into display_profile_option(profile_name, option_name, option_value) values (?, ?, ?)", option_rows)
+            cur.close()
+            globaldb.commit()
+            self.set_last_loaded_display_profile_name(profile_name)
+
+    # Load factory default display options
+    def load_default_display_options(self):
+        # Delete all relevant settings from the option table, so the defaults apply.
+        option_names = [ (opt[1],) for opt in teleost_per_view_option_list ]
+        option_names += [ (opt[0],) for opt in display_profile_general_options ]
+        cur = self.db.cursor()
+        cur.executemany("delete from options where name = ?", option_names)
+        cur.close()
+        self.db.commit()
+        self.set_last_loaded_display_profile_name(None)
+
+    def load_display_profile(self, profile_name):
+        if not profile_name:
+            raise InvalidDisplayProfileNameException(profile_name)
+        with sqlite3.connect(GLOBAL_DB_FILE) as globaldb:
+            if not sqlite3_table_exists(globaldb, "display_profile"):
+                raise DisplayProfileDoesNotExistException(profile_name)
+            cur = globaldb.cursor()
+            cur.execute("select name from display_profile where name = ?", (profile_name,))
+            row = cur.fetchone()
+            cur.close()
+            if row is None or row[0] is None:
+                raise DisplayProfileDoesNotExistException(profile_name)
+
+            cur = globaldb.cursor()
+            cur.execute("select option_name, option_value from display_profile_option where profile_name = ?", (profile_name,))
+            option_settings = []
+            for row in cur:
+                option_settings.append((row[0], row[1]))
+            cur.close()
+            self.set_attributes(option_settings)
+            self.set_last_loaded_display_profile_name(profile_name)
 
     def get_num_games_to_play_by_table(self, round_no=None):
         sql = """select table_no,
@@ -3865,6 +3971,83 @@ unique_id_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345678
 def generate_unique_id():
     return "".join([ random.choice(unique_id_chars) for x in range(10) ])
 
+def get_display_profiles():
+    profile_names = {}
+    with sqlite3.connect(GLOBAL_DB_FILE) as globaldb:
+        if sqlite3_table_exists(globaldb, "display_profile"):
+            cur = globaldb.cursor()
+            cur.execute("select name, atropine_version, last_modified_ts from display_profile")
+            for row in cur:
+                profile_names[row[0]] = {
+                        "atropine_version" : row[1],
+                        "last_modified" : row[2]
+                }
+            cur.close()
+    return profile_names
+
+def get_display_profile_names():
+    profiles = get_display_profiles()
+    return sorted([ profile_name for profile_name in profiles ])
+
+def delete_display_profile(profile_name):
+    with sqlite3.connect(GLOBAL_DB_FILE) as globaldb:
+        if not sqlite3_table_exists(globaldb, "display_profile"):
+            raise DisplayProfileDoesNotExistException(profile_name)
+        cur = globaldb.cursor()
+        cur.execute("select name from display_profile where name = ?", (profile_name,))
+        row = cur.fetchone()
+        if row is None or row[0] is None:
+            cur.close()
+            raise DisplayProfileDoesNotExistException(profile_name)
+        cur.close()
+
+        cur = globaldb.cursor()
+        cur.execute("delete from display_profile_option where profile_name = ?", (profile_name,))
+        cur.execute("delete from display_profile where name = ?", (profile_name,))
+        cur.close()
+        globaldb.commit()
+
+def sqlite3_table_exists(db, table_name):
+    cur = db.cursor()
+    cur.execute("select name from sqlite_master where type in ('table', 'view') and name = ?", (table_name,))
+    row = cur.fetchone()
+    result = (row is not None and row[0] is not None)
+    cur.close()
+    return result
+
+class GlobalPreferences(object):
+    def __init__(self, names_values):
+        self.mapping = names_values.copy()
+
+    def get_result_entry_tab_order(self):
+        return self.mapping.get("resultsentrytaborder", "nnss")
+
+    def set_result_entry_tab_order(self, value):
+        self.mapping["resultsentrytaborder"] = value
+
+    def get_map(self):
+        return self.mapping.copy()
+
+def get_global_preferences():
+    with sqlite3.connect(GLOBAL_DB_FILE) as db:
+        cur = db.cursor()
+        cur.execute("create table if not exists prefs(name text, value text)")
+        cur.execute("select name, value from prefs")
+        prefs = dict()
+        for row in cur:
+            prefs[row[0]] = row[1]
+        cur.close()
+    return GlobalPreferences(prefs)
+
+def set_global_preferences(prefs):
+    with sqlite3.connect(GLOBAL_DB_FILE) as db:
+        db.execute("delete from prefs")
+        rows_to_insert = []
+        mapping = prefs.get_map()
+        for name in mapping:
+            rows_to_insert.append((name, mapping[name]))
+        db.executemany("insert into prefs values (?, ?)", rows_to_insert)
+        db.commit()
 
 def tourney_open(dbname, directory="."):
     if not re.match("^[A-Za-z0-9_-]+$", dbname):

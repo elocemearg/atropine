@@ -11,7 +11,6 @@ import re
 dbdir = os.getenv("TOURNEYSPATH")
 if not dbdir:
     dbdir = os.path.join("..", "tourneys");
-globaldbfile = os.path.join("..", "prefs.db");
 
 def int_or_none(s):
     try:
@@ -1116,50 +1115,6 @@ def add_new_player_from_form(tourney, form):
         tourney.set_player_requires_accessible_table(new_player_name, True)
     if new_preferred_table:
         tourney.set_player_preferred_table(new_player_name, new_preferred_table)
-
-class GlobalPreferences(object):
-    def __init__(self, names_values):
-        self.mapping = names_values.copy()
-
-    def get_result_entry_tab_order(self):
-        return self.mapping.get("resultsentrytaborder", "nnss")
-
-    def set_result_entry_tab_order(self, value):
-        self.mapping["resultsentrytaborder"] = value
-
-    def get_map(self):
-        return self.mapping.copy()
-
-def get_global_preferences():
-    db = sqlite3.connect(globaldbfile)
-
-    cur = db.cursor()
-    cur.execute("create table if not exists prefs(name text, value text)")
-    cur.execute("select name, value from prefs")
-    prefs = dict()
-    for row in cur:
-        prefs[row[0]] = row[1]
-    cur.close()
-
-    db.close()
-
-    return GlobalPreferences(prefs)
-
-def set_global_preferences(prefs):
-    db = sqlite3.connect(globaldbfile)
-    db.execute("delete from prefs")
-
-    rows_to_insert = []
-
-    mapping = prefs.get_map()
-    for name in mapping:
-        rows_to_insert.append((name, mapping[name]))
-
-    db.executemany("insert into prefs values (?, ?)", rows_to_insert)
-
-    db.commit()
-
-    db.close()
 
 def is_client_from_localhost():
     # If the web server is listening only on the loopback interface, then
