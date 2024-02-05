@@ -15,12 +15,33 @@ field_storage_tests = [
     ( "GET", "a=1&b=2&c=3", "", None, None,
         { "a" : "1", "b" : "2", "c" : "3" } ),
     ( "GET", "", "", None, None, {} ),
+    ( "POST", "", "", None, None, {} ),
     ( "GET", "alpha=bravo&charlie=delta&charlie=echo", "", None, None,
         { "alpha" : "bravo", "charlie" : "delta" } ),
     ( "POST", "foo=bar&eurosymbol=%E2%82%AC", "u%5Fwith%5Fumlaut=%C3%BC", None, None,
         { "foo" : "bar", "eurosymbol" : "€", "u_with_umlaut" : "ü" } ),
     ( "POST", "tourney=colin&selectedview=0", "somedata=alpha%2Cbravo%0Acharlie%2Cdelta%0Aecho%2Cfoxtrot%0A&amp=%26&equals=%3D", None, None,
-        { "tourney" : "colin", "selectedview" : "0", "somedata" : "alpha,bravo\ncharlie,delta\necho,foxtrot\n", "amp" : "&", "equals" : "=" } )
+        { "tourney" : "colin", "selectedview" : "0", "somedata" : "alpha,bravo\ncharlie,delta\necho,foxtrot\n", "amp" : "&", "equals" : "=" } ),
+
+    # Everything after the first CONTENT_LENGTH (15) bytes of post data should
+    # be ignored, so no charlie=3 in the expected result.
+    ( "POST", "qs1=a&qs2=b", "alpha=1&bravo=2&charlie=3", "15", None,
+        { "qs1" : "a", "qs2" : "b", "alpha" : "1", "bravo" : "2" } ),
+
+    # Post data contains URL-encoded latin-1 character sequences, which are
+    # not valid UTF-8 on their own. Make sure that if we set charset=latin1 in
+    # the content-type, the strings are decoded correctly.
+    ( "POST", "", "half=%BD&quarter=%BC&%BE=threequarters", None, "application/x-www-form-urlencoded; charset=latin1",
+        { "quarter" : "¼", "half" : "½", "¾" : "threequarters" } ),
+
+    # Content type contains irrelevant arguments that should be ignored.
+    # Check that '+' is decoded as space.
+    ( "POST", "q=foo&qq=foo+bar", "postdata1=The+quick+brown+fox&postdata2=jumps+over+the+lazy+dog", None, "application/x-www-form-urlencoded; wibble=foo; bibble=wobble; a=1; b=2",
+        { "q" : "foo", "qq" : "foo bar", "postdata1" : "The quick brown fox", "postdata2" : "jumps over the lazy dog" } ),
+
+    # Check that URL-encoded strings only get decoded once.
+    ( "POST", "a=100%2541&%2525=foobar", "b=100%2541&%2526=baz", None, None,
+        { "a" : "100%41", "%25" : "foobar", "b" : "100%41", "%26" : "baz" } ),
 ]
 
 def compare_dicts(expected_output, observed_output, preamble):
