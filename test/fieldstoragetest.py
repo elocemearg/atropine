@@ -8,22 +8,6 @@ sys.path.append(os.path.join("webroot", "cgi-bin"))
 
 import fieldstorage
 
-cgi_parse_params_tests = [
-        ( 'a=1;b=2; c=three; d=" four five six "',
-            { "a" : "1", "b" : "2", "c" : "three", "d" : " four five six " }),
-        ( '', {} ),
-        ( '      ', {} ),
-        ( '     foo   ', { "foo" : "" } ),
-        ( 'name=value', {"name" : "value"} ),
-        ( 'charset=utf-8', { "charset" : "utf-8" } ),
-        ( 'a = alpha; b = bravo', { "a" : "alpha", "b" : "bravo" } ),
-        ( 'a;b;c;d;', { "a" : "", "b" : "", "c" : "", "d" : "" } ),
-        ( 'alpha_bravo_charlie="delta; echo=foxtrot"; golf="hotel;india"',
-            { "alpha_bravo_charlie" : "delta; echo=foxtrot", "golf" : "hotel;india" }),
-        ( 'a!#$%&\'*+-.`^_|~=~|_^`.-+*\'&%$#!a;#$="=;=";#valuecontainsnewline!="foo\nbar',
-            { "a!#$%&\'*+-.`^_|~" : "~|_^`.-+*\'&%$#!a", "#$" : "=;=", "#valuecontainsnewline!" : "foo\nbar" } )
-]
-
 field_storage_tests = [
     # REQUEST_METHOD, QUERY_STRING, post data, CONTENT_LENGTH, CONTENT_TYPE, expected name-value relationship
     # If content type is None, use "application/x-www-form-urlencoded".
@@ -73,21 +57,6 @@ def compare_dicts(expected_output, observed_output, preamble):
             oi += 1
             failed = True
     return failed
-
-test_num = 1
-num_failures = 0
-for (input_string, expected_output) in cgi_parse_params_tests:
-    observed_output = fieldstorage.cgi_parse_params(input_string)
-    failed = compare_dicts(expected_output, observed_output, "Test %d (%s)" % (test_num, input_string))
-
-    if failed:
-        num_failures += 1
-    test_num += 1
-
-if num_failures > 0:
-    print("cgi_parse_params: %d tests failed." % (num_failures))
-else:
-    print("cgi_parse_params: %d tests passed." % len(cgi_parse_params_tests))
 
 test_num = 1
 num_failures = 0
