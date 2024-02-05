@@ -155,7 +155,7 @@ if cgicommon.is_client_from_localhost():
             for name in sorted(display_profiles):
                 display_profile_options.append("<option value=\"%s\"%s>%s</option>" % (cgicommon.escape(name), " selected" if name == most_recently_used_display_profile_name else "", cgicommon.escape(name)))
             display_profile_controls_html = "<tr><td>Display profile</td><td><select name=\"displayprofile\">" + "\n".join(display_profile_options) + "</select></td></tr>"
-            display_profile_controls_html += "<tr><td class=\"optionnote\" colspan=\"2\">Automatically apply the display settings from a previously-defined display profile. If you select a profile here, the screen shape defined in that profile will override what you selected above.</td></tr>"
+            display_profile_controls_html += "<tr><td class=\"optionnote\" colspan=\"2\">Automatically apply the display settings from a previously-defined display profile.<br />Note that if you select a profile here, the screen shape defined in that profile will override what you selected above.</td></tr>"
         else:
             display_profile_controls_html = ""
 
