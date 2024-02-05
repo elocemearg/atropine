@@ -3,7 +3,6 @@
 import sys
 import cgicommon
 import urllib.request, urllib.parse, urllib.error
-import cgi
 import cgitb
 import datetime
 import calendar
@@ -544,7 +543,7 @@ def export_csv(tourney, filename, show_standings, selected_divisions, rank_final
 
 baseurl = "/cgi-bin/export.py"
 started_html = False;
-form = cgi.FieldStorage();
+form = cgicommon.FieldStorage();
 tourney_name = form.getfirst("tourney");
 export_format = form.getfirst("format");
 wikitext_date_d = int_or_none(form.getfirst("wikitextday"));

@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import sys
-import cgi
 import cgitb
 import cgicommon
 import os
@@ -86,7 +85,7 @@ cgicommon.writeln("Content-Type: text/html; charset=utf-8");
 cgicommon.writeln("");
 
 baseurl = "/cgi-bin/teamsetup.py";
-form = cgi.FieldStorage();
+form = cgicommon.FieldStorage();
 
 tourneyname = form.getfirst("tourney")
 player_team_submit = form.getfirst("playerteamsubmit")

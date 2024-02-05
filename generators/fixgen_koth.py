@@ -3,7 +3,6 @@
 import random;
 import countdowntourney;
 import htmlform;
-import cgi;
 import urllib.request, urllib.parse, urllib.error;
 import gencommon
 import fixgen

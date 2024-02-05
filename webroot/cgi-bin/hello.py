@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 
 import sys;
-import cgi;
 import cgicommon;
 
-form = cgi.FieldStorage();
+form = cgicommon.FieldStorage();
 
 tourney = form.getfirst("tourney", "NONE");
 

@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import cgi
 import cgitb
 import cgicommon
 import sys
@@ -25,7 +24,7 @@ cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")
 
 baseurl = "/cgi-bin/delround.py"
-form = cgi.FieldStorage()
+form = cgicommon.FieldStorage()
 
 round_no = int_or_none(form.getfirst("round"))
 confirm = int_or_none(form.getfirst("confirm"))

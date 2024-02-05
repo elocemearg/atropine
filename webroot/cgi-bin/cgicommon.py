@@ -2,11 +2,12 @@
 
 import sys;
 import os;
-import cgi;
 import urllib.request, urllib.parse, urllib.error;
 import sqlite3;
 import html
 import re
+
+from fieldstorage import FieldStorage
 
 dbdir = os.getenv("TOURNEYSPATH")
 if not dbdir:
@@ -1148,4 +1149,3 @@ def assert_client_from_localhost():
             "serve you this page if you're from localhost."))
         writeln("</body></html>")
         sys.exit(1)
-

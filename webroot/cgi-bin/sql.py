@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import cgi
 import cgitb
 import cgicommon
 import os
@@ -47,7 +46,7 @@ cgicommon.writeln("")
 cgicommon.print_html_head("Raw SQL interface")
 cgicommon.assert_client_from_localhost()
 
-form = cgi.FieldStorage()
+form = cgicommon.FieldStorage()
 
 request_method = os.environ.get("REQUEST_METHOD", "")
 

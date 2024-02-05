@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import cgi
 import cgitb
 import cgicommon
 import sys
@@ -100,7 +99,7 @@ cgicommon.writeln("Content-Type: text/html; charset=utf-8");
 cgicommon.writeln("");
 
 baseurl = "/cgi-bin/player.py";
-form = cgi.FieldStorage();
+form = cgicommon.FieldStorage();
 tourneyname = form.getfirst("tourney");
 
 player_id = int_or_none(form.getfirst("id"))

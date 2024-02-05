@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import cgi
 import cgitb
 import cgicommon
 import sys
@@ -43,7 +42,7 @@ cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")
 
 baseurl = "/cgi-bin/tableindex.py"
-form = cgi.FieldStorage()
+form = cgicommon.FieldStorage()
 tourneyname = form.getfirst("tourney")
 
 tourney = None

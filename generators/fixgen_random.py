@@ -2,7 +2,6 @@ import random
 import time
 import countdowntourney
 import htmlform
-import cgi
 import gencommon
 import fixgen
 

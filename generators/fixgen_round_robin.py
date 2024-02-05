@@ -3,7 +3,6 @@ import random
 import countdowntourney
 import htmlform
 import urllib.request, urllib.parse, urllib.error
-import cgi
 import fixgen
 
 name = "Round Robin"

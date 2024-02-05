@@ -2,7 +2,6 @@
 
 import sys
 import os
-import cgi
 import cgitb
 import cgicommon
 import urllib
@@ -26,7 +25,7 @@ def unix_time_to_str(unix_time):
 cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")
 
-form = cgi.FieldStorage()
+form = cgicommon.FieldStorage()
 tourney_name = form.getfirst("tourney")
 
 cgicommon.print_html_head("Live Broadcast Setup: %s" % (tourney_name))

@@ -2,7 +2,6 @@
 
 import sys
 import cgicommon
-import cgi
 import cgitb
 import os
 
@@ -12,7 +11,7 @@ cgicommon.writeln("Content-Type: text/html; charset=utf-8");
 cgicommon.writeln("");
 
 baseurl = "/cgi-bin/preferences.py";
-form = cgi.FieldStorage();
+form = cgicommon.FieldStorage();
 tourney_name = form.getfirst("tourney");
 
 tourney = None;

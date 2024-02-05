@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import sys;
-import cgi;
 import cgitb;
 import os;
 import cgicommon;
@@ -187,7 +186,7 @@ cgicommon.writeln("Content-Type: text/html; charset=utf-8");
 cgicommon.writeln("");
 
 baseurl = "/cgi-bin/displayoptions.py";
-form = cgi.FieldStorage();
+form = cgicommon.FieldStorage();
 tourney_name = form.getfirst("tourney");
 
 tourney = None;

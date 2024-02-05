@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import cgi;
 import sys;
 import os;
 import cgitb;
@@ -72,7 +71,7 @@ cgicommon.writeln("");
 
 cgicommon.print_html_head("Create Tourney" if cgicommon.is_client_from_localhost() else "Atropine");
 
-form = cgi.FieldStorage();
+form = cgicommon.FieldStorage();
 
 tourneyname = form.getfirst("name", "");
 longtourneyname = form.getfirst("longtourneyname", "")

@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import cgi
 import cgitb
 import cgicommon
 import sys
@@ -215,7 +214,7 @@ cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")
 
 baseurl = "/cgi-bin/checkin.py"
-form = cgi.FieldStorage()
+form = cgicommon.FieldStorage()
 tourneyname = form.getfirst("tourney")
 hide_help = int_or_zero(form.getfirst("hidehelp"))
 

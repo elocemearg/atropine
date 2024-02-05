@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import sys
-import cgi
 import cgitb
 import json
 import cgicommon
@@ -17,7 +16,7 @@ cgitb.enable()
 cgicommon.writeln("Content-Type: application/json; charset=utf-8")
 cgicommon.writeln("")
 
-form = cgi.FieldStorage()
+form = cgicommon.FieldStorage()
 tourney_name = form.getfirst("tourney")
 request = form.getfirst("request")
 

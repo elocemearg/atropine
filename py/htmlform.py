@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import sys;
-import cgi;
 import html
 import cgicommon
 

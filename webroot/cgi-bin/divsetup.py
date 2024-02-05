@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import cgi
 import cgitb
 import cgicommon
 import sys
@@ -25,7 +24,7 @@ cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")
 
 baseurl = "/cgi-bin/divsetup.py"
-form = cgi.FieldStorage()
+form = cgicommon.FieldStorage()
 tourneyname = form.getfirst("tourney")
 num_divisions_required = int_or_none(form.getfirst("numdivisions"))
 division_size_multiple = int_or_none(form.getfirst("divsizemultiple"))

@@ -3,7 +3,6 @@
 import sys
 import cgicommon
 import urllib.request, urllib.parse, urllib.error
-import cgi
 import cgitb
 
 baseurl = "/cgi-bin/timdownaward.py"
@@ -13,7 +12,7 @@ cgitb.enable()
 cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")
 
-form = cgi.FieldStorage()
+form = cgicommon.FieldStorage()
 tourney_name = form.getfirst("tourney")
 
 tourney = None

@@ -4,7 +4,6 @@ import sys
 import cgicommon
 from cgicommon import writeln, escape
 import urllib.request, urllib.parse, urllib.error
-import cgi
 import cgitb
 import re
 import os
@@ -36,7 +35,7 @@ def print_html_head(title, font_defs_css):
 cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")
 
-form = cgi.FieldStorage()
+form = cgicommon.FieldStorage()
 tourney_name = form.getfirst("tourney")
 mode = form.getfirst("mode")
 if mode is not None:
