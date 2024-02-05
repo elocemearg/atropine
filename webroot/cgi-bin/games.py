@@ -3,7 +3,7 @@
 import sys;
 import cgicommon;
 import urllib.request, urllib.parse, urllib.error;
-import cgitb;
+import htmltraceback
 import os;
 import re;
 import random;
@@ -1080,7 +1080,7 @@ def parse_score(score):
             tb = False;
         return (s1, s2, tb)
 
-cgitb.enable();
+htmltraceback.enable();
 
 cgicommon.writeln("Content-Type: text/html; charset=utf-8");
 cgicommon.writeln("");

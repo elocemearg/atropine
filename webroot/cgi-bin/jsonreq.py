@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import sys
-import cgitb
+import htmltraceback
 import json
 import cgicommon
 
@@ -11,7 +11,7 @@ def send_error_reply(description):
     reply["description"] = description
     json.dump(reply, sys.stdout)
 
-cgitb.enable()
+htmltraceback.enable()
 
 cgicommon.writeln("Content-Type: application/json; charset=utf-8")
 cgicommon.writeln("")

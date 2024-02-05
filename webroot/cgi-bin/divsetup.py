@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
-import cgitb
+import htmltraceback
 import cgicommon
 import sys
 import csv
 import os
 import urllib.request, urllib.parse, urllib.error
 
-cgitb.enable()
+htmltraceback.enable()
 
 cgicommon.set_module_path()
 import countdowntourney

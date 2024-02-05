@@ -3,12 +3,12 @@
 import sys
 import cgicommon
 import urllib.request, urllib.parse, urllib.error
-import cgitb
+import htmltraceback
 import datetime
 import calendar
 import csv
 
-cgitb.enable();
+htmltraceback.enable();
 
 def int_or_none(s):
     try:

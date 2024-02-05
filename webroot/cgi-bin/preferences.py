@@ -2,10 +2,10 @@
 
 import sys
 import cgicommon
-import cgitb
+import htmltraceback
 import os
 
-cgitb.enable();
+htmltraceback.enable();
 
 cgicommon.writeln("Content-Type: text/html; charset=utf-8");
 cgicommon.writeln("");

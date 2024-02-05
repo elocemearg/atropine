@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import cgitb
+import htmltraceback
 import cgicommon
 import os
 import sqlite3
@@ -38,7 +38,7 @@ class Table(object):
 
 baseurl = "/cgi-bin/sql.py"
 
-cgitb.enable()
+htmltraceback.enable()
 
 cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")

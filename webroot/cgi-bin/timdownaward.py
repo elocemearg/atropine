@@ -3,11 +3,11 @@
 import sys
 import cgicommon
 import urllib.request, urllib.parse, urllib.error
-import cgitb
+import htmltraceback
 
 baseurl = "/cgi-bin/timdownaward.py"
 
-cgitb.enable()
+htmltraceback.enable()
 
 cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")

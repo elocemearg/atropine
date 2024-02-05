@@ -3,7 +3,7 @@
 import sys;
 import cgicommon;
 import urllib.request, urllib.parse, urllib.error;
-import cgitb;
+import htmltraceback;
 import os;
 import re;
 
@@ -71,7 +71,7 @@ def write_game_type_selection(game_types, selected_code, control_name, control_i
         ))
     cgicommon.writeln("</select>")
 
-cgitb.enable();
+htmltraceback.enable();
 
 cgicommon.writeln("Content-Type: text/html; charset=utf-8");
 cgicommon.writeln("");

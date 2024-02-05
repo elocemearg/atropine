@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import cgitb
+import htmltraceback
 import cgicommon
 import sys
 import urllib.request, urllib.parse, urllib.error
@@ -30,7 +30,7 @@ def float_or_none(s):
     except ValueError:
         return None;
 
-cgitb.enable();
+htmltraceback.enable();
 
 cgicommon.set_module_path();
 import countdowntourney;

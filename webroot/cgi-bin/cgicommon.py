@@ -559,7 +559,7 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
     writeln("<a href=\"/docs/\" target=\"_blank\">Help " + new_window_html + "</a>")
     writeln("</div>")
 
-    if players:
+    if tourney and players:
         writeln("<div class=\"globalprefslink\">")
         writeln("<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" ")
         writeln("onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=700,height=750'); return false;\" >Preferences... " + new_window_html + "</a>")

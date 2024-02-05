@@ -2,13 +2,13 @@
 
 import sys;
 import os;
-import cgitb;
+import htmltraceback;
 import urllib.request, urllib.parse, urllib.error;
 import time;
 
 import cgicommon;
 
-cgitb.enable();
+htmltraceback.enable();
 cgicommon.set_module_path();
 
 import countdowntourney;

@@ -2,13 +2,13 @@
 
 import sys
 import os
-import cgitb
+import htmltraceback
 import cgicommon
 import urllib
 import time
 import html
 
-cgitb.enable()
+htmltraceback.enable()
 cgicommon.set_module_path()
 
 import countdowntourney

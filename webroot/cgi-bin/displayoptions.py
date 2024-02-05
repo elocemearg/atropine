@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import sys;
-import cgitb;
+import htmltraceback;
 import os;
 import cgicommon;
 import urllib.request, urllib.parse, urllib.error;
@@ -180,7 +180,7 @@ def make_profile_select_html(dropdown_label, profile_names,
 
 ###############################################################################
 
-cgitb.enable();
+htmltraceback.enable();
 
 cgicommon.writeln("Content-Type: text/html; charset=utf-8");
 cgicommon.writeln("");

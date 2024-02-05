@@ -3,9 +3,9 @@
 import sys
 import cgicommon
 import urllib.request, urllib.parse, urllib.error
-import cgitb
+import htmltraceback
 
-cgitb.enable()
+htmltraceback.enable()
 
 cgicommon.writeln("Content-Type: text/html; charset=utf-8")
 cgicommon.writeln("")

@@ -4,11 +4,11 @@ import sys
 import cgicommon
 from cgicommon import writeln, escape
 import urllib.request, urllib.parse, urllib.error
-import cgitb
+import htmltraceback
 import re
 import os
 
-cgitb.enable()
+htmltraceback.enable()
 
 def include_scripts(dir_name, url_path):
     for filename in sorted(os.listdir(dir_name)):

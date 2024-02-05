@@ -1,14 +1,14 @@
 #!/usr/bin/python3
 
 import sys;
-import cgitb;
+import htmltraceback
 import os;
 import cgicommon;
 import urllib.request, urllib.parse, urllib.error;
 import importlib;
 import json;
 
-cgitb.enable();
+htmltraceback.enable();
 
 cgicommon.writeln("Content-Type: text/html; charset=utf-8");
 cgicommon.writeln("");

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import cgitb;
+import htmltraceback
 import cgicommon;
 import sys;
 import csv;
@@ -72,7 +72,7 @@ Todd Bonzalez,1551"""
 
 player_list_rating_help = "To give a player a rating, put a comma after the player's name and put the rating number after that, e.g. <span class=\"fixedwidth\">Harry Peters,1860</span>"
 
-cgitb.enable();
+htmltraceback.enable();
 
 cgicommon.set_module_path();
 import countdowntourney;
