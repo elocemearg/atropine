@@ -160,6 +160,7 @@ if cgicommon.is_client_from_localhost() and request_method == "POST":
         new_preferred_table = int_or_none(form.getfirst("setpreferredtable"))
         if new_preferred_table is not None and new_preferred_table <= 0:
             new_preferred_table = None
+        new_newbie = int_or_zero(form.getfirst("setnewbie"))
 
         if new_rating is not None and player.get_rating() != new_rating:
             try:
@@ -226,6 +227,15 @@ if cgicommon.is_client_from_localhost() and request_method == "POST":
                 player_name = new_name
             except countdowntourney.TourneyException as e:
                 exceptions_to_show.append(("<p>Failed to change player's name...</p>", e))
+
+        # Set player's newbie status
+        if (new_newbie != 0) != player.is_newbie():
+            try:
+                tourney.set_player_newbie(player.get_name(), new_newbie != 0)
+                edit_notifications.append("%s is now %sa newbie" % (player_name, "" if new_newbie else "not "))
+            except countdowntourney.TourneyException as e:
+                exceptions_to_show.append(("<p>Failed to set player's newbie status...</p>", e))
+
         player = tourney.get_player_from_id(player_id)
     elif form.getfirst("newplayersubmit"):
         try:
@@ -337,6 +347,8 @@ for div in range(num_divisions):
             cgicommon.write("&nbsp;<span title=\"Swiss fixture generator will behave as if this player has already played a Prune\">&#9899;</span>")
         if p.is_requiring_accessible_table():
             cgicommon.write("&nbsp;<span title=\"Requires accessible table\">&#9855;</span>");
+        if p.is_newbie():
+            cgicommon.write("&nbsp;<span title=\"Newbie\">&#x1F476;</span>")
         pref_table = p.get_preferred_table()
         if pref_table is not None:
             cgicommon.write("&nbsp;<span title=\"Prefers table %d\"><div class=\"tablebadgenaturalsize\">%d</div></span>" % (pref_table, pref_table))

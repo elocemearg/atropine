@@ -12,7 +12,7 @@ import html
 from cttable import CandidateTable, TableVotingGroup, PhantomTableVotingGroup
 import cttable
 
-SW_VERSION_SPLIT = (1, 2, 2)
+SW_VERSION_SPLIT = (1, 2, 3)
 SW_VERSION = ".".join([str(x) for x in SW_VERSION_SPLIT])
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
@@ -321,6 +321,7 @@ create table if not exists player (
     avoid_prune int not null default 0,
     require_accessible_table int not null default 0,
     preferred_table int not null default -1,
+    newbie int not null default 0,
     unique(name),
     unique(short_name),
     foreign key (team_id) references team(id)
@@ -727,7 +728,10 @@ def get_teleost_mode_services_to_fetch(mode):
         return teleost_modes[mode]["fetch"]
 
 class Player(object):
-    def __init__(self, name, rating=0, team=None, short_name=None, withdrawn=False, division=0, division_fixed=False, player_id=None, avoid_prune=False, require_accessible_table=False, preferred_table=None):
+    def __init__(self, name, rating=0, team=None, short_name=None,
+            withdrawn=False, division=0, division_fixed=False, player_id=None,
+            avoid_prune=False, require_accessible_table=False,
+            preferred_table=None, newbie=False):
         self.name = name;
         self.rating = rating;
         self.team = team;
@@ -746,6 +750,7 @@ class Player(object):
         self.avoid_prune = avoid_prune
         self.require_accessible_table = require_accessible_table
         self.preferred_table = preferred_table
+        self.newbie = newbie
 
     def __eq__(self, other):
         if other is None:
@@ -828,6 +833,9 @@ class Player(object):
     def is_auto_prune(self):
         return self.player_id == PRUNE_PLAYER_ID
 
+    def is_newbie(self):
+        return self.newbie
+
 class PrunePlayer(Player):
     def __init__(self, name):
         super().__init__(name, rating=0, player_id=-1)
@@ -863,7 +871,8 @@ def get_short_name(name, player_names):
 class EnteredPlayer(object):
     def __init__(self, name, rating, division=0, team_id=None,
             avoid_prune=False, withdrawn=False,
-            requires_accessible_table=False, preferred_table=None):
+            requires_accessible_table=False, preferred_table=None,
+            newbie=False):
         self.name = name.strip()
         self.short_name = self.name
         self.rating = rating
@@ -873,6 +882,7 @@ class EnteredPlayer(object):
         self.withdrawn = withdrawn
         self.requires_accessible_table = requires_accessible_table
         self.preferred_table = preferred_table
+        self.newbie = newbie
 
     def get_name(self):
         return self.name
@@ -906,6 +916,9 @@ class EnteredPlayer(object):
 
     def get_preferred_table(self):
         return self.preferred_table
+
+    def is_newbie(self):
+        return self.newbie
 
 
 # COLIN Hangover 2015: each player is assigned a team
@@ -1370,6 +1383,25 @@ class Tourney(object):
     def get_software_version(self):
         return get_software_version()
 
+    # Functions to determine whether this tourney database supports a given
+    # feature. Earlier tourney databases may be lacking the relevant table
+    # columns for certain features, because they were made with a version of
+    # Atropine that didn't have those features.
+    def has_accessible_table_feature(self):
+        return self.db_version >= (1, 0, 4)
+
+    def has_preferred_table_feature(self):
+        return self.db_version >= (1, 0, 5)
+
+    def has_avoid_prune_feature(self):
+        return self.db_version >= (0, 7, 7)
+
+    def has_player_newbie_feature(self):
+        return self.db_version >= (1, 2, 3)
+
+    def has_auto_prune(self):
+        return self.db_version >= (1, 2, 1)
+
     def get_rank_method_list(self, exclude_incompatible=True):
         return [ (i, RANK_METHODS[i]) for i in RANK_METHODS if self.db_version >= RANK_METHODS[i].get_min_db_version() ]
 
@@ -1496,7 +1528,6 @@ class Tourney(object):
             count = 0
         else:
             count = int(result[0])
-        self.db.commit()
         cur.close()
         return count;
 
@@ -1512,7 +1543,7 @@ class Tourney(object):
             return False
 
     def set_player_avoid_prune(self, name, value):
-        if self.db_version < (0, 7, 7):
+        if not self.has_avoid_prune_feature():
             return
         cur = self.db.cursor()
         cur.execute("update player set avoid_prune = ? where (lower(name) = ? or name = ?) and id >= 0", (1 if value else 0, name.lower(), name))
@@ -1520,18 +1551,36 @@ class Tourney(object):
         self.db.commit()
 
     def get_player_avoid_prune(self, name):
-        if self.db_version < (0, 7, 7):
+        if not self.has_avoid_prune_feature():
             return False
         cur = self.db.cursor()
         cur.execute("select avoid_prune from player where lower(name) = ? or name = ?", (name.lower(), name))
         row = cur.fetchone()
+        cur.close()
         if row:
-            retval = bool(row[0])
+            return bool(row[0])
         else:
             raise PlayerDoesNotExistException("Can't get whether player \"%s\" is allowed to play prunes because there is no player with that name." % (name))
+
+    def set_player_newbie(self, name, value):
+        if not self.has_player_newbie_feature():
+            return
+        cur = self.db.cursor()
+        cur.execute("update player set newbie = ? where (lower(name) = ? or name = ?) and id >= 0", (1 if value else 0, name.lower(), name))
         cur.close()
         self.db.commit()
-        return retval
+
+    def get_player_newbie(self, name):
+        if not self.has_player_newbie_feature():
+            return False
+        cur = self.db.cursor()
+        cur.execute("select newbie from player where lower(name) = ? or name = ?", (name.lower(), name))
+        row = cur.fetchone()
+        cur.close()
+        if row:
+            return bool(row[0])
+        else:
+            raise PlayerDoesNotExistException("Can't find whether player \"%s\" is a newbie because there is no player with that name." % (name))
 
     def add_player(self, name, rating, division=0):
         if not name or not name.strip():
@@ -1650,12 +1699,13 @@ class Tourney(object):
 
         self.db.execute("delete from player where id >= 0");
 
-        self.db.executemany("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed, avoid_prune, require_accessible_table, preferred_table) values (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)",
+        self.db.executemany("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed, avoid_prune, require_accessible_table, preferred_table, newbie) values (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)",
                 [ (p.get_name(), p.get_rating(), p.get_team_id(),
                     p.get_short_name(), int(p.get_withdrawn()),
                     p.get_division(), int(p.get_avoid_prune()),
                     int(p.get_requires_accessible_table()),
-                    int(p.get_preferred_table()) if p.get_preferred_table() is not None else -1) for p in players ]);
+                    int(p.get_preferred_table()) if p.get_preferred_table() is not None else -1,
+                    int(p.is_newbie())) for p in players ]);
         self.db.execute("delete from game_log")
         self.db.commit();
 
@@ -1678,46 +1728,53 @@ class Tourney(object):
         cur.close()
         return count
 
-    def get_players(self, exclude_withdrawn=False, include_prune=False):
-        cur = self.db.cursor();
-        if self.db_version < (0, 7, 7):
-            avoid_prune_value = "0"
-        else:
-            avoid_prune_value = "p.avoid_prune"
-
-        if self.db_version < (1, 0, 4):
-            accessible_value = "0"
-        else:
-            accessible_value = "p.require_accessible_table"
-
-        if self.db_version < (1, 0, 5):
-            preferred_table_value = "-1"
-        else:
-            preferred_table_value = "p.preferred_table"
-
-        conditions = []
-        if exclude_withdrawn:
-            conditions.append("p.withdrawn = 0")
-        if not include_prune:
-            conditions.append("p.id >= 0")
-        if conditions:
-            condition = "where " + " and ".join(conditions)
-        else:
-            condition = ""
-
-        cur.execute("select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s, %s, %s from player p left outer join team t on p.team_id = t.id %s order by p.rating desc, p.name" % (avoid_prune_value, accessible_value, preferred_table_value, condition))
-        players = [];
+    def get_players_where(self, sql_condition=None, params=(), order_by=None):
+        # Return a list of Player objects from the PLAYER table, subject to
+        # the given SQL condition which will be placed after a WHERE, and
+        # the optional list of order-by columns.
+        sql = "select p.name, p.rating, t.id, t.name, t.colour, " + \
+            "p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, " + \
+            "%s, %s, %s, %s from player p left outer join team t on p.team_id = t.id" % (
+                # Some columns weren't always present in the PLAYER table. Use
+                # default values in their place where necessary.
+                "p.avoid_prune" if self.has_avoid_prune_feature() else "0",
+                "p.require_accessible_table" if self.has_accessible_table_feature() else "0",
+                "p.preferred_table" if self.has_preferred_table_feature() else "-1",
+                "p.newbie" if self.has_player_newbie_feature() else "0"
+        )
+        if sql_condition:
+            sql += " where " + sql_condition
+        if order_by:
+            sql += " order by " + order_by
+        cur = self.db.cursor()
+        cur.execute(sql, params)
+        players = []
         for row in cur:
             if row[2] is not None:
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
             if row[9] == PRUNE_PLAYER_ID:
-                players.append(PrunePlayer(row[0]))
+                p = PrunePlayer(row[0])
             else:
-                players.append(Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8], row[9], row[10], row[11], row[12]));
-        cur.close();
-        return players;
+                p = Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8], row[9], bool(row[10]), bool(row[11]), row[12], bool(row[13]))
+            players.append(p)
+        cur.close()
+        return players
+
+
+    def get_players(self, exclude_withdrawn=False, include_prune=False):
+        conditions = []
+        if exclude_withdrawn:
+            conditions.append("p.withdrawn = 0")
+        if not include_prune:
+            conditions.append("p.id >= 0")
+        if conditions:
+            condition = " and ".join(conditions)
+        else:
+            condition = None
+
+        return self.get_players_where(condition, order_by="p.rating desc, p.name")
 
     def rerate_player(self, name, rating):
         try:
@@ -1960,7 +2017,7 @@ class Tourney(object):
         self.db.commit()
 
     def set_player_requires_accessible_table(self, name, value):
-        if self.db_version < (1,0,4):
+        if not self.has_accessible_table_feature():
             return
 
         cur = self.db.cursor()
@@ -1969,7 +2026,7 @@ class Tourney(object):
         self.db.commit()
 
     def get_player_requires_accessible_table(self, name):
-        if self.db_version < (1,0,4):
+        if not self.has_accessible_table_feature():
             return False
         cur = self.db.cursor()
         cur.execute("select require_accessible_table from player where name = ?", (name,))
@@ -1981,7 +2038,7 @@ class Tourney(object):
         return retval
 
     def set_player_preferred_table(self, name, value):
-        if self.db_version < (1, 0, 5):
+        if not self.has_preferred_table_feature():
             return
         cur = self.db.cursor()
         cur.execute("update player set preferred_table = ? where name = ? and id >= 0", (value if value is not None else -1, name))
@@ -1989,7 +2046,7 @@ class Tourney(object):
         self.db.commit()
 
     def get_player_preferred_table(self, name):
-        if self.db_version < (1, 0, 5):
+        if not self.has_preferred_table_feature():
             return None
         cur = self.db.cursor()
         cur.execute("select preferred_table from player where name = ?", (name,))
@@ -2237,42 +2294,19 @@ where round_no = ? and seq = ?""", alterations_reordered);
         return rows_updated;
 
     def get_player_from_name(self, name):
-        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, %s, %s, %s from player p left outer join team t on p.team_id = t.id where (lower(p.name) = ? or p.name = ?)" % (
-                "0" if self.db_version < (0, 7, 7) else "p.avoid_prune",
-                "0" if self.db_version < (1, 0, 4) else "p.require_accessible_table",
-                "-1" if self.db_version < (1, 0, 5) else "p.preferred_table"
-                );
-        cur = self.db.cursor();
-        cur.execute(sql, (name.lower(), name));
-        row = cur.fetchone();
-        cur.close();
-        if row is None:
+        players = self.get_players_where("(lower(p.name) = ? or p.name = ?)", params=(name.lower(), name))
+        if not players:
             raise PlayerDoesNotExistException("Player with name \"%s\" does not exist." % name);
         else:
-            if row[2] is not None:
-                team = Team(row[2], row[3], row[4])
-            else:
-                team = None
-            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12]);
+            # DB constraints require every player to have a unique name
+            return players[0]
 
     def get_player_from_id(self, player_id):
-        sql = "select p.name, p.rating, t.id, t.name, t.colour, p.short_name, p.withdrawn, p.division, p.division_fixed, %s, %s, %s from player p left outer join team t on p.team_id = t.id where p.id = ?" % (
-                "0" if self.db_version < (0, 7, 7) else "p.avoid_prune",
-                "0" if self.db_version < (1, 0, 4) else "p.require_accessible_table",
-                "-1" if self.db_version < (1, 0, 5) else "p.preferred_table"
-                );
-        cur = self.db.cursor();
-        cur.execute(sql, (player_id,));
-        row = cur.fetchone();
-        cur.close();
-        if row is None:
+        players = self.get_players_where("p.id = ?", params=(player_id,))
+        if not players:
             raise PlayerDoesNotExistException("No player exists with ID %d" % player_id);
         else:
-            if row[2] is None:
-                team = None
-            else:
-                team = Team(row[2], row[3], row[4])
-            return Player(row[0], row[1], team, row[5], row[6], row[7], row[8], player_id, row[9], row[10], row[11]);
+            return players[0]
 
     def get_latest_started_round(self):
         cur = self.db.cursor()
@@ -2713,7 +2747,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         return value
 
     def get_num_active_players_requiring_accessible_table(self):
-        if self.db_version < (1, 0, 4):
+        if not self.has_accessible_table_feature():
             return 0
 
         cur = self.db.cursor()
@@ -3322,7 +3356,7 @@ and g.game_type = 'P'
         return divs
 
     def get_num_active_accessible_players_in_divisions(self, div_set):
-        if self.db_version < (1, 0, 4) or len(div_set) == 0:
+        if not self.has_accessible_table_feature() or len(div_set) == 0:
             return 0
 
         cur = self.db.cursor()
@@ -3769,7 +3803,7 @@ order by 1""")
         self.set_attribute("autoratingbehaviour", RATINGS_GRADUATED);
 
     def is_table_accessible(self, table_no):
-        if self.db_version < (1, 0, 4):
+        if not self.has_accessible_table_feature():
             return False
         else:
             cur = self.db.cursor()
@@ -3787,7 +3821,7 @@ order by 1""")
             return value
 
     def get_num_accessible_tables(self):
-        if self.db_version < (1, 0, 4):
+        if not self.has_accessible_table_feature():
             return 0
 
         cur = self.db.cursor()
@@ -3818,7 +3852,7 @@ order by 1""")
     # For example, ([1,2,5], True) means all tables are accessible except
     # 1, 2 and 5. ([17,18], False) means only tables 17 and 18 are accessible.
     def get_accessible_tables(self):
-        if self.db_version < (1, 0, 4):
+        if not self.has_accessible_table_feature():
             return ([], False)
 
         accessible_tables = []
@@ -3844,7 +3878,7 @@ order by 1""")
             return (accessible_tables, False)
 
     def set_accessible_tables(self, table_list, all_except=False):
-        if self.db_version < (1, 0, 4):
+        if not self.has_accessible_table_feature():
             return
 
         cur = self.db.cursor()
@@ -3939,9 +3973,6 @@ order by 1""")
 
     def set_rank_finals(self, rank_finals):
         return self.set_attribute("rankfinals", 1 if rank_finals else 0)
-
-    def has_auto_prune(self):
-        return self.db_version >= (1, 2, 1)
 
 
 def get_5_3_table_sizes(num_players):

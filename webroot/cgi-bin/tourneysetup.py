@@ -356,6 +356,7 @@ if request_method == "POST" and player_list_submit:
         player_requires_accessible_table = False
         player_team_id = None
         player_table_pref = None
+        player_is_newbie = False
 
         if player_name == "-":
             # This is a division separator, not a player name. It tells us
@@ -368,6 +369,11 @@ if request_method == "POST" and player_list_submit:
             # * If it parses as a number, it is the player's rating.
             # * If it's "A", it indicates the player requires an accessible
             #   table.
+            # * If it's "N", it indicates the player is a newbie, someone who
+            #   may be unfamiliar with how the competition and gameplay works.
+            #   It's not mandatory for Atropine to know about this, but fixture
+            #   generators may have an option to ensure there are no all-newbie
+            #   tables.
             # * If it's "NP", it indicates the player shouldn't play Prune.
             # * If it's "W", it indicates the player is withdrawn.
             # * If it's "T" followed immediately by an integer, then the
@@ -386,6 +392,8 @@ if request_method == "POST" and player_list_submit:
                         player_avoid_prune = True
                     elif field == "W":
                         player_withdrawn = True
+                    elif field == "N":
+                        player_is_newbie = True
                     elif field and field[0] == "T":
                         try:
                             player_team_id = int(field[1:])
@@ -402,7 +410,8 @@ if request_method == "POST" and player_list_submit:
             player_list.append(countdowntourney.EnteredPlayer(player_name,
                 player_rating, div_index, player_team_id,
                 player_avoid_prune, player_withdrawn,
-                player_requires_accessible_table, player_table_pref))
+                player_requires_accessible_table, player_table_pref,
+                player_is_newbie))
         prev_player_name = player_name
     try:
         tourney.set_players(player_list, auto_rating_behaviour);
@@ -701,6 +710,8 @@ if tourney.get_num_games() == 0:
                 row.append("%g" % (p.get_rating()))
             if p.get_team_id() is not None:
                 row.append("T%d" % (p.get_team_id()))
+            if p.is_newbie():
+                row.append("N")
             if p.is_requiring_accessible_table():
                 row.append("A")
             if p.get_preferred_table() is not None:
@@ -755,6 +766,7 @@ if tourney.get_num_games() == 0:
     cgicommon.writeln("<table>")
     cgicommon.writeln("<tr><td><em>(number)</em></td><td>The player's rating.</td></tr>")
     cgicommon.writeln("<tr><td><span class=\"fixedwidth\">A</span></td><td>Player requires an accessible table.</td></tr>")
+    cgicommon.writeln("<tr><td><span class=\"fixedwidth\">N</span></td><td>Player is a newbie.</td></tr>")
     cgicommon.writeln("<tr><td><span class=\"fixedwidth\">NP</span></td><td>Player will avoid playing Prune.</td></tr>")
     cgicommon.writeln("<tr><td><span class=\"fixedwidth\">P</span><span style=\"font-style: italic;\">n</span></td><td>Player would prefer to be on table number <span style=\"font-style: italic;\">n</span>.</td></tr>")
     cgicommon.writeln("<tr><td><span class=\"fixedwidth\">W</span></td><td>Player is withdrawn.</td></tr>")
@@ -768,6 +780,7 @@ if tourney.get_num_games() == 0:
     cgicommon.writeln("<p>")
     cgicommon.writeln("means that Spangly Fizzbox requires an accessible table and is to avoid playing Prune.")
     cgicommon.writeln("</p>")
+    cgicommon.writeln("<p>A player's newbie status can be used by fixture generators to put at least one non-newbie on each table.</p>")
     cgicommon.writeln("<p>")
     cgicommon.writeln("You can always change these settings later on the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page." % (urllib.parse.quote_plus(tourney.get_name())));
     cgicommon.writeln("</p>")

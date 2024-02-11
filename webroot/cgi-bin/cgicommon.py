@@ -1044,18 +1044,24 @@ def show_player_form(baseurl, tourney, player, custom_query_string=""):
     if not player:
         writeln("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will not include this player)</span></td></tr>" % ("checked" if player and player.is_withdrawn() else ""))
 
-    writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Tourney Setup</a>)</span></td></tr>" % (
-        "checked" if player and player.is_requiring_accessible_table() else "",
-        urllib.parse.quote_plus(tourneyname)
-    ))
+    if tourney.has_accessible_table_feature():
+        writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Tourney Setup</a>)</span></td></tr>" % (
+            "checked" if player and player.is_requiring_accessible_table() else "",
+            urllib.parse.quote_plus(tourneyname)
+        ))
 
-    if player is None:
-        pref = None
-    else:
-        pref = player.get_preferred_table()
-    writeln("<tr><td>Preferred table number</td><td><input type=\"number\" name=\"setpreferredtable\" value=\"%d\" min=\"0\" /> <span class=\"playercontrolhelp\">(player will be assigned this table number if possible; a value of 0 means the player has no specific table preference)</span></td></tr>" % (pref if pref is not None else 0))
+    if tourney.has_preferred_table_feature():
+        if player is None:
+            pref = None
+        else:
+            pref = player.get_preferred_table()
+        writeln("<tr><td>Preferred table number</td><td><input type=\"number\" name=\"setpreferredtable\" value=\"%d\" min=\"0\" /> <span class=\"playercontrolhelp\">(player will be assigned this table number if possible; a value of 0 means the player has no specific table preference)</span></td></tr>" % (pref if pref is not None else 0))
 
-    writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</span></td></tr>" % ("checked" if player and player.is_avoiding_prune() else ""))
+    if tourney.has_avoid_prune_feature():
+        writeln("<tr><td>Avoid Prune?</td><td><input type=\"checkbox\" name=\"setavoidprune\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, the Swiss fixture generator will behave as if this player has already played a Prune)</span></td></tr>" % ("checked" if player and player.is_avoiding_prune() else ""))
+
+    if tourney.has_player_newbie_feature():
+        writeln("<tr><td>Newbie?</td><td><input type=\"checkbox\" name=\"setnewbie\" value=\"1\" %s> <span class=\"playercontrolhelp\">(if ticked, some fixture generators can be made to avoid generating all-newbie tables)</span></td></tr>" % ("checked" if player and player.is_newbie() else ""))
     writeln("</table>")
     writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (escape(tourney.get_name(), True)))
     if player:
@@ -1107,6 +1113,7 @@ def add_new_player_from_form(tourney, form):
     new_avoid_prune = int_or_zero(form.getfirst("setavoidprune"))
     new_requires_accessible_table = int_or_zero(form.getfirst("setrequiresaccessibletable"))
     new_preferred_table = int_or_none(form.getfirst("setpreferredtable"))
+    new_newbie = int_or_zero(form.getfirst("setnewbie"))
     tourney.add_player(new_player_name, new_player_rating, new_player_division)
     if new_withdrawn:
         tourney.set_player_withdrawn(new_player_name, True)
@@ -1116,6 +1123,8 @@ def add_new_player_from_form(tourney, form):
         tourney.set_player_requires_accessible_table(new_player_name, True)
     if new_preferred_table:
         tourney.set_player_preferred_table(new_player_name, new_preferred_table)
+    if new_newbie:
+        tourney.set_player_newbie(new_player_name, True)
 
 def is_client_from_localhost():
     # If the web server is listening only on the loopback interface, then
