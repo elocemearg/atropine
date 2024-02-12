@@ -33,6 +33,9 @@ def escape(string, quote=True):
     else:
         return html.escape(string, quote)
 
+def js_string(contents):
+    return "\"" + contents.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
 def print_html_head(title, cssfile="style.css", othercssfiles=[]):
     writeln("<!DOCTYPE html>")
     writeln("<html lang=\"en\">")

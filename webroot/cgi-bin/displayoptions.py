@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
-import sys;
-import htmltraceback;
-import os;
-import cgicommon;
-import urllib.request, urllib.parse, urllib.error;
-import re;
+import sys
+import os
+import urllib.request, urllib.parse, urllib.error
+import re
 
+import htmltraceback
+import cgicommon
 import dialog
 
 def show_now_showing_frame(tourney, is_widescreen):
@@ -140,43 +140,134 @@ def show_view_menu(tourney, form, teleost_modes, selected_view, auto_current_vie
     cgicommon.writeln("</div>")
     cgicommon.writeln("</div>")
 
-# Make a string containing HTML for form elements to select a profile or
-# enter the name for a new profile to be created. This HTML will be dropped
-# into a form created by dialog.get_html().
-new_profile_name_control_id_serial = 0
-def make_profile_select_html(dropdown_label, profile_names,
-        selected_profile_name, new_profile_option=False, factory_defaults_option=False):
-    # If there are multiple instances of this on a page, give each "new profile
-    # name" box its own distinct ID.
-    global new_profile_name_control_id_serial
-    new_profile_name_control_id = "newprofilenamecontrol" + str(new_profile_name_control_id_serial)
-    new_profile_name_control_id_serial += 1
-    dialog_select_html = "<div class=\"formcontrolrow\">"
-    dialog_select_html += dropdown_label
+def emit_scripts(baseurl, profile_names, selected_profile_name):
+    cgicommon.writeln("<script>")
 
-    # If new_profile_option, selecting the "new profile..." option should make
-    # the new profile name text box appear.
-    if new_profile_option:
-        dialog_select_html += " <select name=\"profilename\" onchange=\"document.getElementById('" + new_profile_name_control_id + "').style.visibility = (this.value == '' ? 'visible' : 'hidden');\">"
+    # Write the JavaScript we need for the dialogBoxShow() function to work...
+    cgicommon.writeln(dialog.DIALOG_JAVASCRIPT)
+
+    # Write a JavaScript list containing the names of all the display profiles
+    # we have, and a string constant for the currently-selected profile. The
+    # code that shows the dialog boxes will need this.
+    cgicommon.writeln("const profileNames = [")
+    for name in profile_names:
+        cgicommon.writeln("    " + cgicommon.js_string(name) + ",")
+    cgicommon.writeln("];")
+    if not selected_profile_name:
+        cgicommon.writeln("const selectedProfileName = null;")
     else:
-        dialog_select_html += " <select name=\"profilename\">"
+        cgicommon.writeln("const selectedProfileName = %s;" % (cgicommon.js_string(selected_profile_name)))
 
-    # One option for each profile name
-    for profile_name in profile_names:
-        dialog_select_html += "<option value=\"%s\"%s>%s</option>" % (cgicommon.escape(profile_name), " selected" if profile_name == selected_profile_name else "", cgicommon.escape(profile_name))
-    if new_profile_option:
-        dialog_select_html += "<option value=\"\"%s>[new profile]</option>" % (" selected" if not selected_profile_name else "")
-    elif factory_defaults_option:
-        dialog_select_html += "<option value=\"\"%s>[factory defaults]</option>" % (" selected" if not selected_profile_name else "")
-    dialog_select_html += "</select></div>"
+    cgicommon.writeln("""
+function clearBannerEditBox() {
+    document.getElementById("bannereditbox").value = "";
+}
 
-    # New profile name box
-    if new_profile_option:
-        dialog_select_html += "<div class=\"formcontrolrow\" id=\"%s\" style=\"visibility: %s;\"><label>New profile name:</label> <input class=\"focusifvisible\" type=\"text\" name=\"newprofilename\" value=\"\"></div>" % (
-                new_profile_name_control_id,
-                "visible" if not selected_profile_name else "hidden"
-        )
-    return dialog_select_html
+/* Return a list of HTML elements to put in a form. The HTML elements comprise
+   a drop-down box with one option for each existing display profile, plus
+   optionally a "[new profile]" or "[factory defaults]" option, whose
+   associated values are the empty string.
+   This is a helper function used to construct the three types of dialog box
+   this page can show when a display profile function button is pressed. */
+function makeProfileSelectElements(helpText, dropDownText, showNewProfile, showFactoryDefaults) {
+    let formElements = [];
+    let dropDownLabel = document.createElement("LABEL");
+    let select = document.createElement("SELECT");
+
+    dropDownLabel.innerText = dropDownText + " ";
+    for (let i = 0; i < profileNames.length; i++) {
+        let name = profileNames[i];
+        let opt = document.createElement("OPTION");
+        opt.value = name;
+        opt.innerText = name;
+        if (selectedProfileName != null && name == selectedProfileName) {
+            opt.selected = true;
+        }
+        select.appendChild(opt);
+    }
+    if (showNewProfile || showFactoryDefaults) {
+        let opt = document.createElement("OPTION");
+        opt.value = "";
+        opt.innerText = showNewProfile ? "[new profile]" : "[factory defaults]";
+        if (selectedProfileName == null) {
+            opt.selected = true;
+        }
+        select.appendChild(opt);
+    }
+    select.name = "profilename";
+    select.addEventListener("change", function (e) {
+        let s = e.target;
+        let profileNameDiv = document.getElementById("newprofilenamediv");
+        if (profileNameDiv) {
+            profileNameDiv.style.visibility = (s.value == "" ? "visible" : "hidden");
+        }
+    });
+
+    let helpTextElement = document.createElement("P");
+    helpTextElement.innerText = helpText;
+
+    formElements.push(helpTextElement);
+
+    let div = document.createElement("DIV");
+    div.classList.add("formcontrolrow");
+    div.appendChild(dropDownLabel);
+    div.appendChild(select);
+    formElements.push(div);
+
+    if (showNewProfile) {
+        let div = document.createElement("DIV");
+        let label = document.createElement("LABEL");
+        let editBox = document.createElement("INPUT");
+        label.innerText = "New profile name: ";
+        editBox.type = "text";
+        editBox.name = "newprofilename";
+        div.id = "newprofilenamediv";
+        editBox.classList.add("focusifvisible");
+        editBox.value = "";
+        div.style.visibility = (selectedProfileName == null ? "visible" : "hidden");
+        div.classList.add("formcontrolrow");
+        div.appendChild(label);
+        div.appendChild(editBox);
+        formElements.push(div);
+    }
+
+    return formElements;
+}
+
+function showSaveToProfileDialog() {
+    dialogBoxShow("displayoptionsdialog", "Save to profile", "Save", "Cancel",
+            "POST", "%(form_action)s", "savetoprofile",
+            makeProfileSelectElements(
+                "The currently-saved display option settings will be saved to the profile selected below, overwriting any previous settings in that profile.",
+                "Save to which profile?", true, false
+            )
+    );
+}
+
+function showLoadFromProfileDialog() {
+    dialogBoxShow("displayoptionsdialog", "Switch to profile",
+            "Switch to profile", "Cancel", "POST", "%(form_action)s", "loadfromprofile",
+            makeProfileSelectElements(
+                "The currently-saved display option settings will be discarded and replaced with those previously saved in the profile you select below.",
+                "Switch to which profile?", false, true
+            )
+    );
+}
+
+function showDeleteProfileDialog() {
+    dialogBoxShow("displayoptionsdialog", "Delete a profile", "Delete",
+            "Cancel", "POST", "%(form_action)s", "deleteprofile",
+            makeProfileSelectElements(
+                "Delete profiles you no longer need. Once you delete a profile it can no longer be used.",
+                "Select profile to delete:", false, false
+            )
+    );
+}
+
+""" % {
+        "form_action" : baseurl + "?" + os.getenv("QUERY_STRING", "")
+    })
+    cgicommon.writeln("</script>")
 
 ###############################################################################
 
@@ -200,26 +291,6 @@ cgicommon.print_html_head("Display setup: " + str(tourney_name), "style.css");
 
 cgicommon.writeln("<body>");
 
-cgicommon.writeln("<script>")
-cgicommon.writeln("""
-function clearBannerEditBox() {
-    document.getElementById("bannereditbox").value = "";
-}
-
-function showDialog(dialogId) {
-    let dialog = document.getElementById(dialogId);
-    dialog.style.display = "block";
-    let elementToFocus = dialog.getElementsByClassName("focusifvisible");
-    for (let i = 0; i < elementToFocus.length; i++) {
-        if (elementToFocus[i].style.visibility != "hidden") {
-            elementToFocus[i].focus();
-            break;
-        }
-    }
-}
-""")
-cgicommon.writeln("</script>")
-
 cgicommon.assert_client_from_localhost()
 
 if tourney_name is None:
@@ -230,8 +301,7 @@ if tourney_name is None:
     sys.exit(0)
 
 try:
-    tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
-
+    tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir)
     teleost_modes = tourney.get_teleost_modes();
 
     selected_view = form.getfirst("selectedview")
@@ -324,6 +394,11 @@ try:
         except countdowntourney.TourneyException as e:
             exceptions.append(e)
 
+    # Get the current list of display profiles, and the currently-selected
+    # profile name, and emit all the Javascript we need...
+    profile_names = countdowntourney.get_display_profile_names()
+    selected_profile_name = tourney.get_last_loaded_display_profile_name()
+    emit_scripts(baseurl, profile_names, selected_profile_name)
 
     banner_text = tourney.get_banner_text()
     if banner_text is None:
@@ -332,9 +407,7 @@ try:
     cgicommon.show_sidebar(tourney);
 
     cgicommon.writeln("<div class=\"mainpane\">")
-
     cgicommon.writeln("<h1>Display Setup</h1>");
-
     cgicommon.writeln("<div class=\"opendisplaylink\">")
     cgicommon.writeln("""
     <a href="/cgi-bin/display.py?tourney=%s"
@@ -447,36 +520,20 @@ try:
     cgicommon.writeln("<p>Atropine can remember your favourite display option settings and apply them to all tourneys you create with this Atropine installation.</p>")
     cgicommon.writeln("<p>To do this, save the settings to a profile below. If you want to save the current settings to a profile, make sure you've applied them above first.</p>")
     cgicommon.writeln("<div class=\"displayoptsform\">")
-    cgicommon.writeln("<button id=\"savetoprofile\" class=\"displayoptionsbutton\" onclick=\"showDialog('savetoprofiledialog');\">&#x1F4BE; Save to profile...</button>")
-    cgicommon.writeln("<button id=\"loadfromprofile\" class=\"displayoptionsbutton\" onclick=\"showDialog('loadfromprofiledialog');\">&#x1F4C2; Switch to profile...</button>")
+    cgicommon.writeln("<button id=\"savetoprofile\" class=\"displayoptionsbutton\" onclick=\"showSaveToProfileDialog();\">&#x1F4BE; Save to profile...</button>")
+    cgicommon.writeln("<button id=\"loadfromprofile\" class=\"displayoptionsbutton\" onclick=\"showLoadFromProfileDialog();\">&#x1F4C2; Switch to profile...</button>")
 
     if profile_names:
-        cgicommon.writeln("<button id=\"deleteprofile\" class=\"displayoptionsbutton\" onclick=\"showDialog('deleteprofiledialog');\">&#x1F5D1; Delete a profile...</button>")
+        cgicommon.writeln("<button id=\"deleteprofile\" class=\"displayoptionsbutton\" onclick=\"showDeleteProfileDialog();\">&#x1F5D1; Delete a profile...</button>")
     cgicommon.writeln("</div>")
 
     cgicommon.writeln("<div style=\"margin-bottom: 50px;\"></div>")
 
     cgicommon.writeln("</div>") # mainpane
 
-    # Dialog boxes for save, load and delete profile buttons. Usually not
-    # displayed, but triggered by pressing the buttons above. Their background
-    # fills the screen and the dialog box is in the middle of it.
-    cgicommon.writeln(dialog.get_html("savetoprofiledialog",
-        "Save to profile", "Save", "Cancel", "POST", baseurl + "?" + os.getenv("QUERY_STRING", ""), "savetoprofile",
-        "<p>The currently-saved display option settings will be saved to the profile selected below, overwriting any previous settings in that profile.</p>" + \
-        make_profile_select_html("Save to which profile?", profile_names, selected_profile_name, new_profile_option=True)
-    ))
-    cgicommon.writeln(dialog.get_html("loadfromprofiledialog",
-        "Switch to profile", "Switch to profile", "Cancel", "POST", baseurl + "?" + os.getenv("QUERY_STRING", ""), "loadfromprofile",
-        "<p>The currently-saved display option settings will be discarded and replaced with those previously saved in the profile you select below.</p>" + \
-        make_profile_select_html("Switch to which profile?", profile_names, selected_profile_name, factory_defaults_option=True)
-    ))
-    cgicommon.writeln(dialog.get_html("deleteprofiledialog",
-        "Delete a profile", "Delete", "Cancel", "POST", baseurl + "?" + os.getenv("QUERY_STRING", ""), "deleteprofile",
-        "<p>Delete profiles you no longer need. Once you delete a profile it can no longer be used.</p>" + \
-        make_profile_select_html("Select profile to delete:", profile_names, None)
-    ))
-
+    # Emit the currently non-displayed dialog box, which will pop up if the
+    # user presses any of the save, restore or delete profile options.
+    cgicommon.writeln(dialog.get_html("displayoptionsdialog"))
 
 except countdowntourney.TourneyException as e:
     cgicommon.show_tourney_exception(e);

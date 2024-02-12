@@ -5,6 +5,7 @@ import cgicommon
 import sys
 import urllib.request, urllib.parse, urllib.error
 import os
+import dialog
 
 htmltraceback.enable();
 
@@ -83,7 +84,7 @@ def delete_withdrawn(tourney, form):
 
 def delete_player(tourney, form):
     try:
-        player_id = int_or_none(form.getfirst("popupsubmitarg"))
+        player_id = int_or_none(form.getfirst("playerid"))
         if player_id is not None:
             player_name = tourney.get_player_name(player_id)
             tourney.delete_player(player_name)
@@ -91,63 +92,16 @@ def delete_player(tourney, form):
     except countdowntourney.TourneyException as e:
         exceptions_to_show.append(e)
 
-# Write out HTML for the popup box we show when the user presses something
-# we want them to confirm they're sure about. This form will have the supplied
-# query string and hidden inputs.
-# Most elements of this form get tinkered with at runtime in JavaScript,
-# such as the submit button name, the title and body text, and the value of
-# the hidden argument popupsubmitarg.
-def generate_hidden_confirm_box(tourney, form_query_string, hidden_inputs):
-    hidden_inputs_html = [
-        "<input type=\"hidden\" name=\"%s\" value=\"%s\">" % (cgicommon.escape(name), cgicommon.escape(str(value))) for (name, value) in hidden_inputs
-    ]
-    hidden_inputs_html.append("<input type=\"hidden\" name=\"tourney\" value=\"%s\">" % (cgicommon.escape(tourney.get_name())))
-    cgicommon.writeln("""
-<div id="popupdiv" style="display: none;">
-    <div class="popupwindow">
-        <h2 id="popuptitle"></h2>
-        <p id="popupbody"></p>
-        <div class="popupwindowcontrols">
-            <form action="{baseurl}?{form_query_string}" method="POST">
-                {hidden_inputs}
-                <input type="hidden" name="popupsubmitarg" value="" id="popupsubmitarg">
-                <input type="submit" class="bigbutton" id="popupsubmit" name="popupsubmit" value="OK">
-                <button type="button" onclick="killPopup();" class="bigbutton">Cancel</button>
-            </form>
-        </div>
-    </div>
-</div>
-""".format(baseurl=baseurl, form_query_string=form_query_string,
-    hidden_inputs="\n".join(hidden_inputs_html))
-    )
-
 # Write out a load of JavaScript functions we're going to need. This is mainly
 # for the buttons which cause a popup box to appear asking the user if they're
 # sure they want to do something.
-def generate_scripts(tourney):
+def generate_scripts(tourney, query_string):
     players = tourney.get_players()
     active_players = [ p for p in players if not p.is_prune() and not p.is_withdrawn() ]
     withdrawn_players = [ p for p in players if not p.is_prune() and p.is_withdrawn() ]
     num_games = tourney.get_num_games()
 
-    script = """
-<script>
-function killPopup() {
-    let popupWindow = document.getElementById("popupdiv");
-    if (popupWindow) {
-        popupWindow.style.display = "none";
-    }
-}
-
-function initPage() {
-    let popupDiv = document.getElementById("popupdiv");
-    popupDiv.addEventListener("click", function(e) {
-        if (e.target.id === "popupdiv") {
-            killPopup();
-        }
-    });
-}
-
+    script = "<script>\n" + dialog.DIALOG_JAVASCRIPT + """
 function escapeHTML(str) {
     if (str === null) {
         return "(null)";
@@ -162,46 +116,47 @@ function escapeHTML(str) {
               .replace(/'/g, "&#039;");
 }
 
-function confirmBox(title, html, submitName, argument) {
-    let popupWindow = document.getElementById("popupdiv");
-    if (popupWindow) {
-        popupWindow.style.display = "block";
-    }
-    let popupTitle = document.getElementById("popuptitle");
-    if (popupTitle) {
-        popupTitle.innerText = title;
-    }
-    let popupBody = document.getElementById("popupbody");
-    if (popupBody) {
-        popupBody.innerHTML = html;
-    }
-    if (argument != null) {
-        let popupSubmitArg = document.getElementById("popupsubmitarg");
-        if (popupSubmitArg) {
-            popupSubmitArg.value = argument.toString();
-        }
-    }
-    let popupSubmit = document.getElementById("popupsubmit");
-    popupSubmit.name = submitName;
+function makeParagraph(innerHTML) {
+    let p = document.createElement("P");
+    p.innerHTML = innerHTML;
+    return p;
 }
 
 function showWithdrawAllConfirm() {
-    confirmBox("Are you sure?", "You are about to set %(num_active_players)d active players as withdrawn.", "withdrawallsubmit", null);
+    dialogBoxShow("checkinconfirmdialog", "Withdraw all?",
+        "Withdraw all players", "Cancel", "POST", %(form_action)s,
+        "withdrawallsubmit",
+        [makeParagraph("You are about to set %(num_active_players)d active players as withdrawn.")]
+    );
 }
 
 function showReinstateAllConfirm() {
-    confirmBox("Are you sure?", "You are about to set %(num_withdrawn_players)d withdrawn players as active.", "reinstateallsubmit", null);
+    dialogBoxShow("checkinconfirmdialog", "Set all as active?",
+        "Set all players as active", "Cancel", "POST", %(form_action)s,
+        "reinstateallsubmit",
+        [makeParagraph("You are about to set %(num_withdrawn_players)d withdrawn players as active.")]
+    );
 }
 
 function showDeleteWithdrawnConfirm() {
-    confirmBox("Are you sure?", "You are about to delete %(num_withdrawn_players)d withdrawn players. If you want to add them again you will have to add each player individually. %(delete_gamed_player_warning)s", "deletewithdrawnsubmit", null);
+    dialogBoxShow("checkinconfirmdialog", "Delete all withdrawn players?",
+        "Delete withdrawn players", "Cancel", "POST", %(form_action)s,
+        "deletewithdrawnsubmit",
+        [makeParagraph("You are about to delete %(num_withdrawn_players)d withdrawn players. If you want to add them again you will have to add each player individually. %(delete_gamed_player_warning)s")]
+    );
 }
 
 function showDeletePlayerConfirm(playerId, playerName) {
-    confirmBox("Delete player?", "Are you sure you want to delete the player <span style=\\"font-weight: bold;\\">" + playerName + "</span>?", "deleteplayersubmit", playerId);
+    dialogBoxShow("checkinconfirmdialog", "Delete player?",
+        "Delete player", "Cancel", "POST", %(form_action)s,
+        "deleteplayersubmit",
+        [makeParagraph("Are you sure you want to delete the player <span style=\\"font-weight: bold;\\">" + escapeHTML(playerName) + "</span>?")],
+        { "playerid" : playerId });
 }
 </script>
-""" % {"num_active_players" : len(active_players),
+""" % {
+        "form_action" : cgicommon.js_string(baseurl + "?" + query_string),
+        "num_active_players" : len(active_players),
         "num_withdrawn_players" : len(withdrawn_players),
         "delete_gamed_player_warning" : "Note that any players who have had a game created for them will <em>not</em> be deleted." if num_games > 0 else "" }
     cgicommon.writeln(script)
@@ -255,18 +210,14 @@ if request_method == "POST":
 
 cgicommon.print_html_head("Player Check-In")
 
-cgicommon.writeln("<body onload=\"initPage();\">")
+cgicommon.writeln("<body>")
 cgicommon.assert_client_from_localhost()
 
 # Each submit button has to preserve the settings such as tourney=... and
 # hidehelp=... so building this query string is useful.
-form_query_string = "tourney=%s" % (urllib.parse.quote_plus(tourneyname))
-if hide_help:
-    form_query_string += "&hidehelp=1"
+form_query_string = os.getenv("QUERY_STRING", "")
 
-# Write out our (initially invisible) popup box and the JavaScript to go with it
-generate_hidden_confirm_box(tourney, form_query_string, [ ("hidehelp", 1 if hide_help else 0) ])
-generate_scripts(tourney)
+generate_scripts(tourney, form_query_string)
 
 cgicommon.show_sidebar(tourney)
 
@@ -292,7 +243,7 @@ else:
 </p>
 <p>
 This page is intended for before you've generated the first round, to help you
-keep track of who has arrived and who is still missing. Use of it is optional.
+keep track of who has arrived and who is still missing. Its use is optional.
 </p>
 <p>
 Each button shows whether a player is currently active {tick}
@@ -354,7 +305,7 @@ for row in range(rows_per_column):
             cgicommon.writeln("<form method=\"POST\" id=\"formcell%d\" action=\"%s?%s\">" % (
                 cell_number,
                 cgicommon.escape(baseurl),
-                form_query_string
+                cgicommon.escape(form_query_string)
             ))
             # Withdraw/reinstate button
             cgicommon.writeln("<button type=\"submit\" form=\"formcell%d\" name=\"%s\" class=\"playercheckinbutton %s\" id=\"regslot%d\" value=\"1\">%s %s</button>" % (
@@ -367,17 +318,15 @@ for row in range(rows_per_column):
             ))
             cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname)))
             cgicommon.writeln("<input type=\"hidden\" name=\"playername\" value=\"%s\" />" % (cgicommon.escape(player.get_name())))
-            if hide_help:
-                cgicommon.writeln("<input type=\"hidden\" name=\"hidehelp\" value=\"1\" />")
             cgicommon.writeln("<input type=\"hidden\" name=\"%s\" value=\"1\" />" % ("reinstatesubmit" if player.is_withdrawn() else "withdrawsubmit"))
             cgicommon.writeln("</form>")
         cgicommon.writeln("</td>")
 
         if player:
             # Small button to delete this player
-            cgicommon.writeln("<td class=\"playercheckincolspace\"><button type=\"button\" class=\"playercheckindeletebutton\" title=\"Delete %s\" onclick=\"showDeletePlayerConfirm(%d, &quot;%s&quot;);\">%s</button></td>" % (
+            cgicommon.writeln("<td class=\"playercheckincolspace\"><button type=\"button\" class=\"playercheckindeletebutton\" title=\"Delete %s\" onclick=\"showDeletePlayerConfirm(%d, %s);\">%s</button></td>" % (
                 cgicommon.escape(player.get_name()), player.get_id(),
-                cgicommon.escape(cgicommon.escape(player.get_name())),
+                cgicommon.escape(cgicommon.js_string(player.get_name())),
                 HTML_TRASHCAN_SYMBOL))
         else:
             cgicommon.writeln("<td class=\"playercheckincolspace\"></td>")
@@ -408,5 +357,10 @@ cgicommon.writeln("<h2>Add new player</h2>")
 cgicommon.show_player_form(baseurl, tourney, None, "hidehelp=1" if hide_help else "")
 
 cgicommon.writeln("</div>") #mainpane
+
+# Currently-invisibvle dialog box which will appear if we need to ask the user
+# if they're sure they want to do what the button they just pressed does.
+cgicommon.writeln(dialog.get_html("checkinconfirmdialog"))
+
 cgicommon.writeln("</body>")
 cgicommon.writeln("</html>")

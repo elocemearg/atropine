@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 
+import sys
+import os
+import urllib.request, urllib.parse, urllib.error
+
 import htmltraceback
 import cgicommon
-import sys
-import urllib.request, urllib.parse, urllib.error
-import os
+import dialog
 
 def int_or_none(s):
     if s is None:
@@ -70,11 +72,8 @@ def write_h2(player, text):
     cgicommon.writeln("<h2%s>%s</h2>" % (classes, cgicommon.escape(text)))
 
 def show_player_delete_form(tourney, player):
-    cgicommon.writeln('<p>If you delete this player, they will be removed from the database entirely. The only way to undo this is to add a new player with that name.</p>')
-    cgicommon.writeln('<form method="POST" action="%s?tourney=%s">' % (cgicommon.escape(baseurl), urllib.parse.quote_plus(tourney.get_name())))
-    cgicommon.writeln('<input type="hidden" name="id" value="%d">' % (player.get_id()))
-    cgicommon.writeln('<input type="submit" name="deleteplayer" class="bigbutton destroybutton" value="Delete %s">' % (cgicommon.escape(player.get_name())))
-    cgicommon.writeln('</form>')
+    cgicommon.writeln('<p>If you delete this player, they will be removed from the database entirely.</p>')
+    cgicommon.writeln("<button class=\"bigbutton\" onclick=\"showDeletePlayerDialog();\">Delete %s</button>" % (cgicommon.escape(player.get_name())))
 
 def show_player_withdrawal_form(tourney, player):
     player_id = player.get_id()
@@ -290,6 +289,30 @@ cgicommon.assert_client_from_localhost()
 
 cgicommon.show_sidebar(tourney)
 
+cgicommon.writeln("<script>")
+cgicommon.writeln(dialog.DIALOG_JAVASCRIPT)
+
+if player_id is not None:
+    cgicommon.writeln("const playerId = %d;" % (player_id))
+if player_name is not None:
+    cgicommon.writeln("const playerName = %s;" % (cgicommon.js_string(player_name)))
+
+cgicommon.writeln("""
+function showDeletePlayerDialog() {
+    let elements = [];
+    let p = document.createElement("P");
+    p.innerText = "Are you sure you want to delete this player? The only way to undo this is to add a new player with this name.";
+    elements.push(p);
+    dialogBoxShow("playerdialog", playerName, "Delete", "Cancel",
+            "POST", %(form_action)s, "deleteplayer",
+            elements, { "id" : playerId });
+}
+""" % {
+    "form_action" : cgicommon.js_string(baseurl + "?" + os.getenv("QUERY_STRING", ""))
+})
+
+cgicommon.writeln("</script>")
+
 cgicommon.writeln("<div class=\"mainpane\">")
 
 cgicommon.writeln("<div class=\"playersetupcontainer\">")
@@ -310,7 +333,7 @@ if not players:
     cgicommon.writeln("<p>")
     cgicommon.writeln("Your tourney doesn't have any players yet.")
     if tourney.get_num_games() == 0:
-        cgicommon.writeln("You can add players below or you can paste a list of players on the <a href=\"tourneysetup.py?tourney=%s\">Tourney Setup</a> page." % (urllib.parse.quote_plus(tourney.get_name())))
+        cgicommon.writeln("You can add players with the link above or you can paste a list of players on the <a href=\"tourneysetup.py?tourney=%s\">Tourney Setup</a> page." % (urllib.parse.quote_plus(tourney.get_name())))
     else:
         cgicommon.writeln("Yet somehow you've managed to create fixtures. I'm not quite sure how you've managed that, but meh. You can add players using the form below.")
     cgicommon.writeln("</p>")
@@ -552,6 +575,10 @@ cgicommon.writeln("</div>") # end form pane container
 cgicommon.writeln("</div>") # end double-pane container
 
 cgicommon.writeln("</div>") # end main pane
+
+# Invisible dialog box which appears when we're about to delete a player
+cgicommon.writeln(dialog.get_html("playerdialog"))
+
 cgicommon.writeln("</body>")
 cgicommon.writeln("</html>")
 
