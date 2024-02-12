@@ -1407,12 +1407,19 @@ class Tourney(object):
 
     # Number of games in the GAME table - that is, number of games played
     # or in progress.
-    def get_num_games(self, finals_only=False):
+    # If finals_only is True, only consider games of type "QF", "SF", "3P" or
+    # "F", and ignore game_type.
+    # Otherwise, if game_type is set, count only games with the given type.
+    def get_num_games(self, finals_only=False, game_type=None):
         cur = self.db.cursor()
         sql = "select count(*) from game"
+        params = ()
         if finals_only:
             sql += " where game_type in ('QF', 'SF', '3P', 'F')"
-        cur.execute(sql)
+        elif game_type:
+            sql += " where game_type = ?"
+            params = (game_type,)
+        cur.execute(sql, params)
         row = cur.fetchone()
         if row and row[0] is not None:
             count = row[0]
@@ -1581,6 +1588,16 @@ class Tourney(object):
             return bool(row[0])
         else:
             raise PlayerDoesNotExistException("Can't find whether player \"%s\" is a newbie because there is no player with that name." % (name))
+
+    # Get the number of non-withdrawn newbies in the PLAYER table.
+    def get_active_newbie_count(self):
+        if not self.has_player_newbie_feature():
+            return 0
+        cur = self.db.cursor()
+        cur.execute("select count(*) from player where newbie != 0 and withdrawn = 0")
+        row = cur.fetchone()
+        cur.close()
+        return row[0]
 
     def add_player(self, name, rating, division=0):
         if not name or not name.strip():

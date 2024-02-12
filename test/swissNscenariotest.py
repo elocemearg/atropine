@@ -148,7 +148,7 @@ def main():
     # the following values:
     # {
     #     "test" : {
-    #          (parameters for the tesdt)
+    #          (parameters for the test)
     #          "group_size" : (required: number of players per table)
     #          "limit_ms" : (max milliseconds to let swissN() run for)
     #

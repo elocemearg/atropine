@@ -19,16 +19,35 @@ kept separate from each other if possible."""
 # call made again.
 def get_user_form(tourney, settings, div_rounds):
     elements = []
-    elements.append(htmlform.HTMLFragment("<p>"))
-    elements.append(htmlform.HTMLFormCheckBox("avoidrematches", "Avoid rematches", bool(settings.get("avoidrematches", True))))
-    elements.append(htmlform.HTMLFragment("</p>"))
+    constraint_choices = []
+
+    # User can choose to avoid rematches, or to avoid all-newbie tables, but
+    # not both. Very likely you will only be using the Random fixture generator
+    # in round 1 anyway, and if you're using it in later rounds there isn't
+    # much point requiring a non-newbie on each table because everybody has
+    # now played a game.
+    if tourney.get_num_games(game_type="P") > 0:
+        # If games have been played, offer to avoid rematches
+        constraint_choices.append(htmlform.HTMLFormChoice("avoidrematches", "Do not allowe rematches", selected=True))
+    if tourney.has_player_newbie_feature() and tourney.get_active_newbie_count() > 0:
+        # If there are newbies, offer to avoid all-newbie tables
+        constraint_choices.append(htmlform.HTMLFormChoice("avoidallnewbietables", "Put at least one non-newbie on each table", selected=(len(constraint_choices) == 0)))
+
+    # If either of the above are true, draw some radio buttons
+    if constraint_choices:
+        constraint_choices = [ htmlform.HTMLFormChoice("none", "None", selected=False) ] + constraint_choices
+        radio_button = htmlform.HTMLFormRadioButton("constraint", "Special constraints:", constraint_choices)
+        elements.append(htmlform.HTMLFragment("<p>"))
+        elements.append(radio_button)
+        elements.append(htmlform.HTMLFragment("</p>"))
     return gencommon.get_user_form_div_table_size(tourney, settings, div_rounds, True, elements)
 
 def check_ready(tourney, div_rounds):
     return gencommon.check_ready_existing_games_and_table_size(tourney, div_rounds)
 
 
-def random_without_rematches_aux(tables, players, player_indices_remaining, table_sizes, potential_opponents, id_to_index, start_time, time_limit_ms):
+def random_without_rematches_aux(tables, players, player_indices_remaining,
+        table_sizes, potential_opponents, id_to_index, start_time, time_limit_ms):
     if len(player_indices_remaining) == 0:
         return tables
 
@@ -121,9 +140,49 @@ def random_without_rematches(players, table_sizes, previous_games, time_limit_ms
     for i in range(len(prunes)):
         tables[i % len(tables)].append(prunes[i])
 
+    # Now place the other players.
     player_indices_remaining = [ id_to_index[p.get_id()] for p in non_prunes ]
-    return random_without_rematches_aux(tables, players, player_indices_remaining, table_sizes, potential_opponents, id_to_index, time.time(), time_limit_ms)
+    return random_without_rematches_aux(tables, players,
+            player_indices_remaining, table_sizes, potential_opponents,
+            id_to_index, time.time(), time_limit_ms)
 
+
+# If there are any tables containing all newbies, we don't want that, so
+# suitably redistribute the newbies in a random fashion.
+# tables is a list of lists of Player objects, where every player playing in
+# this round appears in one of the lists.
+def redistribute_newbies(tables):
+    # table_newbie_spaces: the number of additional newbies this table could accommodate.
+    # An all-newbie table has a count of -1. A table with only one non-newbie
+    # on it cannot have that non-newbie swapped for a newbie so the count is 0.
+    table_newbie_spaces = []
+    for t in tables:
+        table_newbie_spaces.append(len([ p for p in t if not p.is_prune() and not p.is_newbie() ]) - 1)
+
+    # We shouldn't get as far as redistribute_newbies() if there aren't enough
+    # non-newbies in the first place.
+    assert(sum(table_newbie_spaces) >= 0)
+
+    for table_idx in range(len(tables)):
+        if table_newbie_spaces[table_idx] < 0:
+            assert(table_newbie_spaces[table_idx] == -1)
+            # Swap a random newbie on this table with a random non-newbie on
+            # a random other table which currently has >= 2 non-newbies on it.
+            newbie_idx = random.randint(0, len(tables[table_idx]) - 1)
+
+            # Choose a random other table which has space for >= 1 newbie
+            other_table_idx = random.choice([i for i in range(len(tables)) if table_newbie_spaces[i] >= 1 ])
+
+            # Choose a random non-newbie on that table
+            other_table_non_newbie_indexes = [ i for i in range(len(tables[other_table_idx])) if not tables[other_table_idx][i].is_prune() and not tables[other_table_idx][i].is_newbie() ]
+            other_table_player_idx = random.choice(other_table_non_newbie_indexes)
+
+            # Swap that non-newbie for the newbie on this table
+            tmp = tables[table_idx][newbie_idx]
+            tables[table_idx][newbie_idx] = tables[other_table_idx][other_table_player_idx]
+            tables[other_table_idx][other_table_player_idx] = tmp
+            table_newbie_spaces[table_idx] += 1
+            table_newbie_spaces[other_table_idx] -= 1
 
 # Generate and return a list of fixtures. This function does NOT add them
 # to the tourney database. It's the caller's responsibility to do that, and
@@ -134,7 +193,9 @@ def generate(tourney, settings, div_rounds):
     if not ready:
         raise countdowntourney.FixtureGeneratorException(excuse);
 
-    avoid_rematches = bool(settings.get("avoidrematches", False))
+    constraint = settings.get("constraint", "none")
+    avoid_rematches = (constraint == "avoidrematches")
+    avoid_all_newbie_tables = (constraint == "avoidallnewbietables")
 
     generated_groups = fixgen.GeneratedGroups()
 
@@ -144,6 +205,17 @@ def generate(tourney, settings, div_rounds):
         tables = [];
         table_size = int(settings.get("d%d_groupsize" % (div_index)))
         (table_sizes, prunes_required) = gencommon.get_table_sizes(len(players), table_size)
+
+        if avoid_all_newbie_tables:
+            # Guarantee that every table has at least one newbie on it.
+            # Before we start, check that this is actually possible!
+            # Prune counts as a newbie: a table with two newbies and one Prune
+            # on it should be counted as an all-newbie table.
+            num_newbies = len([ p for p in players if p.is_newbie() ]) + prunes_required
+            num_spaces_for_newbies = sum([ n - 1 for n in table_sizes ])
+            if num_newbies > num_spaces_for_newbies:
+                div_str = "" if len(div_rounds) == 1 else tourney.get_division_name(div_index) + ": "
+                raise countdowntourney.FixtureGeneratorException(div_str + "There are not enough non-newbies to have at least one on every table!")
 
         for i in range(prunes_required):
             players.append(tourney.get_auto_prune())
@@ -190,6 +262,25 @@ def generate(tourney, settings, div_rounds):
                         raise countdowntourney.FixtureGeneratorException("I didn't set up the tables correctly and now I don't have enough spaces for the players. This is my problem. It's a bug in Atropine. Please report it.")
                 tables[ti].append(p)
                 ti = (ti + 1) % len(table_sizes)
+
+            if avoid_all_newbie_tables:
+                # If there are any all-newbie tables, swap them with random
+                # non-newbies on other tables so that every table has at least
+                # one non-newbie on it.
+                redistribute_newbies(tables)
+
+            # Any tables with Prunes, go at the end of the list.
+            # redistribute_newbies() might have put a Prune somewhere else.
+            prune_tables = []
+            non_prune_tables = []
+            for t in tables:
+                for p in t:
+                    if p.is_prune():
+                        prune_tables.append(t)
+                        break
+                else:
+                    non_prune_tables.append(t)
+            tables = non_prune_tables + prune_tables
 
         for tab in tables:
             generated_groups.add_group(round_no, div_index, tab)
