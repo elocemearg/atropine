@@ -225,7 +225,7 @@ def generate(tourney, settings, div_rounds):
                     non_prune_tables.append(t)
             tables = non_prune_tables + prune_tables
         else:
-            tables.sort(key=lambda x : len(x))
+            tables.sort(key=lambda x : len(x), reverse=True)
 
         for tab in tables:
             generated_groups.add_group(round_no, div_index, tab)
