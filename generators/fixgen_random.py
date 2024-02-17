@@ -1,9 +1,11 @@
 import random
-import time
+import itertools
+
 import countdowntourney
 import htmlform
 import gencommon
 import fixgen
+import randomdraw
 
 name = "Random Pairings/Groups"
 description = """Randomly assign players to tables, avoiding rematches if
@@ -28,7 +30,7 @@ def get_user_form(tourney, settings, div_rounds):
     # now played a game.
     if tourney.get_num_games(game_type="P") > 0:
         # If games have been played, offer to avoid rematches
-        constraint_choices.append(htmlform.HTMLFormChoice("avoidrematches", "Do not allowe rematches", selected=True))
+        constraint_choices.append(htmlform.HTMLFormChoice("avoidrematches", "Do not allow rematches", selected=True))
     if tourney.has_player_newbie_feature() and tourney.get_active_newbie_count() > 0:
         # If there are newbies, offer to avoid all-newbie tables
         constraint_choices.append(htmlform.HTMLFormChoice("avoidallnewbietables", "Put at least one non-newbie on each table", selected=(len(constraint_choices) == 0)))
@@ -46,105 +48,76 @@ def check_ready(tourney, div_rounds):
     return gencommon.check_ready_existing_games_and_table_size(tourney, div_rounds)
 
 
-def random_without_rematches_aux(tables, players, player_indices_remaining,
-        table_sizes, potential_opponents, id_to_index, start_time, time_limit_ms):
-    if len(player_indices_remaining) == 0:
-        return tables
-
-    if time.time() > start_time + time_limit_ms / 1000.0:
-        raise countdowntourney.FixtureGeneratorException("Timed out before finding a set of fixtures with no rematches.")
-
-    # Find the first table without its full complement of players
-    table_index = 0
-    while table_index < len(tables):
-        if len(tables[table_index]) < table_sizes[table_index]:
-            break
-        else:
-            table_index += 1
-
-    if table_index >= len(tables):
-        return tables
-
-    # Put the remaining players in a random order
-    player_indices_remaining_shuffled = player_indices_remaining[:]
-    random.shuffle(player_indices_remaining_shuffled)
-
-    # Starting with the first player in the shuffled list, try to place that
-    # player on this table. If we can't, try to place the next player here, and
-    # so on, until we find something that works or we run out of options.
-    for player_index in player_indices_remaining_shuffled:
-        tables_copy = []
-        for t in tables:
-            tables_copy.append(t[:])
-
-        for opponent in tables[table_index]:
-            opp_index = id_to_index.get(opponent.get_id())
-            if opp_index is not None:
-                if opp_index not in potential_opponents[player_index]:
-                    break;
-        else:
-            # This player hasn't played anyone on this table. Place them
-            # here, and recurse to place the remaining players.
-            tables_copy[table_index].append(players[player_index])
-            new_player_indices_remaining = player_indices_remaining[:]
-            new_player_indices_remaining.remove(player_index)
-
-            finished_tables = random_without_rematches_aux(tables_copy,
-                    players, new_player_indices_remaining, table_sizes,
-                    potential_opponents, id_to_index, start_time, time_limit_ms)
-            if finished_tables:
-                # We have a complete solution
-                return finished_tables
-
-    # We can't place any player on this table without either having them play
-    # someone they've played before, or forcing a rematch later in the
-    # recursive process, so the task is impossible.
-    return None
-
-
 def random_without_rematches(players, table_sizes, previous_games, time_limit_ms):
-    tables = [ [] for x in table_sizes ]
+    # Prunes have already been added to "players" so we have the right number
+    # for the required table sizes. We'll just check this...
+    assert(len(players) == sum(table_sizes))
 
+    # We represent each player by their index in "players". invalid_pairs is
+    # a list of player indexes (x, y), representing pairs of players who have
+    # already played each other.
+    invalid_pairs = []
+
+    # Build a map: { player ID -> index into players array }
     id_to_index = {}
     for pi in range(len(players)):
         id_to_index[players[pi].get_id()] = pi
 
-    # For each index into "player", make a list of potential opponents
-    potential_opponents = {}
-    for pi in range(len(players)):
-        potential_opponents[pi] = set([ opp for opp in range(len(players)) if opp != pi ])
+    # The prunes will probably all have the same player ID, so
+    # id_to_index[prune_id] will only refer to one index. Build a set of all
+    # the array indices which have prunes.
+    prune_indices = set()
+    for (i, p) in enumerate(players):
+        if p.is_prune():
+            prune_indices.add(i)
 
-    prunes = [ p for p in players if p.is_prune() ]
-    non_prunes = [ p for p in players if not p.is_prune() ]
-
+    # Add to invalid_pairs details of who's played whom so far. If a player has
+    # played a prune, we need to add an entry for every slot in "players" in
+    # which a prune appears.
     for g in previous_games:
-        game_players = g.get_players()
-        pi0 = id_to_index.get(game_players[0].get_id())
-        pi1 = id_to_index.get(game_players[1].get_id())
+        gp = g.get_players()
 
-        if pi0 is not None and pi1 is not None:
-            potential_opponents[pi0].discard(pi1)
-            potential_opponents[pi1].discard(pi0)
+        # For this game, get each player's index in the "players" array.
+        pi0 = id_to_index.get(gp[0].get_id())
+        pi1 = id_to_index.get(gp[1].get_id())
 
-            # If a player has played a prune, behave as if they've played all
-            # the prunes
-            if game_players[0].is_prune() or game_players[1].is_prune():
-                for p in prunes:
-                    prune_index = id_to_index.get(p.get_id())
-                    potential_opponents[pi0].discard(prune_index)
-                    potential_opponents[pi1].discard(prune_index)
-                    potential_opponents[prune_index].discard(pi0)
-                    potential_opponents[prune_index].discard(pi1)
+        if pi0 is None or pi1 is None:
+            # This game involves a player who isn't playing in this round, so
+            # there's no danger of the other player playing them again.
+            # Ignore this game.
+            continue
+        if pi0 in prune_indices:
+            # pi0 is a Prune; prevent pi1 from playing any Prune
+            for prune_index in prune_indices:
+                invalid_pairs.append((prune_index, pi1))
+        elif pi1 in prune_indices:
+            # pi1 is a Prune; prevent pi0 from playing any Prune
+            for prune_index in prune_indices:
+                invalid_pairs.append((pi0, prune_index))
+        else:
+            invalid_pairs.append((pi0, pi1))
 
-    # First, put the prunes on separate tables.
-    for i in range(len(prunes)):
-        tables[i % len(tables)].append(prunes[i])
+    # Also add every pair of prunes to this list, so that all prunes go on
+    # separate tables.
+    if len(prune_indices) >= 2:
+        for (x, y) in itertools.combinations(list(prune_indices), 2):
+            invalid_pairs.append((x, y))
 
-    # Now place the other players.
-    player_indices_remaining = [ id_to_index[p.get_id()] for p in non_prunes ]
-    return random_without_rematches_aux(tables, players,
-            player_indices_remaining, table_sizes, potential_opponents,
-            id_to_index, time.time(), time_limit_ms)
+    try:
+        # Get a list of lists of player indices which fit these requirements.
+        (tables_nums, search_required) = randomdraw.draw(table_sizes, invalid_pairs, search_time_limit_ms=time_limit_ms)
+    except randomdraw.RandomDrawTimeoutException:
+        raise countdowntourney.FixtureGeneratorException("Timed out: failed to find an acceptable set of fixtures within the time limit.")
+    if tables_nums is None:
+        # No solution found!
+        raise countdowntourney.FixtureGeneratorException("Failed to find any set of fixtures%s." % (" without rematches" if previous_games else ""))
+
+    # Convert it to a list of lists of players...
+    tables = []
+    for t in tables_nums:
+        tables.append([ players[i] for i in t ])
+
+    return tables
 
 
 # If there are any tables containing all newbies, we don't want that, so
@@ -217,60 +190,30 @@ def generate(tourney, settings, div_rounds):
                 div_str = "" if len(div_rounds) == 1 else tourney.get_division_name(div_index) + ": "
                 raise countdowntourney.FixtureGeneratorException(div_str + "There are not enough non-newbies to have at least one on every table!")
 
+        # Add any necessary prunes
         for i in range(prunes_required):
             players.append(tourney.get_auto_prune())
+
+        # Total number of auto and non-auto prunes (if anyone still uses non-auto prunes?)
+        num_prunes = len([ p for p in players if p.is_prune() ])
 
         if avoid_rematches:
             tables = random_without_rematches(players, table_sizes, tourney.get_games(game_type="P"), 10000)
 
             if not tables:
                 raise countdowntourney.FixtureGeneratorException("Failed to find a set of fixtures with no rematches.")
-
-            # Put any Pruney tables at the end
-            tables.reverse()
         else:
-            # Randomly shuffle the player list, but always put any prunes at the
-            # end of the list. This will ensure they all go on separate tables
-            # if possible, if the tables are the same size. If we're using the
-            # weird 5&3 thing then we don't need Prunes anyway.
-            prunes = [ p for p in players if p.is_prune() ]
-            non_prunes = [ p for p in players if not p.is_prune() ]
-            random.shuffle(non_prunes);
-            players = non_prunes + prunes
-
-            tables = []
-            for x in table_sizes:
-                tables.append([])
-
-            # If the tables are of unequal size, put the large tables first.
-            table_sizes.sort(reverse=True)
-
-            # Distribute the players amongst the tables. Deal them like cards
-            # rather than cutting the pack, otherwise we'll end up with all
-            # the prunes on the last table.
-            ti = 0
-            for p in players:
-                orig_ti = ti
-                # Put this player on the next table which has space
-                while len(tables[ti]) >= table_sizes[ti]:
-                    ti = (ti + 1) % len(table_sizes)
-                    if ti == orig_ti:
-                        # We shouldn't go into an infinite loop, but if we
-                        # do, then it means the sum of all the values in
-                        # table_sizes is less than the number of players we
-                        # have, which shouldn't have happened.
-                        raise countdowntourney.FixtureGeneratorException("I didn't set up the tables correctly and now I don't have enough spaces for the players. This is my problem. It's a bug in Atropine. Please report it.")
-                tables[ti].append(p)
-                ti = (ti + 1) % len(table_sizes)
-
+            # Use random_without_rematches(), but give it no rematches.
+            tables = random_without_rematches(players, table_sizes, [], 10000)
             if avoid_all_newbie_tables:
                 # If there are any all-newbie tables, swap them with random
                 # non-newbies on other tables so that every table has at least
                 # one non-newbie on it.
                 redistribute_newbies(tables)
 
-            # Any tables with Prunes, go at the end of the list.
-            # redistribute_newbies() might have put a Prune somewhere else.
+        # If there are Prunes, put the Pruney tables last. Otherwise, put the
+        # tables in order of size if they're not all the same size.
+        if num_prunes > 0:
             prune_tables = []
             non_prune_tables = []
             for t in tables:
@@ -281,6 +224,8 @@ def generate(tourney, settings, div_rounds):
                 else:
                     non_prune_tables.append(t)
             tables = non_prune_tables + prune_tables
+        else:
+            tables.sort(key=lambda x : len(x))
 
         for tab in tables:
             generated_groups.add_group(round_no, div_index, tab)

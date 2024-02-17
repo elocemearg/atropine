@@ -2,6 +2,10 @@
 
 import itertools
 import random
+import time
+
+class RandomDrawTimeoutException(Exception):
+    pass
 
 # Our recursive function, called by the front-end function draw().
 #
@@ -15,6 +19,9 @@ import random
 #    The sets are expected to be symmetrical:
 #    (y in allowed_opponents[x] == x in allowed_opponents[y]) for all x, y.
 #
+# expiry_time: throw a FixtureGeneratorException if we don't find a valid
+# solution before time.time() >= expiry_time. Use None (the default) to disable.
+#
 # group_sizes_pos tells us how far we are through the problem.
 #    group_sizes[group_sizes_pos] is the size of the next group to generate.
 #    Everything before group_sizes_pos is ignored.
@@ -23,7 +30,7 @@ import random
 #
 # return value will be the list of lists of player numbers, but the lists will
 # be in reverse order to group_sizes.
-def draw_aux(players, group_sizes, allowed_opponents, group_sizes_pos=0):
+def draw_aux(players, group_sizes, allowed_opponents, expiry_time=None, group_sizes_pos=0):
     # Base case. No players? No tables.
     if group_sizes_pos >= len(group_sizes):
         return []
@@ -56,6 +63,9 @@ def draw_aux(players, group_sizes, allowed_opponents, group_sizes_pos=0):
     # Try every possible combination of permitted opponents for p until we
     # find a complete solution that works or we've tried all the combinations.
     for p_opps in itertools.combinations(allowed_opponents[p], next_group_size - 1):
+        # Have we run out of time?
+        if expiry_time is not None and time.time() > expiry_time:
+            raise RandomDrawTimeoutException()
         # Ensure all the players in p_opps are allowed to play each other
         skip = False
         for (x, y) in itertools.combinations(p_opps, 2):
@@ -95,7 +105,7 @@ def draw_aux(players, group_sizes, allowed_opponents, group_sizes_pos=0):
             # We didn't break out of the inner for-loop above.
             # Take candidate_group as part of our solution, and recurse to
             # solve the rest.
-            remaining_groups = draw_aux(players, group_sizes, allowed_opponents, group_sizes_pos + 1)
+            remaining_groups = draw_aux(players, group_sizes, allowed_opponents, expiry_time, group_sizes_pos + 1)
             if remaining_groups is not None:
                 # We have a complete solution! Return it.
                 remaining_groups.append(candidate_group)
@@ -114,7 +124,7 @@ def draw_aux(players, group_sizes, allowed_opponents, group_sizes_pos=0):
     return None
 
 
-def draw(group_sizes, invalid_pairs, random_attempts_before_search=100):
+def draw(group_sizes, invalid_pairs, random_attempts_before_search=100, search_time_limit_ms=None):
     """
     draw(): randomly divide players into equal groups, subject to constraints
 
@@ -127,13 +137,17 @@ def draw(group_sizes, invalid_pairs, random_attempts_before_search=100):
     invalid_pairs: a collection of pairs (x, y), where x and y are all in the
     range [0, sum(group_sizes)). A valid solution will not put x and y in the
     same group. This is how you tell the function that the players represented
-    by x and y have already played each other.
+    by x and y have already played each other. The caller only needs to include
+    (x, y) one way round; (x, y) and (y, x) are equivalent.
 
     random_attempts_before_search: try up to this many random arrangements
     hoping for one that happens to fit the constraints, before defaulting to a
     random but systematic search, for which some overall outcomes might be
     more probable than others. If a random arrangement succeeds, it will be
     returned and every permitted outcome is as likely as any other.
+
+    search_time_limit_ms: raise a RandomDrawTimeoutException if the search
+    takes longer than this many milliseconds.
 
     return value: (solution, search_required).
         solution: a list of lists of numbers in the range [0, num_players).
@@ -214,7 +228,11 @@ def draw(group_sizes, invalid_pairs, random_attempts_before_search=100):
 
     # Now call our recursive function
     players = set(range(num_players))
-    solution = draw_aux(players, group_sizes, allowed_opponents)
+    if search_time_limit_ms:
+        expiry_time = time.time() + search_time_limit_ms / 1000
+    else:
+        expiry_time = None
+    solution = draw_aux(players, group_sizes, allowed_opponents, expiry_time)
 
     if solution is not None:
         # Decode the returned player numbers using permutation_inverse, so the
