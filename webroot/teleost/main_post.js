@@ -347,10 +347,8 @@ function fetchGameState() {
     }
 
     gameStateFetchRequest = new XMLHttpRequest();
-
     gameStateFetchRequest.open("GET",
-            "/cgi-bin/jsonreq.py?tourney=" + encodeURIComponent(tourneyName) +
-            "&request=default" + modeParam, true);
+            "/atropine/" + encodeURIComponent(tourneyName) + "/state/default?" + modeParam, true);
     gameStateFetchRequest.onreadystatechange = fetchGameStateCallback;
     gameStateFetchRequest.onerror = fetchGameStateError;
     gameStateFetchRequest.send(null);
