@@ -59,25 +59,22 @@ class AtropineHTTPRequestHandler(http.server.CGIHTTPRequestHandler):
                 handlerutils.send_error_response(self, "Bad URL: unknown service \"%s\"" % (handler_name), status_code=404)
                 return
 
-            tourney = None
             try:
                 # Open this tourney DB file.
-                tourney = countdowntourney.tourney_open(tourney_name, tourneys_path)
+                with countdowntourney.tourney_open(tourney_name, tourneys_path) as tourney:
+                    # If this tourney exists and we opened it, call the
+                    # handler's handle() method which will send the response to
+                    # the client.
+                    try:
+                        AtropineHTTPRequestHandler.ATROPINE_HANDLER_MODULES[handler_name].handle(self, tourney, remaining_path_components, query_string)
+                    except Exception as e:
+                        handlerutils.send_error_response(self, "Failed to execute request handler %s for tourney %s: %s" % (handler_name, tourney_name, str(e)), status_code=400)
             except countdowntourney.DBNameDoesNotExistException as e:
                 handlerutils.send_error_response(self, e.description, status_code=404)
             except countdowntourney.TourneyException as e:
                 handlerutils.send_error_response(self, "Failed to open tourney \"%s\": %s" % (tourney_name, e.description), status_code=400)
             except Exception as e:
                 handlerutils.send_error_response(self, "Failed to open tourney \"%s\": %s" % (tourney_name, str(e)), status_code=400)
-
-            if tourney:
-                # If this tourney exists and we opened it, call the handler's
-                # handle() method which will send the response to the client.
-                try:
-                    AtropineHTTPRequestHandler.ATROPINE_HANDLER_MODULES[handler_name].handle(self, tourney, remaining_path_components, query_string)
-                except Exception as e:
-                    handlerutils.send_error_response(self, "Failed to execute request handler %s for tourney %s: %s" % (handler_name, tourney_name, str(e)), status_code=400)
-                tourney.close()
         else:
             # This is not a request for /atropine/...
             # CGIHTTPRequestHandler can handle this.
