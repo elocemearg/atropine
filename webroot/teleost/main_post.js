@@ -338,7 +338,7 @@ function fetchGameStateError(req) {
 function fetchGameState() {
     var modeParam = "";
     if (displayMode >= 0) {
-        modeParam = "&mode=" + displayMode.toString();
+        modeParam = "?mode=" + displayMode.toString();
     }
 
     if (gameStateFetchRequest != null) {
@@ -348,7 +348,7 @@ function fetchGameState() {
 
     gameStateFetchRequest = new XMLHttpRequest();
     gameStateFetchRequest.open("GET",
-            "/atropine/" + encodeURIComponent(tourneyName) + "/state/default?" + modeParam, true);
+            "/atropine/" + encodeURIComponent(tourneyName) + "/state/default" + modeParam, true);
     gameStateFetchRequest.onreadystatechange = fetchGameStateCallback;
     gameStateFetchRequest.onerror = fetchGameStateError;
     gameStateFetchRequest.send(null);
