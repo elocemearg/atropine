@@ -28,7 +28,7 @@ def show_live_and_preview(tourney, form, teleost_modes, showing_view, selected_v
     # Tell the user what mode is being shown, what mode is selected for preview
     # (if different) and if not auto, offer the user a button to return to auto.
     # We assume the "auto" display mode is number 0.
-    cgicommon.writeln("<form action=\"" + baseurl + "?%s\" method=\"POST\">" % (cgicommon.escape(os.getenv("QUERY_STRING", ""))))
+    cgicommon.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=0\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name)))
     cgicommon.writeln("<p>")
     cgicommon.write("You are currently <span style=\"color: green;\">showing</span> the <span style=\"font-weight: bold;\">%s</span> display mode" % (
             "?" if showing_view is None else teleost_modes[showing_view]["name"]
