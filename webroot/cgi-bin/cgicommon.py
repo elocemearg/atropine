@@ -373,7 +373,7 @@ function refreshUploadWidgetCallback() {
 function refreshUploadWidgetError() {
     var el = document.getElementById("uploaderwidgetstatus");
     el.innerText = "Internal error";
-    //el.setAttribute("title", "jsonreq.py failed: " + uploadStatusRequest.statusText);
+    //el.setAttribute("title", "HTTP fetch failed: " + uploadStatusRequest.statusText);
     updateUploadWidgetWithStatus(null);
     if (uploadWidgetExtraCallback != null) {
         uploadWidgetExtraCallback(uploadWidgetBroadcastingEnabled,
@@ -390,7 +390,7 @@ function refreshUploadWidget() {
        it on the uploader widget */
     if (uploadStatusRequest == null) {
         uploadStatusRequest = new XMLHttpRequest();
-        uploadStatusRequest.open("GET", "jsonreq.py?tourney=$TOURNEY_NAME&request=uploader", true);
+        uploadStatusRequest.open("GET", "/atropine/$TOURNEY_NAME/state/uploader", true);
         uploadStatusRequest.onload = refreshUploadWidgetCallback;
         uploadStatusRequest.onerror = refreshUploadWidgetError;
         uploadStatusRequest.send(null);

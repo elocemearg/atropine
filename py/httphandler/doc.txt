@@ -1,0 +1,12 @@
+Any Python module in this directory with a name of the form:
+    http_handler_XXX.py
+is expected to have a handle() function which will be passed HTTP requests made
+to the path /atropine/<tourneyname>/XXX/...
+
+def handle(handler, tourney, remaining_path_components, query_string)
+    handler: the Python HTTPRequestHandler, which contains details of the
+    request. https://docs.python.org/3/library/http.server.html#http.server.BaseHTTPRequestHandler
+    tourney: the countdowntourney object.
+    remaining_path_components: the list of path components after XXX.
+    query_string: the query string after the "?" in the URL, or the empty
+    string if there is no query string.
