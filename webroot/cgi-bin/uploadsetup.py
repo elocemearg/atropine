@@ -110,12 +110,26 @@ else:
     web_link = colive_url_base + "/" + cgicommon.escape(tourney_name, True)
     web_link_raw = colive_url_base + "/" + tourney_name
     cgicommon.writeln("<p>This will upload the tourney state every few seconds so that games, scores and standings are visible at <a href=\"%s\" target=\"_blank\">%s <img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\"/></a></p>" % (web_link, web_link))
-    cgicommon.writeln("<p>You will need:</p>")
-    cgicommon.writeln("<ul>")
-    cgicommon.writeln("<li>A username and password for the server at %s. If you don't have these, then ignore this whole feature. Just pretend it doesn't exist.</li>" % (cgicommon.escape(uploader.http_server_host)))
-    cgicommon.writeln("<li>A connection to the internet.</li>")
-    cgicommon.writeln("</ul>")
-    cgicommon.writeln("<p>If you lose internet access, uploads will be suspended but everything that doesn't require internet access such as results entry, fixture generation and the public display window will be unaffected. Uploads to the server will resume when the internet connection is restored.</p>")
+    cgicommon.writeln("""
+<p>You will need:</p>
+<ul>
+<li>A username and password for the server at %(httpserverhost)s. If you don't have these, then ignore this whole feature. Just pretend it doesn't exist.</li>
+<li>A connection to the internet.</li>
+</ul>
+<p>
+You can manage your account and published tourneys at
+<a href="%(coliveadminurl)s" target="_blank">%(coliveadminurl)s <img src="/images/opensinnewwindow.png" alt="Opens in new window"/></a>
+</p>
+<p>
+If you lose internet access, uploads will be suspended but everything that
+doesn't require internet access such as results entry, fixture generation and
+the public display window will be unaffected. Uploads to the server will resume
+when the internet connection is restored.
+</p>
+""" % {
+        "coliveadminurl" : "https://" + uploader.http_server_host + "/coliveadmin",
+        "httpserverhost" : uploader.http_server_host
+    })
 
     cgicommon.writeln("<div class=\"formbox\">")
     cgicommon.writeln("<form action=\"uploadsetup.py?tourney=%s\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name)))
