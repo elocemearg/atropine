@@ -282,7 +282,7 @@ function generate_fixtures_clicked() {
         elements.append(htmlform.HTMLFragment("<div style=\"margin-top: 5px; margin-bottom: 5px;\">"))
         elements.append(htmlform.HTMLFormCheckBox(div_prefix + "equalwinsareequalplayers",
             "Match players by number of wins then random chance, ignoring standings position",
-            False,
+            bool(settings.get(div_prefix + "equalwinsareequalplayers", False)),
             small_print="This option tries to match every player with random opponents on the same number of wins as them. Specific standings position is disregarded, except that if someone must play an opponent with more wins than them, prefer that to be the highest-ranked player(s) on the lower number of wins.")
         )
         elements.append(htmlform.HTMLFragment("</div>\n"))

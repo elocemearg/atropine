@@ -4,6 +4,7 @@ import sys
 import time
 import countdowntourney
 import random
+import itertools
 
 # Penalty applied to a game between two players who have already played each
 # other, or between two prunes, or between a player and a prune where the
@@ -132,7 +133,7 @@ def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_
     # difference in standings position, so that we group together people in
     # roughly the same part of the standings.
     pos_diff = abs(p1.position - p2.position)
-    if not rank_by_wins:
+    if not rank_by_wins and not equal_wins_are_equal_players:
         win_diff = 0
 
     if win_diff > 0:
@@ -329,6 +330,12 @@ def generate_all_groupings_aux(group_size_list, possible_opponent_matrix,
     if remaining_players:
         p = remaining_players[0]
         opps = [ opp for opp in remaining_players if opp != p and possible_opponent_matrix[p][opp] ]
+
+        # Sort the opponents, putting the opponent most compatible with p first.
+        # This means we try that opponent first and we're more likely to get
+        # the best grouping faster.
+        opps.sort(key=lambda opp : penalty_matrix[p][opp])
+
         #sys.stderr.write("%*slooking for opponents for %d from %s\n" % (depth, "", p, str(opps)))
         if len(opps) >= group_size - 1:
             for remainder in generate_sets(opps, group_size - 1):
@@ -460,15 +467,76 @@ def swissN_first_round(cdt_players, group_size):
         groups.append(PlayerGroup(player_list, 0));
     return (0, groups);
 
-def swap_players(groups, t1, p1, t2, p2):
-    tmp = groups[t1][p1]
-    groups[t1][p1] = groups[t2][p2]
-    groups[t2][p2] = tmp
+def rotate_players(groups, swapsies):
+    """
+    For each (table_index, player_index) in swapsies, replace that player
+    with the player in the position described by the next element in
+    swapsies, and so on, rotating around to the beginning of swapsies.
 
-def generate_table_and_seat_indices(groups, start_table, end_table):
-    for t in range(start_table, end_table + 1):
-        for p in range(0, len(groups[t])):
-            yield (t, p)
+    Calling this function on the same list len(swapsies) times with the same
+    value of swapsies will result in the groups list returning back to its
+    state before the first call.
+    """
+
+    if not swapsies:
+        return
+    (first_t, first_p) = swapsies[0]
+    first_player = groups[first_t][first_p]
+    for (i, (t, p)) in enumerate(swapsies):
+        if i + 1 >= len(swapsies):
+            # Last element of swapsies: replace player at this position with first_player
+            groups[t][p] = first_player
+        else:
+            # Replace player at this position with the next player
+            (next_t, next_p) = swapsies[i + 1]
+            groups[t][p] = groups[next_t][next_p]
+
+def generate_table_and_seat_indices(groups, count, dist_between_tables):
+    """
+    Generate all combinations of lists of (table_index, player_index) where
+    groups[table_index][player_index] is defined, subject to the constraints
+    that all yielded lists have "count" 2-tuples in them, and the smallest and
+    largest table_index in any list are dist_between_tables apart.
+
+    For example:
+      generate_table_and_seat_indices([[a, b, c], [d, e, f], [g, h, i]], 2, 2)
+    yields:
+      [ (0, 0), (2, 0) ]
+      [ (0, 0), (2, 1) ]
+      [ (0, 0), (2, 2) ]
+      [ (0, 1), (2, 0) ]
+      [ (0, 1), (2, 1) ]
+      [ (0, 1), (2, 2) ]
+      [ (0, 2), (2, 0) ]
+      [ (0, 2), (2, 1) ]
+      [ (0, 2), (2, 2) ]
+    """
+
+    for first_table in range(0, len(groups) - dist_between_tables):
+        last_table = first_table + dist_between_tables
+        # We know the lowest and highest table index. Work out all combinations
+        # of length count - 2 of tables that are between those.
+        for mid_tables in itertools.combinations(range(first_table + 1, last_table), count - 2):
+            tables = [first_table] + list(mid_tables) + [last_table]
+
+            # For this set of tables, generate results with all valid player indices.
+            player_indices = [ 0 for t in tables ]
+            finished = False
+            while not finished:
+                yield [ (tables[ti], player_indices[ti]) for ti in range(len(tables)) ]
+                # Increment player_indices[0]. If this reaches
+                # len(groups[tables[0]]), reset it to 0 and increment
+                # player_indices[1], and so on until player_indices[-1] wraps.
+                ti = 0
+                while ti < len(player_indices):
+                    player_indices[ti] += 1
+                    if player_indices[ti] >= len(groups[tables[ti]]):
+                        player_indices[ti] = 0
+                        ti += 1
+                    else:
+                        break
+                if ti == len(player_indices):
+                    finished = True
 
 def hill_climb(groups, penalty_matrix, time_limit_ms=None):
     """
@@ -491,36 +559,55 @@ def hill_climb(groups, penalty_matrix, time_limit_ms=None):
     current_penalty = sum(table_penalties)
     improved = True
     while improved:
-        # See if we can swap two players from different tables to give a lower
-        # overall penalty. Start off trying to swap players from adjacent tables
-        # then increase the distance between the tables we swap between if we
-        # don't find any improvement.
+        # See if we can swap players between different tables to give a lower
+        # overall penalty.
         improved = False
-        for dist_between_tables in range(1, len(groups)):
-            for (t1, p1) in generate_table_and_seat_indices(groups, 0, len(groups) - 1 - dist_between_tables):
-                t2 = t1 + dist_between_tables
-                assert(t2 < len(groups))
-                for p2 in range(0, len(groups[t2])):
-                    # Swap these two players
-                    swap_players(groups, t1, p1, t2, p2)
+        # num_to_swap: the number of players we will rotate like a carousel.
+        # When we've rotated them num_to_swap times, we're back where we began.
+        # Start off by trying to swap only two players, then try to rotate
+        # three players between different tables, then four.
+        for num_to_swap in (2, 3, 4):
+            if num_to_swap > 3:
+                # Don't do an exhaustive search when trying to rotate four
+                # players, because there will be loads of combinations to try,
+                # most of them fruitless.
+                dist_limit = 5
+            else:
+                dist_limit = len(groups) - 1
+            # Start off trying to swap players from adjacent tables then
+            # increase the distance between the tables we swap between if we
+            # don't find any improvement.
+            for dist_between_tables in range(num_to_swap - 1, dist_limit + 1):
+                # Generate all possible combinations of num_to_swap players
+                # between different tables where the furthest-apart tables
+                # are exactly dist_between_tables tables apart.
+                for swapsies in generate_table_and_seat_indices(groups, num_to_swap, dist_between_tables):
+                    for rotate_iteration in range(num_to_swap):
+                        rotate_players(groups, swapsies)
+                        if rotate_iteration == num_to_swap - 1:
+                            # No rotation of these players found any improvement
+                            # and the players are now rotated back to where they
+                            # were before.
+                            break
 
-                    # Recalculate the penalties for tables t1 and t2
-                    t1pen = get_table_penalty(penalty_matrix, groups[t1], penalty_cache)
-                    t2pen = get_table_penalty(penalty_matrix, groups[t2], penalty_cache)
+                        # Recalculate the penalties for the tables involved in this swap
+                        tables_in_swap = [ t for (t, p) in swapsies ]
+                        add_penalty = sum([get_table_penalty(penalty_matrix, groups[t], penalty_cache) for t in tables_in_swap ])
+                        remove_penalty = sum([table_penalties[t] for t in tables_in_swap])
 
-                    # If the sum of the penalties for these two tables is now
-                    # lower than what it was before, accept this swap.
-                    new_penalty = current_penalty + t1pen + t2pen - (table_penalties[t1] + table_penalties[t2])
-                    if new_penalty < current_penalty:
-                        current_penalty = new_penalty
-                        table_penalties[t1] = t1pen
-                        table_penalties[t2] = t2pen
-                        improved = True
-                        print("[swissN] Hill climb: swapping player %d with player %d, total penalty now %f." % (groups[t1][p1], groups[t2][p2], current_penalty), file=sys.stderr)
+                        # If the sum of the penalties for these two tables is
+                        # now lower than what it was before by more than
+                        # floating point rounding noise, accept this swap.
+                        new_penalty = current_penalty + add_penalty - remove_penalty
+                        if current_penalty - new_penalty > 0.000001:
+                            current_penalty = new_penalty
+                            for t in tables_in_swap:
+                                table_penalties[t] = get_table_penalty(penalty_matrix, groups[t], penalty_cache)
+                            improved = True
+                            print("[swissN] Hill climb: swapsies %s, total penalty now %f." % (str(swapsies), current_penalty), file=sys.stderr)
+                            break
+                    if improved:
                         break
-                    else:
-                        # Undo this swap and look for a better one.
-                        swap_players(groups, t1, p1, t2, p2)
                 if improved:
                     break
             if improved:
@@ -585,6 +672,12 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     a fixture between two players who have already played each other. If this
     is set to a positive integer, matches in the "games" list before that
     round number are ignored when applying this rule.
+
+    equal_wins_are_equal_players: do not distinguish between players on the
+    same number of wins. This effectively matches each player with random
+    opponents on the same win count if possible. Standings position is only
+    considered when deciding who has to be promoted to play people of a higher
+    win count.
 """
 
     log = True

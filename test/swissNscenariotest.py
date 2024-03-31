@@ -60,9 +60,17 @@ def test_scenario(scenario_file):
     standings = swissNtest.calculate_standings(games, players)
     name_to_wins = {}
     name_to_pos = {}
+
+    standings_out = None
+    # Uncomment to write standings to text file for debugging
+    #standings_out = open(scenario_file + ".standings.txt", "w")
     for s in standings:
         name_to_wins[s.name] = s.wins + s.draws * 0.5
         name_to_pos[s.name] = s.position
+        if standings_out:
+            print(" %2d %-12s %3.1f %3d" % (s.position, s.name, s.wins + s.draws * 0.5, s.points), file=standings_out)
+    if standings_out:
+        standings_out.close()
 
     test = scenario["test"]
     withdrawn_players = test.get("withdrawn", [])
@@ -73,11 +81,13 @@ def test_scenario(scenario_file):
     group_size = test["group_size"]
     init_max_win_diff = test.get("init_max_win_diff", 2)
     limit_ms = test.get("limit_ms", DEFAULT_LIMIT_MS)
+    equal_wins_are_equal_players = test.get("equal_wins_are_equal_players", False)
 
     # Call the business end of the swissN fixture generator
     (weight, groups) = swissN.swissN(games, active_players, standings,
             group_size, rank_by_wins=True, limit_ms=limit_ms,
-            init_max_win_diff=init_max_win_diff);
+            init_max_win_diff=init_max_win_diff,
+            equal_wins_are_equal_players=equal_wins_are_equal_players);
 
     if not groups:
         print("Unable to find any acceptable groupings in the time limit.")
@@ -87,6 +97,8 @@ def test_scenario(scenario_file):
     exp_max_pos_diff = test.get("exp_max_pos_diff", None)
     exp_rematches = test.get("exp_rematches", 0)
     exp_max_penalty = test.get("exp_max_penalty", None)
+    exp_opponent_win_counts = test.get("exp_opponent_win_counts", None)
+    exp_tables_with_win_diff = test.get("exp_tables_with_win_diff", None)
 
     # Sanity check that every player we passed to swissN() appears exactly once.
     unseen_players = set([p.get_name() for p in active_players])
@@ -137,6 +149,37 @@ def test_scenario(scenario_file):
             print("Rematches %d, expected <= %d" % (num_rematches, exp_rematches))
             return False
 
+    if exp_opponent_win_counts:
+        for name in exp_opponent_win_counts:
+            # Check that this players' opponents have the expected win counts.
+            expected_win_counts = exp_opponent_win_counts[name]
+            observed_win_counts = []
+            for g in groups:
+                for p in g:
+                    if p.name == name:
+                        for opp in g:
+                            if opp.name != p.name:
+                                observed_win_counts.append(name_to_wins[opp.name])
+                        break
+                if observed_win_counts:
+                    break
+            expected_win_counts = tuple(sorted(expected_win_counts))
+            observed_win_counts = tuple(sorted(observed_win_counts))
+            if expected_win_counts != observed_win_counts:
+                print("%s: expected opponent win counts %s but observed %s" % (name, str(expected_win_counts), str(observed_win_counts)))
+                return False
+
+    if exp_tables_with_win_diff is not None:
+        num_tables_with_win_diff = 0
+        for g in groups:
+            min_wins = min( [ name_to_wins[p.name] for p in g ] )
+            max_wins = max( [ name_to_wins[p.name] for p in g ] )
+            if min_wins != max_wins:
+                num_tables_with_win_diff += 1
+        if num_tables_with_win_diff > exp_tables_with_win_diff:
+            print("Expected %d tables with unequal win counts, observed %d" % (exp_tables_with_win_diff, num_tables_with_win_diff))
+            return False
+
     return True
 
 def main():
@@ -168,6 +211,11 @@ def main():
             # doesn't find the best grouping in the time.
             "colin2022_after_r2.json",
 
+            # Same scenario, but we set the equal-wins-are-equal-players flag,
+            # so each player is given random new opponents on the same number
+            # of wins, as far as possible.
+            "colin2022_after_r2_wins_only.json",
+
             # 24 players including two Prunes, generate R3 after two rounds
             # of Lincoln style fixtures.
             "r3_22players_2prunes.json",
@@ -178,6 +226,10 @@ def main():
             # Generate round 5 after 4 rounds of two-to-a-table.
             "r5_pairs.json"
     ]
+
+    if len(sys.argv) > 1:
+        scenario_files = sys.argv[1:]
+
     num_passed = 0
     num_failed = 0
     for scenario_file in scenario_files:
