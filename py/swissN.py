@@ -110,7 +110,7 @@ class PlayerNotInStandingsException(BaseException):
 # into account that they've played before num_played times, and p1's win count
 # differs from p2's win count by win_diff (which is always non-negative).
 # This is also called the "weighting".
-def get_penalty(p1, p2, num_played, win_diff, rank_by_wins=True):
+def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_wins=True, equal_wins_are_equal_players=False):
     pen = 0;
 
     # No, you are not allowed to play yourself
@@ -128,13 +128,35 @@ def get_penalty(p1, p2, num_played, win_diff, rank_by_wins=True):
     # Fixtures between players whose win counts differ by 1 are usually
     # unavoidable, but there should be exponentially harsher penalties for
     # putting people on the same table whose win counts differ by more.
-    # Take the difference in standings position into consideration as well, so
-    # that we group together people in roughly the same part of the standings.
+    # Unless equal_wins_are_equal_players, we also take into account the
+    # difference in standings position, so that we group together people in
+    # roughly the same part of the standings.
     pos_diff = abs(p1.position - p2.position)
     if not rank_by_wins:
         win_diff = 0
 
-    game_pen = ( WIN_DIFFERENCE_PENALTY_BASE ** float(win_diff) ) + ( POSITION_DIFFERENCE_PENALTY_BASE ** float(pos_diff) )
+    if win_diff > 0:
+        game_pen = ( WIN_DIFFERENCE_PENALTY_BASE ** float(win_diff) )
+    else:
+        game_pen = 0
+
+    if equal_wins_are_equal_players:
+        if win_diff > 0:
+            # If we have to put one or more players with N-1 wins with a
+            # player with N wins, prefer to select the highest-ranked players
+            # on N-1 wins, who should play random player(s) on N wins.
+            # For this reason, we make the penalty between P1 and P2 the
+            # number of places away from the top of their win-count-group the
+            # lower-ranked player is, plus whatever win difference penalty was
+            # calculated above. This "promotes" the highest ranked lower-win
+            # players to be honorary higher-win players.
+            if p1.wins < p2.wins:
+                game_pen += p1.position - highest_pos_by_win_count[p1.wins]
+            else:
+                game_pen += p2.position - highest_pos_by_win_count[p2.wins]
+    else:
+        # Take into account these two players' difference in standings.
+        game_pen += ( POSITION_DIFFERENCE_PENALTY_BASE ** float(pos_diff) )
     if game_pen >= HUGE_PENALTY:
         game_pen = HUGE_PENALTY - 1
     pen += game_pen
@@ -142,9 +164,17 @@ def get_penalty(p1, p2, num_played, win_diff, rank_by_wins=True):
     return pen;
 
 # Calculate the matrix of penalties for each pair of players.
-def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank_by_wins=True):
+def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank_by_wins=True, equal_wins_are_equal_players=False):
     matrix_size = len(players);
     matrix = [];
+
+    # For each win count, work out the position of the highest-ranked player
+    # with that win count. get_penalty() may use this.
+    highest_pos_by_win_count = {}
+    for p in players:
+        if p.wins not in highest_pos_by_win_count or p.position < highest_pos_by_win_count[p.wins]:
+            highest_pos_by_win_count[p.wins] = p.position
+
     for i1 in range(matrix_size):
         p1 = players[i1]
         vector = [];
@@ -156,9 +186,11 @@ def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank
         for i2 in range(matrix_size):
             p2 = players[i2]
             pen = max(get_penalty(p1, p2, played_matrix[i1][i2],
-                win_diff_matrix[i1][i2], rank_by_wins),
+                win_diff_matrix[i1][i2], highest_pos_by_win_count,
+                rank_by_wins, equal_wins_are_equal_players),
                 get_penalty(p2, p1, played_matrix[i2][i1],
-                    win_diff_matrix[i2][i1], rank_by_wins)
+                    win_diff_matrix[i2][i1], highest_pos_by_win_count,
+                    rank_by_wins, equal_wins_are_equal_players)
             );
             vector.append(pen);
 
@@ -377,12 +409,15 @@ class PlayerGroup(object):
     def __len__(self):
         return len(self.player_list);
 
-def shuffle_joint_positioned_players(players):
+def shuffle_joint_positioned_players(players, equal_wins_are_equal_players=False):
     i = 0
     while i < len(players):
         pos = players[i].position
+        wins = players[i].wins
         j = i + 1
-        while j < len(players) and players[j].position == pos:
+        # If equal_wins_are_equal_players, chunks of players on the same number
+        # of wins are shuffled, regardless of points or anything else.
+        while j < len(players) and ((not equal_wins_are_equal_players and players[j].position == pos) or (equal_wins_are_equal_players and players[j].wins == wins)):
             j += 1
         if j - i > 1:
             # The chunk of the array in the interval [i, j) must be shuffled
@@ -425,9 +460,80 @@ def swissN_first_round(cdt_players, group_size):
         groups.append(PlayerGroup(player_list, 0));
     return (0, groups);
 
+def swap_players(groups, t1, p1, t2, p2):
+    tmp = groups[t1][p1]
+    groups[t1][p1] = groups[t2][p2]
+    groups[t2][p2] = tmp
+
+def generate_table_and_seat_indices(groups, start_table, end_table):
+    for t in range(start_table, end_table + 1):
+        for p in range(0, len(groups[t])):
+            yield (t, p)
+
+def hill_climb(groups, penalty_matrix, time_limit_ms=None):
+    """
+    Try to swap players between groups to improve the overall penalty of the
+    set of groups. groups will be modified in place, and the penalty of the
+    new groupings will be returned. We only swap players if that improves the
+    overall penalty. We keep swapping players until no more improvement occurs
+    or the time limit expires.
+
+    groups is an array of arrays of integers. Each array groups[x] represents a
+    group of players, and each integer groups[x][y] represents a player.
+    """
+
+    if time_limit_ms:
+        deadline = time.time() + time_limit_ms / 1000
+    else:
+        deadline = None
+    penalty_cache = {}
+    table_penalties = [ get_table_penalty(penalty_matrix, group, penalty_cache) for group in groups ]
+    current_penalty = sum(table_penalties)
+    improved = True
+    while improved:
+        # See if we can swap two players from different tables to give a lower
+        # overall penalty. Start off trying to swap players from adjacent tables
+        # then increase the distance between the tables we swap between if we
+        # don't find any improvement.
+        improved = False
+        for dist_between_tables in range(1, len(groups)):
+            for (t1, p1) in generate_table_and_seat_indices(groups, 0, len(groups) - 1 - dist_between_tables):
+                t2 = t1 + dist_between_tables
+                assert(t2 < len(groups))
+                for p2 in range(0, len(groups[t2])):
+                    # Swap these two players
+                    swap_players(groups, t1, p1, t2, p2)
+
+                    # Recalculate the penalties for tables t1 and t2
+                    t1pen = get_table_penalty(penalty_matrix, groups[t1], penalty_cache)
+                    t2pen = get_table_penalty(penalty_matrix, groups[t2], penalty_cache)
+
+                    # If the sum of the penalties for these two tables is now
+                    # lower than what it was before, accept this swap.
+                    new_penalty = current_penalty + t1pen + t2pen - (table_penalties[t1] + table_penalties[t2])
+                    if new_penalty < current_penalty:
+                        current_penalty = new_penalty
+                        table_penalties[t1] = t1pen
+                        table_penalties[t2] = t2pen
+                        improved = True
+                        print("[swissN] Hill climb: swapping player %d with player %d, total penalty now %f." % (groups[t1][p1], groups[t2][p2], current_penalty), file=sys.stderr)
+                        break
+                    else:
+                        # Undo this swap and look for a better one.
+                        swap_players(groups, t1, p1, t2, p2)
+                if improved:
+                    break
+            if improved:
+                break
+        if deadline and time.time() > deadline:
+            print("[swissN] Hill climb: time expired.", file=sys.stderr)
+            break
+    return current_penalty
+
+
 def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
         limit_ms=None, init_max_rematches=0, init_max_win_diff=0,
-        ignore_rematches_before=None):
+        ignore_rematches_before=None, equal_wins_are_equal_players=False):
     """swissN(): the public entry point to the SwissN generator.
 
     Generate a number of groups (or "tables"), each with a number of players
@@ -513,7 +619,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     # that when we have such a set of people in joint Nth place, the person
     # whose name is nearest the beginning of the alphabet doesn't always get
     # selected first to play on a stronger table.
-    shuffle_joint_positioned_players(players)
+    shuffle_joint_positioned_players(players, equal_wins_are_equal_players)
 
     # Check that the group size makes sense for the number of players. By
     # this point we should have added any required auto-prunes, so the number
@@ -589,7 +695,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
             win_diff_row.append(abs(p.wins - opponent.wins))
         win_diff_matrix.append(win_diff_row)
 
-    penalty_matrix = calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank_by_wins);
+    penalty_matrix = calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank_by_wins, equal_wins_are_equal_players);
     penalty_matrix_size = len(players);
 
     best_grouping = None
@@ -633,6 +739,11 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
                     sys.stderr.write("[swissN] New best plan is %f, %s\n" % (best_weight, str(best_grouping)))
             if limit_ms and time.time() - start_time > float(limit_ms) / 1000.0:
                 break
+            if best_weight == 0:
+                # Can't improve on this, which might happen if
+                # equal_wins_are_equal_players is set and the size of each
+                # win count group is a multiple of the group size.
+                break
         if limit_ms and time.time() - start_time > float(limit_ms) / 1000.0:
             if log:
                 sys.stderr.write("[swissN] That's time...\n")
@@ -651,9 +762,19 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     weight = best_weight
     groups = best_grouping
 
-    # Sort the groups so the players high up in the standings are on
-    # low-numbered tables
-    groups = sorted(groups, key=lambda x : sum([(players[y].position) for y in x]));
+    # If we can further improve this by some simple swaps of players between
+    # tables, do it. Use up to the time we have left, or five seconds,
+    # whichever is greater.
+    time_remaining_ms = max(5000, limit_ms - (time.time() - start_time) * 1000)
+    weight = hill_climb(groups, penalty_matrix, time_limit_ms=time_remaining_ms)
+
+    # Sort the groups. If we're treating players on equal numbers of wins as
+    # equal, sort by total wins on that table. Otherwise sort by total
+    # standings position on that table.
+    if equal_wins_are_equal_players:
+        groups = sorted(groups, key=lambda x : sum([(players[y].wins) for y in x]), reverse=True)
+    else:
+        groups = sorted(groups, key=lambda x : sum([(players[y].position) for y in x]));
 
     if log:
         group_no = 1

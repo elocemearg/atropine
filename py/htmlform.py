@@ -85,10 +85,11 @@ class HTMLFormChoice(object):
         self.enabled = enabled
 
 class HTMLFormCheckBox(HTMLFormElement):
-    def __init__(self, name, label, checked, other_attrs=None):
+    def __init__(self, name, label, checked, other_attrs=None, small_print=None):
         super(HTMLFormCheckBox, self).__init__(name, other_attrs);
         self.label = label;
         self.checked = checked;
+        self.small_print = small_print
 
     def get_value(self):
         return self.checked;
@@ -105,6 +106,8 @@ class HTMLFormCheckBox(HTMLFormElement):
         s += " />";
         s += "<label for=\"%s\"> " % (html.escape(self.name, True))
         s += html.escape(self.label);
+        if self.small_print:
+            s += "<div style=\"font-size: 10pt; color: gray;\">%s</div>" % (html.escape(self.small_print))
         s += "</label>"
         return s;
 

@@ -278,6 +278,15 @@ function generate_fixtures_clicked() {
             format_str = "This must exactly divide the number of active players in the %s."
         elements.append(htmlform.HTMLFormRadioButton(div_prefix + "groupsize", ("How many players per table? " + format_str) % ("division" if num_divisions > 1 else "tournament"), group_size_choices))
         elements.append(htmlform.HTMLFragment("</p>\n"))
+
+        elements.append(htmlform.HTMLFragment("<div style=\"margin-top: 5px; margin-bottom: 5px;\">"))
+        elements.append(htmlform.HTMLFormCheckBox(div_prefix + "equalwinsareequalplayers",
+            "Match players by number of wins then random chance, ignoring standings position",
+            False,
+            small_print="This option tries to match every player with random opponents on the same number of wins as them. Specific standings position is disregarded, except that if someone must play an opponent with more wins than them, prefer that to be the highest-ranked player(s) on the lower number of wins.")
+        )
+        elements.append(htmlform.HTMLFragment("</div>\n"))
+
         elements.append(htmlform.HTMLFragment("<p>Increase the following values if the fixture generator has trouble finding a grouping within the time limit.</p>\n"));
 
         elements.append(htmlform.HTMLFragment("<blockquote>"))
@@ -285,6 +294,7 @@ function generate_fixtures_clicked() {
         elements.append(htmlform.HTMLFragment("</blockquote>\n<blockquote>"))
         elements.append(htmlform.HTMLFormNumberInput("Initial maximum win count difference between players", div_prefix + "initmaxwindiff", str(init_max_win_diff), other_attrs={"min" : "0"}))
         elements.append(htmlform.HTMLFragment("</blockquote>\n"))
+
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<hr />\n"))
 
@@ -400,6 +410,8 @@ def generate(tourney, settings, div_rounds):
         if group_size > 0 and tourney.has_auto_prune():
             gencommon.add_auto_prunes(tourney, players, group_size)
 
+        equal_wins_are_equal_players = settings.get(div_prefix + "equalwinsareequalplayers", False)
+
         # Set a sensible cap of five minutes, in case the user has entered a
         # huge number to be clever
         if limit_ms > 300000:
@@ -409,14 +421,15 @@ def generate(tourney, settings, div_rounds):
         round_no = div_rounds[div_index]
         games = tourney.get_games(game_type="P");
         if len(games) == 0:
-            (weight, groups) = swissN.swissN_first_round(players, group_size);
+            (weight, groups) = swissN.swissN_first_round(players, group_size)
         else:
             (weight, groups) = swissN.swissN(games, players,
                     tourney.get_standings(div_index), group_size,
                     rank_by_wins=rank_by_wins, limit_ms=limit_ms,
                     init_max_rematches=init_max_rematches,
                     init_max_win_diff=init_max_win_diff,
-                    ignore_rematches_before=ignore_rematches_before);
+                    ignore_rematches_before=ignore_rematches_before,
+                    equal_wins_are_equal_players=equal_wins_are_equal_players)
 
         if groups is None:
             raise countdowntourney.FixtureGeneratorException("%s: Unable to generate any permissible groupings in the given time limit." % (tourney.get_division_name(div_index)))
