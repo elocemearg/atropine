@@ -419,7 +419,7 @@ def generate(tourney, settings, div_rounds):
 
         rank_by_wins = tourney.is_ranked_by_wins()
         round_no = div_rounds[div_index]
-        games = tourney.get_games(game_type="P");
+        games = tourney.get_games(game_type="P", division=div_index)
         if len(games) == 0:
             (weight, groups) = swissN.swissN_first_round(players, group_size)
         else:
