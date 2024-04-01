@@ -135,7 +135,12 @@ class HTMLFormTextInput(HTMLFormElement):
         self.value = value
 
     def html(self):
-        return "%s <input type=\"text\" name=\"%s\" value=\"%s\" %s />\n" % (self.label, html.escape(self.name, True), html.escape(self.value, True), self.other_attrs_to_html());
+        return "<label for=\"%(name)s\">%(label)s </label><input type=\"text\" name=\"%(name)s\" id=\"%(name)s\" value=\"%(value)s\" %(otherattrs)s />\n" % {
+                "name" : html.escape(self.name),
+                "value" : html.escape(elf.value),
+                "label" : self.label,
+                "otherattrs" : self.other_attrs_to_html()
+        }
 
 class HTMLFormNumberInput(HTMLFormElement):
     def __init__(self, label, name, value, other_attrs=None):
@@ -150,10 +155,12 @@ class HTMLFormNumberInput(HTMLFormElement):
         self.value = value
 
     def html(self):
-        return "%s <input type=\"number\" name=\"%s\" value=\"%s\" %s />\n" % (
-                self.label, html.escape(self.name, True),
-                html.escape(str(self.value), True),
-                self.other_attrs_to_html())
+        return "<label for=\"%(name)s\">%(label)s </label><input type=\"number\" name=\"%(name)s\" id=\"%(name)s\" value=\"%(value)s\" %(otherattrs)s />\n" % {
+                "name" : html.escape(self.name),
+                "label" : self.label,
+                "value" : html.escape(str(self.value)),
+                "otherattrs" : self.other_attrs_to_html()
+        }
 
 class HTMLFormRadioButton(HTMLFormElement):
     def __init__(self, name, label, choices, other_attrs=None):
@@ -296,3 +303,21 @@ class HTMLWarningBox(HTMLFormElement):
 
     def html(self):
         return cgicommon.make_warning_box(self.contents, self.wide)
+
+class HTMLFormControlStart(HTMLFormElement):
+    def __init__(self, indent=False):
+        self.name = None
+        if indent:
+            self.style_tag = "style=\"margin-left: 2em;\""
+        else:
+            self.style_tag = ""
+
+    def html(self):
+        return "<div class=\"fixgencontrol\" %s>" % (self.style_tag)
+
+class HTMLFormControlEnd(HTMLFormElement):
+    def __init__(self):
+        self.name = None
+
+    def html(self):
+        return "</div>"

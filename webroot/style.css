@@ -600,6 +600,10 @@ td.gameheat {
 	text-align: center;
 }
 
+div.fixgencontrol {
+    margin-bottom: 15px;
+}
+
 
 /* Front page list of available tourneys */
 

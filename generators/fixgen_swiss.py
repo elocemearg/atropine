@@ -218,22 +218,33 @@ function generate_fixtures_clicked() {
         default_default_group_size = None
 
     if num_divisions > 1 and len(table_sizes_valid_for_all_divs) > 0:
-        elements.append(htmlform.HTMLFragment("<p>"))
+        elements.append(htmlform.HTMLFormControlStart())
         group_size_choices = [ htmlform.HTMLFormChoice(str(gs),
             "5&3" if gs == -5 else str(gs),
             int_or_none(settings.get("groupsize", default_default_group_size)) == gs) for gs in table_sizes_valid_for_all_divs ]
         elements.append(htmlform.HTMLFormRadioButton("groupsize", "Default players per table", group_size_choices))
-        elements.append(htmlform.HTMLFragment("</p>"))
+        elements.append(htmlform.HTMLFormControlEnd())
 
-    elements.append(htmlform.HTMLFragment("<p>\n"))
-    elements.append(htmlform.HTMLFormNumberInput("Fixture generator time limit %s(seconds)" % ("per division " if num_divisions > 1 else ""),
-        "maxtime", settings.get("maxtime", "30"),
-        other_attrs={"id" : "maxtime", "min" : 1}));
-    elements.append(htmlform.HTMLFragment("</p>\n<p>\n"))
+    elements.append(htmlform.HTMLFormControlStart())
+    elements.append(htmlform.HTMLFormCheckBox("equalwinsareequalplayers",
+        "Match players by number of wins then random chance, ignoring standings position",
+        bool(settings.get("equalwinsareequalplayers", False)),
+        small_print="This option tries to match every player with random opponents on the same number of wins as them. Specific standings position is disregarded, except that if someone must play an opponent with more wins than them, prefer that to be the highest-ranked player(s) on the lower number of wins.")
+    )
+    elements.append(htmlform.HTMLFormControlEnd())
+
+    elements.append(htmlform.HTMLFormControlStart())
     elements.append(htmlform.HTMLFormNumberInput("For the purpose of avoiding rematches, disregard games before round ", "ignorerematchesbefore", str(ignore_rematches_before_round) if ignore_rematches_before_round is not None else "0", other_attrs={"min" : "0"}));
     elements.append(htmlform.HTMLFragment(" (enter 0 to count all rematches)"))
     elements.append(htmlform.HTMLFormHiddenInput("numdivisions", str(len(div_rounds)), other_attrs={"id" : "numdivisions"}))
-    elements.append(htmlform.HTMLFragment("</p>\n"))
+    elements.append(htmlform.HTMLFormControlEnd())
+
+    elements.append(htmlform.HTMLFormControlStart())
+    elements.append(htmlform.HTMLFormNumberInput("Fixture generator time limit %s(seconds)" % ("per division " if num_divisions > 1 else ""),
+        "maxtime", settings.get("maxtime", "30"),
+        other_attrs={"id" : "maxtime", "min" : 1}));
+    elements.append(htmlform.HTMLFormControlEnd())
+
     elements.append(htmlform.HTMLFragment("<hr />\n"))
 
     for div_index in sorted(div_rounds):
@@ -255,8 +266,6 @@ function generate_fixtures_clicked() {
                     urllib.parse.quote_plus(tourney.get_name())
                 )))
 
-        elements.append(htmlform.HTMLFragment("<p>"))
-
         div_valid_sizes = get_valid_group_sizes(len(players), len(rounds), tourney.has_auto_prune())
         ticked_group_size = int_or_none(settings.get(div_prefix + "groupsize"))
         if ticked_group_size is None:
@@ -276,29 +285,25 @@ function generate_fixtures_clicked() {
             format_str = "If this does not exactly divide the number of active players in the %s, prunes will automatically take up the empty slots."
         else:
             format_str = "This must exactly divide the number of active players in the %s."
+        elements.append(htmlform.HTMLFormControlStart())
         elements.append(htmlform.HTMLFormRadioButton(div_prefix + "groupsize", ("How many players per table? " + format_str) % ("division" if num_divisions > 1 else "tournament"), group_size_choices))
-        elements.append(htmlform.HTMLFragment("</p>\n"))
-
-        elements.append(htmlform.HTMLFragment("<div style=\"margin-top: 5px; margin-bottom: 5px;\">"))
-        elements.append(htmlform.HTMLFormCheckBox(div_prefix + "equalwinsareequalplayers",
-            "Match players by number of wins then random chance, ignoring standings position",
-            bool(settings.get(div_prefix + "equalwinsareequalplayers", False)),
-            small_print="This option tries to match every player with random opponents on the same number of wins as them. Specific standings position is disregarded, except that if someone must play an opponent with more wins than them, prefer that to be the highest-ranked player(s) on the lower number of wins.")
-        )
-        elements.append(htmlform.HTMLFragment("</div>\n"))
-
+        elements.append(htmlform.HTMLFormControlEnd())
         elements.append(htmlform.HTMLFragment("<p>Increase the following values if the fixture generator has trouble finding a grouping within the time limit.</p>\n"));
 
-        elements.append(htmlform.HTMLFragment("<blockquote>"))
+        elements.append(htmlform.HTMLFormControlStart(indent=True))
         elements.append(htmlform.HTMLFormNumberInput("Initial maximum rematches between players", div_prefix + "initmaxrematches", str(init_max_rematches), other_attrs={"min" : 0}))
-        elements.append(htmlform.HTMLFragment("</blockquote>\n<blockquote>"))
+        elements.append(htmlform.HTMLFormControlEnd())
+        elements.append(htmlform.HTMLFormControlStart(indent=True))
         elements.append(htmlform.HTMLFormNumberInput("Initial maximum win count difference between players", div_prefix + "initmaxwindiff", str(init_max_win_diff), other_attrs={"min" : "0"}))
-        elements.append(htmlform.HTMLFragment("</blockquote>\n"))
+        elements.append(htmlform.HTMLFormControlEnd())
 
         if num_divisions > 1:
             elements.append(htmlform.HTMLFragment("<hr />\n"))
 
+    elements.append(htmlform.HTMLFormControlStart())
     elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures", other_attrs={"onclick": "generate_fixtures_clicked();", "id": "generatefixtures", "class" : "bigbutton"}));
+    elements.append(htmlform.HTMLFormControlEnd())
+
     elements.append(htmlform.HTMLFragment("<p id=\"progresstext\">For large numbers of players or unusual formats, fixture generation is not immediate - it can take up to the specified number of seconds. If no permissible configurations are found in that time, an error occurs.</p><p id=\"progresstime\"></p><hr /><p></p>"));
     elements.append(htmlform.HTMLFragment("<noscript>Your browser doesn't have Javascript enabled, which means you miss out on progress updates while fixtures are being generated.</noscript>"));
 
@@ -410,7 +415,7 @@ def generate(tourney, settings, div_rounds):
         if group_size > 0 and tourney.has_auto_prune():
             gencommon.add_auto_prunes(tourney, players, group_size)
 
-        equal_wins_are_equal_players = settings.get(div_prefix + "equalwinsareequalplayers", False)
+        equal_wins_are_equal_players = settings.get("equalwinsareequalplayers", False)
 
         # Set a sensible cap of five minutes, in case the user has entered a
         # huge number to be clever
