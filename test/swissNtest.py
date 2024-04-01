@@ -240,6 +240,12 @@ def main():
         print("-p: players per table must be 2, 3, 4 or -5 (=5&3).")
         sys.exit(1)
 
+    print("Running unit tests...")
+    if not swissN.unit_tests():
+        print("Unit tests failed, see above.")
+        sys.exit(1)
+    print("Unit tests passed.")
+
     print("%d players, %d rounds" % (num_players, num_rounds));
     num_warnings = simulate_tourney(num_players, num_rounds, players_per_table, time_limit_ms, init_max_win_diff);
     print()

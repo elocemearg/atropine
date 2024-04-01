@@ -931,3 +931,101 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
         player_groups.append(PlayerGroup(player_group, group_weight));
 
     return (weight, player_groups);
+
+
+###############################################################################
+
+class TestFailedException(Exception):
+    pass
+
+def lists_equal(l1, l2):
+    if len(l1) != len(l2):
+        return False
+    for i in range(len(l1)):
+        if type(l1[i]) != type(l2[i]):
+            return False
+        if type(l1[i]) == list:
+            if not lists_equal(l1[i], l2[i]):
+                return False
+        elif l1[i] != l2[i]:
+            return False
+    return True
+
+def unit_test_rotate_players(input_list, swapsies, expected_result):
+    rotate_players(input_list, swapsies)
+    if not lists_equal(input_list, expected_result):
+        raise TestFailedException("rotate_players failed.\nSwapsies: %s\nExpected: %s\nObserved: %s" % (str(swapsies), str(expected_result), str(input_list)))
+
+def unit_test_rotate_players_cycle_test(input_list, swapsies):
+    # Check that calling rotate_players N times on the same list with a
+    # swapsies argument N elements long returns the list to its original state.
+    initial_list = []
+    for x in input_list:
+        initial_list.append(x[:])
+    for i in range(len(swapsies)):
+        rotate_players(input_list, swapsies)
+        if i < len(swapsies) - 1 and lists_equal(input_list, initial_list):
+            raise TestFailedException("rotate_players cycle test failed. List unexpectedly same as original after only %d rotations out of %d.\nList: %s" % (i + 1, len(swapsies), str(input_list)))
+    if not lists_equal(input_list, initial_list):
+        raise TestFailedException("rotate_players cycle test failed.\nSwapsies: %s\nCalls: %d\nExpected:%s\nObserved: %s" % (str(swapsies), len(swapsies), str(initial_list), str(input_list)))
+
+def unit_test_generate_table_and_seat_indices(groups, count, dist, expected):
+    observed = list(generate_table_and_seat_indices(groups, count, dist))
+    if not lists_equal(expected, observed):
+        raise TestFailedException("generate_table_and_seat_indices test failed.\nGroups: %s\ncount: %d\ndist: %d\nExpected: %s\nObserved: %s" % (groups, count, dist, str(expected), str(observed)))
+
+def unit_tests():
+    # Self-contained tests for the rotate_players and
+    # generate_table_and_seat_indices functions.
+    try:
+        l = [[0, 1], [2, 3], [4, 5], [6, 7]]
+        unit_test_rotate_players(l, [ (1, 0), (3, 1) ], [[0, 1], [7, 3], [4, 5], [6, 2]])
+        unit_test_rotate_players(l, [ (1, 0), (3, 1) ], [[0, 1], [2, 3], [4, 5], [6, 7]])
+
+        l = [ [0,1,2], [3,4,5], [6,7,8], [9,10,11], [12,13,14] ]
+        unit_test_rotate_players(l, [ (2, 2), (4, 0), (0, 0) ],
+                [ [8,1,2], [3,4,5], [6,7,12], [9,10,11], [ 0,13,14 ] ])
+        unit_test_rotate_players(l, [ (2, 2), (4, 0), (0, 0) ],
+                [ [12,1,2], [3,4,5], [6,7,0], [9,10,11], [ 8,13,14 ] ])
+        unit_test_rotate_players(l, [ (2, 2), (4, 0), (0, 0) ],
+                [ [0,1,2], [3,4,5], [6,7,8], [9,10,11], [12,13,14] ])
+
+        unit_test_rotate_players_cycle_test(l, [ (0, 1), (2, 1) ])
+        unit_test_rotate_players_cycle_test(l, [ (0, 1), (3, 2), (1, 1) ])
+        unit_test_rotate_players_cycle_test(l, [ (0, 0), (1, 1), (2, 2), (3, 0) ])
+
+        groups = [ [0,1], [2,3], [4,5] ]
+        unit_test_generate_table_and_seat_indices(groups, 2, 2,
+            [
+                [ (0, 0), (2, 0) ],
+                [ (0, 1), (2, 0) ],
+                [ (0, 0), (2, 1) ],
+                [ (0, 1), (2, 1) ]
+            ]
+        )
+        groups = [ [0,1], [2,3], [4,5], [6,7] ]
+        unit_test_generate_table_and_seat_indices(groups, 3, 2,
+            [
+                [ (0, 0), (1, 0), (2, 0) ],
+                [ (0, 1), (1, 0), (2, 0) ],
+                [ (0, 0), (1, 1), (2, 0) ],
+                [ (0, 1), (1, 1), (2, 0) ],
+                [ (0, 0), (1, 0), (2, 1) ],
+                [ (0, 1), (1, 0), (2, 1) ],
+                [ (0, 0), (1, 1), (2, 1) ],
+                [ (0, 1), (1, 1), (2, 1) ],
+
+                [ (1, 0), (2, 0), (3, 0) ],
+                [ (1, 1), (2, 0), (3, 0) ],
+                [ (1, 0), (2, 1), (3, 0) ],
+                [ (1, 1), (2, 1), (3, 0) ],
+                [ (1, 0), (2, 0), (3, 1) ],
+                [ (1, 1), (2, 0), (3, 1) ],
+                [ (1, 0), (2, 1), (3, 1) ],
+                [ (1, 1), (2, 1), (3, 1) ]
+            ]
+        )
+    except TestFailedException as e:
+        print(str(e))
+        return False
+    return True
