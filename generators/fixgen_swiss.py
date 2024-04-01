@@ -424,13 +424,23 @@ def generate(tourney, settings, div_rounds):
 
         rank_by_wins = tourney.is_ranked_by_wins()
         round_no = div_rounds[div_index]
-        games = tourney.get_games(game_type="P", division=div_index)
-        if len(games) == 0:
+        games = tourney.get_games(game_type="P")
+        standings = tourney.get_standings(div_index)
+
+        # Determine whether any of these players have played a game yet...
+        is_first_round = True
+        for s in standings:
+            if s.played > 0:
+                is_first_round = False
+                break
+
+        if is_first_round:
+            # No players in this division have played any games yet, so we use
+            # swissN_first_round() instead of swissN().
             (weight, groups) = swissN.swissN_first_round(players, group_size)
         else:
-            (weight, groups) = swissN.swissN(games, players,
-                    tourney.get_standings(div_index), group_size,
-                    rank_by_wins=rank_by_wins, limit_ms=limit_ms,
+            (weight, groups) = swissN.swissN(games, players, standings,
+                    group_size, rank_by_wins=rank_by_wins, limit_ms=limit_ms,
                     init_max_rematches=init_max_rematches,
                     init_max_win_diff=init_max_win_diff,
                     ignore_rematches_before=ignore_rematches_before,
