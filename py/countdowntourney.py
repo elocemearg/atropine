@@ -2819,9 +2819,9 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         player_points = {}
         player_points_against = {}
         player_played_first = {}
-        games = self.get_games(game_type="P")
+        games = [ g for g in self.get_games(game_type="P") if g.get_round_no() >= from_round_no ]
         for g in games:
-            if g.get_round_no() < from_round_no or g.get_division() != division:
+            if g.get_division() != division:
                 continue
             names = g.get_player_names()
             scores = [ g.get_player_name_score(names[0]), g.get_player_name_score(names[1]) ]
