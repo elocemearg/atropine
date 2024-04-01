@@ -186,7 +186,7 @@ class HTMLFormRadioButton(HTMLFormElement):
         s += "<br />";
         num = 0
         for c in self.choices:
-            s += "<input type=\"radio\" name=\"%s\" id=\"%s_%d\" value=\"%s\" %s %s /><label for=\"%s_%d\" %s> %s</label>" % (
+            s += "<input type=\"radio\" style=\"margin-left: 1.5em;\" name=\"%s\" id=\"%s_%d\" value=\"%s\" %s %s /><label for=\"%s_%d\" %s> %s</label>" % (
                     html.escape(self.name, True),
                     html.escape(self.name, True), num,
                     html.escape(c.value, True),
@@ -257,7 +257,10 @@ class HTMLFormDropDownBox(HTMLFormElement):
                 o.set_selected(False);
 
     def html(self):
-        s = "<select name=\"%s\" %s >\n" % (html.escape(self.name, True), self.other_attrs_to_html());
+        s = "<select name=\"%(name)s\" id=\"%(name)s\" %(otherattrs)s >\n" % {
+                "name" : html.escape(self.name),
+                "otherattrs" : self.other_attrs_to_html
+        }
         for o in self.options:
             s += o.html();
         s += "</select>\n";
@@ -308,7 +311,7 @@ class HTMLFormControlStart(HTMLFormElement):
     def __init__(self, indent=False):
         self.name = None
         if indent:
-            self.style_tag = "style=\"margin-left: 2em;\""
+            self.style_tag = "style=\"margin-left: 1.5em;\""
         else:
             self.style_tag = ""
 

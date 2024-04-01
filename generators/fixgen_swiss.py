@@ -48,6 +48,7 @@ def get_user_form(tourney, settings, div_rounds):
 
     max_time = int_or_none(settings.get("maxtime", None))
     ignore_rematches_before_round = int_or_none(settings.get("ignorerematchesbefore", None))
+    num_rounds_to_use = int_or_none(settings.get("numroundstouse"))
 
     div_ready = []
     for div in range(num_divisions):
@@ -240,6 +241,15 @@ function generate_fixtures_clicked() {
     elements.append(htmlform.HTMLFormControlEnd())
 
     elements.append(htmlform.HTMLFormControlStart())
+    num_rounds_to_use_options = [
+            htmlform.HTMLFormDropDownOption("0", "the whole tourney so far", num_rounds_to_use is None or num_rounds_to_use != 1),
+            htmlform.HTMLFormDropDownOption("1", "the previous round only", num_rounds_to_use == 1)
+    ]
+    elements.append(htmlform.HTMLFragment("<label for=\"numroundstouse\">Consider players' standings position and win/loss record from </label>"))
+    elements.append(htmlform.HTMLFormDropDownBox("numroundstouse", num_rounds_to_use_options))
+    elements.append(htmlform.HTMLFormControlEnd())
+
+    elements.append(htmlform.HTMLFormControlStart())
     elements.append(htmlform.HTMLFormNumberInput("Fixture generator time limit %s(seconds)" % ("per division " if num_divisions > 1 else ""),
         "maxtime", settings.get("maxtime", "30"),
         other_attrs={"id" : "maxtime", "min" : 1}));
@@ -358,14 +368,11 @@ def generate(tourney, settings, div_rounds):
     except ValueError:
         limit_ms = 30000;
 
-    ignore_rematches_before = settings.get("ignorerematchesbefore", None)
-    if ignore_rematches_before:
-        try:
-            ignore_rematches_before = int(ignore_rematches_before)
-        except ValueError:
-            ignore_rematches_before = None
-    else:
-        ignore_rematches_before = None
+    ignore_rematches_before = int_or_none(settings.get("ignorerematchesbefore", None))
+    num_rounds_to_use = int_or_none(settings.get("numroundstouse", None))
+    if num_rounds_to_use is None:
+        # 0 means use all rounds
+        num_rounds_to_use = 0
 
     default_group_size = settings.get("groupsize", None)
     if default_group_size is not None:
@@ -425,7 +432,12 @@ def generate(tourney, settings, div_rounds):
         rank_by_wins = tourney.is_ranked_by_wins()
         round_no = div_rounds[div_index]
         games = tourney.get_games(game_type="P")
-        standings = tourney.get_standings(div_index)
+
+        if num_rounds_to_use:
+            # Build a standings table for only the last num_rounds_to_use rounds
+            standings = tourney.get_standings_from_round_onwards(div_index, round_no - num_rounds_to_use)
+        else:
+            standings = tourney.get_standings(div_index, calculate_qualification=False)
 
         # Determine whether any of these players have played a game yet...
         is_first_round = True

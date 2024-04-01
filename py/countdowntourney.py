@@ -1162,6 +1162,9 @@ class Game(object):
                 right += "*";
         return left + " - " + right;
 
+    def is_draw(self):
+        return self.s1 is not None and self.s2 is not None and self.s1 == self.s2
+
     def is_double_loss(self):
         if self.s1 is not None and self.s2 is not None and self.s1 == 0 and self.s2 == 0 and self.tb:
             return True
@@ -1779,6 +1782,8 @@ class Tourney(object):
         cur.close()
         return players
 
+    def get_players_from_division(self, division):
+        return self.get_players_where(sql_condition="p.division = ?", params=(division,))
 
     def get_players(self, exclude_withdrawn=False, include_prune=False):
         conditions = []
@@ -2803,6 +2808,60 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             result = row[0] > 0
         cur.close()
         return result
+
+    def get_standings_from_round_onwards(self, division, from_round_no):
+        # Exclude any game played before from_round_no.
+        # This means we can't use the player_standings view - we have to work
+        # out the standings ourselves.
+        player_wins = {}
+        player_draws = {}
+        player_played = {}
+        player_points = {}
+        player_points_against = {}
+        player_played_first = {}
+        games = self.get_games(game_type="P")
+        for g in games:
+            if g.get_round_no() < from_round_no or g.get_division() != division:
+                continue
+            names = g.get_player_names()
+            scores = [ g.get_player_name_score(names[0]), g.get_player_name_score(names[1]) ]
+            win_counts = [ g.get_player_name_win_count(names[0]), g.get_player_name_win_count(names[1]) ]
+            for i in (0, 1):
+                player_played[names[i]] = player_played.get(names[i], 0) + 1
+                if g.is_draw():
+                    player_draws[names[i]] = player_draws.get(names[i], 0) + 1
+                else:
+                    player_wins[names[i]] = player_wins.get(names[i], 0) + win_counts[i]
+            if g.is_tiebreak():
+                scores[0] = min(scores)
+                scores[1] = min(scores)
+            player_played_first[names[0]] = player_played_first.get(names[0], 0) + 1
+            for i in (0, 1):
+                player_points[names[i]] = player_points.get(names[i], 0) + scores[i]
+                player_points_against[names[i]] = player_points_against.get(names[i], 0) + scores[(i + 1) % 2]
+
+        standings = []
+        for p in self.get_players_from_division(division):
+            standings.append(
+                    StandingsRow(0,
+                        p.name,
+                        player_played.get(p.name, 0),
+                        player_wins.get(p.name, 0),
+                        player_points.get(p.name, 0),
+                        player_draws.get(p.name, 0),
+                        player_points.get(p.name, 0) - player_points_against.get(p.name, 0),
+                        player_played_first.get(p.name, 0),
+                        p.rating,
+                        0,
+                        p.withdrawn,
+                        "",
+                        0
+                    )
+            )
+        rank_method_id = self.get_rank_method_id();
+        rank_method = RANK_METHODS[rank_method_id]
+        rank_method.sort_standings_rows(standings, games, self.get_players(), False)
+        return standings
 
     def get_standings(self, division=None, exclude_withdrawn_with_no_games=False, calculate_qualification=True, rank_finals=None):
         rank_method_id = self.get_rank_method_id();
