@@ -137,7 +137,7 @@ class HTMLFormTextInput(HTMLFormElement):
     def html(self):
         return "<label for=\"%(name)s\">%(label)s </label><input type=\"text\" name=\"%(name)s\" id=\"%(name)s\" value=\"%(value)s\" %(otherattrs)s />\n" % {
                 "name" : html.escape(self.name),
-                "value" : html.escape(elf.value),
+                "value" : html.escape(self.value),
                 "label" : self.label,
                 "otherattrs" : self.other_attrs_to_html()
         }
