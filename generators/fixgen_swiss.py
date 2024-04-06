@@ -240,14 +240,15 @@ function generate_fixtures_clicked() {
     elements.append(htmlform.HTMLFormHiddenInput("numdivisions", str(len(div_rounds)), other_attrs={"id" : "numdivisions"}))
     elements.append(htmlform.HTMLFormControlEnd())
 
-    elements.append(htmlform.HTMLFormControlStart())
-    num_rounds_to_use_options = [
-            htmlform.HTMLFormDropDownOption("0", "the whole tourney so far", num_rounds_to_use is None or num_rounds_to_use != 1),
-            htmlform.HTMLFormDropDownOption("1", "the previous round only", num_rounds_to_use == 1)
-    ]
-    elements.append(htmlform.HTMLFragment("<label for=\"numroundstouse\">Consider players' standings position and win/loss record from </label>"))
-    elements.append(htmlform.HTMLFormDropDownBox("numroundstouse", num_rounds_to_use_options))
-    elements.append(htmlform.HTMLFormControlEnd())
+    if tourney.has_per_round_standings():
+        elements.append(htmlform.HTMLFormControlStart())
+        num_rounds_to_use_options = [
+                htmlform.HTMLFormDropDownOption("0", "the whole tourney so far", num_rounds_to_use is None or num_rounds_to_use != 1),
+                htmlform.HTMLFormDropDownOption("1", "the previous round only", num_rounds_to_use == 1)
+        ]
+        elements.append(htmlform.HTMLFragment("<label for=\"numroundstouse\">Consider players' standings position and win/loss record from </label>"))
+        elements.append(htmlform.HTMLFormDropDownBox("numroundstouse", num_rounds_to_use_options))
+        elements.append(htmlform.HTMLFormControlEnd())
 
     elements.append(htmlform.HTMLFormControlStart())
     elements.append(htmlform.HTMLFormNumberInput("Fixture generator time limit %s(seconds)" % ("per division " if num_divisions > 1 else ""),

@@ -420,11 +420,11 @@ where p1_score is not null and p2_score is not null and game_type = 'P';
 
 create view if not exists game_divided as
 select round_no, seq, table_no, game_type, p1 p_id, p1_score p_score,
-    p2 opp_id, p2_score opp_score, tiebreak
+    p2 opp_id, p2_score opp_score, tiebreak, 1 as seat
 from game
 union all
 select round_no, seq, table_no, game_type, p2 p_id, p2_score p_score,
-    p1 opp_id, p1_score opp_score, tiebreak
+    p1 opp_id, p1_score opp_score, tiebreak, 2 as seat
 from game;
 
 create view if not exists heat_game_divided as
@@ -538,6 +538,32 @@ and p.id = points_against.id
 and p.id = ppf.id
 and p.id = pff.id
 and p.id >= 0;
+
+create view if not exists player_round_standings as
+select p.id, p.name, p.division, g.round_no,
+    count(g.p_id) played,
+    sum(case when g.p_id is null then 0
+                when g.p_score is null or g.opp_score is null then 0
+                when g.p_score == 0 and g.opp_score == 0 and g.tiebreak then 0
+                when g.p_score > g.opp_score then 1
+                else 0 end) wins,
+    sum(case when g.p_id is null then 0
+                when g.p_score is null or g.opp_score is null then 0
+                when g.p_score == 0 and g.opp_score == 0 and g.tiebreak then 0
+                when g.p_score == g.opp_score then 1
+                else 0 end) draws,
+    sum(case when g.p_score is null then 0
+                when g.tiebreak and g.p_score > g.opp_score
+                then g.opp_score
+                else g.p_score end) points,
+    sum(case when g.opp_score is null then 0
+                when g.tiebreak and g.opp_score > g.p_score then g.p_score
+                else g.opp_score end) points_against,
+    sum(case when g.seat = 1 then 1 else 0 end) played_first
+from player p left outer join heat_game_divided g on p.id = g.p_id
+where p.id >= 0
+group by p.id, p.name, p.division, g.round_no;
+
 
 -- Tables for controlling the display system Teleost
 create table if not exists teleost(current_mode int);
@@ -699,6 +725,10 @@ class QualificationTimeoutException(TourneyException):
 
 class AutoPruneNotSupportedException(TourneyException):
     description = "This tourney database file was created with a pre-1.2.1 version of Atropine so does not support automatic prunes. However, we should never have tried to use automatic prunes. So if you see this message, it's a bug in Atropine."
+    pass
+
+class PerRoundStandingsNotSupportedException(TourneyException):
+    description = "This tourney database file was created with a pre-1.2.3 version of Atropine so it does not support per-round standings, or generating fixtures based on only a subset of the previous rounds."
     pass
 
 class CannotDeletePlayerException(TourneyException):
@@ -1404,6 +1434,9 @@ class Tourney(object):
 
     def has_auto_prune(self):
         return self.db_version >= (1, 2, 1)
+
+    def has_per_round_standings(self):
+        return self.db_version >= (1, 2, 3)
 
     def get_rank_method_list(self, exclude_incompatible=True):
         return [ (i, RANK_METHODS[i]) for i in RANK_METHODS if self.db_version >= RANK_METHODS[i].get_min_db_version() ]
@@ -2809,57 +2842,29 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         cur.close()
         return result
 
+    # Exclude any game played before from_round_no.
     def get_standings_from_round_onwards(self, division, from_round_no):
-        # Exclude any game played before from_round_no.
-        # This means we can't use the player_standings view - we have to work
-        # out the standings ourselves.
-        player_wins = {}
-        player_draws = {}
-        player_played = {}
-        player_points = {}
-        player_points_against = {}
-        player_played_first = {}
-        games = [ g for g in self.get_games(game_type="P") if g.get_round_no() >= from_round_no ]
-        for g in games:
-            if g.get_division() != division:
-                continue
-            names = g.get_player_names()
-            scores = [ g.get_player_name_score(names[0]), g.get_player_name_score(names[1]) ]
-            win_counts = [ g.get_player_name_win_count(names[0]), g.get_player_name_win_count(names[1]) ]
-            for i in (0, 1):
-                player_played[names[i]] = player_played.get(names[i], 0) + 1
-                if g.is_draw():
-                    player_draws[names[i]] = player_draws.get(names[i], 0) + 1
-                else:
-                    player_wins[names[i]] = player_wins.get(names[i], 0) + win_counts[i]
-            if g.is_tiebreak():
-                scores[0] = min(scores)
-                scores[1] = min(scores)
-            player_played_first[names[0]] = player_played_first.get(names[0], 0) + 1
-            for i in (0, 1):
-                player_points[names[i]] = player_points.get(names[i], 0) + scores[i]
-                player_points_against[names[i]] = player_points_against.get(names[i], 0) + scores[(i + 1) % 2]
+        if not self.has_per_round_standings():
+            raise PerRoundStandingsNotSupportedException()
 
-        standings = []
-        for p in self.get_players_from_division(division):
-            standings.append(
-                    StandingsRow(0,
-                        p.name,
-                        player_played.get(p.name, 0),
-                        player_wins.get(p.name, 0),
-                        player_points.get(p.name, 0),
-                        player_draws.get(p.name, 0),
-                        player_points.get(p.name, 0) - player_points_against.get(p.name, 0),
-                        player_played_first.get(p.name, 0),
-                        p.rating,
-                        0,
-                        p.withdrawn,
-                        "",
-                        0
-                    )
-            )
-        rank_method_id = self.get_rank_method_id();
+        rank_method_id = self.get_rank_method_id()
         rank_method = RANK_METHODS[rank_method_id]
+
+        games = [ g for g in self.get_games(game_type="P") if g.get_round_no() >= from_round_no ]
+        conditions = []
+        if division is not None:
+            conditions.append("s.division = %d" % (division))
+        conditions.append("p.id >= 0")
+        conditions.append("s.round_no >= %d" % (from_round_no))
+        where_clause = "where " + " and ".join(conditions)
+
+        cur = self.db.cursor()
+        cur.execute("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws, p.withdrawn, '', 0 from player_round_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id " + where_clause)
+        standings = []
+        for x in cur:
+            standings.append(StandingsRow(0, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], bool(x[10]), x[11], x[12]))
+        cur.close()
+
         rank_method.sort_standings_rows(standings, games, self.get_players(), False)
         return standings
 
