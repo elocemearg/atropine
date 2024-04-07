@@ -822,17 +822,17 @@ def show_standings_table(tourney, show_draws_column, show_points_column,
         show_spread_column, show_first_second_column=False,
         linkify_players=False, show_tournament_rating_column=None,
         show_qualified=False, which_division=None, show_finals_column=True,
-        rank_finals=None):
+        rank_finals=None, starting_from_round=1):
     writeln(make_standings_table(tourney, show_draws_column, show_points_column,
         show_spread_column, show_first_second_column, linkify_players,
         show_tournament_rating_column, show_qualified, which_division,
-        show_finals_column, rank_finals))
+        show_finals_column, rank_finals, starting_from_round))
 
 def make_standings_table(tourney, show_draws_column, show_points_column,
         show_spread_column, show_first_second_column=False,
         linkify_players=False, show_tournament_rating_column=None,
         show_qualified=False, which_division=None, show_finals_column=True,
-        rank_finals=None):
+        rank_finals=None, starting_from_round=1):
     html = []
 
     num_divisions = tourney.get_num_divisions()
@@ -859,7 +859,10 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
 
     html.append("<table class=\"ranktable\">")
     for div_index in div_list:
-        standings = tourney.get_standings(div_index, rank_finals=rank_finals)
+        if starting_from_round > 1:
+            standings = tourney.get_standings_from_round_onwards(div_index, starting_from_round)
+        else:
+            standings = tourney.get_standings(div_index, rank_finals=rank_finals)
         if num_divisions > 1:
             div_string = tourney.get_division_name(div_index)
         else:
