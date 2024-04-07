@@ -261,6 +261,23 @@ table.fixturetable td.gameplayer2 {
 	background-color: #ffffcc;
 }
 
+table.fixturetable td.gamestandingsinfo {
+    font-size: 10pt;
+    background-color: #ffffcc;
+    color: #444444;
+}
+
+table.fixturetable td.gamestandingsinfo1 {
+    text-align: left;
+    padding-left: 0.5em;
+}
+
+table.fixturetable td.gamestandingsinfo2 {
+    text-align: right;
+    padding-right: 0.5em;
+}
+
+
 table.fixturetable td.gameremarks {
 	padding-left: 0.5em;
 	padding-right: 0.5em;
@@ -426,6 +443,34 @@ span.faintoutline {
         1px -1px 1px #aaa,
         -1px 1px 1px #aaa,
         1px 1px 1px #aaa;
+}
+
+/* W, D and L symbols to show a player's sequence of wins and losses */
+span.wdl {
+    display: inline-block;
+    width: 1.5em;
+    height: 1.5em;
+    line-height: 1.5em;
+    text-align: center;
+    color: white;
+    margin-right: 2px;
+    background-color: black;
+}
+
+span.wdl_w {
+    background-color: hsl(120deg, 100%, 35%);
+}
+span.wdl_d {
+    background-color: hsl(60deg, 100%, 50%);
+    color: black;
+    border: 1px solid black;
+}
+span.wdl_l {
+    background-color: hsl(0deg, 100%, 35%);
+}
+span.wdl_unplayed {
+    background-color: #cccccc;
+    color: black;
 }
 
 

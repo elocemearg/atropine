@@ -464,15 +464,6 @@ if player:
 
     games = [x for x in games if x.contains_player(player)]
 
-    if not games:
-        write_h2(player, "Delete player")
-        show_player_delete_form(tourney, player)
-    else:
-        write_h2(player, "Games")
-        cgicommon.show_games_as_html_table(games, False, None, True, lambda x : tourney.get_short_round_name(x), player_to_link)
-
-    cgicommon.writeln("<hr />")
-    write_h2(player, "Stats Corner")
     standings = tourney.get_standings(player.get_division())
     rank_method = tourney.get_rank_method()
     standing = None
@@ -483,6 +474,30 @@ if player:
     else:
         cgicommon.writeln("<p>%s isn't in the standings table for %s. This is... odd.</p>" % (cgicommon.escape(player.get_name()), cgicommon.escape(tourney.get_division_name(player.get_division()))))
 
+    if not games:
+        write_h2(player, "Delete player")
+        show_player_delete_form(tourney, player)
+    else:
+        write_h2(player, "Games")
+
+        # Show win-loss summary first
+        form_dict = tourney.get_player_win_loss_strings(game_type=None, player=player)
+        if len(form_dict) > 0:
+            # form_dict will contain only one element
+            form = cgicommon.win_loss_string_to_html(form_dict[next(iter(form_dict))])
+        else:
+            form = None
+        win_loss_record = "%d-%d" % (standing.wins, standing.played - standing.wins - standing.draws)
+        if standing.draws:
+            win_loss_record += "-%d" % (standing.draws)
+        if form:
+            cgicommon.writeln("<p>%s %s</p>" % (form, win_loss_record))
+
+        # Now show all games involving this player
+        cgicommon.show_games_as_html_table(games, False, None, True, lambda x : tourney.get_short_round_name(x), player_to_link)
+
+    cgicommon.writeln("<hr />")
+    write_h2(player, "Stats Corner")
     if standing:
         highest_score = None
         lowest_score = None

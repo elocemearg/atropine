@@ -2984,6 +2984,55 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                                     break
         return standings
 
+    # Return a dict whose key is the player name and whose value is a string
+    # containing a "W", "D" or "L" for each game they have played, in order.
+    # If player is set (type Player), the returned dict will have only one key,
+    # the one corresponding to that player.
+    def get_player_win_loss_strings(self, division=None, game_type="P", player=None):
+        sql_conditions = []
+        params = []
+        if division:
+            sql_conditions.append("p.division = ?")
+            params.append(division)
+        if game_type:
+            sql_conditions.append("g.game_type = ?")
+            params.append(game_type)
+        if player:
+            sql_conditions.append("p.id = ?")
+            params.append(player.get_id())
+
+        if sql_conditions:
+            sql_conditions = "where " + " and ".join(sql_conditions)
+        else:
+            sql_conditions = ""
+        params = tuple(params)
+        sql = """select p.name,
+             case when g.p_score is null or g.opp_score is null then '-'
+             when g.p_score > g.opp_score then 'W'
+             when g.p_score < g.opp_score then 'L'
+             when g.p_score = 0 and g.opp_score = 0 and g.tiebreak != 0 then 'L'
+             when g.p_score = g.opp_score then 'D' end wdl
+             from player p, game_divided g on p.id = g.p_id
+             %s
+             order by p.id, g.round_no, g.seq""" % (sql_conditions)
+        cur = self.db.cursor()
+        cur.execute(sql, params)
+
+        # Build a mapping of { name -> list of W/D/L }.
+        d = {}
+        for row in cur:
+            name = row[0]
+            wdl = row[1]
+            if name not in d:
+                d[name] = []
+            d[name].append(wdl)
+        cur.close()
+
+        # Convert lists to strings like "WWLLLL"
+        for name in d:
+            d[name] = "".join(d[name])
+        return d
+
     def get_logs_since(self, seq=None, include_new_games=False, round_no=None, maxrows=None):
         cur = self.db.cursor();
         sql = """select seq, datetime(ts, 'localtime') ts, round_no,

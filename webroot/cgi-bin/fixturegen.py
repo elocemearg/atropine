@@ -93,6 +93,7 @@ def show_fixtures_to_accept(tourney, generator_name, fixtures, fixgen_settings):
     ))
     cgicommon.writeln("</div>")
     num_divisions = tourney.get_num_divisions()
+    show_wins_and_played = False
     for r in generated_groups.get_rounds():
         round_no = r.get_round_no()
         cgicommon.writeln("<h2>%s</h2>" % cgicommon.escape(r.get_round_name()))
@@ -103,13 +104,15 @@ def show_fixtures_to_accept(tourney, generator_name, fixtures, fixgen_settings):
                 continue
 
             standings = tourney.get_standings(division=div_index)
-            standings_dict = dict()
+            standings_dict = {}
             for s in standings:
                 standings_dict[s.name] = s
+            form_dict = tourney.get_player_win_loss_strings(division=div_index)
+
             if num_divisions > 1:
                 cgicommon.writeln("<h3>%s</h3>" % (cgicommon.escape(tourney.get_division_name(div_index))))
             cgicommon.writeln("<table class=\"fixturetable\">");
-            cgicommon.writeln("<tr><th>Table</th><th>Type</th><th></th><th></th><th></th><th></th></tr>");
+            cgicommon.writeln("<tr><th>Table</th><th>Type</th><th colspan=\"4\">Player 1</th><th></th><th colspan=\"4\">Player 2</th></tr>");
 
             fixnum = 0;
             last_table_no = None;
@@ -127,22 +130,46 @@ def show_fixtures_to_accept(tourney, generator_name, fixtures, fixgen_settings):
 
                 cgicommon.writeln("<td class=\"gametype\">%s</td>" % cgicommon.escape(f.game_type));
                 player_td_html = []
+                game_standings_info_td_html = [] # will be two lists of column contents, one for each player
                 for player in [f.p1, f.p2]:
                     name = player.name
                     standings_row = standings_dict.get(name, None)
                     if player.is_auto_prune():
                         player_td_html.append(cgicommon.player_to_non_link(player, emboldenise=True))
+                        game_standings_info_td_html.append(["", "", ""])
                     elif standings_row is None:
                         player_td_html.append(cgicommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True) + " ?")
+                        game_standings_info_td_html.append(["", "", ""])
                     else:
-                        player_td_html.append(cgicommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True) +
-                                " (%s, %d win%s%s)" % (
+                        if show_wins_and_played:
+                            # Display win count as e.g. "3" or "2½"
+                            w = 2 * standings_row.wins + standings_row.draws
+                            if w % 2 == 1:
+                                wins_str = "%d&frac12;" % (w // 2)
+                            else:
+                                wins_str = "%d" % (w // 2)
+                            win_loss_record = "%s/%d" % (wins_str, standings_row.played)
+                        else:
+                            # Display wins-losses[-draws]
+                            win_loss_record = "%d-%d" % (standings_row.wins, standings_row.played - standings_row.wins - standings_row.draws)
+                            if standings_row.draws:
+                                win_loss_record += "-%d" % (standings_row.draws)
+                        player_td_html.append(cgicommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True))
+                        game_standings_info_td_html.append(
+                                [
                                     cgicommon.ordinal_number(standings_row.position),
-                                    standings_row.wins,
-                                    "" if standings_row.wins == 1 else "s",
-                                    "" if standings_row.draws == 0 else ", %d draw%s" % (standings_row.draws, "" if standings_row.draws == 1 else "s")))
+                                    cgicommon.win_loss_string_to_html(form_dict.get(name, "")),
+                                    win_loss_record
+                                ]
+                        )
 
-                cgicommon.writeln("<td class=\"gameplayer1\">%s</td><td class=\"gamescore\">v</td><td class=\"gameplayer2\">%s</td>" % tuple(player_td_html));
+                for html in game_standings_info_td_html[0]:
+                    cgicommon.writeln("<td class=\"gamestandingsinfo gamestandingsinfo1\">%s</td>" % (html))
+                cgicommon.writeln("<td class=\"gameplayer1\">%s</td>" % (player_td_html[0]))
+                cgicommon.writeln("<td class=\"gamescore\">v</td>")
+                cgicommon.writeln("<td class=\"gameplayer2\">%s</td>" % (player_td_html[1]))
+                for html in game_standings_info_td_html[1]:
+                    cgicommon.writeln("<td class=\"gamestandingsinfo gamestandingsinfo2\">%s</td>" % (html))
                 num_repeats = tourney.count_games_between(f.p1, f.p2)
                 if num_repeats:
                     cgicommon.writeln("<td class=\"gamerepeats\">%s repeat</td>" % (cgicommon.ordinal_number(num_repeats)))

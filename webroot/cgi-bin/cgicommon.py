@@ -1002,6 +1002,19 @@ def ordinal_number(n):
     else:
         return "%dth" % (n)
 
+def win_loss_string_to_html(win_loss_string):
+    html = []
+    for x in win_loss_string.upper():
+        if x in "WDL":
+            wdl_class = "wdl_" + x.lower()
+        elif x == "-":
+            x = "&ndash;"
+            wdl_class = "wdl_unplayed"
+        else:
+            wdl_class = ""
+        html.append("<span class=\"wdl %s\">%s</span>" % (wdl_class, x))
+    return "".join(html)
+
 def show_division_drop_down_box(control_name, tourney, player):
     num_divisions = tourney.get_num_divisions()
     writeln("<select name=\"%s\">" % (escape(control_name, True)))
