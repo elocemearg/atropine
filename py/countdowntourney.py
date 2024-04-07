@@ -541,7 +541,7 @@ and p.id >= 0;
 
 create view if not exists round_standings as
 select g.p_id, g.round_no,
-    count(g.p_id) played,
+    sum(case when g.p_id is not null and g.p_score is not null and g.opp_score is not null then 1 else 0 end) played,
     sum(case when g.p_id is null then 0
                 when g.p_score is null or g.opp_score is null then 0
                 when g.p_score == 0 and g.opp_score == 0 and g.tiebreak then 0
@@ -559,7 +559,7 @@ select g.p_id, g.round_no,
     sum(case when g.opp_score is null then 0
                 when g.tiebreak and g.opp_score > g.p_score then g.p_score
                 else g.opp_score end) points_against,
-    sum(case when g.seat = 1 then 1 else 0 end) played_first
+    sum(case when g.seat = 1 and g.p_id is not null and g.p_score is not null and g.opp_score is not null then 1 else 0 end) played_first
 from heat_game_divided g
 where g.p_id >= 0
 group by g.p_id, g.round_no;
@@ -1816,7 +1816,7 @@ class Tourney(object):
         return players
 
     def get_players_from_division(self, division):
-        return self.get_players_where(sql_condition="p.division = ?", params=(division,))
+        return self.get_players_where(sql_condition="p.division = ? and p.id >= 0", params=(division,))
 
     def get_players(self, exclude_withdrawn=False, include_prune=False):
         conditions = []
