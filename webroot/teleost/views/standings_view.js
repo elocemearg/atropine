@@ -166,7 +166,10 @@ class StandingsView extends PagedTableView {
             wins_string = wins.toString();
         }
 
-        secondaryRankValueStrings = standing.secondary_rank_value_strings
+        secondaryRankValueStrings = [];
+        for (let i = 0; i < standing.secondary_rank_value_strings.length; i++) {
+            secondaryRankValueStrings.push(standing.secondary_rank_value_strings[i]);
+        }
         withdrawn = standing.withdrawn;
 
         var rowElement = document.getElementById(rowName);
