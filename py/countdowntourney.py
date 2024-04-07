@@ -539,8 +539,8 @@ and p.id = ppf.id
 and p.id = pff.id
 and p.id >= 0;
 
-create view if not exists player_round_standings as
-select p.id, p.name, p.division, g.round_no,
+create view if not exists round_standings as
+select g.p_id, g.round_no,
     count(g.p_id) played,
     sum(case when g.p_id is null then 0
                 when g.p_score is null or g.opp_score is null then 0
@@ -560,9 +560,9 @@ select p.id, p.name, p.division, g.round_no,
                 when g.tiebreak and g.opp_score > g.p_score then g.p_score
                 else g.opp_score end) points_against,
     sum(case when g.seat = 1 then 1 else 0 end) played_first
-from player p left outer join heat_game_divided g on p.id = g.p_id
-where p.id >= 0
-group by p.id, p.name, p.division, g.round_no;
+from heat_game_divided g
+where g.p_id >= 0
+group by g.p_id, g.round_no;
 
 
 -- Tables for controlling the display system Teleost
@@ -2853,16 +2853,29 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         games = [ g for g in self.get_games(game_type="P") if g.get_round_no() >= from_round_no ]
         conditions = []
         if division is not None:
-            conditions.append("s.division = %d" % (division))
+            conditions.append("p.division = %d" % (division))
         conditions.append("p.id >= 0")
-        conditions.append("s.round_no >= %d" % (from_round_no))
         where_clause = "where " + " and ".join(conditions)
 
         cur = self.db.cursor()
-        cur.execute("select p.name, s.played, s.wins, s.points, s.draws, s.points - s.points_against spread, s.played_first, p.rating, tr.tournament_rating, s.wins * 2 + s.draws, p.withdrawn, '', 0 from player_round_standings s, player p on p.id = s.id left outer join tournament_rating tr on tr.id = p.id " + where_clause)
+        cur.execute("""
+            select p.name,
+                coalesce(s.played, 0) played, coalesce(s.wins, 0) wins,
+                coalesce(s.points, 0) points, coalesce(s.draws, 0) draws,
+                coalesce(s.spread, 0) spread, coalesce(s.played_first, 0) played_first,
+                p.rating, tr.tournament_rating, p.withdrawn, '', 0
+            from player p left outer join
+                (select s1.p_id, sum(s1.played) played, sum(s1.wins) wins,
+                 sum(s1.points) points, sum(s1.draws) draws,
+                 sum(s1.points - s1.points_against) spread,
+                 sum(s1.played_first) played_first
+                 from round_standings s1
+                 where s1.round_no >= %d group by s1.p_id) s on p.id = s.p_id
+                 left outer join tournament_rating tr on tr.id = p.id
+            %s""" % (from_round_no, where_clause))
         standings = []
         for x in cur:
-            standings.append(StandingsRow(0, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], bool(x[10]), x[11], x[12]))
+            standings.append(StandingsRow(0, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], bool(x[9]), x[10], x[11]))
         cur.close()
 
         rank_method.sort_standings_rows(standings, games, self.get_players(), False)
