@@ -861,13 +861,14 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     time_remaining_ms = max(5000, limit_ms - (time.time() - start_time) * 1000)
     weight = hill_climb(groups, penalty_matrix, time_limit_ms=time_remaining_ms)
 
-    # Sort the groups. If we're treating players on equal numbers of wins as
-    # equal, sort by total wins on that table. Otherwise sort by total
-    # standings position on that table.
+    # Sort the groups. Put the pruney tables at the end. If we're treating
+    # players on equal numbers of wins as equal, sort by average wins on that
+    # table. Otherwise sort by average standings position on that table.
     if equal_wins_are_equal_players:
-        groups = sorted(groups, key=lambda x : sum([(players[y].wins) for y in x]), reverse=True)
+        second_sort_key = lambda group : -sum([(players[pi].wins) for pi in group]) / len(group)
     else:
-        groups = sorted(groups, key=lambda x : sum([(players[y].position) for y in x]));
+        second_sort_key = lambda group : sum([(players[pi].position) for pi in group]) / len(group)
+    groups.sort(key=lambda group : (len([ pi for pi in group if players[pi].is_prune() ]) / len(group), second_sort_key(group)))
 
     if log:
         group_no = 1
