@@ -114,8 +114,13 @@ div.roundlink {
 }
 
 div.sidebarversioninfo {
-    font-size: 8pt;
+    font-size: 9pt;
     color: #444444;
+}
+
+.sidebarversionold {
+    color: hsl(0deg, 100%, 40%);
+    border-bottom: 1px dotted hsl(0deg, 100%, 40%);
 }
 
 #miscstats {

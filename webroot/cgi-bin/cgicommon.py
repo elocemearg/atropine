@@ -571,12 +571,21 @@ def show_sidebar(tourney, show_setup_links=True, show_misc_table_links=False):
     writeln("<br />")
 
     if tourney:
+        atropine_version = tourney.get_software_version(as_tuple=True)
+        atropine_version_string = tourney.get_software_version()
+        tourney_version = tourney.get_db_version(as_tuple=True)
+        tourney_version_string = tourney.get_db_version()
         writeln("<div class=\"sidebarversioninfo\" title=\"This is the version number of the Atropine installation you're using, and the version which created the database for this tourney.\">");
         writeln("<div class=\"sidebarversionline\">")
-        writeln("Atropine version: %s" % (tourney.get_software_version()))
+        writeln("Atropine version: " + atropine_version_string)
         writeln("</div>")
         writeln("<div class=\"sidebarversionline\">")
-        writeln("This tourney version: %s" % (tourney.get_db_version()))
+        writeln("This tourney: ")
+        if tourney_version < atropine_version:
+            writeln("<span class=\"sidebarversionold\" title=\"This tourney's database file was created by an earlier version of Atropine. Some functionality may be unavailable.\">")
+        writeln(tourney_version_string)
+        if tourney_version < atropine_version:
+            writeln("</span>")
         writeln("</div>")
         writeln("</div>")
 

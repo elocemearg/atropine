@@ -1410,11 +1410,17 @@ class Tourney(object):
             self.check_date(year, month, day)
             self.set_attribute("eventdate", "%04d-%02d-%02d" % (year, month, day))
 
-    def get_db_version(self):
-        return ".".join([str(x) for x in self.db_version])
+    def get_db_version(self, as_tuple=False):
+        if as_tuple:
+            return self.db_version
+        else:
+            return ".".join([str(x) for x in self.db_version])
 
-    def get_software_version(self):
-        return get_software_version()
+    def get_software_version(self, as_tuple=False):
+        if as_tuple:
+            return SW_VERSION_SPLIT
+        else:
+            return get_software_version()
 
     # Functions to determine whether this tourney database supports a given
     # feature. Earlier tourney databases may be lacking the relevant table
