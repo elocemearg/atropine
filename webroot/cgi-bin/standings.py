@@ -53,12 +53,12 @@ try:
     cgicommon.writeln(cgicommon.escape(rank_method.get_short_description()))
     cgicommon.writeln("</p>")
 
-    if tourney.has_per_round_standings():
-        cgicommon.writeln("<form action=\"standings.py\" method=\"GET\" style=\"margin-bottom: 20px;\">")
+    rounds = tourney.get_rounds()
+
+    if tourney.has_per_round_standings() and len(rounds) > 1:
+        cgicommon.writeln("<form action=\"standings.py\" method=\"GET\" class=\"spaced\">")
         cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\">" % (html.escape(tourney_name)))
         cgicommon.writeln("Count games from ")
-        rounds = tourney.get_rounds()
-
         cgicommon.writeln("<select name=\"fromround\">")
         max_round_no = 1
         for r in rounds:
@@ -70,11 +70,12 @@ try:
                 max_round_no = r["num"]
         cgicommon.writeln("</select>")
         cgicommon.writeln(" onwards")
-        cgicommon.writeln("<br><input type=\"submit\" value=\"Refresh\" style=\"margin-top: 10px;\">")
+        cgicommon.writeln("<br><input type=\"submit\" value=\"Refresh\">")
         cgicommon.writeln("</form>")
     else:
-        # This is an older tourney DB without the round_standings view, so we
-        # can only show standings for the whole tourney, not per-round.
+        # Either we have no more than one round at the moment, or this is an
+        # older tourney DB without the round_standings view. Either way, don't
+        # offer the user per-round selection form.
         starting_from_round = 1
 
     if tourney.are_players_assigned_teams():

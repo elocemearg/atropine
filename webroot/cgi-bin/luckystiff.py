@@ -42,16 +42,13 @@ try:
 
     cgicommon.writeln("<h1>Lucky Stiff</h1>")
 
-    cgicommon.writeln("<form action=\"/cgi-bin/luckystiff.py\" method=\"GET\">")
-    cgicommon.writeln("<p>")
+    cgicommon.writeln("<form action=\"/cgi-bin/luckystiff.py\" method=\"GET\" class=\"spaced\">")
     cgicommon.writeln("The Lucky Stiff is the player whose")
     cgicommon.writeln("<input type=\"number\" name=\"numwins\" value=\"%d\" min=\"1\" max=\"999\" size=\"3\" />" % (num_wins))
     cgicommon.writeln("closest winning games had the lowest aggregate winning margin. It is the opposite of <a href=\"/cgi-bin/tuffluck.py?tourney=%s\">Tuff Luck</a>." % (cgicommon.escape(tourney_name, True)))
-    cgicommon.writeln("</p>")
-    cgicommon.writeln("<p>")
+    cgicommon.writeln("<br>")
     cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
     cgicommon.writeln("<input type=\"submit\" name=\"submit\" value=\"Refresh\" />")
-    cgicommon.writeln("</p>")
     cgicommon.writeln("</form>")
 
     players_lucky_stiff = tourney.get_players_lucky_stiff(num_wins)

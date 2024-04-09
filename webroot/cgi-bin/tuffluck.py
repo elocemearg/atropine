@@ -42,17 +42,14 @@ try:
 
     cgicommon.writeln("<h1>Tuff Luck</h1>")
 
-    cgicommon.writeln("<form action=\"/cgi-bin/tuffluck.py\" method=\"GET\">")
-    cgicommon.writeln("<p>")
+    cgicommon.writeln("<form action=\"/cgi-bin/tuffluck.py\" method=\"GET\" class=\"spaced\" >")
     cgicommon.writeln("A player's Tuff Luck is their aggregate losing margin over their")
     cgicommon.writeln("<input type=\"number\" name=\"numlosinggames\" value=\"%d\" min=\"1\" max=\"999\" size=\"3\" />" % (num_losing_games))
     cgicommon.writeln("closest losing games, for players who have lost at least that many games.")
     cgicommon.writeln("It is the opposite of <a href=\"/cgi-bin/luckystiff.py?tourney=%s\">Lucky Stiff</a>." % (cgicommon.escape(tourney_name, True)))
-    cgicommon.writeln("</p>")
-    cgicommon.writeln("<p>")
+    cgicommon.writeln("<br>")
     cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
     cgicommon.writeln("<input type=\"submit\" name=\"submit\" value=\"Refresh\" />")
-    cgicommon.writeln("</p>")
     cgicommon.writeln("</form>")
 
     players_tuff_luck = tourney.get_players_tuff_luck(num_losing_games)

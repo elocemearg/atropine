@@ -45,16 +45,13 @@ try:
 
     cgicommon.writeln("<h1>Tim Down Award</h1>")
 
-    cgicommon.writeln("<form action=\"%s\" method=\"GET\">" % (baseurl))
-    cgicommon.writeln("<p>")
+    cgicommon.writeln("<form action=\"%s\" method=\"GET\" class=\"spaced\">" % (baseurl))
     cgicommon.writeln("The Tim Down Award goes to the player whose opponents have the highest average standings position, and who lost ")
     cgicommon.writeln("<input type=\"number\" name=\"numlosinggames\" value=\"%d\" min=\"0\" max=\"999\" size=\"3\" />" % (num_losing_games))
     cgicommon.writeln("or more games.")
-    cgicommon.writeln("</p>")
-    cgicommon.writeln("<p>")
+    cgicommon.writeln("<br>")
     cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
     cgicommon.writeln("<input type=\"submit\" name=\"submit\" value=\"Refresh\" />")
-    cgicommon.writeln("</p>")
     cgicommon.writeln("</form>")
 
     num_divisions = tourney.get_num_divisions()

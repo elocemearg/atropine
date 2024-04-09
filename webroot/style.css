@@ -157,6 +157,18 @@ div.sidebarbanner {
 	background-color: purple;
 }
 
+select {
+    padding: 3px;
+}
+
+form.spaced {
+    margin-bottom: 20px;
+}
+
+form.spaced input[type="submit"] {
+    margin-top: 10px;
+}
+
 .bigbutton {
     padding: 10px;
     font-size: 12pt;
