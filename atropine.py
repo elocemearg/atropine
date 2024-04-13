@@ -97,6 +97,16 @@ def fatal_error(context, exc=None):
     input()
     sys.exit(1)
 
+def looks_like_temp_zip_dir(path):
+    # If any directory component contains "atropine-" and ".zip" then this is
+    # probably a temporary directory created by Windows, and if you're having
+    # problems then the first thing to check is whether you're trying to run
+    # Atropine from inside the zip file.
+    for component in path.split(os.path.sep):
+        if component.find("atropine-") >= 0 and component.find(".zip") >= 0:
+            return True
+    return False
+
 try:
     parser = argparse.ArgumentParser(description="Run Atropine's web server.")
     parser.add_argument("-p", "--port", default=http_listen_port, type=int)
@@ -146,10 +156,11 @@ for d in [ "py", "webroot" ]:
         # We're in either case (1) or (2). Doesn't really matter because we
         # aren't going to be able to run anyway, but let's use a little
         # heuristic so that the error message is a bit more helpful...
-        if atropine_home_dir.endswith(".zip") or atropine_home_dir.endswith(".zip" + os.path.sep):
-            fatal_error("I don't have the " + d + " folder next to me. I " +
-                    "think this is because I've been run from inside a zip " +
-                    "file. This isn't going to work. " +
+        if looks_like_temp_zip_dir(atropine_home_dir):
+            fatal_error("I'm in " + atropine_home_dir + " but the " + d +
+                    " folder isn't. " +
+                    "I think this is because I've been run from inside a zip " +
+                    "file, which isn't going to work. " +
                     "You need to extract all contents of the zip file to a " +
                     "new folder first, then run this script from that " +
                     "location.")
