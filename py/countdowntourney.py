@@ -68,6 +68,11 @@ AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT = 36
 # a round rather than Standings/Videprinter.
 AUTO_WIDESCREEN_RESULTS_DURING_ROUND_DEFAULT = 1
 
+# If there's at least one table in the current round with only one game, by
+# default do not display the name-to-table index screen. Prefer the fixtures
+# display, so you can see who is player 1 and who is player 2.
+AUTO_NO_TABLE_INDEX_IF_ONE_GAME_PER_TABLE_DEFAULT = 1
+
 # Standard information about each public display ("teleost") mode, such as the
 # name description, preview image, and what game state objects the display
 # page should fetch when in that mode.
@@ -212,6 +217,7 @@ teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autouseplayercheckin", CONTROL_CHECKBOX, "$CONTROL Show Player Check-In screen before first fixtures are generated", 1),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindex", CONTROL_CHECKBOX, "$CONTROL Show name-to-table index instead of fixture list at start of round if there are at least...", 1),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindexthreshold", CONTROL_NUMBER, "$INDENT $CONTROL active players", AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autonotableindexifonegamepertable", CONTROL_CHECKBOX, "$INDENT $CONTROL Never use name-to-table index if there are two-player tables", AUTO_NO_TABLE_INDEX_IF_ONE_GAME_PER_TABLE_DEFAULT),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autocurrentroundmusthavegamesinalldivisions", CONTROL_CHECKBOX, "$CONTROL Only switch to Fixtures display after fixtures are generated for all divisions", 1),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"],
         "autowidescreenresultsduringround", CONTROL_CHECKBOX,
@@ -2714,14 +2720,29 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         if value >= 0 and value < len(SCREEN_SHAPE_PROFILES):
             self.set_attribute("screenshapeprofile", str(value))
 
+    def round_contains_table_with_one_game(self, round_no):
+        sql = """select count(*) from (select g.table_no, count(*) from game g where round_no = ? group by g.table_no having count(*) = 1) please"""
+        cur = self.db.cursor()
+        cur.execute(sql, (round_no,))
+        row = cur.fetchone()
+        retval = not(row is None or row[0] is None or row[0] == 0)
+        cur.close()
+        return retval
+
     def set_auto_use_table_index(self, value):
         self.set_attribute("autousetableindex", str(int(value)))
 
-    def get_auto_use_table_index(self):
+    def get_auto_use_table_index(self, round_no):
         use_table_index = self.get_int_attribute("autousetableindex", 1) != 0
         if use_table_index:
             threshold = self.get_int_attribute("autousetableindexthreshold", AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT)
-            return self.get_num_active_players() >= threshold
+            if self.get_num_active_players() >= threshold:
+                if self.get_int_attribute("autonotableindexifonegamepertable", AUTO_NO_TABLE_INDEX_IF_ONE_GAME_PER_TABLE_DEFAULT):
+                    return not self.round_contains_table_with_one_game(round_no)
+                else:
+                    return True
+            else:
+                return False
         else:
             return False
 
@@ -3161,7 +3182,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                         mode_name = "TELEOST_MODE_VERTICAL_STANDINGS_RESULTS"
                     else:
                         mode_name = "TELEOST_MODE_STANDINGS_RESULTS"
-                elif self.get_auto_use_table_index():
+                elif self.get_auto_use_table_index(round_no):
                     mode_name = "TELEOST_MODE_TABLE_NUMBER_INDEX"
                 else:
                     mode_name = "TELEOST_MODE_FIXTURES"
