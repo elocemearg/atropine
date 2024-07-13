@@ -101,6 +101,8 @@ for (request_method, query_string, post_data, content_length, content_type, expe
 
 if num_failures > 0:
     print("FieldStorage: %d tests failed." % (num_failures))
+    sys.exit(1)
 else:
     print("FieldStorage: %d tests passed." % (len(field_storage_tests)))
+    sys.exit(0)
 

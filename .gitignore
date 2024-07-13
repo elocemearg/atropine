@@ -1,5 +1,6 @@
 *.pyc
 *.wav
+tourneys
 *.db
 old
 out
@@ -9,3 +10,4 @@ countdown.jpg
 atropine*.zip
 *.swp
 junk
+test/logs

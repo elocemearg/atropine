@@ -1,0 +1,11 @@
+acctabletest.py
+fieldstoragetest.py
+finalsranktest.py
+qualtest.py
+randomdrawtest.py
+randomfixgentest.py
+ranktest.py
+standingstest.py
+swissNscenariotest.py
+swissNtest.py
+tourneytest.py
