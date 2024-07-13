@@ -86,9 +86,9 @@ def show_fixtures_to_accept(tourney, generator_name, fixtures, fixgen_settings):
     tourney_name = tourney.get_name()
     cgicommon.writeln("<form method=\"POST\" action=\"/cgi-bin/fixturegen.py\">");
     cgicommon.writeln("<div class=\"fixtureacceptbox\">")
-    cgicommon.writeln("<p>I've generated the following fixtures. They won't be saved until you click the <em>Accept Fixtures</em> button.</p>");
-    cgicommon.writeln("<input type=\"submit\" name=\"accept\" class=\"bigbutton\" value=\"Accept Fixtures\" />");
-    cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\" class=\"fixturecancellink\">Discard and return to fixture generator menu</a>" % (
+    cgicommon.writeln("<p>I've generated the following fixtures. You must click <em>Accept Fixtures</em> below if you want to use them.</p>");
+    cgicommon.writeln("<input type=\"submit\" name=\"accept\" class=\"bigbutton\" value=\"&#x2705; Accept Fixtures\" />");
+    cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\" class=\"fixturecancellink\">&#x274c; Discard and return to fixture generator menu</a>" % (
         urllib.parse.quote_plus(tourney_name)
     ))
     cgicommon.writeln("</div>")
@@ -203,8 +203,8 @@ def show_fixtures_to_accept(tourney, generator_name, fixtures, fixgen_settings):
     json_fixture_plan = json.dumps(fixture_plan);
     cgicommon.writeln("<input type=\"hidden\" name=\"jsonfixtureplan\" value=\"%s\" />" % cgicommon.escape(json_fixture_plan, True));
     cgicommon.writeln("<div class=\"fixtureacceptbox\">")
-    cgicommon.writeln("<input type=\"submit\" name=\"accept\" value=\"Accept Fixtures\" class=\"bigbutton\" />");
-    cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\" class=\"fixturecancellink\">Discard and return to fixture generator menu</a>" % (
+    cgicommon.writeln("<input type=\"submit\" name=\"accept\" class=\"bigbutton\" value=\"&#x2705; Accept Fixtures\" />");
+    cgicommon.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\" class=\"fixturecancellink\">&#x274c; Discard and return to fixture generator menu</a>" % (
         urllib.parse.quote_plus(tourney_name)
     ))
     cgicommon.writeln("</div>")
