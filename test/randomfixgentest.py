@@ -12,7 +12,7 @@ import os
 
 sys.path.append("py")
 sys.path.append("generators")
-sys.path.append(os.path.join("webroot", "cgi-bin"))
+sys.path.append(os.path.join("py", "dynamicpages"))
 
 import countdowntourney
 import fixgen_random

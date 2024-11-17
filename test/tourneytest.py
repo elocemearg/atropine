@@ -8,7 +8,7 @@ import subprocess
 # i.e.
 # ./test/tourneytest.py
 sys.path.append(os.path.join(os.getcwd(), "py"))
-sys.path.append(os.path.join(os.getcwd(), "webroot", "cgi-bin"))
+sys.path.append(os.path.join(os.getcwd(), "py", "dynamicpages"))
 
 import countdowntourney
 import httpresponse
@@ -140,8 +140,8 @@ def apply_scenario(tourney, scenario):
 def export_text(tourney, output_file):
     """Export a tourney report as plain text.
 
-    Run cgi-bin/export.py's handle() function to generate a tournament report
-    as plain text, and write it to output_file."""
+    Run py/dynamicpages/export.py's handle() function to generate a tournament
+    report as plain text, and write it to output_file."""
 
     if os.path.exists(output_file):
         os.unlink(output_file)

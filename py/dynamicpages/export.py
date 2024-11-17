@@ -566,7 +566,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     num_finals_games = tourney.get_num_games(finals_only=True)
     finals_noun = "final" if num_finals_games == 1 else "finals"
 
-    non_local_client = not httpreq.is_client_from_localhost()
+    non_local_client = httpreq is not None and not httpreq.is_client_from_localhost()
 
     if not submit:
         # Show the form asking the user what format they want, and any other

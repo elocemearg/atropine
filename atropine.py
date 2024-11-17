@@ -106,10 +106,10 @@ for d in [ "py", "webroot" ]:
 # The directories exist, but what about the contents? We won't check every
 # file because then we'd have to maintain a manifest of all the files we
 # expect, but let's at least check for py/countdowntourney.py and
-# webroot/cgi-bin/home.py.
+# py/dynamicpages/home.py.
 rel_paths = [
         os.path.join("py", "countdowntourney.py"),
-        os.path.join("webroot", "cgi-bin", "home.py")
+        os.path.join("py", "dynamicpages", "home.py")
 ]
 for p in rel_paths:
     abs_path = os.path.join(atropine_home_dir, p)
@@ -127,7 +127,7 @@ try:
     sys.path.append(os.path.join(os.getcwd(), "generators"))
     sys.path.append(os.path.join(os.getcwd(), "py"))
     sys.path.append(os.path.join(os.getcwd(), "py", "httphandler"))
-    sys.path.append(os.path.join(os.getcwd(), "webroot", "cgi-bin"))
+    sys.path.append(os.path.join(os.getcwd(), "py", "dynamicpages"))
 except Exception as e:
     fatal_error("Failed to add a necessary directory to Python's list of module paths.", e)
 
@@ -187,16 +187,16 @@ except Exception as e:
 
 # Set up the handler modules which used to be CGI scripts.
 try:
-    old_cgi_handler_path = os.path.join(os.getcwd(), "webroot", "cgi-bin")
-    file_list = os.listdir(old_cgi_handler_path)
+    dynamic_pages_path = os.path.join(os.getcwd(), "py", "dynamicpages")
+    file_list = os.listdir(dynamic_pages_path)
     for file_name in file_list:
         if file_name.endswith(".py"):
             handler_name = file_name[:-3]
             module = importlib.import_module(handler_name)
             if hasattr(module, "handle"):
-                AtropineHTTPRequestHandler.add_former_cgi_module(handler_name, module)
+                AtropineHTTPRequestHandler.add_webpage_module(handler_name, module)
 except Exception as e:
-    fatal_error("Failed to import legacy former-CGI scripts in the webroot/cgi-bin directory.", e)
+    fatal_error("Failed to import legacy former-CGI scripts in the py/dynamicpages directory.", e)
 
 # Success! If you reach this point then Atropine was installed correctly.
 
@@ -219,7 +219,7 @@ try:
     httpd = ThreadedHTTPServer(server_address, AtropineHTTPRequestHandler)
     print("Local web server created. Paste this link into your browser:")
     print()
-    print("http://localhost:" + str(http_listen_port) + "/cgi-bin/home.py")
+    print("http://localhost:" + str(http_listen_port) + "/")
     print()
     httpd.serve_forever();
 except socket.error as e:

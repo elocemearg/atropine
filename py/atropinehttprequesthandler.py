@@ -11,13 +11,13 @@ import fieldstorage
 import htmltraceback
 
 # List of former CGI handlers which do not take a countdowntourney object
-CGI_HANDLERS_WITHOUT_TOURNEY = frozenset(["home", "sql", "preferences"])
-def cgi_handler_needs_tourney(handler_name):
-    return handler_name not in CGI_HANDLERS_WITHOUT_TOURNEY
+WEBPAGE_HANDLERS_WITHOUT_TOURNEY = frozenset(["home", "sql", "preferences"])
+def webpage_handler_needs_tourney(handler_name):
+    return handler_name not in WEBPAGE_HANDLERS_WITHOUT_TOURNEY
 
 # List of former CGI handlers which are allowed to be access from clients
 # other than localhost
-CGI_HANDLERS_PUBLIC = frozenset(["home", "export", "display", "hello"])
+WEBPAGE_HANDLERS_PUBLIC = frozenset(["home", "export", "display", "hello"])
 
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     pass
@@ -30,27 +30,27 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     # Modules with a handle() method which want to handle requests to
     # /cgi-bin/<somescript>.py are put in this dictionary.
-    # ATROPINE_FORMER_CGI_MODULES[<somescript>] = module
+    # ATROPINE_WEBPAGE_MODULES[<somescript>] = module
     # These are modules which used to be standalone CGI scripts, and are
     # now rewritten not to expect to be called as their own process.
-    ATROPINE_FORMER_CGI_MODULES = {}
+    ATROPINE_WEBPAGE_MODULES = {}
 
     """
     All HTTP requests are handled by AtropineHTTPRequestHandler.
     Requests to /atropine/<tourneyname>/<handlername> are passed to the
     appropriate handler module in ATROPINE_HANDLER_MODULES.
     Requests to /cgi-bin/<script>.py are passed to the handler module in
+    py/dynamicpages/.
 
-    All other requests
-    are handled by the SimpleHTTPRequestHandler, which returns the contents of
-    a file.
+    All other requests are handled by the SimpleHTTPRequestHandler, which
+    returns the contents of a file.
     """
 
     def add_handler_module(handler_name, module):
         AtropineHTTPRequestHandler.ATROPINE_HANDLER_MODULES[handler_name] = module
 
-    def add_former_cgi_module(handler_name, module):
-        AtropineHTTPRequestHandler.ATROPINE_FORMER_CGI_MODULES[handler_name] = module
+    def add_webpage_module(handler_name, module):
+        AtropineHTTPRequestHandler.ATROPINE_WEBPAGE_MODULES[handler_name] = module
 
     def atropine_handle_request(self, request_method):
         # Split up "path" into its path component and query string
@@ -66,6 +66,10 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             query_string = ""
 
         tourneys_path = os.getenv("TOURNEYSPATH")
+
+        # If the user requests the root then rewrite this to /cgi-bin/home.py
+        if len(path_components) == 0 or (len(path_components) == 1 and path_components[0] == ""):
+            path_components = [ "cgi-bin", "home.py" ]
 
         # If we have a handler for this path, call it, otherwise let
         # SimpleHTTPRequestHandler handle it.
@@ -100,14 +104,15 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             return True
         elif len(path_components) == 2 and path_components[0] == "cgi-bin" and path_components[1].endswith(".py"):
             # It's an old link to what used to be a CGI script.
-            # Pass this request to the appropriate module. The tourney name
-            # is expected to be part of the query string or POST data.
+            # Pass this request to the appropriate module in py/dynamicpages.
+            # The tourney name is expected to be part of the query string or
+            # POST data.
             handler_name = path_components[1][:-3]
-            if handler_name not in AtropineHTTPRequestHandler.ATROPINE_FORMER_CGI_MODULES:
+            if handler_name not in AtropineHTTPRequestHandler.ATROPINE_WEBPAGE_MODULES:
                 handlerutils.send_html_error_response(self, "Bad URL: /cgi-bin/%s.py not found" % (handler_name), status_code=404)
                 return True
 
-            if handler_name not in CGI_HANDLERS_PUBLIC and not self.is_client_from_localhost():
+            if handler_name not in WEBPAGE_HANDLERS_PUBLIC and not self.is_client_from_localhost():
                 # Non-localhost connection to a non-public page
                 handlerutils.send_html_error_response(self, "This page is only accessible from the same computer that is running Atropine.", status_code=403)
                 return True
@@ -138,7 +143,7 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             # that here and open the countdowntourney object, to avoid every
             # individual script having to do it.
             try:
-                if not cgi_handler_needs_tourney(handler_name):
+                if not webpage_handler_needs_tourney(handler_name):
                     tourney_name = None
                 else:
                     tourney_name = field_storage.getfirst("tourney")
@@ -146,7 +151,7 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         handlerutils.send_html_error_response(self, "No tourney name specified.", status_code=400)
                         return True
 
-                handler_module = AtropineHTTPRequestHandler.ATROPINE_FORMER_CGI_MODULES[handler_name]
+                handler_module = AtropineHTTPRequestHandler.ATROPINE_WEBPAGE_MODULES[handler_name]
                 if tourney_name is None:
                     # This script doesn't have or need a tourney=... parameter
                     try:
