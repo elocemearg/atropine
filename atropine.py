@@ -2,83 +2,15 @@
 
 import sys
 import os
-import http.server
-import socketserver
 import socket
 import errno
 import argparse
 import textwrap
 import importlib
-from urllib.parse import unquote
 
 http_listen_port = 3960
 uploader_listen_port = 3961
 tourneys_path = None
-
-class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
-    pass
-
-class AtropineHTTPRequestHandler(http.server.CGIHTTPRequestHandler):
-    # Modules with a handle() method which want to handle requests to
-    # /atropine/<tourneyname>/<handlername> are put in this dictionary.
-    # ATROPINE_HANDLER_MODULES[<handlername>] = module
-    ATROPINE_HANDLER_MODULES = {}
-
-    """
-    All HTTP requests are handled by AtropineHTTPRequestHandler.
-    Requests to /atropine/<tourneyname>/<handlername> are passed to the
-    appropriate handler module in ATROPINE_HANDLER_MODULES. All other requests
-    are handled by the CGIHTTPRequestHandler, which either executes a CGI
-    script or returns the contents of a file as appropriate.
-    """
-
-    def do_GET(self):
-        # Split up "path" into its path component and query string
-        fields = self.path.split("?", 1)
-
-        if len(fields) > 0:
-            path_components = [ unquote(x) for x in fields[0].split("/") if x != "" ]
-        else:
-            path_components = []
-        if len(fields) > 1:
-            query_string = fields[1]
-        else:
-            query_string = ""
-
-        # If we have a handler for this path, call it, otherwise let
-        # CGIHTTPRequestHandler handle it.
-        if len(path_components) >= 1 and path_components[0] == "atropine":
-            if len(path_components) < 3:
-                handlerutils.send_error_response(self, "Bad URL: format is /atropine/<tourneyname>/<service>/...", status_code=400)
-                return
-            tourney_name = path_components[1]
-            handler_name = path_components[2]
-            remaining_path_components = path_components[3:]
-            if handler_name not in AtropineHTTPRequestHandler.ATROPINE_HANDLER_MODULES:
-                # Unknown handler name
-                handlerutils.send_error_response(self, "Bad URL: unknown service \"%s\"" % (handler_name), status_code=404)
-                return
-
-            try:
-                # Open this tourney DB file.
-                with countdowntourney.tourney_open(tourney_name, tourneys_path) as tourney:
-                    # If this tourney exists and we opened it, call the
-                    # handler's handle() method which will send the response to
-                    # the client.
-                    try:
-                        AtropineHTTPRequestHandler.ATROPINE_HANDLER_MODULES[handler_name].handle(self, tourney, remaining_path_components, query_string)
-                    except Exception as e:
-                        handlerutils.send_error_response(self, "Failed to execute request handler %s for tourney %s: %s" % (handler_name, tourney_name, str(e)), status_code=400)
-            except countdowntourney.DBNameDoesNotExistException as e:
-                handlerutils.send_error_response(self, e.description, status_code=404)
-            except countdowntourney.TourneyException as e:
-                handlerutils.send_error_response(self, "Failed to open tourney \"%s\": %s" % (tourney_name, e.description), status_code=400)
-            except Exception as e:
-                handlerutils.send_error_response(self, "Failed to open tourney \"%s\": %s" % (tourney_name, str(e)), status_code=400)
-        else:
-            # This is not a request for /atropine/...
-            # CGIHTTPRequestHandler can handle this.
-            super().do_GET()
 
 def fatal_error(context, exc=None):
     print()
@@ -195,6 +127,7 @@ try:
     sys.path.append(os.path.join(os.getcwd(), "generators"))
     sys.path.append(os.path.join(os.getcwd(), "py"))
     sys.path.append(os.path.join(os.getcwd(), "py", "httphandler"))
+    sys.path.append(os.path.join(os.getcwd(), "webroot", "cgi-bin"))
 except Exception as e:
     fatal_error("Failed to add a necessary directory to Python's list of module paths.", e)
 
@@ -228,8 +161,13 @@ try:
 except Exception as e:
     fatal_error("Failed to import the countdowntourney module. Is there a file countdowntourney.py in the py folder? There should be.", e)
 
+try:
+    from atropinehttprequesthandler import AtropineHTTPRequestHandler, ThreadedHTTPServer, UnauthorisedClientException
+except Exception as e:
+    fatal_error("Failed to import the atropinehttprequesthandler module. Is there a file atropinehttprequesthandler.py in the py folder? There should be.", e)
+
 # Set up any of our own HTTP handlers we have, for URLs we don't want to be
-# handled by the CGIHTTPRequestHandler. Any Python file in the py/httphandler
+# handled by the SimpleHTTPRequestHandler. Any Python file in the py/httphandler
 # directory which starts with "http_handler_" is a module in which we expect
 # to find a handle() function.
 try:
@@ -243,9 +181,22 @@ try:
         if file_name.startswith(prefix) and file_name.endswith(suffix):
             handler_name = file_name[len(prefix):-len(suffix)]
             module = importlib.import_module(prefix + handler_name)
-            AtropineHTTPRequestHandler.ATROPINE_HANDLER_MODULES[handler_name] = module
+            AtropineHTTPRequestHandler.add_handler_module(handler_name, module)
 except Exception as e:
     fatal_error("Failed to import the handlerutils or other handler modules in the py directory.", e)
+
+# Set up the handler modules which used to be CGI scripts.
+try:
+    old_cgi_handler_path = os.path.join(os.getcwd(), "webroot", "cgi-bin")
+    file_list = os.listdir(old_cgi_handler_path)
+    for file_name in file_list:
+        if file_name.endswith(".py"):
+            handler_name = file_name[:-3]
+            module = importlib.import_module(handler_name)
+            if hasattr(module, "handle"):
+                AtropineHTTPRequestHandler.add_former_cgi_module(handler_name, module)
+except Exception as e:
+    fatal_error("Failed to import legacy former-CGI scripts in the webroot/cgi-bin directory.", e)
 
 # Success! If you reach this point then Atropine was installed correctly.
 

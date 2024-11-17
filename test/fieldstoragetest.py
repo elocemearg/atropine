@@ -4,7 +4,7 @@ import sys
 import os
 import io
 
-sys.path.append(os.path.join("webroot", "cgi-bin"))
+sys.path.append("py")
 
 import fieldstorage
 
@@ -82,13 +82,10 @@ def compare_dicts(expected_output, observed_output, preamble):
 test_num = 1
 num_failures = 0
 for (request_method, query_string, post_data, content_length, content_type, expected_output) in field_storage_tests:
-    post_data_buffer = io.BytesIO(post_data.encode("utf-8"))
-    form = fieldstorage.FieldStorage(environment={
-            "REQUEST_METHOD" : request_method, "QUERY_STRING" : query_string,
-            "CONTENT_LENGTH" : (len(post_data) if content_length is None else content_length),
-            "CONTENT_TYPE" : ("application/x-www-form-urlencoded" if content_type is None else content_type)
-        },
-        input_buffer=post_data_buffer
+    form = fieldstorage.FieldStorage(
+            content_type=("application/x-www-form-urlencoded" if content_type is None else content_type),
+            request_method=request_method, query_string=query_string,
+            post_data=(post_data.encode("utf-8") if content_length is None else post_data.encode("utf-8")[:int(content_length)])
     )
     observed_output = {}
     for key in form:

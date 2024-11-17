@@ -1,16 +1,9 @@
 #!/usr/bin/python3
 
-import sys
-import os
-import htmltraceback
 import cgicommon
 import urllib
 import time
 import html
-
-htmltraceback.enable()
-cgicommon.set_module_path()
-
 import countdowntourney
 import uploadercli
 import uploader
@@ -22,39 +15,20 @@ def unix_time_to_str(unix_time):
         return None
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(unix_time))
 
-cgicommon.writeln("Content-Type: text/html; charset=utf-8")
-cgicommon.writeln("")
+def handle(httpreq, response, tourney, request_method, form, query_string):
+    tourney_name = tourney.get_name()
 
-form = cgicommon.FieldStorage()
-tourney_name = form.getfirst("tourney")
+    cgicommon.print_html_head(response, "Live Broadcast Setup: %s" % (tourney_name))
 
-cgicommon.print_html_head("Live Broadcast Setup: %s" % (tourney_name))
+    response.writeln("<body>")
 
-cgicommon.writeln("<body>")
+    httpreq.assert_client_from_localhost()
 
-cgicommon.assert_client_from_localhost()
+    cgicommon.show_sidebar(response, tourney)
 
-tourney = None
-if tourney_name is not None:
-    try:
-        tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir)
-    except countdowntourney.TourneyException as e:
-        cgicommon.show_tourney_exception(e);
-        cgicommon.writeln("<p><a href=\"/cgi-bin/home.py\">Home</a></p>")
-        cgicommon.writeln("</body></html>")
-        sys.exit(1)
+    response.writeln("<div class=\"mainpane\">")
+    response.writeln("<h1>Live Broadcast Setup</h1>")
 
-cgicommon.show_sidebar(tourney)
-
-cgicommon.writeln("<div class=\"mainpane\">")
-cgicommon.writeln("<h1>Live Broadcast Setup</h1>")
-
-if tourney_name is None:
-    show_error_text("No tourney name specified in query string")
-elif tourney is None:
-    show_error_text("No valid tourney name specified")
-else:
-    request_method = os.environ.get("REQUEST_METHOD", "")
     username = ""
     password = ""
     private_tourney = None
@@ -103,14 +77,14 @@ else:
     upload_on = state.get("publishing", False)
 
     if exception_text:
-        cgicommon.show_error_text(exception_context + ": " + exception_text)
+        cgicommon.show_error_text(response, exception_context + ": " + exception_text)
     if delete_success:
-        cgicommon.show_success_box("Successfully deleted tourney <strong>%s</strong> from the website." % (cgicommon.escape(tourney_name)))
+        cgicommon.show_success_box(response, "Successfully deleted tourney <strong>%s</strong> from the website." % (cgicommon.escape(tourney_name)))
 
     web_link = colive_url_base + "/" + cgicommon.escape(tourney_name, True)
     web_link_raw = colive_url_base + "/" + tourney_name
-    cgicommon.writeln("<p>This will upload the tourney state every few seconds so that games, scores and standings are visible at <a href=\"%s\" target=\"_blank\">%s <img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\"/></a></p>" % (web_link, web_link))
-    cgicommon.writeln("""
+    response.writeln("<p>This will upload the tourney state every few seconds so that games, scores and standings are visible at <a href=\"%s\" target=\"_blank\">%s <img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\"/></a></p>" % (web_link, web_link))
+    response.writeln("""
 <p>You will need:</p>
 <ul>
 <li>A username and password for the server at %(httpserverhost)s. If you don't have these, then ignore this whole feature. Just pretend it doesn't exist.</li>
@@ -131,8 +105,8 @@ when the internet connection is restored.
         "httpserverhost" : uploader.http_server_host
     })
 
-    cgicommon.writeln("<div class=\"formbox\">")
-    cgicommon.writeln("<form action=\"uploadsetup.py?tourney=%s\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name)))
+    response.writeln("<div class=\"formbox\">")
+    response.writeln("<form action=\"uploadsetup.py?tourney=%s\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name)))
 
     form_info = [
             { "type" : "text", "name" : "username", "label" : "Username",
@@ -141,8 +115,8 @@ when the internet connection is restored.
                 "autocomplete" : "current-password", "value" : password }
     ]
     for info in form_info:
-        cgicommon.writeln("<div class=\"formline\">")
-        cgicommon.writeln("""<div class="formlabel" style="width: 7em;">
+        response.writeln("<div class=\"formline\">")
+        response.writeln("""<div class="formlabel" style="width: 7em;">
         <label for="%s">%s</label>
         </div>
         <div class="formcontrol">
@@ -157,18 +131,18 @@ when the internet connection is restored.
             cgicommon.escape(info["autocomplete"]),
             "class=\"noteditable\" readonly" if upload_on else "")
         )
-        cgicommon.writeln("</div>")
-    cgicommon.writeln("<div class=\"formline\">")
-    cgicommon.writeln("<div class=\"formlabel\" style=\"width: 7em;\">")
-    cgicommon.writeln("Unlisted")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("<div class=\"formcontrol\">")
-    cgicommon.writeln("<input type=\"checkbox\" name=\"privatetourney\" id=\"privatetourney\" %s %s />" % ("checked" if private_tourney else "", "disabled" if upload_on else ""))
-    cgicommon.writeln("<label for=\"privatetourney\" style=\"font-size: 10pt; color: gray;\">If ticked, this tourney will not appear in the public list and will be visible only to people with the link. This is useful if you're just testing things.</label>")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("</div>")
+        response.writeln("</div>")
+    response.writeln("<div class=\"formline\">")
+    response.writeln("<div class=\"formlabel\" style=\"width: 7em;\">")
+    response.writeln("Unlisted")
+    response.writeln("</div>")
+    response.writeln("<div class=\"formcontrol\">")
+    response.writeln("<input type=\"checkbox\" name=\"privatetourney\" id=\"privatetourney\" %s %s />" % ("checked" if private_tourney else "", "disabled" if upload_on else ""))
+    response.writeln("<label for=\"privatetourney\" style=\"font-size: 10pt; color: gray;\">If ticked, this tourney will not appear in the public list and will be visible only to people with the link. This is useful if you're just testing things.</label>")
+    response.writeln("</div>")
+    response.writeln("</div>")
 
-    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name)))
+    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name)))
     if show_delete_confirm:
         warning_html = "<div class=\"formline\">\n"
         warning_html += "<p>Are you sure you want to delete the tourney <strong>%s</strong> from the web?</p>\n" % (cgicommon.escape(tourney_name))
@@ -181,22 +155,22 @@ when the internet connection is restored.
         warning_html += "<input type=\"submit\" name=\"submitdeletefromwebconfirm\" value=\"Confirm\" class=\"bigbutton destroybutton\" />\n"
         warning_html += "<input type=\"submit\" name=\"submitdeletefromwebcancel\" value=\"Cancel\" class=\"bigbutton chickenoutbutton\" />\n"
         warning_html += "</div>\n"
-        cgicommon.show_warning_box(warning_html, True)
+        cgicommon.show_warning_box(response, warning_html, True)
     else:
-        cgicommon.writeln("<div class=\"formline submitline\">")
-        cgicommon.writeln("<input type=\"submit\" name=\"%s\" value=\"%s\" class=\"bigbutton\" />" % (
+        response.writeln("<div class=\"formline submitline\">")
+        response.writeln("<input type=\"submit\" name=\"%s\" value=\"%s\" class=\"bigbutton\" />" % (
             "submitstopuploading" if upload_on else "submitstartuploading",
             "Stop Broadcasting" if upload_on else "Start Broadcasting"
         ))
 
         if not upload_on:
-            cgicommon.writeln("<input type=\"submit\" name=\"submitdeletefromweb\" value=\"Delete from website\" class=\"bigbutton\" />")
-        cgicommon.writeln("</div>")
-    cgicommon.writeln("</form>")
-    cgicommon.writeln("</div>") #formbox
+            response.writeln("<input type=\"submit\" name=\"submitdeletefromweb\" value=\"Delete from website\" class=\"bigbutton\" />")
+        response.writeln("</div>")
+    response.writeln("</form>")
+    response.writeln("</div>") #formbox
 
     if not show_delete_confirm:
-        cgicommon.writeln("""<div class="uploadconsole">
+        response.writeln("""<div class="uploadconsole">
 <div class="uploadconsoleenabled" id="uploadconsoleenabled"></div>
 <div class="uploadconsolestatus" id="uploadconsolestatus"></div>
 <div class="uploadconsolediag" id="uploadconsolediag">
@@ -208,12 +182,9 @@ when the internet connection is restored.
     </div>
 </div>
     """ % (html.escape(web_link_raw)))
-    #<div style="display: inline-block; width: 120px;">Shareable link</div>
 
-    cgicommon.writeln("""
+    response.writeln("""
 <script>
-// <!--
-
 function copyLink() {
     var element = document.getElementById("linktext");
     if (element != null) {
@@ -305,11 +276,9 @@ function uploadConsoleRefresh(enabled, success, numViewers, secondsOfFailure,
 }
 
 uploadWidgetExtraCallback = uploadConsoleRefresh;
-
--->
 </script>
 """)
 
-cgicommon.writeln("</div>") #mainpane
-cgicommon.writeln("</body>")
-cgicommon.writeln("</html>")
+    response.writeln("</div>") #mainpane
+    response.writeln("</body>")
+    response.writeln("</html>")

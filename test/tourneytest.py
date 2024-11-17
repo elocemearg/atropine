@@ -8,8 +8,12 @@ import subprocess
 # i.e.
 # ./test/tourneytest.py
 sys.path.append(os.path.join(os.getcwd(), "py"))
+sys.path.append(os.path.join(os.getcwd(), "webroot", "cgi-bin"))
 
 import countdowntourney
+import httpresponse
+import fieldstorage
+import export as export_page_module
 
 div_scenario = {
     "full_name" : "Some Divisioned Tourney",
@@ -133,27 +137,20 @@ def apply_scenario(tourney, scenario):
             fixtures.append(countdowntourney.Game(round_no, seq, table_no, div, 'P', name_to_player[n1], name_to_player[n2], s1, s2, tb))
         tourney.merge_games(fixtures)
 
-def export_text(tourney_name, output_file):
-    """Export a named tourney report as plain text.
+def export_text(tourney, output_file):
+    """Export a tourney report as plain text.
 
-    Run cgi-bin/export.py to generate a tournament report as plain text,
-    and write it to output_file."""
+    Run cgi-bin/export.py's handle() function to generate a tournament report
+    as plain text, and write it to output_file."""
 
     if os.path.exists(output_file):
         os.unlink(output_file)
     with open(output_file, "w") as out:
-        p = subprocess.run(
-                ["python3", os.path.join("cgi-bin", "export.py") ],
-                stdout=out,
-                cwd="webroot",
-                check=True,
-                env={
-                    "REQUEST_METHOD" : "GET",
-                    "QUERY_STRING" : "tourney=%s&format=text&submitview=1" % (tourney_name),
-                    "PYTHONPATH" : os.path.join(os.getcwd(), "py")
-                },
-                universal_newlines=True
-        )
+        response = httpresponse.HTTPResponse()
+        query_string = "tourney=%s&format=text&submitview=1" % (tourney.get_name())
+        form = fieldstorage.FieldStorage(request_method="GET", query_string=query_string, post_data=None)
+        export_page_module.handle(None, response, tourney, "GET", form, query_string)
+        out.write(response.get_string())
 
 def diff_files(observed, expected):
     p = subprocess.run(
@@ -184,7 +181,7 @@ def test_scenario(test_name, scenario):
     output_file = os.path.join("test", "tourneytestfiles", "%s.out" % (test_name))
     expected_file = os.path.join("test", "tourneytestfiles", "%s.expected" % (test_name))
 
-    export_text(tourney_name, output_file)
+    export_text(tourney, output_file)
     if not diff_files(output_file, expected_file):
         print("%s failed." % (test_name))
         return False

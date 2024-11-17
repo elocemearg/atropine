@@ -37,3 +37,11 @@ def send_error_response(http_handler, error_text, status_code=400):
             status_code=status_code
     )
 
+def send_html_error_response(http_handler, error_text, status_code=400):
+    send_response(http_handler, "text/html; charset=utf-8",
+            """<html>
+<head><title>Atropine: error</title></head>
+<body>
+<p>%s</p>
+</body>
+</html>""" % (error_text), status_code=status_code)

@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
-import htmltraceback
-import cgicommon
-import os
 import sqlite3
 import urllib.parse
 import re
-
+import cgicommon
 import sys
+import os
+
+baseurl = "/cgi-bin/sql.py"
 
 class Column(object):
     def __init__(self, seq, name, typ):
@@ -35,129 +35,121 @@ class Table(object):
     def get_columns(self):
         return self.columns[:]
 
+def handle(httpreq, response, tourney, request_method, form, query_string):
+    # tourney is None for this handler
 
-baseurl = "/cgi-bin/sql.py"
+    cgicommon.print_html_head(response, "Raw SQL interface")
+    httpreq.assert_client_from_localhost()
 
-htmltraceback.enable()
+    sql_text = None
+    execute_sql = None
+    error_text = None
+    error_text_context = ""
+    db = None
+    result_rows = []
+    num_result_cols = 0
+    num_rows_affected = None
+    result_col_names = []
+    result_col_types = []
+    show_warning = True
 
-cgicommon.writeln("Content-Type: text/html; charset=utf-8")
-cgicommon.writeln("")
+    tables = []
+    views = []
 
-cgicommon.print_html_head("Raw SQL interface")
-cgicommon.assert_client_from_localhost()
+    tourney_name = form.getfirst("tourney")
 
-form = cgicommon.FieldStorage()
+    if form.getfirst("nowarning"):
+        show_warning = False
 
-request_method = os.environ.get("REQUEST_METHOD", "")
+    if request_method == "POST" and tourney_name:
+        sql_text = form.getfirst("sql")
+        execute = form.getfirst("execute")
+        if execute:
+            execute_sql = sql_text
 
-sql_text = None
-execute_sql = None
-tourney_name = form.getfirst("tourney")
-error_text = None
-error_text_context = ""
-db = None
-result_rows = []
-num_result_cols = 0
-num_rows_affected = None
-result_col_names = []
-result_col_types = []
-show_warning = True
-
-tables = []
-views = []
-
-if form.getfirst("nowarning"):
-    show_warning = False
-
-if request_method == "POST" and tourney_name:
-    sql_text = form.getfirst("sql")
-    execute = form.getfirst("execute")
-    if execute:
-        execute_sql = sql_text
-
-if tourney_name:
-    if not re.match("^[A-Za-z0-9_-]+$", tourney_name):
-        error_text_context = "Can't open tourney database"
-        error_text = "The tourney name is invalid. It may consist only of letters, numbers, underscores and hyphens."
-    else:
-        db_path = cgicommon.dbdir
-        if db_path and db_path[-1] != os.sep:
-            db_path += os.sep
-        db_path += tourney_name + ".db"
-        if not os.path.exists(db_path):
+    if tourney_name:
+        if not re.match("^[A-Za-z0-9_-]+$", tourney_name):
             error_text_context = "Can't open tourney database"
-            error_text = "The tourney \"%s\" does not exist." % (tourney_name)
+            error_text = "The tourney name is invalid. It may consist only of letters, numbers, underscores and hyphens."
         else:
-            db = sqlite3.connect(db_path)
+            db_path = cgicommon.dbdir
+            if db_path and db_path[-1] != os.sep:
+                db_path += os.sep
+            db_path += tourney_name + ".db"
+            if not os.path.exists(db_path):
+                error_text_context = "Can't open tourney database"
+                error_text = "The tourney \"%s\" does not exist." % (tourney_name)
+            else:
+                db = sqlite3.connect(db_path)
 
-if db and execute_sql:
-    # Execute SQL supplied by user, and fetch results if applicable
-    try:
-        cur = db.cursor()
-        cur.execute(execute_sql)
-        if cur.description:
-            num_result_cols = len(cur.description)
-            for col in cur.description:
-                result_col_names.append(col[0])
-                result_col_types.append(col[1])
+    if db and execute_sql:
+        # Execute SQL supplied by user, and fetch results if applicable
+        try:
+            cur = db.cursor()
+            cur.execute(execute_sql)
+            if cur.description:
+                num_result_cols = len(cur.description)
+                for col in cur.description:
+                    result_col_names.append(col[0])
+                    result_col_types.append(col[1])
+                for row in cur:
+                    result_rows.append(tuple([ str(value) if value is not None else None for value in row ]))
+            else:
+                num_rows_affected = cur.rowcount
+            cur.close()
+            db.commit()
+        except sqlite3.Error as e:
+            error_text_context = "SQL Error"
+            error_text = str(e)
+        except sqlite3.Warning as e:
+            error_text_context = "SQL Warning"
+            error_text = str(e)
+
+    if db:
+        try:
+            # Build data dictionary
+            cur = db.cursor()
+            cur.execute("select type, name from sqlite_master where name not like 'sqlite_%' order by type, name")
             for row in cur:
-                result_rows.append(tuple([ str(value) if value is not None else None for value in row ]))
-        else:
-            num_rows_affected = cur.rowcount
-        cur.close()
-        db.commit()
-    except sqlite3.Error as e:
-        error_text_context = "SQL Error"
-        error_text = str(e)
-    except sqlite3.Warning as e:
-        error_text_context = "SQL Warning"
-        error_text = str(e)
+                table = Table(row[1])
+                if row[0] == "table":
+                    tables.append(table)
+                elif row[0] == "view":
+                    views.append(table)
 
-if db:
-    try:
-        # Build data dictionary
-        cur = db.cursor()
-        cur.execute("select type, name from sqlite_master where name not like 'sqlite_%' order by type, name")
-        for row in cur:
-            table = Table(row[1])
-            if row[0] == "table":
-                tables.append(table)
-            elif row[0] == "view":
-                views.append(table)
+            cur.close()
 
-        cur.close()
+            for tl in (tables, views):
+                for t in tl:
+                    try:
+                        cur = db.cursor()
+                        table_name = t.get_name()
+                        if not re.match("^[A-Za-z_][A-Za-z0-9_]*$", table_name):
+                            table_name = "\"" + "".join([ x if x != "\"" else "\\\"" for x in table_name ]) + "\""
+                        cur.execute("pragma table_info(" + table_name + ")")
+                        columns = []
+                        for row in cur:
+                            columns.append(Column(int(row[0]), row[1], row[2]))
+                        columns = sorted(columns, key=lambda c : c.seq)
+                        for c in columns:
+                            t.add_column(c)
+                        cur.close()
+                    except sqlite3.Error as e:
+                        sys.stderr.write("Failed to fetch columns for table " + table_name + ": " + str(e) + "\r\n")
+                    except sqlite3.Warning as e:
+                        sys.stderr.write("Failed to fetch columns for table " + table_name + ": " + str(e) + "\r\n")
+            db.commit()
+        except sqlite3.Error as e:
+            sys.stderr.write("Failed to build data dictionary: " + str(e) + "\r\n")
+        except sqlite3.Warning as e:
+            sys.stderr.write("Failed to build data dictionary: " + str(e) + "\r\n")
 
-        for tl in (tables, views):
-            for t in tl:
-                try:
-                    cur = db.cursor()
-                    table_name = t.get_name()
-                    if not re.match("^[A-Za-z_][A-Za-z0-9_]*$", table_name):
-                        table_name = "\"" + "".join([ x if x != "\"" else "\\\"" for x in table_name ]) + "\""
-                    cur.execute("pragma table_info(" + table_name + ")")
-                    columns = []
-                    for row in cur:
-                        columns.append(Column(int(row[0]), row[1], row[2]))
-                    columns = sorted(columns, key=lambda c : c.seq)
-                    for c in columns:
-                        t.add_column(c)
-                    cur.close()
-                except sqlite3.Error as e:
-                    sys.stderr.write("Failed to fetch columns for table " + table_name + ": " + str(e) + "\r\n")
-                except sqlite3.Warning as e:
-                    sys.stderr.write("Failed to fetch columns for table " + table_name + ": " + str(e) + "\r\n")
-        db.commit()
-    except sqlite3.Error as e:
-        sys.stderr.write("Failed to build data dictionary: " + str(e) + "\r\n")
-    except sqlite3.Warning as e:
-        sys.stderr.write("Failed to build data dictionary: " + str(e) + "\r\n")
+    if db:
+        db.close()
 
-if db:
-    db.close()
+    response.writeln("<body class=\"scary\" onload=\"bodyLoad();\">")
 
-cgicommon.writeln("<body class=\"scary\" onload=\"bodyLoad();\">")
-
-cgicommon.writeln("""
+    response.writeln("""
 <script>
 function clickTableName(name) {
     var ul = document.getElementById("col_list_" + name);
@@ -208,132 +200,130 @@ function rowHighlight(rowNum, highlightOn) {
 """)
 
 
-# Write the sidebar, but not the normal sidebar, because that requires a
-# tourney, and we might not have a usable one.
-cgicommon.writeln("<div class=\"sidebar sqlsidebar\">")
+    # Write the sidebar, but not the normal sidebar, because that requires a
+    # tourney, and we might not have a usable one.
+    response.writeln("<div class=\"sidebar sqlsidebar\">")
 
-cgicommon.writeln("<div style=\"margin-bottom: 20px;\">")
-cgicommon.writeln("<img src=\"/images/eyebergine128.png\" alt=\"Eyebergine\" />")
-cgicommon.writeln("</div>")
+    response.writeln("<div style=\"margin-bottom: 20px;\">")
+    response.writeln("<img src=\"/images/eyebergine128.png\" alt=\"Eyebergine\" />")
+    response.writeln("</div>")
 
-cgicommon.writeln("<div class=\"sqlsidebarname\">")
-if tourney_name:
-    cgicommon.writeln("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">%s</a>" % (urllib.parse.quote_plus(tourney_name), cgicommon.escape(tourney_name)))
-cgicommon.writeln("</div>")
+    response.writeln("<div class=\"sqlsidebarname\">")
+    if tourney_name:
+        response.writeln("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">%s</a>" % (urllib.parse.quote_plus(tourney_name), cgicommon.escape(tourney_name)))
+    response.writeln("</div>")
 
-# Display list of tables and views, which can be expanded to show columns
-if db:
-    for (tl, object_type) in ((tables, "Tables"), (views, "Views")):
-        cgicommon.writeln("<div class=\"sqldictsection\">")
-        cgicommon.writeln("<div class=\"sqldictsectionheading\">%s</div>" % (cgicommon.escape(object_type)))
-        cgicommon.writeln("<ul class=\"sqldict\">")
-        for tab in tl:
-            tab_escaped = cgicommon.escape(tab.get_name())
-            tab_sq_escaped = "".join([x if x != '\'' else '\\\'' for x in tab.get_name()])
-            cgicommon.writeln("<li class=\"tablename handcursor\" onclick=\"clickTableName('%s');\"><span style=\"display: inline-block; min-width: 0.75em;\" id=\"table_expand_symbol_%s\">&#x25b8;</span> %s</li>" % (
-                cgicommon.escape(tab_sq_escaped),
-                tab_escaped, tab_escaped))
-            cgicommon.writeln("<ul class=\"sqldictcolumnlist\" id=\"col_list_%s\">" % (tab_escaped))
-            for col in tab.get_columns():
-                cgicommon.writeln("<li>%s (%s)</li>" % (cgicommon.escape(col.get_name()), cgicommon.escape(col.get_type())))
-            cgicommon.writeln("</ul>")
-        cgicommon.writeln("</ul>")
-        cgicommon.writeln("</div>")
-else:
-    cgicommon.writeln("<p>No database.</p>")
-
-cgicommon.writeln("</div>") #sidebar
-
-cgicommon.writeln("<div class=\"sqlmainpane\">")
-
-if tourney_name:
-    cgicommon.writeln("<h1>Raw SQL interface</h1>")
-
-    if show_warning:
-        cgicommon.show_warning_box(
-                "<div style=\"max-width: 800px;\">" +
-                "<p style=\"font-weight: bold;\">Warning!</p>" +
-                "<p>This page allows you to run arbitrary SQL on your tourney's " +
-                "<a href=\"https://sqlite.org/lang.html\" target=\"_blank\">SQLite</a> " +
-                "database. " +
-                "It is intended for debugging and emergency database " +
-                "surgery by people who know what they're doing.</p>"
-                "<p>If you don't know what SQL is or what the various tables " +
-                "in the database do, then I strongly recommend that you " +
-                "<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">flee to safety</a>.</p>" % (urllib.parse.quote_plus(tourney_name)) +
-                "</div>",
-                wide=True
-                )
+    # Display list of tables and views, which can be expanded to show columns
+    if db:
+        for (tl, object_type) in ((tables, "Tables"), (views, "Views")):
+            response.writeln("<div class=\"sqldictsection\">")
+            response.writeln("<div class=\"sqldictsectionheading\">%s</div>" % (cgicommon.escape(object_type)))
+            response.writeln("<ul class=\"sqldict\">")
+            for tab in tl:
+                tab_escaped = cgicommon.escape(tab.get_name())
+                tab_sq_escaped = "".join([x if x != '\'' else '\\\'' for x in tab.get_name()])
+                response.writeln("<li class=\"tablename handcursor\" onclick=\"clickTableName('%s');\"><span style=\"display: inline-block; min-width: 0.75em;\" id=\"table_expand_symbol_%s\">&#x25b8;</span> %s</li>" % (
+                    cgicommon.escape(tab_sq_escaped),
+                    tab_escaped, tab_escaped))
+                response.writeln("<ul class=\"sqldictcolumnlist\" id=\"col_list_%s\">" % (tab_escaped))
+                for col in tab.get_columns():
+                    response.writeln("<li>%s (%s)</li>" % (cgicommon.escape(col.get_name()), cgicommon.escape(col.get_type())))
+                response.writeln("</ul>")
+            response.writeln("</ul>")
+            response.writeln("</div>")
     else:
-        cgicommon.writeln("<p><a href=\"https://sqlite.org/lang.html\" target=\"_blank\">SQLite language reference</a></p>")
-        cgicommon.writeln("<p><a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Back to tourney setup</a></p>" % (urllib.parse.quote_plus(tourney_name)))
+        response.writeln("<p>No database.</p>")
 
-    cgicommon.writeln("<div class=\"sqlentry\">")
+    response.writeln("</div>") #sidebar
 
-    cgicommon.writeln("<h2>Enter SQL query</h2>")
-    cgicommon.writeln("<form id=\"sqlform\" action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourney_name)))
-    cgicommon.writeln("<div class=\"sqlentrybox\">")
-    cgicommon.writeln("<textarea autofocus id=\"sql\" name=\"sql\" style=\"width: 600px; height: 100px;\">")
-    if sql_text:
-        cgicommon.write(cgicommon.escape(sql_text))
-    cgicommon.writeln("</textarea>")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("<div class=\"sqlentrysubmit\">")
-    #cgicommon.writeln("<input type=\"text\" name=\"sql\" />")
-    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name)))
-    cgicommon.writeln("<input type=\"hidden\" name=\"execute\" value=\"1\" />")
-    cgicommon.writeln("<input type=\"hidden\" name=\"nowarning\" value=\"1\" />")
+    response.writeln("<div class=\"sqlmainpane\">")
 
-    cgicommon.writeln("<input class=\"bigbutton\" type=\"submit\" name=\"submitsql\" value=\"Run SQL (Ctrl-Enter)\" />")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("</form>")
-    cgicommon.writeln("</div>")
+    if tourney_name:
+        response.writeln("<h1>Raw SQL interface</h1>")
 
-    cgicommon.writeln("<div class=\"sqlresults\">")
-
-    if execute_sql:
-        if num_result_cols == 0:
-            result_count_text = ""
+        if show_warning:
+            cgicommon.show_warning_box(response,
+                    "<div style=\"max-width: 800px;\">" +
+                    "<p style=\"font-weight: bold;\">Warning!</p>" +
+                    "<p>This page allows you to run arbitrary SQL on your tourney's " +
+                    "<a href=\"https://sqlite.org/lang.html\" target=\"_blank\">SQLite</a> " +
+                    "database. " +
+                    "It is intended for debugging and emergency database " +
+                    "surgery by people who know what they're doing.</p>"
+                    "<p>If you don't know what SQL is or what the various tables " +
+                    "in the database do, then I strongly recommend that you " +
+                    "<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">flee to safety</a>.</p>" % (urllib.parse.quote_plus(tourney_name)) +
+                    "</div>",
+                    wide=True
+                    )
         else:
-            result_count_text = " (%d row%s)" % (len(result_rows), "" if len(result_rows) == 1 else "s")
+            response.writeln("<p><a href=\"https://sqlite.org/lang.html\" target=\"_blank\">SQLite language reference</a></p>")
+            response.writeln("<p><a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Back to tourney setup</a></p>" % (urllib.parse.quote_plus(tourney_name)))
 
-        cgicommon.writeln("<h2>Results%s</h2>" % (result_count_text))
+        response.writeln("<div class=\"sqlentry\">")
 
-        if error_text:
-            cgicommon.show_error_text(error_text_context + ": " + error_text)
-        elif num_result_cols > 0:
-            cgicommon.writeln("<table class=\"sqlresults\">")
-            cgicommon.writeln("<tr>")
-            for i in range(num_result_cols):
-                cgicommon.writeln("<th>%s</th>" % (cgicommon.escape(result_col_names[i])))
-            cgicommon.writeln("</tr>")
+        response.writeln("<h2>Enter SQL query</h2>")
+        response.writeln("<form id=\"sqlform\" action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourney_name)))
+        response.writeln("<div class=\"sqlentrybox\">")
+        response.writeln("<textarea autofocus id=\"sql\" name=\"sql\" style=\"width: 600px; height: 100px;\">")
+        if sql_text:
+            response.write(cgicommon.escape(sql_text))
+        response.writeln("</textarea>")
+        response.writeln("</div>")
+        response.writeln("<div class=\"sqlentrysubmit\">")
+        #response.writeln("<input type=\"text\" name=\"sql\" />")
+        response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name)))
+        response.writeln("<input type=\"hidden\" name=\"execute\" value=\"1\" />")
+        response.writeln("<input type=\"hidden\" name=\"nowarning\" value=\"1\" />")
 
-            row_num = 0
-            for row in result_rows:
-                cgicommon.writeln("<tr id=\"row%d\" onmouseover=\"rowHighlight(%d, true);\" onmouseout=\"rowHighlight(%d, false);\">" % (row_num, row_num, row_num))
-                for index in range(len(row)):
-                    value = row[index]
-                    if value is None:
-                        value_str = "NULL"
-                    else:
-                        value_str = value
-                    typ = result_col_types[index]
-                    cgicommon.writeln("<td%s>%s</td>" % (
-                        " class=\"sqlnull\"" if value is None else "",
-                        cgicommon.escape(value_str)))
-                cgicommon.writeln("</tr>")
-                row_num += 1
-            cgicommon.writeln("</table>")
-        else:
-            if num_rows_affected is not None and num_rows_affected >= 0:
-                cgicommon.show_success_box("Query successful, %d row%s affected." % (num_rows_affected, "" if num_rows_affected == 1 else "s"))
+        response.writeln("<input class=\"bigbutton\" type=\"submit\" name=\"submitsql\" value=\"Run SQL (Ctrl-Enter)\" />")
+        response.writeln("</div>")
+        response.writeln("</form>")
+        response.writeln("</div>")
+
+        response.writeln("<div class=\"sqlresults\">")
+
+        if execute_sql:
+            if num_result_cols == 0:
+                result_count_text = ""
             else:
-                cgicommon.show_success_box("Query successful.")
+                result_count_text = " (%d row%s)" % (len(result_rows), "" if len(result_rows) == 1 else "s")
 
-    cgicommon.writeln("</div>")
+            response.writeln("<h2>Results%s</h2>" % (result_count_text))
 
-cgicommon.writeln("</div>")
+            if error_text:
+                cgicommon.show_error_text(response, error_text_context + ": " + error_text)
+            elif num_result_cols > 0:
+                response.writeln("<table class=\"sqlresults\">")
+                response.writeln("<tr>")
+                for i in range(num_result_cols):
+                    response.writeln("<th>%s</th>" % (cgicommon.escape(result_col_names[i])))
+                response.writeln("</tr>")
 
-cgicommon.writeln("</body></html>")
+                row_num = 0
+                for row in result_rows:
+                    response.writeln("<tr id=\"row%d\" onmouseover=\"rowHighlight(%d, true);\" onmouseout=\"rowHighlight(%d, false);\">" % (row_num, row_num, row_num))
+                    for index in range(len(row)):
+                        value = row[index]
+                        if value is None:
+                            value_str = "NULL"
+                        else:
+                            value_str = value
+                        typ = result_col_types[index]
+                        response.writeln("<td%s>%s</td>" % (
+                            " class=\"sqlnull\"" if value is None else "",
+                            cgicommon.escape(value_str)))
+                    response.writeln("</tr>")
+                    row_num += 1
+                response.writeln("</table>")
+            else:
+                if num_rows_affected is not None and num_rows_affected >= 0:
+                    cgicommon.show_success_box(response, "Query successful, %d row%s affected." % (num_rows_affected, "" if num_rows_affected == 1 else "s"))
+                else:
+                    cgicommon.show_success_box(response, "Query successful.")
 
-sys.exit(0)
+        response.writeln("</div>")
+
+    response.writeln("</div>")
+
+    response.writeln("</body></html>")

@@ -1,13 +1,14 @@
 #!/usr/bin/python3
 
-import sys;
-import cgicommon;
-import urllib.request, urllib.parse, urllib.error;
-import htmltraceback
-import os;
-import re;
-import random;
-import json;
+import urllib.request, urllib.parse, urllib.error
+import re
+import random
+import json
+import cgicommon
+import countdowntourney
+import uploadercli
+
+baseurl = "/cgi-bin/games.py"
 
 def int_or_none(s):
     try:
@@ -28,14 +29,14 @@ def ordinal_suffix(num):
     else:
         return "th"
 
-def write_autocomplete_scripts(tourney, games):
-    cgicommon.writeln("<script>")
-    cgicommon.writeln("var previous_control_values = {};")
+def write_autocomplete_scripts(response, tourney, games):
+    response.writeln("<script>")
+    response.writeln("var previous_control_values = {};")
 
     # Act as if the initial value of the score boxes is user input, otherwise
     # if a user mistypes a name, submits the form, then corrects it, correcting
     # the name would load the old (blank) score into the score boxes.
-    cgicommon.writeln("var control_last_change_was_manual = { \"scores\" : true };")
+    response.writeln("var control_last_change_was_manual = { \"scores\" : true };")
 
     players_dict = dict()
     players_tables = dict()
@@ -44,13 +45,13 @@ def write_autocomplete_scripts(tourney, games):
     # Dictionary which maps lowercased player names back to their original
     # case. In the other dictionaries below, the key is always the lowercased
     # player name, so that we treat player names case-insensitively.
-    cgicommon.writeln("const players_cased_names = ")
+    response.writeln("const players_cased_names = ")
     players_cased_names = {}
     for p in tourney.get_players(include_prune=True):
         players_cased_names[p.get_name().lower()] = p.get_name()
-    cgicommon.writeln(json.dumps(players_cased_names, indent=4))
-    cgicommon.writeln(";")
-    cgicommon.writeln()
+    response.writeln(json.dumps(players_cased_names, indent=4))
+    response.writeln(";")
+    response.writeln()
 
     # players
     # Dictionary mapping lowercased player names to a list of their opponents
@@ -62,10 +63,10 @@ def write_autocomplete_scripts(tourney, games):
     #     "tb" : tiebreak (true/false)
     #     "seq" : this game's sequence number within the round
     # }
-    cgicommon.writeln("const players = ")
+    response.writeln("const players = ")
 
     if not games:
-        cgicommon.writeln("{}")
+        response.writeln("{}")
     else:
         for g in games:
             names = g.get_player_names()
@@ -88,15 +89,15 @@ def write_autocomplete_scripts(tourney, games):
                 elif g.table_no not in players_tables[name]:
                     players_tables[name] = sorted(players_tables[name] + [g.table_no])
 
-        cgicommon.writeln(json.dumps(players_dict, indent=4))
-    cgicommon.writeln(";")
+        response.writeln(json.dumps(players_dict, indent=4))
+    response.writeln(";")
 
     # player_snapshots
     # Another dictionary mapping lowercased player names to a snapshot string
     # suitable for the link text which appears above the edit box. A snapshot
     # string looks like "T6 B 7th P4 W1 L3 178pts".
     # lowercase player name -> snapshot string
-    cgicommon.writeln("const player_snapshots = ")
+    response.writeln("const player_snapshots = ")
 
     players_summaries = dict()
     num_divisions = tourney.get_num_divisions()
@@ -122,12 +123,12 @@ def write_autocomplete_scripts(tourney, games):
                     ordinal_suffix(row.position), row.played, row.wins,
                     draw_string, row.played - row.wins - row.draws, row.points)
 
-    cgicommon.writeln(json.dumps(players_summaries, indent=4))
-    cgicommon.writeln(";")
+    response.writeln(json.dumps(players_summaries, indent=4))
+    response.writeln(";")
 
     # player_links
     # A dictionary mapping lowercase player names to "<a href=...>" HTML.
-    cgicommon.writeln("const player_links = ")
+    response.writeln("const player_links = ")
     player_links = dict()
     tourney_name = tourney.get_name()
     for name in players_summaries:
@@ -136,25 +137,25 @@ def write_autocomplete_scripts(tourney, games):
             player_links[name] = cgicommon.player_to_link(p, tourney_name, False, False, True, players_summaries[name])
         except PlayerDoesNotExistException:
             pass
-    cgicommon.writeln(json.dumps(player_links, indent=4))
-    cgicommon.writeln(";")
-    cgicommon.writeln()
+    response.writeln(json.dumps(player_links, indent=4))
+    response.writeln(";")
+    response.writeln()
 
     # prunes
     # A dictionary which is really just a set. Its keys are only the lowercased
     # names of prunes. Ordinary players do not appear in this dictionary at all.
     # lowercase player name -> true
-    cgicommon.writeln("const prunes = ")
+    response.writeln("const prunes = ")
     prune_dict = {}
     for p in tourney.get_players(include_prune=True):
         if p.is_prune():
             prune_dict[p.get_name().lower()] = True
-    cgicommon.writeln(json.dumps(prune_dict, indent=4))
-    cgicommon.writeln(";")
-    cgicommon.writeln()
+    response.writeln(json.dumps(prune_dict, indent=4))
+    response.writeln(";")
+    response.writeln()
 
 
-    cgicommon.writeln("""
+    response.writeln("""
 var tiebreak_prev_state = false;
 var tiebreak_visible = false;
 
@@ -560,7 +561,7 @@ function news_edit_open(seq, currentText, postedToVideprinter, postedToWeb) {
 }
 
 """)
-    cgicommon.writeln("</script>")
+    response.writeln("</script>")
 
 def escape_double_quotes(value):
     return "".join([ x if x not in ('\\', '\"') else "\\" + x for x in value ])
@@ -568,8 +569,8 @@ def escape_double_quotes(value):
 def js_quote_string(s):
     return "\"" + escape_double_quotes(s) + "\""
 
-def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
-        last_entry_error=None, last_entry_names=None,
+def write_new_data_entry_controls(response, tourney, round_no,
+        last_entry_valid=False, last_entry_error=None, last_entry_names=None,
         last_entry_scores=None, last_entry_tiebreak=False):
 
     # If there was an error with the user's last entry, leave the edit boxes
@@ -602,28 +603,26 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
         default_tiebreak = False
 
     if not last_entry_valid and last_entry_error:
-        cgicommon.show_tourney_exception(countdowntourney.InvalidEntryException(last_entry_error))
+        cgicommon.show_tourney_exception(response, countdowntourney.InvalidEntryException(last_entry_error))
 
     tourney_name = tourney.get_name()
-    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgicommon.escape(tourney_name, True));
-    cgicommon.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
+    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgicommon.escape(tourney_name, True));
+    response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
 
     # Print new-fangled friendlier data-entry controls
-    cgicommon.writeln("<div class=\"scoreentry boxshadow\">")
-    cgicommon.writeln("<div class=\"resultsentrytitle\">Result entry</div>")
-    cgicommon.writeln("<div class=\"scoreentryheaderrow\">")
-    cgicommon.writeln("<div class=\"scoreentryplayerinfo scoreentryplayerinfo1\" id=\"entryinfo1\"></div>")
-    cgicommon.writeln("<div class=\"scoreentryplayerinfo scoreentryplayerinfo2\" id=\"entryinfo2\"></div>")
-    cgicommon.writeln("<div class=\"scoreentryclear\">")
-    cgicommon.writeln("<label class=\"closeselectedgame\" onclick=\"deselect_game();\">clear</label>")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("</div>")
+    response.writeln("<div class=\"scoreentry boxshadow\">")
+    response.writeln("<div class=\"resultsentrytitle\">Result entry</div>")
+    response.writeln("<div class=\"scoreentryheaderrow\">")
+    response.writeln("<div class=\"scoreentryplayerinfo scoreentryplayerinfo1\" id=\"entryinfo1\"></div>")
+    response.writeln("<div class=\"scoreentryplayerinfo scoreentryplayerinfo2\" id=\"entryinfo2\"></div>")
+    response.writeln("<div class=\"scoreentryclear\">")
+    response.writeln("<label class=\"closeselectedgame\" onclick=\"deselect_game();\">clear</label>")
+    response.writeln("</div>")
+    response.writeln("</div>")
 
-    #print "<div class=\"scoreentrynamerow\">"
+    response.writeln("<div class=\"scoreentryspacer\"></div>")
 
-    cgicommon.writeln("<div class=\"scoreentryspacer\"></div>")
-
-    cgicommon.writeln("<div class=\"scoreentryeditboxes\">")
+    response.writeln("<div class=\"scoreentryeditboxes\">")
 
     name1div = "<div class=\"scoreentryname\" id=\"name1div\">"
     name1div += ("<input class=\"entryname\" type=\"text\" name=\"entryname1\" " +
@@ -640,11 +639,7 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
         "onchange=\"entry_name_change_finished('entryname2', 'entryname1');\"" +
         " />") % (cgicommon.escape(default_names[1], True))
     name2div += "</div>"
-    #print "</div>" # scoreentrynamerow
 
-    #print "<div class=\"scoreentryspacer\"></div>"
-
-    #print "<div class=\"scoreentryscorerow\">"
     score1div = "<div class=\"scoreentryscore\" id=\"score1div\">"
     score1div += ("<input class=\"entryscore\" type=\"text\" name=\"entryscore1\" " +
             "id=\"entryscore1\" placeholder=\"Score\" value=\"%s\" " +
@@ -669,36 +664,34 @@ def write_new_data_entry_controls(tourney, round_no, last_entry_valid=False,
         div_order = [ name1div, name2div, score1div, score2div ]
 
     for div in div_order:
-        cgicommon.writeln(div)
+        response.writeln(div)
 
-    #print "</div>" # scoreentryscorerow
+    response.writeln("</div>") # scoreentryeditboxes
 
-    cgicommon.writeln("</div>") # scoreentryeditboxes
+    response.writeln("<div class=\"scoreentryspacer\"></div>")
 
-    cgicommon.writeln("<div class=\"scoreentryspacer\"></div>")
+    response.writeln("<div class=\"scoreentryotherrow\">")
+    response.writeln("<div class=\"scoreentrytiebreak\" id=\"tiebreakdiv\">")
+    response.writeln("<input class=\"entrytiebreak\" type=\"checkbox\" name=\"entrytiebreak\" id=\"entrytiebreak\" value=\"1\" style=\"cursor: pointer;\" %s />" % ("checked=\"checked\"" if default_tiebreak else ""))
+    response.writeln("<label for=\"entrytiebreak\" style=\"cursor: pointer;\" id=\"tiebreaklabel\">Game won on tiebreak?</label>")
+    response.writeln("</div>")
+    response.writeln("<div class=\"scoreentrysubmit\">")
+    response.writeln("<input type=\"submit\" name=\"entrysubmit\" value=\"Submit result\" />")
+    response.writeln("</div>")
+    response.writeln("</div>") #scoreentryotherrow
+    response.writeln("<div class=\"scoreentryspacer\"></div>")
 
-    cgicommon.writeln("<div class=\"scoreentryotherrow\">")
-    cgicommon.writeln("<div class=\"scoreentrytiebreak\" id=\"tiebreakdiv\">")
-    cgicommon.writeln("<input class=\"entrytiebreak\" type=\"checkbox\" name=\"entrytiebreak\" id=\"entrytiebreak\" value=\"1\" style=\"cursor: pointer;\" %s />" % ("checked=\"checked\"" if default_tiebreak else ""))
-    cgicommon.writeln("<label for=\"entrytiebreak\" style=\"cursor: pointer;\" id=\"tiebreaklabel\">Game won on tiebreak?</label>")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("<div class=\"scoreentrysubmit\">")
-    cgicommon.writeln("<input type=\"submit\" name=\"entrysubmit\" value=\"Submit result\" />")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("</div>") #scoreentryotherrow
-    cgicommon.writeln("<div class=\"scoreentryspacer\"></div>")
+    response.writeln("</div>") # scoreentry
 
-    cgicommon.writeln("</div>") # scoreentry
+    response.writeln("<p id=\"diag\"></p>")
 
-    cgicommon.writeln("<p id=\"diag\"></p>")
-
-def write_news_form_tick_box_div(tourney, publishing, is_edit):
+def write_news_form_tick_box_div(response, tourney, publishing, is_edit):
     if is_edit:
         id_suffix = "1"
     else:
         id_suffix = "0"
 
-    cgicommon.writeln("<div class=\"newsformheadingoptions\">")
+    response.writeln("<div class=\"newsformheadingoptions\">")
     if publishing or is_edit:
         tick_box_html_format = """
         <input type="checkbox" name="posttovideprinter" id="posttovideprinter%s" value="1" %s />
@@ -706,7 +699,7 @@ def write_news_form_tick_box_div(tourney, publishing, is_edit):
         <input type="checkbox" name="posttoweb" id="posttoweb%s" value="1" %s />
         <label for="posttoweb%s">To web</label>
         """
-        cgicommon.writeln(tick_box_html_format % (
+        response.writeln(tick_box_html_format % (
             str(id_suffix),
             "checked" if tourney.is_post_to_videprinter_set() else "",
             str(id_suffix),
@@ -715,16 +708,17 @@ def write_news_form_tick_box_div(tourney, publishing, is_edit):
             str(id_suffix)
         ))
     else:
-        cgicommon.writeln("<input type=\"hidden\" name=\"posttovideprinter\" id=\"posttovideprinter%s\" value=\"1\" />" % (str(id_suffix)))
-        cgicommon.writeln("<input type=\"hidden\" name=\"posttoweb\" id=\"posttoweb%s\" value=\"1\" />" % (str(id_suffix)))
+        response.writeln("<input type=\"hidden\" name=\"posttovideprinter\" id=\"posttovideprinter%s\" value=\"1\" />" % (str(id_suffix)))
+        response.writeln("<input type=\"hidden\" name=\"posttoweb\" id=\"posttoweb%s\" value=\"1\" />" % (str(id_suffix)))
 
     if is_edit:
-        cgicommon.writeln("<button type=\"button\" onclick=\"news_edit_close();\">Close</button>")
-    cgicommon.writeln("</div>")
+        response.writeln("<button type=\"button\" onclick=\"news_edit_close();\">Close</button>")
+    response.writeln("</div>")
 
-def write_videprinter(tourney, round_no):
+def write_videprinter(response, tourney, round_no):
+    tourney_name = tourney.get_name()
     try:
-        upload_state = uploadercli.get_tourney_upload_state(tourney_name)
+        upload_state = uploadercli.get_tourney_upload_state(tourney.get_name())
         if upload_state and upload_state.get("publishing", False):
             publishing = True
         else:
@@ -732,9 +726,9 @@ def write_videprinter(tourney, round_no):
     except uploadercli.UploaderClientException:
         publishing = False
 
-    cgicommon.writeln("<div class=\"videprinter boxshadow\" id=\"videprinterdiv\">")
-    cgicommon.writeln("<div class=\"resultsentrytitle\">News feed</div>")
-    cgicommon.writeln("<div class=\"videprinterwindow\" id=\"videprinterwindow\">")
+    response.writeln("<div class=\"videprinter boxshadow\" id=\"videprinterdiv\">")
+    response.writeln("<div class=\"resultsentrytitle\">News feed</div>")
+    response.writeln("<div class=\"videprinterwindow\" id=\"videprinterwindow\">")
 
     logs = tourney.get_logs_since(None, False, round_no)
     num_divisions = tourney.get_num_divisions()
@@ -743,7 +737,7 @@ def write_videprinter(tourney, round_no):
         (seq_no, timestamp, rno, round_seq, table_no, game_type, name1, score1, name2, score2, tiebreak, log_type, division, superseded, comment) = entry
 
         if log_type in (1, 2):
-            cgicommon.writeln("<div class=\"videprinterentry\" onclick=\"select_game(%d, true);\">" % (round_seq))
+            response.writeln("<div class=\"videprinterentry\" onclick=\"select_game(%d, true);\">" % (round_seq))
 
             if score1 is not None and score2 is not None:
                 if score1 == 0 and score2 == 0 and tiebreak:
@@ -762,17 +756,17 @@ def write_videprinter(tourney, round_no):
                 scorestr2 = ""
 
             if superseded:
-                cgicommon.writeln("<span class=\"videprintersuperseded\">")
+                response.writeln("<span class=\"videprintersuperseded\">")
                 if division:
-                    cgicommon.writeln(cgicommon.escape(tourney.get_short_division_name(division)))
-                cgicommon.writeln(cgicommon.escape("R%dT%d %s " % (rno, table_no, name1)));
-                cgicommon.writeln("%s-%s" % (scorestr1, scorestr2))
-                cgicommon.writeln(cgicommon.escape(" %s" % (name2)))
-                cgicommon.writeln("</span>")
+                    response.writeln(cgicommon.escape(tourney.get_short_division_name(division)))
+                response.writeln(cgicommon.escape("R%dT%d %s " % (rno, table_no, name1)));
+                response.writeln("%s-%s" % (scorestr1, scorestr2))
+                response.writeln(cgicommon.escape(" %s" % (name2)))
+                response.writeln("</span>")
             else:
                 if num_divisions > 1 and division is not None:
-                    cgicommon.writeln("<span class=\"videprinterdivision\">%s</span>" % (tourney.get_short_division_name(division)))
-                cgicommon.writeln("<span class=\"videprinterroundandtable\">R%dT%d</span>" % (rno, table_no))
+                    response.writeln("<span class=\"videprinterdivision\">%s</span>" % (tourney.get_short_division_name(division)))
+                response.writeln("<span class=\"videprinterroundandtable\">R%dT%d</span>" % (rno, table_no))
 
                 player_classes = [ "videprinterplayer", "videprinterplayer" ]
                 if score1 is not None and score2 is not None:
@@ -783,65 +777,65 @@ def write_videprinter(tourney, round_no):
                     elif score2 > score1:
                         player_classes = [ "videprinterlosingplayer", "videprinterwinningplayer" ]
 
-                cgicommon.writeln("<span class=\"%s\">%s</span>" % (player_classes[0], cgicommon.escape(name1)))
-                cgicommon.writeln("<span class=\"videprinterscore\">%s-%s</span>" % (scorestr1, scorestr2))
-                cgicommon.writeln("<span class=\"%s\">%s</span>" % (player_classes[1], cgicommon.escape(name2)))
-            cgicommon.writeln("</div>")
+                response.writeln("<span class=\"%s\">%s</span>" % (player_classes[0], cgicommon.escape(name1)))
+                response.writeln("<span class=\"videprinterscore\">%s-%s</span>" % (scorestr1, scorestr2))
+                response.writeln("<span class=\"%s\">%s</span>" % (player_classes[1], cgicommon.escape(name2)))
+            response.writeln("</div>")
         elif (log_type & countdowntourney.LOG_TYPE_COMMENT) != 0:
             # News item
             if comment is None:
                 comment = ""
             post_to_videprinter = (log_type & countdowntourney.LOG_TYPE_COMMENT_VIDEPRINTER_FLAG) != 0
             post_to_web = (log_type & countdowntourney.LOG_TYPE_COMMENT_WEB_FLAG) != 0
-            cgicommon.writeln("<div class=\"videprinterentry videprinternewsentry\" id=\"videprinter_news_%d\" onclick=\"news_edit_open(%d, %s, %s, %s);\">" % (
+            response.writeln("<div class=\"videprinterentry videprinternewsentry\" id=\"videprinter_news_%d\" onclick=\"news_edit_open(%d, %s, %s, %s);\">" % (
                 seq_no, seq_no,
                 cgicommon.escape(js_quote_string(comment), True),
                 "true" if post_to_videprinter else "false",
                 "true" if post_to_web else "false"
             ))
-            cgicommon.writeln("&#8227; " + cgicommon.escape(comment))
-            cgicommon.writeln("</div>")
+            response.writeln("&#8227; " + cgicommon.escape(comment))
+            response.writeln("</div>")
 
-    cgicommon.writeln("</div>") # videprinterwindow
+    response.writeln("</div>") # videprinterwindow
 
     # Form to post a new comment
-    cgicommon.writeln("<div class=\"newsform\" id=\"newspost\">")
-    cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no))
-    cgicommon.writeln("<div class=\"newsformheading\">")
-    cgicommon.writeln("<div class=\"newsformheadingtext\">Post comment</div>")
+    response.writeln("<div class=\"newsform\" id=\"newspost\">")
+    response.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no))
+    response.writeln("<div class=\"newsformheading\">")
+    response.writeln("<div class=\"newsformheadingtext\">Post comment</div>")
 
-    write_news_form_tick_box_div(tourney, publishing, False)
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("<div class=\"newsformbody\">")
-    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
-    cgicommon.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
-    cgicommon.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformtext\" id=\"newsformtext\" value=\"\" />")
-    cgicommon.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformsubmit\" id=\"newsformbutton\" value=\"Post\" />")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("</form>")
-    cgicommon.writeln("</div>") # newsform
+    write_news_form_tick_box_div(response, tourney, publishing, False)
+    response.writeln("</div>")
+    response.writeln("<div class=\"newsformbody\">")
+    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
+    response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
+    response.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformtext\" id=\"newsformtext\" value=\"\" />")
+    response.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformsubmit\" id=\"newsformbutton\" value=\"Post\" />")
+    response.writeln("</div>")
+    response.writeln("</form>")
+    response.writeln("</div>") # newsform
 
     # Form to edit an existing comment
-    cgicommon.writeln("<div class=\"newsform\" id=\"newsedit\" style=\"display: none;\">")
-    cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no))
-    cgicommon.writeln("<div class=\"newsformheading newsformheadingedit\">")
-    cgicommon.writeln("<div class=\"newsformheadingtext\">Editing comment</div>")
-    write_news_form_tick_box_div(tourney, publishing, True)
-    cgicommon.writeln("</div>")
+    response.writeln("<div class=\"newsform\" id=\"newsedit\" style=\"display: none;\">")
+    response.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no))
+    response.writeln("<div class=\"newsformheading newsformheadingedit\">")
+    response.writeln("<div class=\"newsformheadingtext\">Editing comment</div>")
+    write_news_form_tick_box_div(response, tourney, publishing, True)
+    response.writeln("</div>")
 
-    cgicommon.writeln("<div class=\"newsformbody\">")
-    cgicommon.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
-    cgicommon.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
-    cgicommon.writeln("<input type=\"hidden\" name=\"newseditseq\" value=\"\" id=\"newseditseq\" />")
-    cgicommon.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformedittext\" id=\"newsformedittext\" value=\"\" />")
-    cgicommon.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformeditsubmit\" id=\"newsformeditbutton\" value=\"Save\" />")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("</form>")
-    cgicommon.writeln("</div>") # newsform
+    response.writeln("<div class=\"newsformbody\">")
+    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
+    response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
+    response.writeln("<input type=\"hidden\" name=\"newseditseq\" value=\"\" id=\"newseditseq\" />")
+    response.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformedittext\" id=\"newsformedittext\" value=\"\" />")
+    response.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformeditsubmit\" id=\"newsformeditbutton\" value=\"Save\" />")
+    response.writeln("</div>")
+    response.writeln("</form>")
+    response.writeln("</div>") # newsform
 
-    cgicommon.writeln("</div>") # videprinter
+    response.writeln("</div>") # videprinter
 
-def write_blinkenlights(tourney, round_no):
+def write_blinkenlights(response, tourney, round_no):
     games = tourney.get_games(round_no)
 
     if not games:
@@ -870,22 +864,22 @@ def write_blinkenlights(tourney, round_no):
                 "type" : g.game_type
         }
 
-    cgicommon.writeln("<script>")
-    cgicommon.writeln("var games_this_round = ");
+    response.writeln("<script>")
+    response.writeln("var games_this_round = ");
 
-    cgicommon.writeln(json.dumps(game_seq_to_game, indent=4))
-    cgicommon.writeln(";")
+    response.writeln(json.dumps(game_seq_to_game, indent=4))
+    response.writeln(";")
 
-    cgicommon.writeln("var player_name_to_link_html = ");
+    response.writeln("var player_name_to_link_html = ");
     link_dict = dict()
     for p in tourney.get_players():
         link_dict[p.get_name()] = cgicommon.player_to_link(p, tourney.get_name(), False, False, True)
-    cgicommon.writeln(json.dumps(link_dict, indent=4))
-    cgicommon.writeln(";")
+    response.writeln(json.dumps(link_dict, indent=4))
+    response.writeln(";")
 
-    cgicommon.writeln("var round_no = %d;" % (round_no))
+    response.writeln("var round_no = %d;" % (round_no))
 
-    cgicommon.writeln("""
+    response.writeln("""
 function get_link_html(name) {
     if (name == null) {
         return "";
@@ -985,13 +979,13 @@ function set_blinkenlights_mouseover(text) {
     }
 }
     """)
-    cgicommon.writeln("</script>")
+    response.writeln("</script>")
 
     max_games_on_table = max([ len(tables_to_games[t]) for t in tables_to_games ])
 
-    cgicommon.writeln("<div class=\"blinkenlights boxshadow\">")
-    cgicommon.writeln("<div class=\"resultsentrytitle\" style=\"padding: 7px;\">Blinkenlights</div>")
-    cgicommon.writeln("<table class=\"blinkenlightstable\">")
+    response.writeln("<div class=\"blinkenlights boxshadow\">")
+    response.writeln("<div class=\"resultsentrytitle\" style=\"padding: 7px;\">Blinkenlights</div>")
+    response.writeln("<table class=\"blinkenlightstable\">")
 
     num_tables_drawn = 0
     tables_per_row = 8
@@ -1003,8 +997,8 @@ function set_blinkenlights_mouseover(text) {
 
         if num_tables_drawn % tables_per_row == 0:
             if num_tables_drawn > 0:
-                cgicommon.writeln("</tr>")
-            cgicommon.writeln("<tr class=\"blinkenlightsrow\">")
+                response.writeln("</tr>")
+            response.writeln("<tr class=\"blinkenlightsrow\">")
 
         for g in table_games:
             for p in g.get_player_names():
@@ -1021,19 +1015,19 @@ function set_blinkenlights_mouseover(text) {
 
         mouseover_event = cgicommon.escape("set_blinkenlights_mouseover(\"" + cgicommon.escape(", ".join(sorted(players_on_table)), True) + "\");", True)
 
-        cgicommon.writeln("<td class=\"blinkenlightscell\">")
-        cgicommon.writeln("<div class=\"blinkenlightsdivision\">")
-        cgicommon.writeln(cgicommon.escape(division_letters_string))
-        cgicommon.writeln("</div>")
+        response.writeln("<td class=\"blinkenlightscell\">")
+        response.writeln("<div class=\"blinkenlightsdivision\">")
+        response.writeln(cgicommon.escape(division_letters_string))
+        response.writeln("</div>")
         num_games_left = len([ x for x in table_games if not x.is_complete() ])
-        cgicommon.writeln("<div class=\"blinkenlightstablenumber%s\" onmouseover=\"%s\" onmouseout=\"set_blinkenlights_mouseover(&quot;&quot;);\">%d</div>" % (
+        response.writeln("<div class=\"blinkenlightstablenumber%s\" onmouseover=\"%s\" onmouseout=\"set_blinkenlights_mouseover(&quot;&quot;);\">%d</div>" % (
             " blinkenlightstablenumbernomoregames" if num_games_left == 0 else "",
             mouseover_event,
             table_no
         ))
 
-        cgicommon.writeln("<div class=\"blinkenlightsgamesleft\">")
-        cgicommon.writeln("<table><tr>")
+        response.writeln("<div class=\"blinkenlightsgamesleft\">")
+        response.writeln("<table><tr>")
         for g in table_games:
             onclick_script = "select_game(%d, false);" % (g.seq)
             element_id = "gameselectionbutton%d" % (g.seq)
@@ -1042,29 +1036,29 @@ function set_blinkenlights_mouseover(text) {
                 tdclass = "blinkenlightsgameplayed"
             else:
                 tdclass = "blinkenlightsgameleft"
-            cgicommon.writeln("<td class=\"%s\" onclick=\"%s\" id=\"%s\" onmouseover=\"%s\" onmouseout=\"set_blinkenlights_mouseover(&quot;&quot;);\"> </td>" % (tdclass, onclick_script, element_id, mouseover_event))
-        cgicommon.writeln("</tr></table>")
-        cgicommon.writeln("</div>")
-        cgicommon.writeln("</td>")
+            response.writeln("<td class=\"%s\" onclick=\"%s\" id=\"%s\" onmouseover=\"%s\" onmouseout=\"set_blinkenlights_mouseover(&quot;&quot;);\"> </td>" % (tdclass, onclick_script, element_id, mouseover_event))
+        response.writeln("</tr></table>")
+        response.writeln("</div>")
+        response.writeln("</td>")
         num_tables_drawn += 1
 
     # Draw dummy table cells to fill out the row
     while num_tables_drawn % 8 != 0:
-        cgicommon.writeln("<td class=\"blinkenlightspaddingcell\"></td>")
+        response.writeln("<td class=\"blinkenlightspaddingcell\"></td>")
         num_tables_drawn += 1
 
-    cgicommon.writeln("</tr>")
-    cgicommon.writeln("</table>")
+    response.writeln("</tr>")
+    response.writeln("</table>")
 
-    cgicommon.writeln("<div class=\"blinkenlightsfooter\">")
-    cgicommon.writeln("<div class=\"blinkenlightsmouseovertext\">")
-    cgicommon.writeln("<span id=\"blinkenlightsmouseoverlabel\"></span>")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("</div>")
+    response.writeln("<div class=\"blinkenlightsfooter\">")
+    response.writeln("<div class=\"blinkenlightsmouseovertext\">")
+    response.writeln("<span id=\"blinkenlightsmouseoverlabel\"></span>")
+    response.writeln("</div>")
+    response.writeln("</div>")
 
-    cgicommon.writeln("</div>")
+    response.writeln("</div>")
 
-    cgicommon.writeln("<div style=\"clear: both;\"></div>")
+    response.writeln("<div style=\"clear: both;\"></div>")
 
 
 def parse_score(score):
@@ -1080,36 +1074,15 @@ def parse_score(score):
             tb = False;
         return (s1, s2, tb)
 
-htmltraceback.enable();
+def handle(httpreq, response, tourney, request_method, form, query_string):
+    tourney_name = tourney.get_name()
+    cgicommon.print_html_head(response, "Games: " + str(tourney_name));
 
-cgicommon.writeln("Content-Type: text/html; charset=utf-8");
-cgicommon.writeln("");
+    response.writeln("<body onload=\"games_on_load();\">");
 
-baseurl = "/cgi-bin/games.py";
-form = cgicommon.FieldStorage();
-tourney_name = form.getfirst("tourney");
+    httpreq.assert_client_from_localhost()
 
-tourney = None;
-request_method = os.environ.get("REQUEST_METHOD", "");
-
-cgicommon.set_module_path();
-
-import countdowntourney;
-import uploadercli
-
-cgicommon.print_html_head("Games: " + str(tourney_name));
-
-cgicommon.writeln("<body onload=\"games_on_load();\">");
-
-cgicommon.assert_client_from_localhost()
-
-if tourney_name is None:
-    cgicommon.writeln("<h1>No tourney specified</h1>");
-    cgicommon.writeln("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
-    cgicommon.writeln("</body></html>");
-    sys.exit(0);
-
-cgicommon.writeln("""
+    response.writeln("""
 <script>
 function scroll_to_bottom(element) {
     element.scrollTop = element.scrollHeight - element.clientHeight;
@@ -1125,312 +1098,309 @@ function games_on_load() {
 </script>
 """);
 
-try:
-    tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir);
+    try:
+        cgicommon.show_sidebar(response, tourney);
 
-    cgicommon.show_sidebar(tourney);
+        response.writeln("<div class=\"mainpane\">");
+        response.writeln("<div class=\"entrymainpane\">");
 
-    cgicommon.writeln("<div class=\"mainpane\">");
+        # If a round is selected, show the scores for that round, in editable
+        # boxes so they can be changed.
+        round_no = None;
+        if "round" in form:
+            try:
+                round_no = int(form.getfirst("round"));
+            except ValueError:
+                response.writeln("<h1>Invalid round number</h1>");
+                response.writeln("<p>\"%s\" is not a valid round number.</p>" % (cgicommon.escape(form.getfirst("round"))));
+        else:
+            response.writeln("<h1>No round number specified</h1>");
 
-    cgicommon.writeln("<div class=\"entrymainpane\">");
+        if round_no is not None:
+            games = tourney.get_games(round_no=round_no);
+            rounds = tourney.get_rounds();
+            round_name = None;
+            for r in rounds:
+                if r["num"] == round_no:
+                    round_name = r.get("name", None);
+                    break;
+            if not round_name:
+                round_name = "Round " + str(round_no);
 
-    # If a round is selected, show the scores for that round, in editable
-    # boxes so they can be changed.
-    round_no = None;
-    if "round" in form:
-        try:
-            round_no = int(form.getfirst("round"));
-        except ValueError:
-            cgicommon.writeln("<h1>Invalid round number</h1>");
-            cgicommon.writeln("<p>\"%s\" is not a valid round number.</p>" % (cgicommon.escape(form.getfirst("round"))));
-    else:
-        cgicommon.writeln("<h1>No round number specified</h1>");
+            remarks = dict();
+            response.writeln("<div class=\"roundnamebox boxshadow\">")
+            response.writeln(cgicommon.escape(round_name));
+            response.writeln("</div>")
 
-    if round_no is not None:
-        games = tourney.get_games(round_no=round_no);
-        rounds = tourney.get_rounds();
-        round_name = None;
-        for r in rounds:
-            if r["num"] == round_no:
-                round_name = r.get("name", None);
-                break;
-        if not round_name:
-            round_name = "Round " + str(round_no);
+            response.writeln("<div style=\"clear: both;\"></div>")
 
-        remarks = dict();
-        cgicommon.writeln("<div class=\"roundnamebox boxshadow\">")
-        cgicommon.writeln(cgicommon.escape(round_name));
-        cgicommon.writeln("</div>")
+            last_entry_valid = False
+            last_entry_error = None
+            last_entry_names = None
+            last_entry_scores = None
+            last_entry_tb = False
+            control_with_error = None
+            default_control_focus = "entryname1"
 
-        cgicommon.writeln("<div style=\"clear: both;\"></div>")
+            if "entrysubmit" in form:
+                # If the user entered names and a score into the data entry
+                # panel, we'll need to add the result for that game. We do this
+                # as well as applying any changes made to the scores in the
+                # main game list.
+                name1 = form.getfirst("entryname1")
+                name2 = form.getfirst("entryname2")
+                score1 = form.getfirst("entryscore1")
+                score2 = form.getfirst("entryscore2")
+                tb = form.getfirst("entrytiebreak")
 
-        last_entry_valid = False
-        last_entry_error = None
-        last_entry_names = None
-        last_entry_scores = None
-        last_entry_tb = False
-        control_with_error = None
-        default_control_focus = "entryname1"
-
-        if "entrysubmit" in form:
-            # If the user entered names and a score into the data entry panel,
-            # we'll need to add the result for that game. We do this as well as
-            # applying any changes made to the scores in the main game list.
-            name1 = form.getfirst("entryname1")
-            name2 = form.getfirst("entryname2")
-            score1 = form.getfirst("entryscore1")
-            score2 = form.getfirst("entryscore2")
-            tb = form.getfirst("entrytiebreak")
-
-            # Check if the user entered anything in the data entry panel,
-            # and if they did, check that it's valid.
-            if name1 or name2:
-                if not name1 or not name2:
-                    # Must fill in both names or neither
-                    last_entry_error = "Only one name is filled in. You need to fill in both."
-                    control_with_error = "entryname1" if not name1 else "entryname2"
-                else:
-                    # Check that the player names exist
-                    try:
-                        p1 = tourney.get_player_from_name(name1)
-                    except countdowntourney.PlayerDoesNotExistException:
-                        p1 = None
-                    try:
-                        p2 = tourney.get_player_from_name(name2)
-                    except countdowntourney.PlayerDoesNotExistException:
-                        p2 = None
-
-                    if p1 is None and p2 is None:
-                        control_with_error = "entryname1"
-                        last_entry_error = "The players \"%s\" and \"%s\" do not exist in this tournament." % (name1, name2)
-                    elif p1 is None:
-                        control_with_error = "entryname1"
-                        last_entry_error = "The player \"%s\" does not exist in this tournament." % (name1)
-                    elif p2 is None:
-                        control_with_error = "entryname2"
-                        last_entry_error = "The player \"%s\" does not exist in this tournament." % (name2)
+                # Check if the user entered anything in the data entry panel,
+                # and if they did, check that it's valid.
+                if name1 or name2:
+                    if not name1 or not name2:
+                        # Must fill in both names or neither
+                        last_entry_error = "Only one name is filled in. You need to fill in both."
+                        control_with_error = "entryname1" if not name1 else "entryname2"
                     else:
-                        # Both players have been specified, and they exist.
-                        # Good so far. Now let's check that there is a game
-                        # in this round between those two players. Note that
-                        # it is not necessary for the users to enter the
-                        # player names the "correct" way round.
-                        matching_games = tourney.get_games_between(round_no, name1, name2)
-                        if len(matching_games) == 0:
+                        # Check that the player names exist
+                        try:
+                            p1 = tourney.get_player_from_name(name1)
+                        except countdowntourney.PlayerDoesNotExistException:
+                            p1 = None
+                        try:
+                            p2 = tourney.get_player_from_name(name2)
+                        except countdowntourney.PlayerDoesNotExistException:
+                            p2 = None
+
+                        if p1 is None and p2 is None:
                             control_with_error = "entryname1"
-                            last_entry_error = "There is no game in this round between %s and %s." % (name1, name2)
-                        elif len(matching_games) > 1:
+                            last_entry_error = "The players \"%s\" and \"%s\" do not exist in this tournament." % (name1, name2)
+                        elif p1 is None:
                             control_with_error = "entryname1"
-                            last_entry_error = "There are %d games in this round between %s and %s. Please use the old results interface (see link at bottom of page) to enter results for these matches." % (len(matching_games), name1, name2)
+                            last_entry_error = "The player \"%s\" does not exist in this tournament." % (name1)
+                        elif p2 is None:
+                            control_with_error = "entryname2"
+                            last_entry_error = "The player \"%s\" does not exist in this tournament." % (name2)
                         else:
-                            # There is exactly one game in this round between
-                            # these two players.
-                            game = matching_games[0]
-                            score1int = None
-                            score2int = None
-                            unplayed = False
-                            score_valid = True
-                            players_swapped = False
-
-                            game_players = game.get_player_names()
-                            assert(game.is_between_names(game_players[0], game_players[1]))
-                            if game_players[0].lower() == p1.get_name().lower():
+                            # Both players have been specified, and they exist.
+                            # Good so far. Now let's check that there is a game
+                            # in this round between those two players. Note that
+                            # it is not necessary for the users to enter the
+                            # player names the "correct" way round.
+                            matching_games = tourney.get_games_between(round_no, name1, name2)
+                            if len(matching_games) == 0:
+                                control_with_error = "entryname1"
+                                last_entry_error = "There is no game in this round between %s and %s." % (name1, name2)
+                            elif len(matching_games) > 1:
+                                control_with_error = "entryname1"
+                                last_entry_error = "There are %d games in this round between %s and %s. Please use the old results interface (see link at bottom of page) to enter results for these matches." % (len(matching_games), name1, name2)
+                            else:
+                                # There is exactly one game in this round
+                                # between these two players.
+                                game = matching_games[0]
+                                score1int = None
+                                score2int = None
+                                unplayed = False
+                                score_valid = True
                                 players_swapped = False
-                            else:
-                                players_swapped = True
 
-                            # If the user has typed a complete score into one
-                            # of the score boxes, then split them up into the
-                            # two boxes.
-                            score_tuple = None
-                            if not score1 and score2:
-                                score_tuple = parse_score(score2);
-                            elif not score2 and score1:
-                                score_tuple = parse_score(score1)
-
-                            if score_tuple:
-                                score1 = str(score_tuple[0])
-                                score2 = str(score_tuple[1])
-                                tb = score_tuple[2]
-
-                            # If both scores are blank, then the game is
-                            # unplayed. Otherwise, both scores must be
-                            # numbers.
-
-                            if not score1 or not score2:
-                                # Both scores are blank. Remove the result.
-                                if not score1 and not score2:
-                                    unplayed = True
+                                game_players = game.get_player_names()
+                                assert(game.is_between_names(game_players[0], game_players[1]))
+                                if game_players[0].lower() == p1.get_name().lower():
+                                    players_swapped = False
                                 else:
-                                    last_entry_error = "Both scores must be filled in. Alternatively, leave both scores blank to remove the result."
-                                    control_with_error = ("entryscore1" if score1 is None or len(score1) == 0 else "entryscore2")
-                                    score_valid = False
-                            else:
-                                # Both scores have something in them.
-                                score_strings = [score1, score2]
-                                score_ints = [None, None]
-                                for i in range(2):
-                                    # If the score has an asterisk in it,
-                                    # then it was a tiebreak, regardless of
-                                    # what the checkbox says.
-                                    score_string = score_strings[i]
-                                    if "*" in score_string:
-                                        tb = "1"
-                                        score_string = "".join([ x for x in score_string if x != "*" ])
-                                        score_strings[i] = score_string
-                                    try:
-                                        score_ints[i] = int(score_string)
-                                    except ValueError:
-                                        pass
+                                    players_swapped = True
 
-                                if score_ints[0] is None or score_ints[1] is None:
-                                    last_entry_error = "\"%s\" is not a valid score. This must be an integer." % (score1 if score_ints[0] is None else score2)
-                                    score_valid = False
-                                    control_with_error = ("entryscore1" if score_ints[0] is None else "entryscore2")
-                                elif tb and abs(score_ints[0] - score_ints[1]) != 10 and not(score_ints[0] == 0 and score_ints[1] == 0):
-                                    last_entry_error = "This can't be a tiebreak game: the winning margin is not 10."
-                                    control_with_error = "entryscore1"
-                                    score_valid = False
+                                # If the user has typed a complete score into
+                                # one of the score boxes, then split them up
+                                # into the two boxes.
+                                score_tuple = None
+                                if not score1 and score2:
+                                    score_tuple = parse_score(score2);
+                                elif not score2 and score1:
+                                    score_tuple = parse_score(score1)
 
+                                if score_tuple:
+                                    score1 = str(score_tuple[0])
+                                    score2 = str(score_tuple[1])
+                                    tb = score_tuple[2]
 
-                            if score_valid:
-                                if tb:
-                                    tb = True
+                                # If both scores are blank, then the game is
+                                # unplayed. Otherwise, both scores must be
+                                # numbers.
+
+                                if not score1 or not score2:
+                                    # Both scores are blank. Remove the result.
+                                    if not score1 and not score2:
+                                        unplayed = True
+                                    else:
+                                        last_entry_error = "Both scores must be filled in. Alternatively, leave both scores blank to remove the result."
+                                        control_with_error = ("entryscore1" if score1 is None or len(score1) == 0 else "entryscore2")
+                                        score_valid = False
                                 else:
-                                    tb = False
+                                    # Both scores have something in them.
+                                    score_strings = [score1, score2]
+                                    score_ints = [None, None]
+                                    for i in range(2):
+                                        # If the score has an asterisk in it,
+                                        # then it was a tiebreak, regardless of
+                                        # what the checkbox says.
+                                        score_string = score_strings[i]
+                                        if "*" in score_string:
+                                            tb = "1"
+                                            score_string = "".join([ x for x in score_string if x != "*" ])
+                                            score_strings[i] = score_string
+                                        try:
+                                            score_ints[i] = int(score_string)
+                                        except ValueError:
+                                            pass
 
-                                if unplayed:
-                                    game.set_score(None, None, False)
-                                elif players_swapped:
-                                    game.set_score(score_ints[1], score_ints[0], tb)
-                                else:
-                                    game.set_score(score_ints[0], score_ints[1], tb)
-
-                                tourney.merge_games([game]);
-                                last_entry_valid = True
-            else:
-                # User didn't use the data entry panel
-                last_entry_valid = False
-
-            if last_entry_error:
-                last_entry_valid = False
-
-            last_entry_names = (name1, name2)
-            last_entry_scores = (score1, score2)
-            last_entry_tb = tb
-        elif "newsformsubmit" in form:
-            news_text = form.getfirst("newsformtext")
-            post_to_videprinter = bool(int_or_none(form.getfirst("posttovideprinter")))
-            post_to_web = bool(int_or_none(form.getfirst("posttoweb")))
-            if news_text:
-                tourney.post_news_item(round_no, news_text, post_to_videprinter, post_to_web)
-            tourney.set_post_to_videprinter(post_to_videprinter)
-            tourney.set_post_to_web(post_to_web)
-            default_control_focus = "newsformtext"
-        elif "newsformeditsubmit" in form:
-            news_text = form.getfirst("newsformedittext")
-            post_to_videprinter = bool(int_or_none(form.getfirst("posttovideprinter")))
-            post_to_web = bool(int_or_none(form.getfirst("posttoweb")))
-            if news_text is None:
-                news_text = ""
-            news_entry_seq = int_or_none(form.getfirst("newseditseq"))
-            if news_entry_seq is not None:
-                tourney.edit_news_item(news_entry_seq, news_text, post_to_videprinter, post_to_web)
-            default_control_focus = "newsformtext"
-
-        num_divisions = tourney.get_num_divisions()
-
-        cgicommon.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no));
-
-        write_new_data_entry_controls(tourney, round_no, last_entry_valid,
-                last_entry_error, last_entry_names, last_entry_scores,
-                last_entry_tb)
-
-        cgicommon.writeln("</form>")
-
-        write_videprinter(tourney, round_no)
-
-        write_blinkenlights(tourney, round_no)
-
-        # Fetch the games in the tourney now, after any changes which may have
-        # just been applied.
-        games = tourney.get_games(round_no=round_no)
-
-        # If the user got something wrong, the control with the mistake should
-        # have focus. If the user just submitted a news item then the news text
-        # box should have focus. Otherwise, the player 1 text box should have
-        # focus.
-        if control_with_error or games:
-            highlight_control = False
-            if control_with_error:
-                control_with_focus = control_with_error
-                highlight_control = True
-            else:
-                control_with_focus = default_control_focus
-            cgicommon.writeln("<script>")
-            cgicommon.writeln("document.getElementById('" + control_with_focus + "').focus();")
-            if highlight_control:
-                cgicommon.writeln("document.getElementById('" + control_with_focus + "').select();")
-            cgicommon.writeln("</script>")
-
-        # For the auto-completion of player names in the data entry box, we need
-        # a Javascript-accessible mapping of all the players playing in this
-        # round mapped to the list of player names they're playing.
-        write_autocomplete_scripts(tourney, games)
+                                    if score_ints[0] is None or score_ints[1] is None:
+                                        last_entry_error = "\"%s\" is not a valid score. This must be an integer." % (score1 if score_ints[0] is None else score2)
+                                        score_valid = False
+                                        control_with_error = ("entryscore1" if score_ints[0] is None else "entryscore2")
+                                    elif tb and abs(score_ints[0] - score_ints[1]) != 10 and not(score_ints[0] == 0 and score_ints[1] == 0):
+                                        last_entry_error = "This can't be a tiebreak game: the winning margin is not 10."
+                                        control_with_error = "entryscore1"
+                                        score_valid = False
 
 
-    if round_no is not None:
-        cgicommon.writeln("<div style=\"margin-top: 10px\">")
-        cgicommon.writeln("<span style=\"font-size: 10pt; margin-right: 20px;\">");
-        cgicommon.writeln("<a href=\"/cgi-bin/fixtureedit.py?tourney=%s&amp;round=%d\">Edit fixture list</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
-        cgicommon.writeln("</span>");
-        cgicommon.writeln("<span style=\"font-size: 10pt; margin-right: 20px;\">");
-        cgicommon.writeln("<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Old results interface</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
-        cgicommon.writeln("</span>");
-        cgicommon.writeln("</div>");
+                                if score_valid:
+                                    if tb:
+                                        tb = True
+                                    else:
+                                        tb = False
 
-    cgicommon.writeln("</div>"); #entrymainpane
+                                    if unplayed:
+                                        game.set_score(None, None, False)
+                                    elif players_swapped:
+                                        game.set_score(score_ints[1], score_ints[0], tb)
+                                    else:
+                                        game.set_score(score_ints[0], score_ints[1], tb)
+
+                                    tourney.merge_games([game]);
+                                    last_entry_valid = True
+                else:
+                    # User didn't use the data entry panel
+                    last_entry_valid = False
+
+                if last_entry_error:
+                    last_entry_valid = False
+
+                last_entry_names = (name1, name2)
+                last_entry_scores = (score1, score2)
+                last_entry_tb = tb
+            elif "newsformsubmit" in form:
+                news_text = form.getfirst("newsformtext")
+                post_to_videprinter = bool(int_or_none(form.getfirst("posttovideprinter")))
+                post_to_web = bool(int_or_none(form.getfirst("posttoweb")))
+                if news_text:
+                    tourney.post_news_item(round_no, news_text, post_to_videprinter, post_to_web)
+                tourney.set_post_to_videprinter(post_to_videprinter)
+                tourney.set_post_to_web(post_to_web)
+                default_control_focus = "newsformtext"
+            elif "newsformeditsubmit" in form:
+                news_text = form.getfirst("newsformedittext")
+                post_to_videprinter = bool(int_or_none(form.getfirst("posttovideprinter")))
+                post_to_web = bool(int_or_none(form.getfirst("posttoweb")))
+                if news_text is None:
+                    news_text = ""
+                news_entry_seq = int_or_none(form.getfirst("newseditseq"))
+                if news_entry_seq is not None:
+                    tourney.edit_news_item(news_entry_seq, news_text, post_to_videprinter, post_to_web)
+                default_control_focus = "newsformtext"
+
+            num_divisions = tourney.get_num_divisions()
+
+            response.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no));
+
+            write_new_data_entry_controls(response, tourney, round_no,
+                    last_entry_valid, last_entry_error, last_entry_names,
+                    last_entry_scores, last_entry_tb)
+
+            response.writeln("</form>")
+
+            write_videprinter(response, tourney, round_no)
+
+            write_blinkenlights(response, tourney, round_no)
+
+            # Fetch the games in the tourney now, after any changes which may
+            # have just been applied.
+            games = tourney.get_games(round_no=round_no)
+
+            # If the user got something wrong, the control with the mistake
+            # should have focus. If the user just submitted a news item then
+            # the news text box should have focus. Otherwise, the player 1 text
+            # box should have focus.
+            if control_with_error or games:
+                highlight_control = False
+                if control_with_error:
+                    control_with_focus = control_with_error
+                    highlight_control = True
+                else:
+                    control_with_focus = default_control_focus
+                response.writeln("<script>")
+                response.writeln("document.getElementById('" + control_with_focus + "').focus();")
+                if highlight_control:
+                    response.writeln("document.getElementById('" + control_with_focus + "').select();")
+                response.writeln("</script>")
+
+            # For the auto-completion of player names in the data entry box, we
+            # need a Javascript-accessible mapping of all the players playing
+            # in this round mapped to the list of player names they're playing.
+            write_autocomplete_scripts(response, tourney, games)
 
 
-    if round_no is not None:
-        # Show games as a list, to the right of the entry controls, or, if
-        # it won't fit there, below the entry controls.
+        if round_no is not None:
+            response.writeln("<div style=\"margin-top: 10px\">")
+            response.writeln("<span style=\"font-size: 10pt; margin-right: 20px;\">");
+            response.writeln("<a href=\"/cgi-bin/fixtureedit.py?tourney=%s&amp;round=%d\">Edit fixture list</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+            response.writeln("</span>");
+            response.writeln("<span style=\"font-size: 10pt; margin-right: 20px;\">");
+            response.writeln("<a href=\"/cgi-bin/gameslist.py?tourney=%s&amp;round=%d\">Old results interface</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+            response.writeln("</span>");
+            response.writeln("</div>");
 
-        cgicommon.writeln("<div class=\"gamelistpane boxshadow\">")
-        cgicommon.writeln("<div class=\"resultsentrytitle\">Games</div>")
-        cgicommon.writeln("<div class=\"gamelistpanebody\">")
+        response.writeln("</div>"); #entrymainpane
 
-        games_by_division = dict()
-        num_divisions = tourney.get_num_divisions()
-        for g in games:
-            if g.division in games_by_division:
-                games_by_division[g.division].append(g)
-            else:
-                games_by_division[g.division] = [g]
 
-        for div in sorted(games_by_division):
-            div_games = games_by_division[div]
-            if num_divisions > 1:
-                cgicommon.writeln("<div class=\"gamelistdivisionheading\">")
-                cgicommon.writeln(cgicommon.escape(tourney.get_division_name(div)))
-                cgicommon.writeln("</div>")
-            cgicommon.show_games_as_html_table(div_games, editable=False,
-                    remarks=None, include_round_column=False, round_namer=None,
-                    player_to_link=None, remarks_heading="",
-                    show_game_type=True,
-                    game_onclick_fn=lambda rnd, seq : "select_game(%d, false);" % (seq),
-                    colour_win_loss=False, score_id_prefix="gamelistscore",
-                    show_heading_row=False, hide_game_type_if_p=True)
+        if round_no is not None:
+            # Show games as a list, to the right of the entry controls, or, if
+            # it won't fit there, below the entry controls.
 
-        cgicommon.writeln("</div>") #gamelistpanebody
-        cgicommon.writeln("</div>") #gamelistpane
+            response.writeln("<div class=\"gamelistpane boxshadow\">")
+            response.writeln("<div class=\"resultsentrytitle\">Games</div>")
+            response.writeln("<div class=\"gamelistpanebody\">")
 
-    cgicommon.writeln("</div>"); #mainpane
+            games_by_division = dict()
+            num_divisions = tourney.get_num_divisions()
+            for g in games:
+                if g.division in games_by_division:
+                    games_by_division[g.division].append(g)
+                else:
+                    games_by_division[g.division] = [g]
 
-except countdowntourney.TourneyException as e:
-    cgicommon.show_tourney_exception(e);
+            for div in sorted(games_by_division):
+                div_games = games_by_division[div]
+                if num_divisions > 1:
+                    response.writeln("<div class=\"gamelistdivisionheading\">")
+                    response.writeln(cgicommon.escape(tourney.get_division_name(div)))
+                    response.writeln("</div>")
+                cgicommon.show_games_as_html_table(response,
+                        div_games, editable=False, remarks=None,
+                        include_round_column=False, round_namer=None,
+                        player_to_link=None, remarks_heading="",
+                        show_game_type=True,
+                        game_onclick_fn=lambda rnd, seq : "select_game(%d, false);" % (seq),
+                        colour_win_loss=False, score_id_prefix="gamelistscore",
+                        show_heading_row=False, hide_game_type_if_p=True)
 
-cgicommon.writeln("</body>");
-cgicommon.writeln("</html>");
+            response.writeln("</div>") #gamelistpanebody
+            response.writeln("</div>") #gamelistpane
 
-sys.exit(0);
+        response.writeln("</div>"); #mainpane
+
+    except countdowntourney.TourneyException as e:
+        cgicommon.show_tourney_exception(response, e);
+
+    response.writeln("</body>");
+    response.writeln("</html>");

@@ -1,33 +1,10 @@
 #!/usr/bin/python3
 
-import htmltraceback
-import cgicommon
-import sys
 import urllib.request, urllib.parse, urllib.error
-import os
+import cgicommon
+import countdowntourney
 
-htmltraceback.enable();
-
-cgicommon.set_module_path();
-import countdowntourney;
-
-def fatal_error(text):
-    cgicommon.print_html_head("Table Index")
-    cgicommon.writeln("<body>")
-    cgicommon.writeln("<p>%s</p>" % (cgicommon.escape(text)))
-    cgicommon.writeln("</body></html>")
-    sys.exit(1)
-
-def fatal_exception(exc, tourney=None):
-    cgicommon.print_html_head("Table Index")
-    cgicommon.writeln("<body>")
-    if tourney:
-        cgicommon.show_sidebar(tourney, show_misc_table_links=True)
-    cgicommon.writeln("<div class=\"mainpane\">")
-    cgicommon.show_tourney_exception(exc)
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("</body></html>")
-    sys.exit(1)
+baseurl = "/cgi-bin/tableindex.py"
 
 def int_or_none(s):
     if s is None:
@@ -38,141 +15,126 @@ def int_or_none(s):
         except:
             return None
 
-cgicommon.writeln("Content-Type: text/html; charset=utf-8")
-cgicommon.writeln("")
+def handle(httpreq, response, tourney, request_method, form, query_string):
+    # Read parameters to adjust how the table is formatted
+    max_columns = int_or_none(form.getfirst("maxcols"))
+    if max_columns is None or max_columns < 1:
+        max_columns = 3
+    names_per_column = int_or_none(form.getfirst("namespercol"))
+    if names_per_column is None or names_per_column <= 0:
+        names_per_column = 20
+    min_names_per_column = int_or_none(form.getfirst("minnamespercol"))
+    if min_names_per_column is None or min_names_per_column < 0:
+        min_names_per_column = 5
 
-baseurl = "/cgi-bin/tableindex.py"
-form = cgicommon.FieldStorage()
-tourneyname = form.getfirst("tourney")
+    cgicommon.print_html_head(response, "Table assignment")
 
-tourney = None
-if tourneyname is None:
-    fatal_error("No tourney name specified.")
+    response.writeln("<body>")
 
-try:
-    tourney = countdowntourney.tourney_open(tourneyname, cgicommon.dbdir)
-except countdowntourney.TourneyException as e:
-    fatal_exception(e, None)
+    httpreq.assert_client_from_localhost()
 
-# Read parameters to adjust how the table is formatted
-max_columns = int_or_none(form.getfirst("maxcols"))
-if max_columns is None or max_columns < 1:
-    max_columns = 3
-names_per_column = int_or_none(form.getfirst("namespercol"))
-if names_per_column is None or names_per_column <= 0:
-    names_per_column = 20
-min_names_per_column = int_or_none(form.getfirst("minnamespercol"))
-if min_names_per_column is None or min_names_per_column < 0:
-    min_names_per_column = 5
+    cgicommon.show_sidebar(response, tourney, show_misc_table_links=True)
 
-cgicommon.print_html_head("Table assignment")
+    response.writeln("<div class=\"mainpane\">")
 
-cgicommon.writeln("<body>")
+    rd = tourney.get_current_round()
 
-cgicommon.assert_client_from_localhost()
+    if rd is None:
+        response.writeln("<h1>Table assignment</h1>")
+        response.writeln("<p>There are no fixtures yet.</p>")
+    else:
+        round_no = rd["num"]
+        round_name = rd["name"]
 
-cgicommon.show_sidebar(tourney, show_misc_table_links=True)
+        response.writeln("<h1>Table assignment: %s</h1>" % (cgicommon.escape(round_name)))
+        games = tourney.get_games(round_no)
 
-cgicommon.writeln("<div class=\"mainpane\">")
+        # Map of player name -> list of table numbers they're on in this round
+        player_name_to_table_list = dict()
 
-rd = tourney.get_current_round()
+        # Map of player name -> player object
+        player_name_to_player = dict()
 
-if rd is None:
-    cgicommon.writeln("<h1>Table assignment</h1>")
-    cgicommon.writeln("<p>There are no fixtures yet.</p>")
-else:
-    round_no = rd["num"]
-    round_name = rd["name"]
+        # Map of table number -> list of players
+        table_to_player_list = dict()
 
-    cgicommon.writeln("<h1>Table assignment: %s</h1>" % (cgicommon.escape(round_name)))
-    games = tourney.get_games(round_no)
+        for g in games:
+            names = []
+            current_player_list = table_to_player_list.get(g.table_no, [])
+            for p in [g.p1, g.p2]:
+                if not p.is_prune():
+                    names.append(p.get_name())
+                    player_name_to_player[p.get_name()] = p
+                    if p not in current_player_list:
+                        current_player_list.append(p)
+            table_to_player_list[g.table_no] = current_player_list
+            for name in names:
+                current_table_list = player_name_to_table_list.get(name, [])
+                if g.table_no not in current_table_list:
+                    player_name_to_table_list[name] = current_table_list + [g.table_no]
 
-    # Map of player name -> list of table numbers they're on in this round
-    player_name_to_table_list = dict()
+        # Display the index in several columns, so we use more horizontal space
+        # and save vertical space.
 
-    # Map of player name -> player object
-    player_name_to_player = dict()
+        num_names = len(player_name_to_table_list)
 
-    # Map of table number -> list of players
-    table_to_player_list = dict()
+        if num_names > 0:
+            num_columns = (num_names + names_per_column - 1) // names_per_column
+            if num_columns <= 2:
+                names_per_column = num_names
 
-    for g in games:
-        names = []
-        current_player_list = table_to_player_list.get(g.table_no, [])
-        for p in [g.p1, g.p2]:
-            if not p.is_prune():
-                names.append(p.get_name())
-                player_name_to_player[p.get_name()] = p
-                if p not in current_player_list:
-                    current_player_list.append(p)
-        table_to_player_list[g.table_no] = current_player_list
-        for name in names:
-            current_table_list = player_name_to_table_list.get(name, [])
-            if g.table_no not in current_table_list:
-                player_name_to_table_list[name] = current_table_list + [g.table_no]
+            # If there would be fewer than five names in the last column, use
+            # one fewer column and extend the earlier columns.
+            if num_columns > 1 and num_names % names_per_column > 0 and num_names % names_per_column < min_names_per_column:
+                num_columns -= 1
+                names_per_column = (num_names + num_columns - 1) // num_columns
 
-    # Display the index in several columns, so we use more horizontal space
-    # and save vertical space.
+            # Don't display more than the maximum number of columns. If we have
+            # more than this many columns, make the columns longer.
+            if num_columns > max_columns:
+                num_columns = max_columns
+                names_per_column = (num_names + num_columns - 1) // num_columns
 
-    num_names = len(player_name_to_table_list)
+            response.writeln("<table class=\"misctable\">")
+            columns = [ [] for i in range(num_columns) ]
+            sorted_names = sorted(player_name_to_table_list)
+            for position_in_column in range(0, names_per_column):
+                response.writeln("<tr>")
+                for column in range(0, num_columns):
+                    position_in_list = column * names_per_column + position_in_column
+                    if position_in_list < len(sorted_names):
+                        name = sorted_names[position_in_list]
+                        player = player_name_to_player.get(name, None)
+                        if player:
+                            response.writeln(("<td class=\"text tableindexname\">%s</td>" % (cgicommon.player_to_link(player, tourney.get_name()))))
+                        else:
+                            response.writeln(("<td class=\"text tableindexname\">%s</td>" % (cgicommon.escape(name))))
 
-    if num_names > 0:
-        num_columns = (num_names + names_per_column - 1) // names_per_column
-        if num_columns <= 2:
-            names_per_column = num_names
+                        # Show the list of tables this player is on in this
+                        # round. This will almost always be one table, but it
+                        # is possible to construct a round in which a player
+                        # has to be in two places.
+                        response.writeln("<td class=\"tableindexnumber\" style=\"border-left: none\" >")
+                        table_list = player_name_to_table_list[name]
+                        for index in range(len(table_list)):
+                            # Print the table number, with a mouseover-text
+                            # listing all the players on that table.
+                            player_list = table_to_player_list.get(table_list[index], [])
+                            title = "Table %d: %s" % (table_list[index], ", ".join(sorted([x.get_name() for x in player_list])))
+                            response.writeln(("<div class=\"tablebadgenaturalsize\" style=\"margin-top: 2px; margin-bottom: 2px;\" title=\"%s\">" % cgicommon.escape(title, True)));
+                            response.writeln(("%d" % (table_list[index])))
+                            response.writeln("</div>")
+                            if index < len(table_list) - 1:
+                                response.writeln(", ");
+                        response.writeln("</td>")
 
-        # If there would be fewer than five names in the last column, use one
-        # fewer column and extend the earlier columns.
-        if num_columns > 1 and num_names % names_per_column > 0 and num_names % names_per_column < min_names_per_column:
-            num_columns -= 1
-            names_per_column = (num_names + num_columns - 1) // num_columns
+                        if column < num_columns - 1:
+                            response.writeln("<td class=\"columnspacer\"> </td>")
 
-        # Don't display more than the maximum number of columns. If we have
-        # more than this many columns, make the columns longer.
-        if num_columns > max_columns:
-            num_columns = max_columns
-            names_per_column = (num_names + num_columns - 1) // num_columns
+                response.writeln("</tr>")
+            response.writeln("</table>")
 
-        cgicommon.writeln("<table class=\"misctable\">")
-        columns = [ [] for i in range(num_columns) ]
-        sorted_names = sorted(player_name_to_table_list)
-        for position_in_column in range(0, names_per_column):
-            cgicommon.writeln("<tr>")
-            for column in range(0, num_columns):
-                position_in_list = column * names_per_column + position_in_column
-                if position_in_list < len(sorted_names):
-                    name = sorted_names[position_in_list]
-                    player = player_name_to_player.get(name, None)
-                    if player:
-                        cgicommon.writeln(("<td class=\"text tableindexname\">%s</td>" % (cgicommon.player_to_link(player, tourney.get_name()))))
-                    else:
-                        cgicommon.writeln(("<td class=\"text tableindexname\">%s</td>" % (cgicommon.escape(name))))
-
-                    # Show the list of tables this player is on in this round.
-                    # This will almost always be one table, but it is possible
-                    # to construct a round in which a player has to be in
-                    # two places.
-                    cgicommon.writeln("<td class=\"tableindexnumber\" style=\"border-left: none\" >")
-                    table_list = player_name_to_table_list[name]
-                    for index in range(len(table_list)):
-                        # Print the table number, with a mouseover-text listing
-                        # all the players on that table.
-                        player_list = table_to_player_list.get(table_list[index], [])
-                        title = "Table %d: %s" % (table_list[index], ", ".join(sorted([x.get_name() for x in player_list])))
-                        cgicommon.writeln(("<div class=\"tablebadgenaturalsize\" style=\"margin-top: 2px; margin-bottom: 2px;\" title=\"%s\">" % cgicommon.escape(title, True)));
-                        cgicommon.writeln(("%d" % (table_list[index])))
-                        cgicommon.writeln("</div>")
-                        if index < len(table_list) - 1:
-                            cgicommon.writeln(", ");
-                    cgicommon.writeln("</td>")
-
-                    if column < num_columns - 1:
-                        cgicommon.writeln("<td class=\"columnspacer\"> </td>")
-
-            cgicommon.writeln("</tr>")
-        cgicommon.writeln("</table>")
-
-cgicommon.writeln("</div>")
-cgicommon.writeln("</body>")
-cgicommon.writeln("</html>")
+    response.writeln("</div>")
+    response.writeln("</body>")
+    response.writeln("</html>")
 

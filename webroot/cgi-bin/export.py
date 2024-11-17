@@ -1,14 +1,14 @@
 #!/usr/bin/python3
 
-import sys
 import cgicommon
 import urllib.request, urllib.parse, urllib.error
-import htmltraceback
 import datetime
 import calendar
 import csv
+import countdowntourney
+from io import StringIO
 
-htmltraceback.enable();
+baseurl = "/cgi-bin/export.py"
 
 def int_or_none(s):
     try:
@@ -24,20 +24,18 @@ def valid_date(d, m, y):
     except ValueError:
         return False
 
-def show_error(err_str):
-    cgicommon.writeln("Content-Type: text/html; charset=utf-8");
-    cgicommon.writeln("");
-    cgicommon.print_html_head("Tourney: %s" % tourney_name);
+def show_error(response, err_str):
+    cgicommon.print_html_head(response, "Tourney: %s" % tourney_name);
 
-    cgicommon.writeln("<body>");
+    response.writeln("<body>");
 
-    cgicommon.show_sidebar(tourney);
+    cgicommon.show_sidebar(response, tourney);
 
-    cgicommon.writeln("<div class=\"mainpane\">")
-    cgicommon.writeln("<p><strong>%s</strong></p>" % err_str)
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("</body>")
-    cgicommon.writeln("</html>")
+    response.writeln("<div class=\"mainpane\">")
+    response.writeln("<p><strong>%s</strong></p>" % err_str)
+    response.writeln("</div>")
+    response.writeln("</body>")
+    response.writeln("</html>")
 
 form_letter_to_word = {
     "W" : "won",
@@ -54,42 +52,40 @@ def get_date_string(tourney):
     return date_string
 
 
-def export_html(tourney, filename, show_standings_before_finals, show_standings_after_finals, finals_noun):
+def export_html(tourney, response, filename, show_standings_before_finals, show_standings_after_finals, finals_noun):
     full_name = tourney.get_full_name() or tourney.get_name()
     venue = tourney.get_venue()
     date_string = get_date_string(tourney)
     rank_method = tourney.get_rank_method()
     show_draws_column = tourney.get_show_draws_column()
 
-    cgicommon.writeln("Content-Type: text/html; charset=utf-8");
     if filename:
-        cgicommon.writeln("Content-Disposition: attachment; filename=\"%s.html\""% (filename))
-    cgicommon.writeln("");
+        response.add_header("Content-Disposition", "attachment; filename=\"%s.html\"" % (filename))
 
     started_html = True;
 
-    cgicommon.print_html_head_local("Tourney: %s" % full_name);
+    cgicommon.print_html_head_local(response, "Tourney: %s" % full_name);
 
-    cgicommon.writeln("<body>");
-    cgicommon.writeln("<div class=\"exportedstandings\">")
-    cgicommon.writeln("<h1>%s</h1>" % (cgicommon.escape(full_name)))
+    response.writeln("<body>");
+    response.writeln("<div class=\"exportedstandings\">")
+    response.writeln("<h1>%s</h1>" % (cgicommon.escape(full_name)))
     if venue:
-        cgicommon.writeln("<p>%s</p>" % (cgicommon.escape(venue)))
+        response.writeln("<p>%s</p>" % (cgicommon.escape(venue)))
     if date_string:
-        cgicommon.writeln("<p>%s</p>" % (cgicommon.escape(date_string)))
+        response.writeln("<p>%s</p>" % (cgicommon.escape(date_string)))
 
-    cgicommon.writeln("<h2>Standings</h2>")
+    response.writeln("<h2>Standings</h2>")
     num_divisions = tourney.get_num_divisions()
-    cgicommon.writeln("<p>")
-    cgicommon.writeln(cgicommon.escape(rank_method.get_short_description()))
+    response.writeln("<p>")
+    response.writeln(cgicommon.escape(rank_method.get_short_description()))
     if show_draws_column:
-        cgicommon.writeln("Draws count as half a win.")
-    cgicommon.writeln("</p>")
+        response.writeln("Draws count as half a win.")
+    response.writeln("</p>")
 
     if show_standings_before_finals:
         if show_standings_before_finals and show_standings_after_finals:
-            cgicommon.writeln("<h3>Before %s</h3>" % (finals_noun))
-        cgicommon.show_standings_table(tourney, show_draws_column,
+            response.writeln("<h3>Before %s</h3>" % (finals_noun))
+        cgicommon.show_standings_table(response, tourney, show_draws_column,
                 tourney.is_ranked_by_points(), tourney.is_ranked_by_spread(),
                 show_first_second_column=False, linkify_players=False,
                 show_tournament_rating_column=None, show_qualified=True,
@@ -97,18 +93,18 @@ def export_html(tourney, filename, show_standings_before_finals, show_standings_
                 rank_finals=False)
     if show_standings_after_finals:
         if show_standings_before_finals and show_standings_after_finals:
-            cgicommon.writeln("<h3>After %s</h3>" % (finals_noun))
-        cgicommon.show_standings_table(tourney, show_draws_column,
+            response.writeln("<h3>After %s</h3>" % (finals_noun))
+        cgicommon.show_standings_table(response, tourney, show_draws_column,
                 tourney.is_ranked_by_points(), tourney.is_ranked_by_spread(),
                 show_first_second_column=False, linkify_players=False,
                 show_tournament_rating_column=None, show_qualified=True,
                 which_division=None, show_finals_column=True,
                 rank_finals=True)
 
-    cgicommon.writeln("</div>")
+    response.writeln("</div>")
 
-    cgicommon.writeln("<div class=\"exportedresults\">")
-    cgicommon.writeln("<h2>Results</h2>")
+    response.writeln("<div class=\"exportedresults\">")
+    response.writeln("<h2>Results</h2>")
     prev_round_no = None
     prev_table_no = None
     prev_division = None
@@ -118,15 +114,15 @@ def export_html(tourney, filename, show_standings_before_finals, show_standings_
     for g in games:
         if prev_round_no is None or prev_round_no != g.round_no:
             if prev_round_no is not None:
-                cgicommon.writeln("</table>")
-                cgicommon.writeln("<br />")
-            cgicommon.writeln("<h3>%s</h3>" % (cgicommon.escape(tourney.get_round_name(g.round_no))))
-            cgicommon.writeln("<table class=\"scorestable\">")
+                response.writeln("</table>")
+                response.writeln("<br />")
+            response.writeln("<h3>%s</h3>" % (cgicommon.escape(tourney.get_round_name(g.round_no))))
+            response.writeln("<table class=\"scorestable\">")
             prev_table_no = None
             prev_division = None
         if prev_division is None or prev_division != g.division:
             if num_divisions > 1:
-                cgicommon.writeln("<tr class=\"divisionrow\"><th colspan=\"3\">%s</th></tr>" % (cgicommon.escape(tourney.get_division_name(g.division))))
+                response.writeln("<tr class=\"divisionrow\"><th colspan=\"3\">%s</th></tr>" % (cgicommon.escape(tourney.get_division_name(g.division))))
 
             # If this division has a table with more than one game on it
             # then show the table numbers, otherwise don't bother.
@@ -142,27 +138,28 @@ def export_html(tourney, filename, show_standings_before_finals, show_standings_
             prev_table_no = None
         if prev_table_no is None or prev_table_no != g.table_no:
             if show_table_numbers:
-                cgicommon.writeln("<tr class=\"tablenumberrow\"><th colspan=\"3\">Table %d</th></tr>" % g.table_no)
-        cgicommon.writeln("<tr class=\"gamerow\">")
+                response.writeln("<tr class=\"tablenumberrow\"><th colspan=\"3\">Table %d</th></tr>" % g.table_no)
+        response.writeln("<tr class=\"gamerow\">")
         names = g.get_player_names();
-        cgicommon.writeln("<td class=\"gameplayer1\">%s</td>" % names[0]);
+        response.writeln("<td class=\"gameplayer1\">%s</td>" % names[0]);
         if g.s1 is None or g.s2 is None:
-            cgicommon.writeln("<td class=\"gamescore\"> v </td>")
+            response.writeln("<td class=\"gamescore\"> v </td>")
         else:
-            cgicommon.writeln("<td class=\"gamescore\">%s</td>" % cgicommon.escape(g.format_score()));
-        cgicommon.writeln("<td class=\"gameplayer2\">%s</td>" % names[1]);
-        cgicommon.writeln("</tr>")
+            response.writeln("<td class=\"gamescore\">%s</td>" % cgicommon.escape(g.format_score()));
+        response.writeln("<td class=\"gameplayer2\">%s</td>" % names[1]);
+        response.writeln("</tr>")
         prev_table_no = g.table_no
         prev_round_no = g.round_no
         prev_division = g.division
         game_seq += 1
     if prev_round_no is not None:
-        cgicommon.writeln("</table>")
-    cgicommon.writeln("</div>")
-    cgicommon.writeln("</body></html>");
+        response.writeln("</table>")
+    response.writeln("</div>")
+    response.writeln("</body></html>");
 
-def export_text_standings(tourney, max_name_len, rank_finals, rank_method,
-        show_draws_column, show_points_column, show_tournament_rating_column):
+def export_text_standings(tourney, response, max_name_len, rank_finals,
+        rank_method, show_draws_column, show_points_column,
+        show_tournament_rating_column):
     num_divisions = tourney.get_num_divisions()
 
     div_standings = {}
@@ -176,7 +173,7 @@ def export_text_standings(tourney, max_name_len, rank_finals, rank_method,
     for div_index in range(num_divisions):
         standings = div_standings[div_index]
         if num_divisions > 1:
-            cgicommon.writeln(tourney.get_division_name(div_index))
+            response.writeln(tourney.get_division_name(div_index))
 
         # Show the position, then the name, then games played, then the
         # number of wins, then the number of draws if applicable, then any
@@ -205,7 +202,7 @@ def export_text_standings(tourney, max_name_len, rank_finals, rank_method,
             header_line += "      TR"
             row_format += " %(tr)7s"
 
-        cgicommon.writeln(header_line)
+        response.writeln(header_line)
         for s in standings:
             fields = {
                     "pos" : s.position,
@@ -219,7 +216,7 @@ def export_text_standings(tourney, max_name_len, rank_finals, rank_method,
             secondary_rank_value_strings = s.get_secondary_rank_value_strings()
             for i in range(len(secondary_rank_value_strings)):
                 fields["secondary" + str(i)] = secondary_rank_value_strings[i]
-            cgicommon.write(row_format % fields)
+            response.write(row_format % fields)
 
             if rank_finals:
                 # If this player has played in any QF, SF, final or third place
@@ -233,16 +230,16 @@ def export_text_standings(tourney, max_name_len, rank_finals, rank_method,
                 if finals_form:
                     if len(finals_form) == 1 and s[0] <= 4:
                         match_type = ("final" if s[0] <= 2 else "third place")
-                        cgicommon.write(" (%s %s)" % (form_letter_to_word.get(finals_form), match_type))
+                        response.write(" (%s %s)" % (form_letter_to_word.get(finals_form), match_type))
                     else:
                         # Not just a single finals match, so display
                         # something like "(finals: WWL)".
-                        cgicommon.write(" (finals: " + finals_form + ")")
-            cgicommon.writeln("")
-        cgicommon.writeln("")
-        cgicommon.writeln("")
+                        response.write(" (finals: " + finals_form + ")")
+            response.writeln("")
+        response.writeln("")
+        response.writeln("")
 
-def export_text(tourney, filename, show_standings_before_finals, show_standings_after_finals, finals_noun):
+def export_text(tourney, response, filename, show_standings_before_finals, show_standings_after_finals, finals_noun):
     full_name = tourney.get_full_name() or tourney.get_name()
     venue = tourney.get_venue()
     date_string = get_date_string(tourney)
@@ -257,42 +254,41 @@ def export_text(tourney, filename, show_standings_before_finals, show_standings_
         if max_name_len < len(p.get_name()):
             max_name_len = len(p.get_name())
 
-    cgicommon.writeln("Content-Type: text/plain; charset=utf-8")
+    response.set_content_type("text/plain; charset=utf-8")
     if filename:
-        cgicommon.writeln("Content-Disposition: attachment; filename=\"%s.txt\""% (filename))
-    cgicommon.writeln("")
+        response.add_header("Content-Disposition", "attachment; filename=\"%s.txt\""% (filename))
 
-    cgicommon.writeln(full_name)
+    response.writeln(full_name)
     if venue:
-        cgicommon.writeln(venue)
+        response.writeln(venue)
     if date_string:
-        cgicommon.writeln(date_string)
-    cgicommon.writeln("")
-    cgicommon.writeln("STANDINGS")
-    cgicommon.writeln("")
-    cgicommon.writeln(rank_method.get_short_description())
+        response.writeln(date_string)
+    response.writeln("")
+    response.writeln("STANDINGS")
+    response.writeln("")
+    response.writeln(rank_method.get_short_description())
     if show_draws_column:
-        cgicommon.writeln("Draws count as half a win.")
-    cgicommon.writeln("")
-    cgicommon.writeln("")
+        response.writeln("Draws count as half a win.")
+    response.writeln("")
+    response.writeln("")
 
     # Show standings table before and/or after finals
     if show_standings_before_finals:
         if show_standings_before_finals and show_standings_after_finals:
-            cgicommon.writeln("Before %s" % (finals_noun))
-            cgicommon.writeln("")
-        export_text_standings(tourney, max_name_len, False, rank_method,
-                show_draws_column, show_points_column,
+            response.writeln("Before %s" % (finals_noun))
+            response.writeln("")
+        export_text_standings(tourney, response, max_name_len, False,
+                rank_method, show_draws_column, show_points_column,
                 show_tournament_rating_column)
     if show_standings_after_finals:
         if show_standings_before_finals and show_standings_after_finals:
-            cgicommon.writeln("After %s" % (finals_noun))
-            cgicommon.writeln("")
-        export_text_standings(tourney, max_name_len, True, rank_method,
-                show_draws_column, show_points_column,
+            response.writeln("After %s" % (finals_noun))
+            response.writeln("")
+        export_text_standings(tourney, response, max_name_len, True,
+                rank_method, show_draws_column, show_points_column,
                 show_tournament_rating_column)
 
-    cgicommon.writeln("RESULTS")
+    response.writeln("RESULTS")
     prev_round_no = None
     prev_table_no = None
     prev_division = None
@@ -301,14 +297,14 @@ def export_text(tourney, filename, show_standings_before_finals, show_standings_
     games = tourney.get_games()
     for g in games:
         if prev_round_no is None or prev_round_no != g.round_no:
-            cgicommon.writeln("")
-            cgicommon.writeln(tourney.get_round_name(g.round_no))
+            response.writeln("")
+            response.writeln(tourney.get_round_name(g.round_no))
             prev_table_no = None
             prev_division = None
         if prev_division is None or prev_division != g.division:
             if num_divisions > 1:
-                cgicommon.writeln("")
-                cgicommon.writeln(tourney.get_division_name(g.division))
+                response.writeln("")
+                response.writeln(tourney.get_division_name(g.division))
             i = 1
             prev_table_no = g.table_no
             show_table_numbers = False
@@ -323,8 +319,8 @@ def export_text(tourney, filename, show_standings_before_finals, show_standings_
             prev_table_no = None
         if prev_table_no is None or prev_table_no != g.table_no:
             if show_table_numbers:
-                cgicommon.writeln("")
-                cgicommon.writeln("Table %d" % g.table_no)
+                response.writeln("")
+                response.writeln("Table %d" % g.table_no)
         if g.s1 is None or g.s2 is None:
             score_str = "    -    "
         elif g.is_double_loss():
@@ -332,13 +328,13 @@ def export_text(tourney, filename, show_standings_before_finals, show_standings_
         else:
             score_str = "%3d%s-%s%d" % (g.s1, "*" if g.tb and g.s1 > g.s2 else " ", "*" if g.tb and g.s2 >= g.s1 else " ", g.s2)
         names = g.get_player_names()
-        cgicommon.writeln("%*s %-9s %s" % (max_name_len, names[0], score_str, names[1]))
+        response.writeln("%*s %-9s %s" % (max_name_len, names[0], score_str, names[1]))
         prev_round_no = g.round_no
         prev_table_no = g.table_no
         prev_division = g.division
         game_seq += 1
 
-def export_wikitext(tourney, filename, show_standings_before_finals,
+def export_wikitext(tourney, response, filename, show_standings_before_finals,
         show_standings_after_finals, finals_noun, date_d, date_m, date_y,
         game_prefix):
     full_name = tourney.get_full_name() or tourney.get_name()
@@ -351,10 +347,9 @@ def export_wikitext(tourney, filename, show_standings_before_finals,
     show_tournament_rating_column = tourney.get_show_tournament_rating_column()
     num_divisions = tourney.get_num_divisions()
 
-    cgicommon.writeln("Content-Type: text/plain; charset=utf-8")
+    response.set_content_type("text/plain; charset=utf-8")
     if filename:
-        cgicommon.writeln("Content-Disposition: attachment; filename=\"%s.txt\"" % (filename))
-    cgicommon.writeln("")
+        response.add_header("Content-Disposition", "attachment; filename=\"%s.txt\"" % (filename))
 
     for rank_finals in [ False, True ]:
         # Skip this version of the standings table if we haven't been asked
@@ -372,48 +367,48 @@ def export_wikitext(tourney, filename, show_standings_before_finals,
                 standings_heading = " (after %s)" % (finals_noun)
             else:
                 standings_heading = " (before %s)" % (finals_noun)
-        cgicommon.writeln("==Standings%s==" % (standings_heading))
-        cgicommon.writeln()
+        response.writeln("==Standings%s==" % (standings_heading))
+        response.writeln()
 
         # Show the standings for each division
         sec_rank_headings = rank_method.get_secondary_rank_headings()
         for div_index in range(num_divisions):
             if num_divisions > 1:
-                cgicommon.writeln("===%s===" % (tourney.get_division_name(div_index)))
+                response.writeln("===%s===" % (tourney.get_division_name(div_index)))
             standings = tourney.get_standings(div_index, True, False, rank_finals=rank_finals)
-            cgicommon.writeln("{|")
-            cgicommon.write("! Rank !! Name !! Games !! Wins")
+            response.writeln("{|")
+            response.write("! Rank !! Name !! Games !! Wins")
             if show_draws_column:
-                cgicommon.write(" !! Draws")
+                response.write(" !! Draws")
             for head in sec_rank_headings:
-                cgicommon.write(" !! " + head)
+                response.write(" !! " + head)
             if show_points_column and "Points" not in sec_rank_headings:
-                cgicommon.write(" !! Points")
+                response.write(" !! Points")
             if show_spread_column and "Spread" not in sec_rank_headings:
-                cgicommon.write(" !! Spread")
+                response.write(" !! Spread")
             if show_tournament_rating_column:
-                cgicommon.write(" !! Tournament rating")
-            cgicommon.writeln("")
+                response.write(" !! Tournament rating")
+            response.writeln("")
             for s in standings:
-                cgicommon.writeln("|-")
-                cgicommon.write("| %3d || %s || %d || %d" % (s.position, s.name, s.played, s.wins))
+                response.writeln("|-")
+                response.write("| %3d || %s || %d || %d" % (s.position, s.name, s.played, s.wins))
                 if show_draws_column:
-                    cgicommon.write(" || %d" % (s.draws))
+                    response.write(" || %d" % (s.draws))
                 for val in s.get_secondary_rank_value_strings():
-                    cgicommon.write(" || %s" % (val))
+                    response.write(" || %s" % (val))
                 if show_points_column and "Points" not in sec_rank_headings:
-                    cgicommon.write(" || %d" % (s.points))
+                    response.write(" || %d" % (s.points))
                 if show_spread_column and "Spread" not in sec_rank_headings:
-                    cgicommon.write(" || %+d" % (s.spread))
+                    response.write(" || %+d" % (s.spread))
                 if show_tournament_rating_column:
-                    cgicommon.write(" || %d" % (s.tournament_rating))
-                cgicommon.writeln("")
-            cgicommon.writeln("|-")
-            cgicommon.writeln("|}")
-            cgicommon.writeln()
+                    response.write(" || %d" % (s.tournament_rating))
+                response.writeln("")
+            response.writeln("|-")
+            response.writeln("|}")
+            response.writeln()
 
     # Show the results for each game
-    cgicommon.writeln("==Results==")
+    response.writeln("==Results==")
     num_tiebreaks = 0
     game_serial_no = 1
     if date_d and date_m and date_y:
@@ -423,14 +418,14 @@ def export_wikitext(tourney, filename, show_standings_before_finals,
     games = tourney.get_games()
     for div_index in range(num_divisions):
         if num_divisions > 1:
-            cgicommon.writeln("===%s===" % (tourney.get_division_name(div_index)))
-        cgicommon.writeln("{{game table}}")
+            response.writeln("===%s===" % (tourney.get_division_name(div_index)))
+        response.writeln("{{game table}}")
         div_games = [x for x in games if x.get_division() == div_index]
         prev_round_no = None
         for g in div_games:
             if g.round_no != prev_round_no:
-                cgicommon.writeln("{{game table block|%s}}" % (tourney.get_round_name(g.round_no)))
-            cgicommon.writeln("{{game | %s%03d | %s | Table %d | %s | %s | %s | }}" % (
+                response.writeln("{{game table block|%s}}" % (tourney.get_round_name(g.round_no)))
+            response.writeln("{{game | %s%03d | %s | Table %d | %s | %s | %s | }}" % (
                     game_prefix, game_serial_no, wikitext_date,
                     g.table_no, g.get_player_names()[0], g.format_score(),
                     g.get_player_names()[1]))
@@ -438,13 +433,13 @@ def export_wikitext(tourney, filename, show_standings_before_finals,
                 num_tiebreaks += 1
             prev_round_no = g.round_no
             game_serial_no += 1
-        cgicommon.writeln("{{game table end}}")
-        cgicommon.writeln("")
+        response.writeln("{{game table end}}")
+        response.writeln("")
 
     if num_tiebreaks > 0:
-        cgicommon.writeln("<center>* includes 10 points from a tie-break conundrum</center>")
+        response.writeln("<center>* includes 10 points from a tie-break conundrum</center>")
 
-def export_csv(tourney, filename, show_standings, selected_divisions, rank_finals, event_code, game_format):
+def export_csv(tourney, response, filename, show_standings, selected_divisions, rank_finals, event_code, game_format):
     num_divisions = tourney.get_num_divisions()
     show_draws_column = tourney.get_show_draws_column()
     show_points_column = tourney.is_ranked_by_points()
@@ -457,16 +452,15 @@ def export_csv(tourney, filename, show_standings, selected_divisions, rank_final
             filename += "_standings"
         else:
             filename += "_results"
-        cgicommon.writeln("Content-Type: text/csv; charset=utf-8")
-        cgicommon.writeln("Content-Disposition: attachment; filename=\"%s.csv\"" % (filename))
+        response.set_content_type("text/csv; charset=utf-8")
+        response.add_header("Content-Disposition", "attachment; filename=\"%s.csv\"" % (filename))
     else:
-        cgicommon.writeln("Content-Type: text/plain; charset=utf-8")
+        response.set_content_type("text/plain; charset=utf-8")
 
-    cgicommon.writeln("")
-
+    csv_string = StringIO()
     if show_standings:
         sec_rank_headings = rank_method.get_secondary_rank_headings()
-        writer = csv.writer(sys.stdout, delimiter=",", quotechar="\"", quoting=csv.QUOTE_MINIMAL)
+        writer = csv.writer(csv_string, delimiter=",", quotechar="\"", quoting=csv.QUOTE_MINIMAL)
         if num_divisions == 1:
             selected_divisions = [0]
 
@@ -508,7 +502,7 @@ def export_csv(tourney, filename, show_standings, selected_divisions, rank_final
         games = tourney.get_games()
         games = sorted(games, key=lambda x : (x.get_round_no(), x.get_division(), x.get_table_no(), x.get_round_seq()))
 
-        writer = csv.writer(sys.stdout, delimiter=',', quotechar='\"', quoting=csv.QUOTE_MINIMAL)
+        writer = csv.writer(csv_string, delimiter=',', quotechar='\"', quoting=csv.QUOTE_MINIMAL)
 
         # Write header row
         writer.writerow(("Event code", "Player 1", "Player 1's score", "Player 2's score", "Player 2", "Round", "Format", "Tiebreak?"))
@@ -537,120 +531,104 @@ def export_csv(tourney, filename, show_standings, selected_divisions, rank_final
             writer.writerow((event_code,
                 player_names[0], score[0], score[1], player_names[1],
                 round_text, game_format, 1 if g.is_tiebreak() else None))
+    response.write(csv_string.getvalue())
 
 
 ###############################################################################
 
-baseurl = "/cgi-bin/export.py"
-started_html = False;
-form = cgicommon.FieldStorage();
-tourney_name = form.getfirst("tourney");
-export_format = form.getfirst("format");
-wikitext_date_d = int_or_none(form.getfirst("wikitextday"));
-wikitext_date_m = int_or_none(form.getfirst("wikitextmonth"))
-wikitext_date_y = int_or_none(form.getfirst("wikitextyear"))
-wikitext_game_prefix = form.getfirst("wikitextgameprefix")
-wikitext_submit = form.getfirst("wikitextsubmit")
+def handle(httpreq, response, tourney, request_method, form, query_string):
+    started_html = False;
+    tourney_name = tourney.name
+    export_format = form.getfirst("format");
+    wikitext_date_d = int_or_none(form.getfirst("wikitextday"));
+    wikitext_date_m = int_or_none(form.getfirst("wikitextmonth"))
+    wikitext_date_y = int_or_none(form.getfirst("wikitextyear"))
+    wikitext_game_prefix = form.getfirst("wikitextgameprefix")
+    wikitext_submit = form.getfirst("wikitextsubmit")
 
-csv_event_code = form.getfirst("csveventcode")
-csv_game_format = form.getfirst("csvgameformat")
-csv_table = form.getfirst("csvtable")
+    csv_event_code = form.getfirst("csveventcode")
+    csv_game_format = form.getfirst("csvgameformat")
+    csv_table = form.getfirst("csvtable")
 
-standings_finals = form.getfirst("finals")
-if not standings_finals:
-    standings_finals = "after"
+    standings_finals = form.getfirst("finals")
+    if not standings_finals:
+        standings_finals = "after"
 
-submit_view = form.getfirst("submitview")
-submit_download = form.getfirst("submitdownload")
-submit = submit_view or submit_download
+    submit_view = form.getfirst("submitview")
+    submit_download = form.getfirst("submitdownload")
+    submit = submit_view or submit_download
 
-tourney = None;
+    if csv_event_code is None:
+        csv_event_code = ""
+    if csv_game_format is None:
+        csv_game_format = ""
 
-cgicommon.set_module_path();
+    num_finals_games = tourney.get_num_games(finals_only=True)
+    finals_noun = "final" if num_finals_games == 1 else "finals"
 
-if csv_event_code is None:
-    csv_event_code = ""
-if csv_game_format is None:
-    csv_game_format = ""
+    if not submit:
+        # Show the form asking the user what format they want, and any other
+        # options.
 
-import countdowntourney;
+        # Default value for Wikitext event date is the event date recorded in
+        # the tourney, or the current date if that is not set.
+        (year, month, day) = tourney.get_event_date()
+        if year and month and day:
+            wikitext_date_d = day
+            wikitext_date_m = month
+            wikitext_date_y = year
+        else:
+            today = datetime.date.today()
+            wikitext_date_d = today.day
+            wikitext_date_m = today.month
+            wikitext_date_y = today.year
 
-if tourney_name is None:
-    show_error("No tourney specified");
-    sys.exit(0);
-else:
-    tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir)
+        # Set up the default game ID prefix for the Wikitext format
+        wikitext_game_prefix = ""
+        for c in tourney_name.upper():
+            if c.isupper() or c.isdigit():
+                wikitext_game_prefix += c
+        if wikitext_game_prefix[-1].isdigit():
+            wikitext_game_prefix += "."
 
-num_finals_games = tourney.get_num_games(finals_only=True)
-finals_noun = "final" if num_finals_games == 1 else "finals"
+        # No format specified: display a list of possible formats to choose from
+        started_html = True
+        cgicommon.print_html_head(response, "Tournament report: " + str(tourney_name))
 
-if not submit:
-    # Show the form asking the user what format they want, and any other
-    # options.
+        response.writeln("<body>")
 
-    # Default value for Wikitext event date is the event date recorded in
-    # the tourney, or the current date if that is not set.
-    (year, month, day) = tourney.get_event_date()
-    if year and month and day:
-        wikitext_date_d = day
-        wikitext_date_m = month
-        wikitext_date_y = year
-    else:
-        today = datetime.date.today()
-        wikitext_date_d = today.day
-        wikitext_date_m = today.month
-        wikitext_date_y = today.year
+        cgicommon.show_sidebar(response, tourney)
 
-    # Set up the default game ID prefix for the Wikitext format
-    wikitext_game_prefix = ""
-    for c in tourney_name.upper():
-        if c.isupper() or c.isdigit():
-            wikitext_game_prefix += c
-    if wikitext_game_prefix[-1].isdigit():
-        wikitext_game_prefix += "."
+        response.writeln("<div class=\"mainpane\">")
 
-    # No format specified: display a list of possible formats to choose from
-    cgicommon.writeln("Content-Type: text/html; charset=utf-8")
-    cgicommon.writeln("")
-    started_html = True;
-    cgicommon.print_html_head("Tournament report: " + str(tourney_name))
-
-    cgicommon.writeln("<body>")
-
-    tourney = countdowntourney.tourney_open(tourney_name, cgicommon.dbdir)
-
-    cgicommon.show_sidebar(tourney)
-
-    cgicommon.writeln("<div class=\"mainpane\">")
-
-    # Wikitext only: build a month selector
-    month_options = ""
-    for m in range(1, 13):
-        month_options += '<option value="%d" %s>%s</option>' % (
-                m, "selected " if m == wikitext_date_m else "",
-                cgicommon.escape(calendar.month_name[m])
-        )
-
-    # CSV only: let the user choose which divisions they want to include.
-    division_options = ""
-    num_divisions = tourney.get_num_divisions()
-    if num_divisions > 1:
-        # All checkboxes start checked, and also disabled because they're in
-        # the CSV-specific section, which is not shown on page load.
-        division_options += "<div class=\"formline\">"
-        division_options += "<div class=\"formlabel\"><label>Which divisions?</label></div>"
-        division_options += "<div class=\"formcontrol\">"
-        for div in range(num_divisions):
-            division_options += "<input type=\"checkbox\" name=\"csvdiv%d\" id=\"csvdiv%d\" value=\"1\" checked disabled /> <label for=\"csvdiv%d\">%s</label><br />" % (
-                    div, div, div, cgicommon.escape(tourney.get_division_name(div))
+        # Wikitext only: build a month selector
+        month_options = ""
+        for m in range(1, 13):
+            month_options += '<option value="%d" %s>%s</option>' % (
+                    m, "selected " if m == wikitext_date_m else "",
+                    cgicommon.escape(calendar.month_name[m])
             )
-        division_options += "</div>"
-        division_options += "</div>"
 
-    if num_finals_games == 0:
-        finals_options = ""
-    else:
-        finals_options = """
+        # CSV only: let the user choose which divisions they want to include.
+        division_options = ""
+        num_divisions = tourney.get_num_divisions()
+        if num_divisions > 1:
+            # All checkboxes start checked, and also disabled because they're in
+            # the CSV-specific section, which is not shown on page load.
+            division_options += "<div class=\"formline\">"
+            division_options += "<div class=\"formlabel\"><label>Which divisions?</label></div>"
+            division_options += "<div class=\"formcontrol\">"
+            for div in range(num_divisions):
+                division_options += "<input type=\"checkbox\" name=\"csvdiv%d\" id=\"csvdiv%d\" value=\"1\" checked disabled /> <label for=\"csvdiv%d\">%s</label><br />" % (
+                        div, div, div, cgicommon.escape(tourney.get_division_name(div))
+                )
+            division_options += "</div>"
+            division_options += "</div>"
+
+        if num_finals_games == 0:
+            finals_options = ""
+        else:
+            finals_options = """
 <div class="formline">
     <div class="formlabel"><label for="finals">Standings</label></div>
     <div class="formcontrol">
@@ -662,10 +640,10 @@ if not submit:
     </div>
 </div>
 """ % {
-    "finals" : finals_noun
-}
+                "finals" : finals_noun
+            }
 
-    html = """<h1>Export tournament report</h1>
+        html = """<h1>Export tournament report</h1>
 <script>
 function formatDropDownChange() {
     let formatSelect = document.getElementById("format");
@@ -852,67 +830,62 @@ function validateDate() {
 </form>
 </div> <!-- formbox -->
 """ % {
-    "tourneynameinurl" : urllib.parse.quote_plus(tourney_name),
-    "tourneyname" : cgicommon.escape(tourney_name),
-    "baseurl" : cgicommon.escape(baseurl),
-    "wikitextday" : wikitext_date_d,
-    "monthoptions" : month_options,
-    "wikitextyear" : wikitext_date_y,
-    "wikitextgameprefix" : cgicommon.escape(wikitext_game_prefix),
-    "divisionoptions" : division_options,
-    "finalsoptions" : finals_options
-}
-    cgicommon.writeln(html)
+            "tourneynameinurl" : urllib.parse.quote_plus(tourney_name),
+            "tourneyname" : cgicommon.escape(tourney_name),
+            "baseurl" : cgicommon.escape(baseurl),
+            "wikitextday" : wikitext_date_d,
+            "monthoptions" : month_options,
+            "wikitextyear" : wikitext_date_y,
+            "wikitextgameprefix" : cgicommon.escape(wikitext_game_prefix),
+            "divisionoptions" : division_options,
+            "finalsoptions" : finals_options
+        }
+        response.writeln(html)
 
-    cgicommon.writeln("</div>") #mainpane
+        response.writeln("</div>") #mainpane
 
-    cgicommon.writeln("</body>")
-    cgicommon.writeln("</html>")
+        response.writeln("</body>")
+        response.writeln("</html>")
+        return
 
-    # And exit here
-    sys.exit(0)
+    # If we get here, the form was submitted.
+    try:
+        show_standings_before_finals = (standings_finals in ("before", "both"))
+        show_standings_after_finals = (standings_finals in ("after", "both"))
 
-# If we get here, the form was submitted.
+        if num_finals_games == 0:
+            # No point showing state after finals if there are no finals...
+            show_standings_before_finals = True
+            show_standings_after_finals = False
 
-try:
-    show_standings_before_finals = (standings_finals in ("before", "both"))
-    show_standings_after_finals = (standings_finals in ("after", "both"))
+        if submit_download:
+            filename = tourney.get_name()
+        else:
+            filename = None
 
-    if num_finals_games == 0:
-        # No point showing state after finals if there are no finals...
-        show_standings_before_finals = True
-        show_standings_after_finals = False
-
-    if submit_download:
-        filename = tourney.get_name()
-    else:
-        filename = None
-
-    started_html = True
-    if export_format == "html":
-        export_html(tourney, filename, show_standings_before_finals, show_standings_after_finals, finals_noun)
-    elif export_format == "text":
-        export_text(tourney, filename, show_standings_before_finals, show_standings_after_finals, finals_noun)
-    elif export_format == "wikitext":
-        export_wikitext(tourney, filename, show_standings_before_finals,
-                show_standings_after_finals, finals_noun, wikitext_date_d,
-                wikitext_date_m, wikitext_date_y, wikitext_game_prefix)
-    elif export_format == "csv":
-        selected_divisions = set()
-        for div_index in range(tourney.get_num_divisions()):
-            if ("csvdiv%d" % (div_index)) in form:
-                selected_divisions.add(div_index)
-        export_csv(tourney, filename, csv_table == "standings",
-                selected_divisions, show_standings_after_finals,
-                csv_event_code, csv_game_format)
-    else:
-        cgicommon.writeln("Content-Type: text/plain; charset=utf-8")
-        cgicommon.writeln("")
-        cgicommon.writeln("Invalid format: " + export_format)
-except countdowntourney.TourneyException as e:
-    if started_html:
-        cgicommon.show_tourney_exception(e);
-    else:
-        show_error(e.get_description());
-
-sys.exit(0)
+        started_html = True
+        if export_format == "html":
+            export_html(tourney, response, filename, show_standings_before_finals, show_standings_after_finals, finals_noun)
+        elif export_format == "text":
+            export_text(tourney, response, filename, show_standings_before_finals, show_standings_after_finals, finals_noun)
+        elif export_format == "wikitext":
+            export_wikitext(tourney, response, filename,
+                    show_standings_before_finals, show_standings_after_finals,
+                    finals_noun, wikitext_date_d, wikitext_date_m,
+                    wikitext_date_y, wikitext_game_prefix)
+        elif export_format == "csv":
+            selected_divisions = set()
+            for div_index in range(tourney.get_num_divisions()):
+                if ("csvdiv%d" % (div_index)) in form:
+                    selected_divisions.add(div_index)
+            export_csv(tourney, response, filename, csv_table == "standings",
+                    selected_divisions, show_standings_after_finals,
+                    csv_event_code, csv_game_format)
+        else:
+            response.set_content_type("text/plain; charset=utf-8")
+            response.writeln("Invalid format: " + export_format)
+    except countdowntourney.TourneyException as e:
+        if started_html:
+            cgicommon.show_tourney_exception(response, e);
+        else:
+            show_error(response, e.get_description());
