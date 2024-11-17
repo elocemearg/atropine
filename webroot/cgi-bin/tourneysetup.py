@@ -303,8 +303,6 @@ function setDateToday() {
 </script>
 """)
 
-    httpreq.assert_client_from_localhost()
-
     show_success_box = None
     show_exception = None
 

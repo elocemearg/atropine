@@ -277,8 +277,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     cgicommon.print_html_head(response, "Display setup: " + str(tourney_name), "style.css");
     response.writeln("<body>");
 
-    httpreq.assert_client_from_localhost()
-
     try:
         teleost_modes = tourney.get_teleost_modes();
 

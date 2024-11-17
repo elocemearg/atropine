@@ -230,8 +230,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
 
     response.writeln("<body>");
 
-    httpreq.assert_client_from_localhost()
-
     try:
         cgicommon.show_sidebar(response, tourney);
 

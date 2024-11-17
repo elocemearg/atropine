@@ -401,15 +401,18 @@ setupUploadWidget();
     response.writeln(upload_widget_script_text)
 
 
-def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links=False):
+def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links=False, non_local_client=False):
     new_window_html = "<img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Opens in new window\" />"
     response.writeln("<div class=\"sidebar\">");
-
     response.writeln("<a href=\"/cgi-bin/home.py\"><img src=\"/images/eyebergine128.png\" alt=\"Eyebergine\" /></a><br />");
+
+    players = []
     if tourney:
+        response.writeln("<p><strong>%s</strong></p>" % escape(tourney.name));
+
+    if tourney and not non_local_client:
         players = tourney.get_players()
         num_games = tourney.get_num_games()
-        response.writeln("<p><strong>%s</strong></p>" % escape(tourney.name));
         response.writeln(("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\"><strong>Tourney Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
 
         if show_setup_links:
@@ -541,13 +544,13 @@ function toggleMiscStats() {
             response.writeln(misc_links_html)
             response.writeln("</div>")
 
-    response.writeln("<br />")
+    if not non_local_client:
+        response.writeln("<br />")
+        response.writeln("<div class=\"misclinks\">")
+        response.writeln("<a href=\"/docs/\" target=\"_blank\">Help " + new_window_html + "</a>")
+        response.writeln("</div>")
 
-    response.writeln("<div class=\"misclinks\">")
-    response.writeln("<a href=\"/docs/\" target=\"_blank\">Help " + new_window_html + "</a>")
-    response.writeln("</div>")
-
-    if tourney and players:
+    if tourney and players and not non_local_client:
         response.writeln("<div class=\"globalprefslink\">")
         response.writeln("<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" ")
         response.writeln("onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=700,height=750'); return false;\" >Preferences... " + new_window_html + "</a>")

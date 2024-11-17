@@ -23,8 +23,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
 
     response.writeln("<body>");
 
-    httpreq.assert_client_from_localhost()
-
     if confirm:
         try:
             tourney.delete_round(round_no)

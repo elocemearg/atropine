@@ -172,7 +172,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     cgicommon.print_html_head(response, "Player Check-In")
 
     response.writeln("<body>")
-    httpreq.assert_client_from_localhost()
 
     # Each submit button has to preserve the settings such as tourney=... and
     # hidehelp=... so building this query string is useful.

@@ -232,8 +232,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
 
     response.writeln("<body>");
 
-    httpreq.assert_client_from_localhost()
-
     exception_content = None
     exceptions_to_show = []
     warning_content = None

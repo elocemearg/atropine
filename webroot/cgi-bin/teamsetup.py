@@ -92,8 +92,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
 
     response.writeln("<body>")
 
-    httpreq.assert_client_from_localhost()
-
     cgicommon.show_sidebar(response, tourney);
 
     if request_method == "POST":

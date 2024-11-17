@@ -10,13 +10,14 @@ import handlerutils
 import fieldstorage
 import htmltraceback
 
-class UnauthorisedClientException(Exception):
-    pass
-
 # List of former CGI handlers which do not take a countdowntourney object
 CGI_HANDLERS_WITHOUT_TOURNEY = frozenset(["home", "sql", "preferences"])
 def cgi_handler_needs_tourney(handler_name):
     return handler_name not in CGI_HANDLERS_WITHOUT_TOURNEY
+
+# List of former CGI handlers which are allowed to be access from clients
+# other than localhost
+CGI_HANDLERS_PUBLIC = frozenset(["home", "export", "display", "hello"])
 
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     pass
@@ -106,6 +107,11 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 handlerutils.send_html_error_response(self, "Bad URL: /cgi-bin/%s.py not found" % (handler_name), status_code=404)
                 return True
 
+            if handler_name not in CGI_HANDLERS_PUBLIC and not self.is_client_from_localhost():
+                # Non-localhost connection to a non-public page
+                handlerutils.send_html_error_response(self, "This page is only accessible from the same computer that is running Atropine.", status_code=403)
+                return True
+
             if request_method == "POST":
                 # Read this request's POST data
                 try:
@@ -179,11 +185,14 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         if not self.atropine_handle_request("GET"):
+            # Just a regular fetch of a file from under webroot
             super().do_GET()
 
     def do_POST(self):
         if not self.atropine_handle_request("POST"):
-            super().do_POST()
+            # If we get a POST request and it isn't for a path handled by
+            # atropine_handle_request(), then this path doesn't support POST.
+            handlerutils.send_html_error_response(self, "This path (%s) does not support POST requests." % (self.path), status_code=405)
 
     def is_client_from_localhost(self):
         # If the web server is listening only on the loopback interface, then
@@ -199,7 +208,3 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             if remote_addr in valid_answers:
                 return True
         return False
-
-    def assert_client_from_localhost(self):
-        if not self.is_client_from_localhost():
-            raise UnauthorisedClientException("This page is only accessible from the same computer that is running Atropine.")

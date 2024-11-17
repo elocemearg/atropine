@@ -49,8 +49,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     cgicommon.print_html_head(response, "Overachievers: " + str(tourney_name))
     response.writeln("<body>")
 
-    httpreq.assert_client_from_localhost()
-
     try:
         cgicommon.show_sidebar(response, tourney, show_misc_table_links=True)
 

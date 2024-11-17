@@ -1080,8 +1080,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
 
     response.writeln("<body onload=\"games_on_load();\">");
 
-    httpreq.assert_client_from_localhost()
-
     response.writeln("""
 <script>
 function scroll_to_bottom(element) {

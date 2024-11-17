@@ -39,7 +39,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     # tourney is None for this handler
 
     cgicommon.print_html_head(response, "Raw SQL interface")
-    httpreq.assert_client_from_localhost()
 
     sql_text = None
     execute_sql = None

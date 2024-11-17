@@ -80,8 +80,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
 
     response.writeln("<body onload=\"relabel_save_button();\">");
 
-    httpreq.assert_client_from_localhost()
-
     if not tourney_name:
         response.writeln("<h1>No tourney specified</h1>");
         response.writeln("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");

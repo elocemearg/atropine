@@ -162,7 +162,7 @@ except Exception as e:
     fatal_error("Failed to import the countdowntourney module. Is there a file countdowntourney.py in the py folder? There should be.", e)
 
 try:
-    from atropinehttprequesthandler import AtropineHTTPRequestHandler, ThreadedHTTPServer, UnauthorisedClientException
+    from atropinehttprequesthandler import AtropineHTTPRequestHandler, ThreadedHTTPServer
 except Exception as e:
     fatal_error("Failed to import the atropinehttprequesthandler module. Is there a file atropinehttprequesthandler.py in the py folder? There should be.", e)
 
