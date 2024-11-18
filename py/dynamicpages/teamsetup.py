@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-import cgicommon
-import urllib.request, urllib.parse, urllib.error
 import random
+
+import htmlcommon
 import countdowntourney
 
 def int_or_none(s):
@@ -86,11 +86,11 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     tourney_exception = None
     player_teams_set = False
 
-    cgicommon.print_html_head(response, "Hangover Team Setup: " + str(tourneyname))
+    htmlcommon.print_html_head(response, "Hangover Team Setup: " + str(tourneyname))
 
     response.writeln("<body>")
 
-    cgicommon.show_sidebar(response, tourney);
+    htmlcommon.show_sidebar(response, tourney);
 
     if request_method == "POST":
         if player_team_submit:
@@ -130,22 +130,22 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     num_players = len(tourney.get_players())
 
     if player_teams_set:
-        cgicommon.show_success_box(response, "Teams set successfully.")
+        htmlcommon.show_success_box(response, "Teams set successfully.")
     elif tourney_exception:
-        cgicommon.show_tourney_exception(response, tourney_exception)
+        htmlcommon.show_tourney_exception(response, tourney_exception)
 
     teams = tourney.get_teams()
     player_teams = sorted(tourney.get_player_teams(), key=lambda x : x[0].get_rating(), reverse=True)
 
     if num_players == 0:
         response.writeln("<p>This tourney doesn't have any players, so you can't specify teams yet.</p>")
-        response.writeln('<p><a href="/atropine/%s/tourneysetup">Back to Tourney Setup</a></p>' % (cgicommon.escape(tourneyname)));
+        response.writeln('<p><a href="/atropine/%s/tourneysetup">Back to Tourney Setup</a></p>' % (htmlcommon.escape(tourneyname)));
     else:
         response.writeln('<h2>Teams</h2>')
         for team in teams:
             response.writeln('<p>')
-            response.writeln(cgicommon.make_team_dot_html(team) + " " + cgicommon.escape(team.get_name()))
-            player_name_list = [ cgicommon.escape(p.get_name()) for (p, pt) in player_teams if pt is not None and pt.get_id() == team.get_id() ]
+            response.writeln(htmlcommon.make_team_dot_html(team) + " " + htmlcommon.escape(team.get_name()))
+            player_name_list = [ htmlcommon.escape(p.get_name()) for (p, pt) in player_teams if pt is not None and pt.get_id() == team.get_id() ]
 
             if player_name_list:
                 response.writeln(" (%d): %s" % (len(player_name_list), ", ".join(player_name_list)));
@@ -155,12 +155,12 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         response.writeln('<h2>Players</h2>')
         response.writeln('<form method="POST">')
-        #response.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True))
+        #response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname, True))
         response.writeln('<table class="misctable">')
         response.writeln('<tr><th>Player</th>')
         response.writeln('<th>No team</th>')
         for team in teams:
-            response.writeln('<th>%s</th>' % (cgicommon.escape(team.get_name())))
+            response.writeln('<th>%s</th>' % (htmlcommon.escape(team.get_name())))
         response.writeln('</tr>')
 
         index = 0
@@ -169,7 +169,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             team = player_team[1]
 
             response.writeln('<tr>')
-            response.writeln('<td class="text">%s<input type="hidden" name="player%d" value="%s" /></td>' % (cgicommon.escape(player.get_name()), index, cgicommon.escape(player.get_name())))
+            response.writeln('<td class="text">%s<input type="hidden" name="player%d" value="%s" /></td>' % (htmlcommon.escape(player.get_name()), index, htmlcommon.escape(player.get_name())))
 
             # Radio button for "no team"
             response.writeln('<td class="control"><input type="radio" name="team%d" value="%d" %s /></td>' % (index, -1, "checked" if team is None else ""))
@@ -186,7 +186,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         response.writeln('<h2>Automatic random team assignment</h2>')
         response.writeln('<form method="POST">')
-        #response.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True))
+        #response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname, True))
         response.writeln('<p>')
         response.writeln('Divide players by rating into groups of <input type="number" name="randomgroupsize" value="%d" min="0" /> and randomly distribute each group as evenly as possible among the teams. Set to 0 to divide the whole player list randomly into teams, ignoring rating.' % random_group_size)
         response.writeln('</p>')
@@ -197,7 +197,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         response.writeln('<h2>Clear teams</h2>')
         response.writeln('<form method="POST">')
-        #response.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True))
+        #response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname, True))
         response.writeln('<p>')
         response.writeln('Remove all players from their teams.')
         response.writeln('</p>')

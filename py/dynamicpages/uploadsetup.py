@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 
-import cgicommon
-import urllib
 import time
-import html
+
+import htmlcommon
 import countdowntourney
 import uploadercli
 import uploader
@@ -18,11 +17,11 @@ def unix_time_to_str(unix_time):
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
 
-    cgicommon.print_html_head(response, "Live Broadcast Setup: %s" % (tourney_name))
+    htmlcommon.print_html_head(response, "Live Broadcast Setup: %s" % (tourney_name))
 
     response.writeln("<body>")
 
-    cgicommon.show_sidebar(response, tourney)
+    htmlcommon.show_sidebar(response, tourney)
 
     response.writeln("<div class=\"mainpane\">")
     response.writeln("<h1>Live Broadcast Setup</h1>")
@@ -75,11 +74,11 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     upload_on = state.get("publishing", False)
 
     if exception_text:
-        cgicommon.show_error_text(response, exception_context + ": " + exception_text)
+        htmlcommon.show_error_text(response, exception_context + ": " + exception_text)
     if delete_success:
-        cgicommon.show_success_box(response, "Successfully deleted tourney <strong>%s</strong> from the website." % (cgicommon.escape(tourney_name)))
+        htmlcommon.show_success_box(response, "Successfully deleted tourney <strong>%s</strong> from the website." % (htmlcommon.escape(tourney_name)))
 
-    web_link = colive_url_base + "/" + cgicommon.escape(tourney_name, True)
+    web_link = colive_url_base + "/" + htmlcommon.escape(tourney_name, True)
     web_link_raw = colive_url_base + "/" + tourney_name
     response.writeln("<p>This will upload the tourney state every few seconds so that games, scores and standings are visible at <a href=\"%s\" target=\"_blank\">%s <img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\"/></a></p>" % (web_link, web_link))
     response.writeln("""
@@ -120,13 +119,13 @@ when the internet connection is restored.
         <div class="formcontrol">
         <input type="%s" name="%s" id="%s" value="%s" autocomplete="%s" %s />
         </div>""" % (
-            cgicommon.escape(info["name"]),
-            cgicommon.escape(info["label"]),
-            cgicommon.escape(info["type"]),
-            cgicommon.escape(info["name"]),
-            cgicommon.escape(info["name"]),
-            cgicommon.escape(info["value"]),
-            cgicommon.escape(info["autocomplete"]),
+            htmlcommon.escape(info["name"]),
+            htmlcommon.escape(info["label"]),
+            htmlcommon.escape(info["type"]),
+            htmlcommon.escape(info["name"]),
+            htmlcommon.escape(info["name"]),
+            htmlcommon.escape(info["value"]),
+            htmlcommon.escape(info["autocomplete"]),
             "class=\"noteditable\" readonly" if upload_on else "")
         )
         response.writeln("</div>")
@@ -140,20 +139,20 @@ when the internet connection is restored.
     response.writeln("</div>")
     response.writeln("</div>")
 
-    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name)))
+    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name)))
     if show_delete_confirm:
         warning_html = "<div class=\"formline\">\n"
-        warning_html += "<p>Are you sure you want to delete the tourney <strong>%s</strong> from the web?</p>\n" % (cgicommon.escape(tourney_name))
+        warning_html += "<p>Are you sure you want to delete the tourney <strong>%s</strong> from the web?</p>\n" % (htmlcommon.escape(tourney_name))
         warning_html += "<p>If you click Confirm below, <a href=\"%s/%s\" target=\"_blank\">this tourney called <strong>%s</strong></a> will be deleted from the website.</p>\n" % (
-            colive_url_base, cgicommon.escape(tourney_name, True),
-            cgicommon.escape(tourney_name))
+            colive_url_base, htmlcommon.escape(tourney_name, True),
+            htmlcommon.escape(tourney_name))
         warning_html += "<p>Your local copy of this tourney will not be affected.</p>\n"
         warning_html += "</div>\n"
         warning_html += "<div class=\"formline submitline\">\n"
         warning_html += "<input type=\"submit\" name=\"submitdeletefromwebconfirm\" value=\"Confirm\" class=\"bigbutton destroybutton\" />\n"
         warning_html += "<input type=\"submit\" name=\"submitdeletefromwebcancel\" value=\"Cancel\" class=\"bigbutton chickenoutbutton\" />\n"
         warning_html += "</div>\n"
-        cgicommon.show_warning_box(response, warning_html, True)
+        htmlcommon.show_warning_box(response, warning_html, True)
     else:
         response.writeln("<div class=\"formline submitline\">")
         response.writeln("<input type=\"submit\" name=\"%s\" value=\"%s\" class=\"bigbutton\" />" % (
@@ -179,7 +178,7 @@ when the internet connection is restored.
     <button type="button" onclick="copyLink();" style="width: 155px; float: right">Copy to clipboard</button>
     </div>
 </div>
-    """ % (html.escape(web_link_raw)))
+    """ % (htmlcommon.escape(web_link_raw)))
 
     response.writeln("""
 <script>

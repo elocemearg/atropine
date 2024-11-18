@@ -1,4 +1,4 @@
-import cgicommon
+import htmlcommon
 
 # Produce HTML for a modal dialog box containing a form with Submit and Cancel
 # buttons. The Submit button submits the form and the Cancel button closes the
@@ -29,7 +29,7 @@ def get_html(dialog_id):
     </div>
 </div>
 """ % {
-        "dialog_id" : cgicommon.escape(dialog_id)
+        "dialog_id" : htmlcommon.escape(dialog_id)
     }
 
 DIALOG_JAVASCRIPT = """

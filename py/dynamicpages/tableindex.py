@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-import urllib.request, urllib.parse, urllib.error
-import cgicommon
+import htmlcommon
 import countdowntourney
 
 def int_or_none(s):
@@ -25,11 +24,11 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     if min_names_per_column is None or min_names_per_column < 0:
         min_names_per_column = 5
 
-    cgicommon.print_html_head(response, "Table assignment")
+    htmlcommon.print_html_head(response, "Table assignment")
 
     response.writeln("<body>")
 
-    cgicommon.show_sidebar(response, tourney, show_misc_table_links=True)
+    htmlcommon.show_sidebar(response, tourney, show_misc_table_links=True)
 
     response.writeln("<div class=\"mainpane\">")
 
@@ -42,7 +41,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         round_no = rd["num"]
         round_name = rd["name"]
 
-        response.writeln("<h1>Table assignment: %s</h1>" % (cgicommon.escape(round_name)))
+        response.writeln("<h1>Table assignment: %s</h1>" % (htmlcommon.escape(round_name)))
         games = tourney.get_games(round_no)
 
         # Map of player name -> list of table numbers they're on in this round
@@ -102,9 +101,9 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                         name = sorted_names[position_in_list]
                         player = player_name_to_player.get(name, None)
                         if player:
-                            response.writeln(("<td class=\"text tableindexname\">%s</td>" % (cgicommon.player_to_link(player, tourney.get_name()))))
+                            response.writeln(("<td class=\"text tableindexname\">%s</td>" % (htmlcommon.player_to_link(player, tourney.get_name()))))
                         else:
-                            response.writeln(("<td class=\"text tableindexname\">%s</td>" % (cgicommon.escape(name))))
+                            response.writeln(("<td class=\"text tableindexname\">%s</td>" % (htmlcommon.escape(name))))
 
                         # Show the list of tables this player is on in this
                         # round. This will almost always be one table, but it
@@ -117,7 +116,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                             # listing all the players on that table.
                             player_list = table_to_player_list.get(table_list[index], [])
                             title = "Table %d: %s" % (table_list[index], ", ".join(sorted([x.get_name() for x in player_list])))
-                            response.writeln(("<div class=\"tablebadgenaturalsize\" style=\"margin-top: 2px; margin-bottom: 2px;\" title=\"%s\">" % cgicommon.escape(title, True)));
+                            response.writeln(("<div class=\"tablebadgenaturalsize\" style=\"margin-top: 2px; margin-bottom: 2px;\" title=\"%s\">" % htmlcommon.escape(title, True)));
                             response.writeln(("%d" % (table_list[index])))
                             response.writeln("</div>")
                             if index < len(table_list) - 1:

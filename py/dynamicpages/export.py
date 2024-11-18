@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
-import cgicommon
-import urllib.request, urllib.parse, urllib.error
 import datetime
 import calendar
 import csv
-import countdowntourney
 from io import StringIO
+
+import countdowntourney
+import htmlcommon
 
 def int_or_none(s):
     try:
@@ -23,11 +23,11 @@ def valid_date(d, m, y):
         return False
 
 def show_error(response, err_str, non_local_client):
-    cgicommon.print_html_head(response, "Tourney: %s" % tourney_name);
+    htmlcommon.print_html_head(response, "Tourney: %s" % tourney_name);
 
     response.writeln("<body>");
 
-    cgicommon.show_sidebar(response, tourney, non_local_client=non_local_client)
+    htmlcommon.show_sidebar(response, tourney, non_local_client=non_local_client)
 
     response.writeln("<div class=\"mainpane\">")
     response.writeln("<p><strong>%s</strong></p>" % err_str)
@@ -62,20 +62,20 @@ def export_html(tourney, response, filename, show_standings_before_finals, show_
 
     started_html = True;
 
-    cgicommon.print_html_head_local(response, "Tourney: %s" % full_name);
+    htmlcommon.print_html_head_local(response, "Tourney: %s" % full_name);
 
     response.writeln("<body>");
     response.writeln("<div class=\"exportedstandings\">")
-    response.writeln("<h1>%s</h1>" % (cgicommon.escape(full_name)))
+    response.writeln("<h1>%s</h1>" % (htmlcommon.escape(full_name)))
     if venue:
-        response.writeln("<p>%s</p>" % (cgicommon.escape(venue)))
+        response.writeln("<p>%s</p>" % (htmlcommon.escape(venue)))
     if date_string:
-        response.writeln("<p>%s</p>" % (cgicommon.escape(date_string)))
+        response.writeln("<p>%s</p>" % (htmlcommon.escape(date_string)))
 
     response.writeln("<h2>Standings</h2>")
     num_divisions = tourney.get_num_divisions()
     response.writeln("<p>")
-    response.writeln(cgicommon.escape(rank_method.get_short_description()))
+    response.writeln(htmlcommon.escape(rank_method.get_short_description()))
     if show_draws_column:
         response.writeln("Draws count as half a win.")
     response.writeln("</p>")
@@ -83,7 +83,7 @@ def export_html(tourney, response, filename, show_standings_before_finals, show_
     if show_standings_before_finals:
         if show_standings_before_finals and show_standings_after_finals:
             response.writeln("<h3>Before %s</h3>" % (finals_noun))
-        cgicommon.show_standings_table(response, tourney, show_draws_column,
+        htmlcommon.show_standings_table(response, tourney, show_draws_column,
                 tourney.is_ranked_by_points(), tourney.is_ranked_by_spread(),
                 show_first_second_column=False, linkify_players=False,
                 show_tournament_rating_column=None, show_qualified=True,
@@ -92,7 +92,7 @@ def export_html(tourney, response, filename, show_standings_before_finals, show_
     if show_standings_after_finals:
         if show_standings_before_finals and show_standings_after_finals:
             response.writeln("<h3>After %s</h3>" % (finals_noun))
-        cgicommon.show_standings_table(response, tourney, show_draws_column,
+        htmlcommon.show_standings_table(response, tourney, show_draws_column,
                 tourney.is_ranked_by_points(), tourney.is_ranked_by_spread(),
                 show_first_second_column=False, linkify_players=False,
                 show_tournament_rating_column=None, show_qualified=True,
@@ -114,13 +114,13 @@ def export_html(tourney, response, filename, show_standings_before_finals, show_
             if prev_round_no is not None:
                 response.writeln("</table>")
                 response.writeln("<br />")
-            response.writeln("<h3>%s</h3>" % (cgicommon.escape(tourney.get_round_name(g.round_no))))
+            response.writeln("<h3>%s</h3>" % (htmlcommon.escape(tourney.get_round_name(g.round_no))))
             response.writeln("<table class=\"scorestable\">")
             prev_table_no = None
             prev_division = None
         if prev_division is None or prev_division != g.division:
             if num_divisions > 1:
-                response.writeln("<tr class=\"divisionrow\"><th colspan=\"3\">%s</th></tr>" % (cgicommon.escape(tourney.get_division_name(g.division))))
+                response.writeln("<tr class=\"divisionrow\"><th colspan=\"3\">%s</th></tr>" % (htmlcommon.escape(tourney.get_division_name(g.division))))
 
             # If this division has a table with more than one game on it
             # then show the table numbers, otherwise don't bother.
@@ -143,7 +143,7 @@ def export_html(tourney, response, filename, show_standings_before_finals, show_
         if g.s1 is None or g.s2 is None:
             response.writeln("<td class=\"gamescore\"> v </td>")
         else:
-            response.writeln("<td class=\"gamescore\">%s</td>" % cgicommon.escape(g.format_score()));
+            response.writeln("<td class=\"gamescore\">%s</td>" % htmlcommon.escape(g.format_score()));
         response.writeln("<td class=\"gameplayer2\">%s</td>" % names[1]);
         response.writeln("</tr>")
         prev_table_no = g.table_no
@@ -593,11 +593,11 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         # No format specified: display a list of possible formats to choose from
         started_html = True
-        cgicommon.print_html_head(response, "Tournament report: " + str(tourney_name))
+        htmlcommon.print_html_head(response, "Tournament report: " + str(tourney_name))
 
         response.writeln("<body>")
 
-        cgicommon.show_sidebar(response, tourney, non_local_client=non_local_client)
+        htmlcommon.show_sidebar(response, tourney, non_local_client=non_local_client)
 
         response.writeln("<div class=\"mainpane\">")
 
@@ -606,7 +606,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         for m in range(1, 13):
             month_options += '<option value="%d" %s>%s</option>' % (
                     m, "selected " if m == wikitext_date_m else "",
-                    cgicommon.escape(calendar.month_name[m])
+                    htmlcommon.escape(calendar.month_name[m])
             )
 
         # CSV only: let the user choose which divisions they want to include.
@@ -620,7 +620,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             division_options += "<div class=\"formcontrol\">"
             for div in range(num_divisions):
                 division_options += "<input type=\"checkbox\" name=\"csvdiv%d\" id=\"csvdiv%d\" value=\"1\" checked disabled /> <label for=\"csvdiv%d\">%s</label><br />" % (
-                        div, div, div, cgicommon.escape(tourney.get_division_name(div))
+                        div, div, div, htmlcommon.escape(tourney.get_division_name(div))
                 )
             division_options += "</div>"
             division_options += "</div>"
@@ -830,12 +830,11 @@ function validateDate() {
 </form>
 </div> <!-- formbox -->
 """ % {
-            "tourneynameinurl" : urllib.parse.quote_plus(tourney_name),
-            "tourneyname" : cgicommon.escape(tourney_name),
+            "tourneyname" : htmlcommon.escape(tourney_name),
             "wikitextday" : wikitext_date_d,
             "monthoptions" : month_options,
             "wikitextyear" : wikitext_date_y,
-            "wikitextgameprefix" : cgicommon.escape(wikitext_game_prefix),
+            "wikitextgameprefix" : htmlcommon.escape(wikitext_game_prefix),
             "divisionoptions" : division_options,
             "finalsoptions" : finals_options
         }
@@ -885,6 +884,6 @@ function validateDate() {
             response.writeln("Invalid format: " + export_format)
     except countdowntourney.TourneyException as e:
         if started_html:
-            cgicommon.show_tourney_exception(response, e);
+            htmlcommon.show_tourney_exception(response, e);
         else:
             show_error(response, e.get_description());

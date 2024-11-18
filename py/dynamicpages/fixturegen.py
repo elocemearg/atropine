@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-import urllib.request, urllib.parse, urllib.error
 import importlib
 import json
-import cgicommon
+
+import htmlcommon
 import generators
 import countdowntourney
 import htmlform
@@ -79,14 +79,14 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
     response.writeln("<p>I've generated the following fixtures. You must click <em>Accept Fixtures</em> below if you want to use them.</p>");
     response.writeln("<input type=\"submit\" name=\"accept\" class=\"bigbutton\" value=\"&#x2705; Accept Fixtures\" />");
     response.writeln("<a href=\"/atropine/%s/fixturegen\" class=\"fixturecancellink\">&#x274c; Discard and return to fixture generator menu</a>" % (
-        urllib.parse.quote_plus(tourney_name)
+        htmlcommon.escape(tourney_name)
     ))
     response.writeln("</div>")
     num_divisions = tourney.get_num_divisions()
     show_wins_and_played = False
     for r in rounds:
         round_no = r.get_round_no()
-        response.writeln("<h2>%s</h2>" % cgicommon.escape(r.get_round_name()))
+        response.writeln("<h2>%s</h2>" % htmlcommon.escape(r.get_round_name()))
 
         for div_index in range(num_divisions):
             round_fixtures = [x for x in fixtures if x.round_no == round_no and x.division == div_index];
@@ -100,7 +100,7 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
             form_dict = tourney.get_player_win_loss_strings(division=div_index)
 
             if num_divisions > 1:
-                response.writeln("<h3>%s</h3>" % (cgicommon.escape(tourney.get_division_name(div_index))))
+                response.writeln("<h3>%s</h3>" % (htmlcommon.escape(tourney.get_division_name(div_index))))
             response.writeln("<table class=\"fixturetable\">");
             response.writeln("<tr><th>Table</th><th>Type</th><th colspan=\"4\">Player 1</th><th></th><th colspan=\"4\">Player 2</th></tr>");
 
@@ -118,17 +118,17 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
                 if first_game_on_table:
                     response.writeln("<td class=\"tableno\" rowspan=\"%d\"><div class=\"tablebadge\">%d</div></td>" % (num_games_on_table, f.table_no));
 
-                response.writeln("<td class=\"gametype\">%s</td>" % cgicommon.escape(f.game_type));
+                response.writeln("<td class=\"gametype\">%s</td>" % htmlcommon.escape(f.game_type));
                 player_td_html = []
                 game_standings_info_td_html = [] # will be two lists of column contents, one for each player
                 for player in [f.p1, f.p2]:
                     name = player.name
                     standings_row = standings_dict.get(name, None)
                     if player.is_auto_prune():
-                        player_td_html.append(cgicommon.player_to_non_link(player, emboldenise=True))
+                        player_td_html.append(htmlcommon.player_to_non_link(player, emboldenise=True))
                         game_standings_info_td_html.append(["", "", ""])
                     elif standings_row is None:
-                        player_td_html.append(cgicommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True) + " ?")
+                        player_td_html.append(htmlcommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True) + " ?")
                         game_standings_info_td_html.append(["", "", ""])
                     else:
                         if show_wins_and_played:
@@ -144,11 +144,11 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
                             win_loss_record = "%d-%d" % (standings_row.wins, standings_row.played - standings_row.wins - standings_row.draws)
                             if standings_row.draws:
                                 win_loss_record += "-%d" % (standings_row.draws)
-                        player_td_html.append(cgicommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True))
+                        player_td_html.append(htmlcommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True))
                         game_standings_info_td_html.append(
                                 [
-                                    cgicommon.ordinal_number(standings_row.position),
-                                    cgicommon.win_loss_string_to_html(form_dict.get(name, "")),
+                                    htmlcommon.ordinal_number(standings_row.position),
+                                    htmlcommon.win_loss_string_to_html(form_dict.get(name, "")),
                                     win_loss_record
                                 ]
                         )
@@ -162,7 +162,7 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
                     response.writeln("<td class=\"gamestandingsinfo gamestandingsinfo2\">%s</td>" % (html))
                 num_repeats = tourney.count_games_between(f.p1, f.p2)
                 if num_repeats:
-                    response.writeln("<td class=\"gamerepeats\">%s repeat</td>" % (cgicommon.ordinal_number(num_repeats)))
+                    response.writeln("<td class=\"gamerepeats\">%s repeat</td>" % (htmlcommon.ordinal_number(num_repeats)))
                 else:
                     response.writeln("<td class=\"gameremarks\"></td>")
                 response.writeln("</tr>");
@@ -170,14 +170,14 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
                 last_table_no = f.table_no;
 
             response.writeln("</table>");
-    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgicommon.escape(tourney_name, True));
-    response.writeln("<input type=\"hidden\" name=\"generator\" value=\"%s\" />" % cgicommon.escape(generator_name, True));
+    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % htmlcommon.escape(tourney_name, True));
+    response.writeln("<input type=\"hidden\" name=\"generator\" value=\"%s\" />" % htmlcommon.escape(generator_name, True));
 
     # Remember all the _div* settings, or check_ready might
     # object when we do try to submit the fixtures
     for name in fixgen_settings:
         if name[0:4] == "_div":
-            response.writeln("<input type=\"hidden\" name=\"%s\" value=\"%s\" />" % (cgicommon.escape(name, True), cgicommon.escape(fixgen_settings[name], True)))
+            response.writeln("<input type=\"hidden\" name=\"%s\" value=\"%s\" />" % (htmlcommon.escape(name, True), htmlcommon.escape(fixgen_settings[name], True)))
 
     fixture_plan = {
             "fixtures" : [
@@ -191,18 +191,18 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
             ]
     }
     json_fixture_plan = json.dumps(fixture_plan);
-    response.writeln("<input type=\"hidden\" name=\"jsonfixtureplan\" value=\"%s\" />" % cgicommon.escape(json_fixture_plan, True));
+    response.writeln("<input type=\"hidden\" name=\"jsonfixtureplan\" value=\"%s\" />" % htmlcommon.escape(json_fixture_plan, True));
     response.writeln("<div class=\"fixtureacceptbox\">")
     response.writeln("<input type=\"submit\" name=\"accept\" class=\"bigbutton\" value=\"&#x2705; Accept Fixtures\" />");
     response.writeln("<a href=\"/atropine/%s/fixturegen\" class=\"fixturecancellink\">&#x274c; Discard and return to fixture generator menu</a>" % (
-        urllib.parse.quote_plus(tourney_name)
+        htmlcommon.escape(tourney_name)
     ))
     response.writeln("</div>")
     response.writeln("</form>");
 
 
 def show_fixgen_table(response, tourney_name, module_list, title, description):
-    response.writeln("<h2>%s</h2>" % (cgicommon.escape(title)))
+    response.writeln("<h2>%s</h2>" % (htmlcommon.escape(title)))
     if description:
         response.writeln("<p>")
         response.writeln(description)
@@ -212,21 +212,21 @@ def show_fixgen_table(response, tourney_name, module_list, title, description):
         fixgen_module = fixgen_modules[module_name]
         response.writeln("<tr>");
         response.writeln("<td class=\"fixgentable fixgen\">");
-        response.writeln("<a href=\"/atropine/%s/fixturegen/%s\">" % (urllib.parse.quote_plus(tourney_name), urllib.parse.quote_plus(module_name)))
-        response.writeln("<img src=\"/images/fixgen/%s.png\" alt=\"%s\" />" % (cgicommon.escape(module_name), cgicommon.escape(fixgen_module.name)))
+        response.writeln("<a href=\"/atropine/%s/fixturegen/%s\">" % (htmlcommon.escape(tourney_name), htmlcommon.escape(module_name)))
+        response.writeln("<img src=\"/images/fixgen/%s.png\" alt=\"%s\" />" % (htmlcommon.escape(module_name), htmlcommon.escape(fixgen_module.name)))
         response.writeln("</a>")
         response.writeln("</td>")
         response.writeln("<td class=\"fixgentable fixgen\">");
-        response.writeln("<a href=\"/atropine/%s/fixturegen/%s\">%s</a>" % (urllib.parse.quote_plus(tourney_name), urllib.parse.quote_plus(module_name), cgicommon.escape(fixgen_module.name)));
+        response.writeln("<a href=\"/atropine/%s/fixturegen/%s\">%s</a>" % (htmlcommon.escape(tourney_name), htmlcommon.escape(module_name), htmlcommon.escape(fixgen_module.name)));
         response.writeln("</td>");
-        response.writeln("<td class=\"fixgentable fixgendescription\">%s</td>" % (cgicommon.escape(fixgen_module.description)));
+        response.writeln("<td class=\"fixgentable fixgendescription\">%s</td>" % (htmlcommon.escape(fixgen_module.description)));
         response.writeln("</tr>");
     response.writeln("</table>");
 
 
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
-    cgicommon.print_html_head(response, "Generate Fixtures: " + str(tourney_name));
+    htmlcommon.print_html_head(response, "Generate Fixtures: " + str(tourney_name));
 
     response.writeln("<body>");
 
@@ -269,13 +269,13 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                     "requires an accessible table" if num_players_requiring_accessible_table == 1 else "require accessible tables",
                     "you haven't defined any accessible tables" if num_accessible_tables == 0 else ("you have only defined %d accessible table%s" % (num_accessible_tables, "" if num_accessible_tables == 1 else "s")),
                     "this player is given an accessible table" if num_players_requiring_accessible_table == 1 else "these players are given accessible tables",
-                    urllib.parse.quote_plus(tourney.get_name())
+                    htmlcommon.escape(tourney.get_name())
                 )
 
             show_fixgen_list = True
 
         elif generator_name not in fixgen_modules:
-            exception_content = "No such generator %s." % (cgicommon.escape(generator_name))
+            exception_content = "No such generator %s." % (htmlcommon.escape(generator_name))
         elif num_divisions > 1 and not form.getfirst("_divsubmit") and "accept" not in form:
             fixgen_ask_divisions = True
         else:
@@ -397,7 +397,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     # new round.
 
     if tourney:
-        cgicommon.show_sidebar(response, tourney);
+        htmlcommon.show_sidebar(response, tourney);
 
     response.writeln("<div class=\"mainpane\">");
 
@@ -415,30 +415,30 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
     # If exception_content is set, show the exception box.
     if exception_content:
-        cgicommon.show_error_text(response, exception_content)
+        htmlcommon.show_error_text(response, exception_content)
 
     # Also show an exception box for each exception in the list exceptions_to_show.
     if exceptions_to_show:
         for e in exceptions_to_show:
-            cgicommon.show_tourney_exception(response, e);
+            htmlcommon.show_tourney_exception(response, e);
 
     if exception_content or exceptions_to_show:
         response.writeln("<p>")
         if generator_name and not check_ready_failed:
-            response.writeln("<a href=\"/atropine/%s/fixturegen/%s\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name), urllib.parse.quote_plus(generator_name)))
+            response.writeln("<a href=\"/atropine/%s/fixturegen/%s\">Sigh...</a>" % (htmlcommon.escape(tourney_name), htmlcommon.escape(generator_name)))
         elif no_players:
-            response.writeln("<a href=\"/atropine/%s/tourneysetup\">Set the player list at the tourney setup page</a>" % (urllib.parse.quote_plus(tourney_name)))
+            response.writeln("<a href=\"/atropine/%s/tourneysetup\">Set the player list at the tourney setup page</a>" % (htmlcommon.escape(tourney_name)))
         else:
-            response.writeln("<a href=\"/atropine/%s/fixturegen\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name)))
+            response.writeln("<a href=\"/atropine/%s/fixturegen\">Sigh...</a>" % (htmlcommon.escape(tourney_name)))
         response.writeln("</p>")
 
     # Show any warning...
     if warning_content:
-        cgicommon.show_warning_box(response, warning_content)
+        htmlcommon.show_warning_box(response, warning_content)
 
     # And a success box, if we've just saved the new fixtures to the db.
     if success_content:
-        cgicommon.show_success_box(response, success_content)
+        htmlcommon.show_success_box(response, success_content)
 
 
     # show_fixgen_list is set when the user hasn't yet picked a fixture generator.
@@ -487,7 +487,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             elements.append(htmlform.HTMLFragment("</td></tr>"))
         elements.append(htmlform.HTMLFragment("</table>"))
         elements.append(htmlform.HTMLFormSubmitButton("_divsubmit", "Next", other_attrs={"class" : "bigbutton"}))
-        settings_form = htmlform.HTMLForm("POST", "/atropine/%s/fixturegen/%s" % (urllib.parse.quote_plus(tourney.get_name()), urllib.parse.quote_plus(generator_name)), elements)
+        settings_form = htmlform.HTMLForm("POST", "/atropine/%s/fixturegen/%s" % (htmlcommon.escape(tourney.get_name()), htmlcommon.escape(generator_name)), elements)
         response.writeln(settings_form.html());
 
     # If the user has selected which divisions they want to generate fixtures
@@ -509,7 +509,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     # the round we just generated, or the earliest such round if we generated
     # for more than one round.
     if show_link_to_round is not None:
-        response.writeln("<p><a href=\"/atropine/%s/games/%d\">Go to result entry page</a></p>" % (urllib.parse.quote_plus(tourney_name), show_link_to_round));
+        response.writeln("<p><a href=\"/atropine/%s/games/%d\">Go to result entry page</a></p>" % (htmlcommon.escape(tourney_name), show_link_to_round));
 
     # end mainpane div
     response.writeln("</div>");

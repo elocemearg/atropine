@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 
+import sys
+import os
 import sqlite3
 import urllib.parse
 import re
-import cgicommon
-import sys
-import os
+
+import htmlcommon
 
 class Column(object):
     def __init__(self, seq, name, typ):
@@ -36,7 +37,7 @@ class Table(object):
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     # tourney is None for this handler
 
-    cgicommon.print_html_head(response, "Raw SQL interface")
+    htmlcommon.print_html_head(response, "Raw SQL interface")
 
     sql_text = None
     execute_sql = None
@@ -71,7 +72,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             error_text_context = "Can't open tourney database"
             error_text = "The tourney name is invalid. It may consist only of letters, numbers, underscores and hyphens."
         else:
-            db_path = cgicommon.dbdir
+            db_path = htmlcommon.dbdir
             if db_path and db_path[-1] != os.sep:
                 db_path += os.sep
             db_path += tourney_name + ".db"
@@ -209,24 +210,24 @@ function rowHighlight(rowNum, highlightOn) {
 
     response.writeln("<div class=\"sqlsidebarname\">")
     if tourney_name:
-        response.writeln("<a href=\"/atropine/%s/tourneysetup\">%s</a>" % (cgicommon.escape(tourney_name), cgicommon.escape(tourney_name)))
+        response.writeln("<a href=\"/atropine/%s/tourneysetup\">%s</a>" % (htmlcommon.escape(tourney_name), htmlcommon.escape(tourney_name)))
     response.writeln("</div>")
 
     # Display list of tables and views, which can be expanded to show columns
     if db:
         for (tl, object_type) in ((tables, "Tables"), (views, "Views")):
             response.writeln("<div class=\"sqldictsection\">")
-            response.writeln("<div class=\"sqldictsectionheading\">%s</div>" % (cgicommon.escape(object_type)))
+            response.writeln("<div class=\"sqldictsectionheading\">%s</div>" % (htmlcommon.escape(object_type)))
             response.writeln("<ul class=\"sqldict\">")
             for tab in tl:
-                tab_escaped = cgicommon.escape(tab.get_name())
+                tab_escaped = htmlcommon.escape(tab.get_name())
                 tab_sq_escaped = "".join([x if x != '\'' else '\\\'' for x in tab.get_name()])
                 response.writeln("<li class=\"tablename handcursor\" onclick=\"clickTableName('%s');\"><span style=\"display: inline-block; min-width: 0.75em;\" id=\"table_expand_symbol_%s\">&#x25b8;</span> %s</li>" % (
-                    cgicommon.escape(tab_sq_escaped),
+                    htmlcommon.escape(tab_sq_escaped),
                     tab_escaped, tab_escaped))
                 response.writeln("<ul class=\"sqldictcolumnlist\" id=\"col_list_%s\">" % (tab_escaped))
                 for col in tab.get_columns():
-                    response.writeln("<li>%s (%s)</li>" % (cgicommon.escape(col.get_name()), cgicommon.escape(col.get_type())))
+                    response.writeln("<li>%s (%s)</li>" % (htmlcommon.escape(col.get_name()), htmlcommon.escape(col.get_type())))
                 response.writeln("</ul>")
             response.writeln("</ul>")
             response.writeln("</div>")
@@ -241,7 +242,7 @@ function rowHighlight(rowNum, highlightOn) {
         response.writeln("<h1>Raw SQL interface</h1>")
 
         if show_warning:
-            cgicommon.show_warning_box(response,
+            htmlcommon.show_warning_box(response,
                     "<div style=\"max-width: 800px;\">" +
                     "<p style=\"font-weight: bold;\">Warning!</p>" +
                     "<p>This page allows you to run arbitrary SQL on your tourney's " +
@@ -251,13 +252,13 @@ function rowHighlight(rowNum, highlightOn) {
                     "surgery by people who know what they're doing.</p>"
                     "<p>If you don't know what SQL is or what the various tables " +
                     "in the database do, then I strongly recommend that you " +
-                    "<a href=\"/atropine/%s/tourneysetup\">flee to safety</a>.</p>" % (cgicommon.escape(tourney_name)) +
+                    "<a href=\"/atropine/%s/tourneysetup\">flee to safety</a>.</p>" % (htmlcommon.escape(tourney_name)) +
                     "</div>",
                     wide=True
                     )
         else:
             response.writeln("<p><a href=\"https://sqlite.org/lang.html\" target=\"_blank\">SQLite language reference</a></p>")
-            response.writeln("<p><a href=\"/atropine/%s/tourneysetup\">Back to tourney setup</a></p>" % (cgicommon.escape(tourney_name)))
+            response.writeln("<p><a href=\"/atropine/%s/tourneysetup\">Back to tourney setup</a></p>" % (htmlcommon.escape(tourney_name)))
 
         response.writeln("<div class=\"sqlentry\">")
 
@@ -266,12 +267,12 @@ function rowHighlight(rowNum, highlightOn) {
         response.writeln("<div class=\"sqlentrybox\">")
         response.writeln("<textarea autofocus id=\"sql\" name=\"sql\" style=\"width: 600px; height: 100px;\">")
         if sql_text:
-            response.write(cgicommon.escape(sql_text))
+            response.write(htmlcommon.escape(sql_text))
         response.writeln("</textarea>")
         response.writeln("</div>")
         response.writeln("<div class=\"sqlentrysubmit\">")
         #response.writeln("<input type=\"text\" name=\"sql\" />")
-        response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name)))
+        response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name)))
         response.writeln("<input type=\"hidden\" name=\"execute\" value=\"1\" />")
         response.writeln("<input type=\"hidden\" name=\"nowarning\" value=\"1\" />")
 
@@ -291,12 +292,12 @@ function rowHighlight(rowNum, highlightOn) {
             response.writeln("<h2>Results%s</h2>" % (result_count_text))
 
             if error_text:
-                cgicommon.show_error_text(response, error_text_context + ": " + error_text)
+                htmlcommon.show_error_text(response, error_text_context + ": " + error_text)
             elif num_result_cols > 0:
                 response.writeln("<table class=\"sqlresults\">")
                 response.writeln("<tr>")
                 for i in range(num_result_cols):
-                    response.writeln("<th>%s</th>" % (cgicommon.escape(result_col_names[i])))
+                    response.writeln("<th>%s</th>" % (htmlcommon.escape(result_col_names[i])))
                 response.writeln("</tr>")
 
                 row_num = 0
@@ -311,15 +312,15 @@ function rowHighlight(rowNum, highlightOn) {
                         typ = result_col_types[index]
                         response.writeln("<td%s>%s</td>" % (
                             " class=\"sqlnull\"" if value is None else "",
-                            cgicommon.escape(value_str)))
+                            htmlcommon.escape(value_str)))
                     response.writeln("</tr>")
                     row_num += 1
                 response.writeln("</table>")
             else:
                 if num_rows_affected is not None and num_rows_affected >= 0:
-                    cgicommon.show_success_box(response, "Query successful, %d row%s affected." % (num_rows_affected, "" if num_rows_affected == 1 else "s"))
+                    htmlcommon.show_success_box(response, "Query successful, %d row%s affected." % (num_rows_affected, "" if num_rows_affected == 1 else "s"))
                 else:
-                    cgicommon.show_success_box(response, "Query successful.")
+                    htmlcommon.show_success_box(response, "Query successful.")
 
         response.writeln("</div>")
 

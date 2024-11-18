@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 
-import random;
-import countdowntourney;
-import htmlform;
-import cgicommon
-import gencommon
-import urllib.request, urllib.parse, urllib.error;
 import re
+import countdowntourney
+import htmlform
+import htmlcommon
+import gencommon
 import fixgen
 import json
 
@@ -438,7 +436,7 @@ def get_user_form(tourney, settings, div_rounds):
                 raise countdowntourney.FixtureGeneratorException("%s: number of players (%d) is not compatible with any supported table size." % (tourney.get_division_name(div_index), len(div_players)))
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (htmlcommon.escape(tourney.get_division_name(div_index)))))
 
         elements.append(htmlform.HTMLFragment("<p>"))
         elements.append(htmlform.HTMLFormRadioButton(table_size_name, "Players per table", choices))
@@ -635,7 +633,7 @@ function editBoxEdit(divIndex, controlId) {
 
         if num_divisions > 1:
             # Display heading containing division name.
-            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (htmlcommon.escape(tourney.get_division_name(div_index)))))
 
         if not game_type:
             # Ask the user if they want these games to count towards the
@@ -662,7 +660,7 @@ function editBoxEdit(divIndex, controlId) {
                 )
             ));
             if game_type is not None:
-                elements.append(htmlform.HTMLFragment("<td class=\"fixturegametype\">%s</td>" % (cgicommon.escape(game_type, True))))
+                elements.append(htmlform.HTMLFragment("<td class=\"fixturegametype\">%s</td>" % (htmlcommon.escape(game_type, True))))
             for i in range(table_size):
                 # Colour the table cell background in an appropriate colour
                 # depending on whether it's valid, and if not, why not.
@@ -725,12 +723,12 @@ function editBoxEdit(divIndex, controlId) {
                 span_style = ""
             for i in range(len(unselected_names)):
                 name = unselected_names[i]
-                elements.append(htmlform.HTMLFragment("<span %s>%s</span>%s" % (span_style, cgicommon.escape(name, True), "" if i == len(unselected_names) - 1 else ", ")));
+                elements.append(htmlform.HTMLFragment("<span %s>%s</span>%s" % (span_style, htmlcommon.escape(name, True), "" if i == len(unselected_names) - 1 else ", ")));
             elements.append(htmlform.HTMLFragment("</p>\n"));
 
         # Remind the player how to invoke the automatic prune
         if tourney.has_auto_prune():
-            elements.append(htmlform.HTMLFragment("<p>Automatic prune player name: %s</p>" % (cgicommon.escape(tourney.get_auto_prune_name()))))
+            elements.append(htmlform.HTMLFragment("<p>Automatic prune player name: %s</p>" % (htmlcommon.escape(tourney.get_auto_prune_name()))))
 
         # Add some hidden inputs containing state we want to keep for the next
         # time the form is submitted...

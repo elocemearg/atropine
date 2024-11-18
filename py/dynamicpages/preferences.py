@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
-import cgicommon
+import htmlcommon
 import countdowntourney
 
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     # tourney is None for this handler
 
-    cgicommon.print_html_head(response, "Preferences");
+    htmlcommon.print_html_head(response, "Preferences");
 
     saved_prefs = False
 
@@ -64,7 +64,7 @@ function change_saved_indicator(on) {
         response.writeln("<label for=\"resultstab_%s\">" % (option_tab_order))
         response.writeln("<img src=\"/images/taborder%d.png\" alt=\"%s\" />" % (
                 idx + 1,
-                cgicommon.escape("-".join(field_name_list), True)
+                htmlcommon.escape("-".join(field_name_list), True)
         ))
         response.writeln("</label>")
         response.writeln("</div>")

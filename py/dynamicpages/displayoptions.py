@@ -1,20 +1,20 @@
 #!/usr/bin/python3
 
-import urllib.request, urllib.parse, urllib.error
 import re
-import cgicommon
-import dialog
+
+import htmlcommon
+import htmldialog
 import countdowntourney
 
 def show_now_showing_frame(response, tourney, is_widescreen):
     response.writeln("<iframe class=\"displaypreviewframe\" src=\"/atropine/%s/display\" height=\"270\" width=\"%d\"></iframe>" % (
-        urllib.parse.quote_plus(tourney.get_name()),
+        htmlcommon.escape(tourney.get_name()),
         480 if is_widescreen else 360
     ))
 
 def show_view_preview(response, tourney, form, selected_view, is_widescreen):
     response.writeln("<iframe class=\"displaypreviewframe\" src=\"/atropine/%s/display?mode=%d\" height=\"270\" width=\"%d\"></iframe>" % (
-        urllib.parse.quote_plus(tourney.get_name()),
+        htmlcommon.escape(tourney.get_name()),
         selected_view, 480 if is_widescreen else 360
     ))
 
@@ -25,7 +25,7 @@ def show_live_and_preview(response, tourney, form, query_string, teleost_modes, 
     # Tell the user what mode is being shown, what mode is selected for preview
     # (if different) and if not auto, offer the user a button to return to auto.
     # We assume the "auto" display mode is number 0.
-    response.writeln("<form action=\"/atropine/%s/displayoptions/0\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name)))
+    response.writeln("<form action=\"/atropine/%s/displayoptions/0\" method=\"POST\">" % (htmlcommon.escape(tourney_name)))
     response.writeln("<p>")
     response.write("You are currently <span style=\"color: green;\">showing</span> the <span style=\"font-weight: bold;\">%s</span> display mode" % (
             "?" if showing_view is None else teleost_modes[showing_view]["name"]
@@ -84,7 +84,7 @@ def show_view_option_controls(response, options):
                         disabled = True
                     break
         if o.name in checkbox_to_assoc_field:
-            onclick_value = "var numberField = document.getElementById('%s'); var checkboxField = document.getElementById('%s'); numberField.disabled = !checkboxField.checked;" % ("teleost_option_" + checkbox_to_assoc_field[o.name], "teleost_option_" + cgicommon.escape(o.name))
+            onclick_value = "var numberField = document.getElementById('%s'); var checkboxField = document.getElementById('%s'); numberField.disabled = !checkboxField.checked;" % ("teleost_option_" + checkbox_to_assoc_field[o.name], "teleost_option_" + htmlcommon.escape(o.name))
         else:
             onclick_value = None
         html = o.get_html(disabled, onclick_value)
@@ -106,15 +106,15 @@ def show_view_thumbnail(response, tourney_name, mode, selected_view, auto_curren
         # This is neither showing nor selected
         classes.append("viewmenucellbystander")
     response.writeln("<div class=\"%s\">" % (" ".join(classes)))
-    response.writeln("<a href=\"/atropine/%s/displayoptions/%d\">" % (urllib.parse.quote_plus(tourney_name), mode["num"]))
+    response.writeln("<a href=\"/atropine/%s/displayoptions/%d\">" % (htmlcommon.escape(tourney_name), mode["num"]))
     img_src = mode.get("image", None)
     if img_src:
         response.writeln("<img src=\"%s\" alt=\"%s\" title=\"%s\" />" % (
-                cgicommon.escape(img_src, True), cgicommon.escape(mode["name"], True),
-                cgicommon.escape(mode["desc"], True)))
+                htmlcommon.escape(img_src, True), htmlcommon.escape(mode["name"], True),
+                htmlcommon.escape(mode["desc"], True)))
     response.writeln("</a>")
     response.writeln("<br>")
-    response.writeln(cgicommon.escape(mode["name"]))
+    response.writeln(htmlcommon.escape(mode["name"]))
     response.writeln("</div>")
 
 # selected_view: the view the user has clicked on and is previewing, not
@@ -141,19 +141,19 @@ def emit_scripts(response, query_string, profile_names, selected_profile_name):
     response.writeln("<script>")
 
     # Write the JavaScript we need for the dialogBoxShow() function to work...
-    response.writeln(dialog.DIALOG_JAVASCRIPT)
+    response.writeln(htmldialog.DIALOG_JAVASCRIPT)
 
     # Write a JavaScript list containing the names of all the display profiles
     # we have, and a string constant for the currently-selected profile. The
     # code that shows the dialog boxes will need this.
     response.writeln("const profileNames = [")
     for name in profile_names:
-        response.writeln("    " + cgicommon.js_string(name) + ",")
+        response.writeln("    " + htmlcommon.js_string(name) + ",")
     response.writeln("];")
     if not selected_profile_name:
         response.writeln("const selectedProfileName = null;")
     else:
-        response.writeln("const selectedProfileName = %s;" % (cgicommon.js_string(selected_profile_name)))
+        response.writeln("const selectedProfileName = %s;" % (htmlcommon.js_string(selected_profile_name)))
 
     response.writeln("""
 function clearBannerEditBox() {
@@ -272,7 +272,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     content_type = "text/html; charset=utf-8"
     tourney_name = tourney.get_name()
 
-    cgicommon.print_html_head(response, "Display setup: " + str(tourney_name), "style.css");
+    htmlcommon.print_html_head(response, "Display setup: " + str(tourney_name), "style.css");
     response.writeln("<body>");
 
     try:
@@ -381,7 +381,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         if banner_text is None:
             banner_text = ""
 
-        cgicommon.show_sidebar(response, tourney);
+        htmlcommon.show_sidebar(response, tourney);
 
         response.writeln("<div class=\"mainpane\">")
         response.writeln("<h1>Display Setup</h1>");
@@ -393,20 +393,20 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
            <img src=\"/images/opensinnewwindow.png\"
                 alt=\"Opens in new window\"
                 title=\"Opens in new window\" />
-            </a>""" % (urllib.parse.quote_plus(tourney.name)));
+            </a>""" % (htmlcommon.escape(tourney.name)));
         response.writeln("</div>")
 
         for exc in exceptions:
-            cgicommon.show_tourney_exception(response, exc)
+            htmlcommon.show_tourney_exception(response, exc)
         for text in ok_messages:
-            cgicommon.show_success_box(response, cgicommon.escape(text))
+            htmlcommon.show_success_box(response, htmlcommon.escape(text))
 
 
         # Banner text controls
         response.writeln("<h2>Configuration</h2>")
         response.writeln("<div class=\"displayoptsform bannercontrol\">")
         response.writeln("<form method=\"POST\">")
-        response.writeln("Banner text: <input type=\"text\" name=\"bannertext\" id=\"bannereditbox\" value=\"%s\" size=\"50\" onclick=\"this.select();\" />" % (cgicommon.escape(banner_text, True)))
+        response.writeln("Banner text: <input type=\"text\" name=\"bannertext\" id=\"bannereditbox\" value=\"%s\" size=\"50\" onclick=\"this.select();\" />" % (htmlcommon.escape(banner_text, True)))
         response.writeln("<input type=\"submit\" style=\"min-width: 60px;\" name=\"setbanner\" value=\"Set\" />")
         response.writeln("<input type=\"submit\" style=\"min-width: 60px;\" name=\"clearbanner\" value=\"Clear\" />")
         response.writeln("</form>")
@@ -420,7 +420,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     <label for="fontprofileselect">Font width:</label>
     <select name="fontprofileselect" id="fontprofileselect">""")
         for i in range(len(font_profile_descs)):
-            response.writeln("<option value=\"%d\" %s>%s</option>" % (i, "selected" if i == display_font_profile else "", cgicommon.escape(font_profile_descs[i]["name"])))
+            response.writeln("<option value=\"%d\" %s>%s</option>" % (i, "selected" if i == display_font_profile else "", htmlcommon.escape(font_profile_descs[i]["name"])))
         response.writeln("</select>")
         response.writeln("<input type=\"submit\" name=\"setfontprofile\" value=\"Set font width\" />")
         response.writeln("</form>")
@@ -434,7 +434,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     <label for="screenshapeselect">Optimise for screen shape:</label>
     <select name="screenshapeselect" id="screenshapeselect">""")
         for i in range(len(screen_shape_descs)):
-            response.writeln("<option value=\"%d\" %s>%s</option>" % (i, "selected" if i == screen_shape_profile else "", cgicommon.escape(screen_shape_descs[i]["name"])))
+            response.writeln("<option value=\"%d\" %s>%s</option>" % (i, "selected" if i == screen_shape_profile else "", htmlcommon.escape(screen_shape_descs[i]["name"])))
         response.writeln("</select>")
         response.writeln("<input type=\"submit\" name=\"setscreenshape\" value=\"Set screen shape\" />")
         response.writeln("</form>")
@@ -462,15 +462,15 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         #response.writeln("<div class=\"viewmenuheading\">Select screen mode</div>")
         response.writeln("<div class=\"viewdetailstext\">")
         response.writeln("<span style=\"font-weight: bold;\">")
-        response.write(cgicommon.escape(mode_info["name"]))
+        response.write(htmlcommon.escape(mode_info["name"]))
         response.writeln(": </span>");
-        response.writeln(cgicommon.escape(mode_info["desc"]))
+        response.writeln(htmlcommon.escape(mode_info["desc"]))
         response.writeln("</div>") # viewdetailstext
         response.writeln("</div>") # viewdetails
 
         options = tourney.get_teleost_options(mode=selected_view)
         if options:
-            response.writeln("<h3>Options for the <span style=\"font-weight: bold;\">%s</span> display mode</h3>" % ("?" if selected_view is None or selected_view < 0 or selected_view >= len(teleost_modes) else cgicommon.escape(teleost_modes[selected_view]["name"])))
+            response.writeln("<h3>Options for the <span style=\"font-weight: bold;\">%s</span> display mode</h3>" % ("?" if selected_view is None or selected_view < 0 or selected_view >= len(teleost_modes) else htmlcommon.escape(teleost_modes[selected_view]["name"])))
             response.writeln("<div class=\"viewcontrols\">")
             response.writeln("<form method=\"POST\">")
             response.writeln("<div class=\"viewoptions\" id=\"viewoptions\">")
@@ -481,7 +481,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             response.writeln("<div class=\"viewoptionssave\">")
             response.writeln("<input type=\"submit\" class=\"displayoptionsbutton\" name=\"setoptions\" value=\"Apply options\" />")
             if not teleost_modes[selected_view].get("selected", False):
-                response.writeln("<input type=\"submit\" class=\"displayoptionsbutton\" name=\"setoptionsandswitch\" value=\"Apply options and switch to %s\" />" % (cgicommon.escape(teleost_modes[selected_view]["name"])))
+                response.writeln("<input type=\"submit\" class=\"displayoptionsbutton\" name=\"setoptionsandswitch\" value=\"Apply options and switch to %s\" />" % (htmlcommon.escape(teleost_modes[selected_view]["name"])))
             response.writeln("</div>")
             response.writeln("</div>") # viewsubmitbuttons
 
@@ -510,9 +510,9 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         # Emit the currently non-displayed dialog box, which will pop up if the
         # user presses any of the save, restore or delete profile options.
-        response.writeln(dialog.get_html("displayoptionsdialog"))
+        response.writeln(htmldialog.get_html("displayoptionsdialog"))
 
     except countdowntourney.TourneyException as e:
-        cgicommon.show_tourney_exception(response, e);
+        htmlcommon.show_tourney_exception(response, e);
 
     response.writeln("</body></html>");

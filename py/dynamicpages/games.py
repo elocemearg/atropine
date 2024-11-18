@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 
-import urllib.request, urllib.parse, urllib.error
 import re
-import random
 import json
-import cgicommon
+
+import htmlcommon
 import countdowntourney
 import uploadercli
 
@@ -132,7 +131,7 @@ def write_autocomplete_scripts(response, tourney, games):
     for name in players_summaries:
         try:
             p = tourney.get_player_from_name(name)
-            player_links[name] = cgicommon.player_to_link(p, tourney_name, False, False, True, players_summaries[name])
+            player_links[name] = htmlcommon.player_to_link(p, tourney_name, False, False, True, players_summaries[name])
         except PlayerDoesNotExistException:
             pass
     response.writeln(json.dumps(player_links, indent=4))
@@ -601,10 +600,10 @@ def write_new_data_entry_controls(response, tourney, round_no,
         default_tiebreak = False
 
     if not last_entry_valid and last_entry_error:
-        cgicommon.show_tourney_exception(response, countdowntourney.InvalidEntryException(last_entry_error))
+        htmlcommon.show_tourney_exception(response, countdowntourney.InvalidEntryException(last_entry_error))
 
     tourney_name = tourney.get_name()
-    #response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgicommon.escape(tourney_name, True));
+    #response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % htmlcommon.escape(tourney_name, True));
     #response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
 
     # Print new-fangled friendlier data-entry controls
@@ -627,7 +626,7 @@ def write_new_data_entry_controls(response, tourney, round_no,
         "id=\"entryname1\" placeholder=\"Player name\" value=\"%s\" " +
         "oninput=\"entry_name_change('entryname1', 'entryname2');\" " +
         "onchange=\"entry_name_change_finished('entryname1', 'entryname2');\"" +
-        " />") % (cgicommon.escape(default_names[0], True))
+        " />") % (htmlcommon.escape(default_names[0], True))
     name1div += "</div>"
 
     name2div = "<div class=\"scoreentryname\" id=\"name2div\">"
@@ -635,21 +634,21 @@ def write_new_data_entry_controls(response, tourney, round_no,
         "id=\"entryname2\" placeholder=\"Player name\" value=\"%s\" " +
         "oninput=\"entry_name_change('entryname2', 'entryname1');\" " +
         "onchange=\"entry_name_change_finished('entryname2', 'entryname1');\"" +
-        " />") % (cgicommon.escape(default_names[1], True))
+        " />") % (htmlcommon.escape(default_names[1], True))
     name2div += "</div>"
 
     score1div = "<div class=\"scoreentryscore\" id=\"score1div\">"
     score1div += ("<input class=\"entryscore\" type=\"text\" name=\"entryscore1\" " +
             "id=\"entryscore1\" placeholder=\"Score\" value=\"%s\" " +
             "autocomplete=\"off\" " +
-            "oninput=\"entry_score_change(true);\" />") % (cgicommon.escape(default_scores[0], True))
+            "oninput=\"entry_score_change(true);\" />") % (htmlcommon.escape(default_scores[0], True))
     score1div += "</div>"
 
     score2div = "<div class=\"scoreentryscore\" id=\"score2div\">"
     score2div += ("<input class=\"entryscore\" type=\"text\" name=\"entryscore2\" " +
             "id=\"entryscore2\" placeholder=\"Score\" value=\"%s\" " +
             "autocomplete=\"off\" " +
-            "oninput=\"entry_score_change(true);\" />") % (cgicommon.escape(default_scores[1], True))
+            "oninput=\"entry_score_change(true);\" />") % (htmlcommon.escape(default_scores[1], True))
     score2div += "</div>"
 
     prefs = countdowntourney.get_global_preferences()
@@ -756,10 +755,10 @@ def write_videprinter(response, tourney, round_no):
             if superseded:
                 response.writeln("<span class=\"videprintersuperseded\">")
                 if division:
-                    response.writeln(cgicommon.escape(tourney.get_short_division_name(division)))
-                response.writeln(cgicommon.escape("R%dT%d %s " % (rno, table_no, name1)));
+                    response.writeln(htmlcommon.escape(tourney.get_short_division_name(division)))
+                response.writeln(htmlcommon.escape("R%dT%d %s " % (rno, table_no, name1)));
                 response.writeln("%s-%s" % (scorestr1, scorestr2))
-                response.writeln(cgicommon.escape(" %s" % (name2)))
+                response.writeln(htmlcommon.escape(" %s" % (name2)))
                 response.writeln("</span>")
             else:
                 if num_divisions > 1 and division is not None:
@@ -775,9 +774,9 @@ def write_videprinter(response, tourney, round_no):
                     elif score2 > score1:
                         player_classes = [ "videprinterlosingplayer", "videprinterwinningplayer" ]
 
-                response.writeln("<span class=\"%s\">%s</span>" % (player_classes[0], cgicommon.escape(name1)))
+                response.writeln("<span class=\"%s\">%s</span>" % (player_classes[0], htmlcommon.escape(name1)))
                 response.writeln("<span class=\"videprinterscore\">%s-%s</span>" % (scorestr1, scorestr2))
-                response.writeln("<span class=\"%s\">%s</span>" % (player_classes[1], cgicommon.escape(name2)))
+                response.writeln("<span class=\"%s\">%s</span>" % (player_classes[1], htmlcommon.escape(name2)))
             response.writeln("</div>")
         elif (log_type & countdowntourney.LOG_TYPE_COMMENT) != 0:
             # News item
@@ -787,11 +786,11 @@ def write_videprinter(response, tourney, round_no):
             post_to_web = (log_type & countdowntourney.LOG_TYPE_COMMENT_WEB_FLAG) != 0
             response.writeln("<div class=\"videprinterentry videprinternewsentry\" id=\"videprinter_news_%d\" onclick=\"news_edit_open(%d, %s, %s, %s);\">" % (
                 seq_no, seq_no,
-                cgicommon.escape(js_quote_string(comment), True),
+                htmlcommon.escape(js_quote_string(comment), True),
                 "true" if post_to_videprinter else "false",
                 "true" if post_to_web else "false"
             ))
-            response.writeln("&#8227; " + cgicommon.escape(comment))
+            response.writeln("&#8227; " + htmlcommon.escape(comment))
             response.writeln("</div>")
 
     response.writeln("</div>") # videprinterwindow
@@ -805,7 +804,7 @@ def write_videprinter(response, tourney, round_no):
     write_news_form_tick_box_div(response, tourney, publishing, False)
     response.writeln("</div>")
     response.writeln("<div class=\"newsformbody\">")
-    #response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
+    #response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name, True)))
     #response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
     response.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformtext\" id=\"newsformtext\" value=\"\" />")
     response.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformsubmit\" id=\"newsformbutton\" value=\"Post\" />")
@@ -822,7 +821,7 @@ def write_videprinter(response, tourney, round_no):
     response.writeln("</div>")
 
     response.writeln("<div class=\"newsformbody\">")
-    #response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
+    #response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name, True)))
     #response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
     response.writeln("<input type=\"hidden\" name=\"newseditseq\" value=\"\" id=\"newseditseq\" />")
     response.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformedittext\" id=\"newsformedittext\" value=\"\" />")
@@ -871,7 +870,7 @@ def write_blinkenlights(response, tourney, round_no):
     response.writeln("var player_name_to_link_html = ");
     link_dict = dict()
     for p in tourney.get_players():
-        link_dict[p.get_name()] = cgicommon.player_to_link(p, tourney.get_name(), False, False, True)
+        link_dict[p.get_name()] = htmlcommon.player_to_link(p, tourney.get_name(), False, False, True)
     response.writeln(json.dumps(link_dict, indent=4))
     response.writeln(";")
 
@@ -1011,11 +1010,11 @@ function set_blinkenlights_mouseover(text) {
         else:
             division_letters_string = ""
 
-        mouseover_event = cgicommon.escape("set_blinkenlights_mouseover(\"" + cgicommon.escape(", ".join(sorted(players_on_table)), True) + "\");", True)
+        mouseover_event = htmlcommon.escape("set_blinkenlights_mouseover(\"" + htmlcommon.escape(", ".join(sorted(players_on_table)), True) + "\");", True)
 
         response.writeln("<td class=\"blinkenlightscell\">")
         response.writeln("<div class=\"blinkenlightsdivision\">")
-        response.writeln(cgicommon.escape(division_letters_string))
+        response.writeln(htmlcommon.escape(division_letters_string))
         response.writeln("</div>")
         num_games_left = len([ x for x in table_games if not x.is_complete() ])
         response.writeln("<div class=\"blinkenlightstablenumber%s\" onmouseover=\"%s\" onmouseout=\"set_blinkenlights_mouseover(&quot;&quot;);\">%d</div>" % (
@@ -1029,7 +1028,7 @@ function set_blinkenlights_mouseover(text) {
         for g in table_games:
             onclick_script = "select_game(%d, false);" % (g.seq)
             element_id = "gameselectionbutton%d" % (g.seq)
-            mouseover_event = cgicommon.escape("set_blinkenlights_mouseover(\"" + cgicommon.escape(g.get_short_string(), True) + "\");", True);
+            mouseover_event = htmlcommon.escape("set_blinkenlights_mouseover(\"" + htmlcommon.escape(g.get_short_string(), True) + "\");", True);
             if g.is_complete():
                 tdclass = "blinkenlightsgameplayed"
             else:
@@ -1074,7 +1073,7 @@ def parse_score(score):
 
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
-    cgicommon.print_html_head(response, "Games: " + str(tourney_name));
+    htmlcommon.print_html_head(response, "Games: " + str(tourney_name));
 
     response.writeln("<body onload=\"games_on_load();\">");
 
@@ -1102,7 +1101,7 @@ function games_on_load() {
         round_no = None
 
     try:
-        cgicommon.show_sidebar(response, tourney);
+        htmlcommon.show_sidebar(response, tourney);
 
         response.writeln("<div class=\"mainpane\">");
         response.writeln("<div class=\"entrymainpane\">");
@@ -1118,7 +1117,7 @@ function games_on_load() {
             round_no = int(round_no)
         except ValueError:
             response.writeln("<h1>Invalid round number</h1>");
-            response.writeln("<p>\"%s\" is not a valid round number.</p>" % (cgicommon.escape(round_no)));
+            response.writeln("<p>\"%s\" is not a valid round number.</p>" % (htmlcommon.escape(round_no)));
             response.writeln("</div></div></body></html>")
             return
 
@@ -1134,7 +1133,7 @@ function games_on_load() {
 
         remarks = dict();
         response.writeln("<div class=\"roundnamebox boxshadow\">")
-        response.writeln(cgicommon.escape(round_name));
+        response.writeln(htmlcommon.escape(round_name));
         response.writeln("</div>")
 
         response.writeln("<div style=\"clear: both;\"></div>")
@@ -1357,10 +1356,10 @@ function games_on_load() {
 
         response.writeln("<div style=\"margin-top: 10px\">")
         response.writeln("<span style=\"font-size: 10pt; margin-right: 20px;\">");
-        response.writeln("<a href=\"/atropine/%s/fixtureedit/%d\">Edit fixture list</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+        response.writeln("<a href=\"/atropine/%s/fixtureedit/%d\">Edit fixture list</a>" % (htmlcommon.escape(tourney_name), round_no));
         response.writeln("</span>");
         response.writeln("<span style=\"font-size: 10pt; margin-right: 20px;\">");
-        response.writeln("<a href=\"/atropine/%s/gameslist/%d\">Old results interface</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+        response.writeln("<a href=\"/atropine/%s/gameslist/%d\">Old results interface</a>" % (htmlcommon.escape(tourney_name), round_no));
         response.writeln("</span>");
         response.writeln("</div>");
 
@@ -1385,9 +1384,9 @@ function games_on_load() {
             div_games = games_by_division[div]
             if num_divisions > 1:
                 response.writeln("<div class=\"gamelistdivisionheading\">")
-                response.writeln(cgicommon.escape(tourney.get_division_name(div)))
+                response.writeln(htmlcommon.escape(tourney.get_division_name(div)))
                 response.writeln("</div>")
-            cgicommon.show_games_as_html_table(response,
+            htmlcommon.show_games_as_html_table(response,
                     div_games, editable=False, remarks=None,
                     include_round_column=False, round_namer=None,
                     player_to_link=None, remarks_heading="",
@@ -1402,7 +1401,7 @@ function games_on_load() {
         response.writeln("</div>"); #mainpane
 
     except countdowntourney.TourneyException as e:
-        cgicommon.show_tourney_exception(response, e);
+        htmlcommon.show_tourney_exception(response, e);
 
     response.writeln("</body>");
     response.writeln("</html>");

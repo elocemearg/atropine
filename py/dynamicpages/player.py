@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
-import urllib.request, urllib.parse, urllib.error
-import cgicommon
-import dialog
+import htmlcommon
+import htmldialog
 import countdowntourney
 
 def int_or_none(s):
@@ -38,18 +37,18 @@ def show_player_search_form(response, tourney):
     response.writeln("</form>")
 
 def fatal_error(response, text):
-    cgicommon.print_html_head(response, "Player View")
+    htmlcommon.print_html_head(response, "Player View")
     response.writeln("<body>")
-    response.writeln("<p>%s</p>" % (cgicommon.escape(text)))
+    response.writeln("<p>%s</p>" % (htmlcommon.escape(text)))
     response.writeln("</body></html>")
 
 def fatal_exception(response, exc, tourney=None):
-    cgicommon.print_html_head(response, "Player View")
+    htmlcommon.print_html_head(response, "Player View")
     response.writeln("<body>")
     if tourney:
-        cgicommon.show_sidebar(response, tourney)
+        htmlcommon.show_sidebar(response, tourney)
     response.writeln("<div class=\"mainpane\">")
-    cgicommon.show_tourney_exception(response, exc)
+    htmlcommon.show_tourney_exception(response, exc)
     response.writeln("</div>")
     response.writeln("</body></html>")
 
@@ -57,28 +56,28 @@ def write_h2(response, player, text):
     classes = ""
     if player and player.is_withdrawn():
         classes = " class=\"withdrawnplayer\""
-    response.writeln("<h2%s>%s</h2>" % (classes, cgicommon.escape(text)))
+    response.writeln("<h2%s>%s</h2>" % (classes, htmlcommon.escape(text)))
 
 def show_player_delete_form(response, tourney, player):
     response.writeln('<p>If you delete this player, they will be removed from the database entirely.</p>')
-    response.writeln("<button class=\"bigbutton\" onclick=\"showDeletePlayerDialog();\">Delete %s</button>" % (cgicommon.escape(player.get_name())))
+    response.writeln("<button class=\"bigbutton\" onclick=\"showDeletePlayerDialog();\">Delete %s</button>" % (htmlcommon.escape(player.get_name())))
 
 def show_player_withdrawal_form(response, tourney, player):
     player_id = player.get_id()
     player_name = player.get_name()
     tourneyname = tourney.get_name()
     if player.is_withdrawn():
-        response.writeln('<p>%s is currently <span style="font-weight: bold; color: red;">withdrawn</span>, which means newly-generated rounds will not include this player.</p>' % (cgicommon.escape(player_name)))
+        response.writeln('<p>%s is currently <span style="font-weight: bold; color: red;">withdrawn</span>, which means newly-generated rounds will not include this player.</p>' % (htmlcommon.escape(player_name)))
         response.writeln('<p>If you reinstate them as an active player, they will be included in any subsequent fixtures you generate.</p>')
     else:
-        response.writeln('<p>%s is currently an <span style="font-weight: bold; color: #008800"">active player</span>, which means they will be included when fixtures are generated.</p>' % (cgicommon.escape(player_name)))
+        response.writeln('<p>%s is currently an <span style="font-weight: bold; color: #008800"">active player</span>, which means they will be included when fixtures are generated.</p>' % (htmlcommon.escape(player_name)))
         response.writeln('<p>If you withdraw this player, they will be excluded from later rounds. You can reinstate a withdrawn player at any time.</p>')
     response.writeln('<form method="POST">')
     #response.writeln('<input type="hidden" name="id" value="%d">' % (player_id))
     if player.is_withdrawn():
-        response.writeln('<input type="submit" name="reinstateplayer" class="bigbutton" value="Reinstate %s">' % (cgicommon.escape(player_name)))
+        response.writeln('<input type="submit" name="reinstateplayer" class="bigbutton" value="Reinstate %s">' % (htmlcommon.escape(player_name)))
     else:
-        response.writeln('<input type="submit" name="withdrawplayer" class="bigbutton" value="Withdraw %s">' % (cgicommon.escape(player_name)))
+        response.writeln('<input type="submit" name="withdrawplayer" class="bigbutton" value="Withdraw %s">' % (htmlcommon.escape(player_name)))
     response.writeln('</form>')
 
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
@@ -217,7 +216,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             player = tourney.get_player_from_id(player_id)
         elif form.getfirst("newplayersubmit"):
             try:
-                cgicommon.add_new_player_from_form(tourney, form)
+                htmlcommon.add_new_player_from_form(tourney, form)
             except countdowntourney.TourneyException as e:
                 exceptions_to_show.append(("<p>Error when adding new player...</p>", e))
         elif form.getfirst("reinstateplayer"):
@@ -225,14 +224,14 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                 try:
                     tourney.unwithdraw_player(player_name)
                 except countdowntourney.TourneyException as e:
-                    exceptions_to_show.append(("<p>Failed to reinstate player \"%s\"...</p>" % (cgicommon.escape(player_name)), e))
+                    exceptions_to_show.append(("<p>Failed to reinstate player \"%s\"...</p>" % (htmlcommon.escape(player_name)), e))
                 player = tourney.get_player_from_id(player_id)
         elif form.getfirst("withdrawplayer"):
             if player_name:
                 try:
                     tourney.withdraw_player(player_name)
                 except countdowntourney.TourneyException as e:
-                    exceptions_to_show.append(("<p>Failed to withdraw player \"%s\"...</p>" % (cgicommon.escape(player_name)), e))
+                    exceptions_to_show.append(("<p>Failed to withdraw player \"%s\"...</p>" % (htmlcommon.escape(player_name)), e))
                 player = tourney.get_player_from_id(player_id)
         elif form.getfirst("deleteplayer"):
             if player_name:
@@ -240,7 +239,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                     tourney.delete_player(player_name)
                     player_name_deleted = player_name
                 except countdowntourney.TourneyException as e:
-                    exception_to_show.append(("<p>Failed to delete player \"%s\"...</p>" % (cgicommon.escape(player_name)), e))
+                    exception_to_show.append(("<p>Failed to delete player \"%s\"...</p>" % (htmlcommon.escape(player_name)), e))
                 player = None
                 player_id = None
                 player_name = ""
@@ -258,21 +257,21 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             exceptions_to_show.append(("", e))
 
     if player:
-        cgicommon.print_html_head(response, player_name)
+        htmlcommon.print_html_head(response, player_name)
     else:
-        cgicommon.print_html_head(response, "Player View")
+        htmlcommon.print_html_head(response, "Player View")
 
     response.writeln("<body>")
 
-    cgicommon.show_sidebar(response, tourney)
+    htmlcommon.show_sidebar(response, tourney)
 
     response.writeln("<script>")
-    response.writeln(dialog.DIALOG_JAVASCRIPT)
+    response.writeln(htmldialog.DIALOG_JAVASCRIPT)
 
     if player_id is not None:
         response.writeln("const playerId = %d;" % (player_id))
     if player_name is not None:
-        response.writeln("const playerName = %s;" % (cgicommon.js_string(player_name)))
+        response.writeln("const playerName = %s;" % (htmlcommon.js_string(player_name)))
 
     response.writeln("""
 function showDeletePlayerDialog() {
@@ -300,14 +299,14 @@ function showDeletePlayerDialog() {
     num_withdrawn = len(players) - len(active_players)
 
     response.writeln("<p>")
-    response.writeln("<a href=\"/atropine/%s/player?addplayer=1\">Add new player...</a>" % (cgicommon.escape(tourney.get_name())))
+    response.writeln("<a href=\"/atropine/%s/player?addplayer=1\">Add new player...</a>" % (htmlcommon.escape(tourney.get_name())))
     response.writeln("</p>")
 
     if not players:
         response.writeln("<p>")
         response.writeln("Your tourney doesn't have any players yet.")
         if tourney.get_num_games() == 0:
-            response.writeln("You can add players with the link above or you can paste a list of players on the <a href=\"/atropine/%s/tourneysetup\">Tourney Setup</a> page." % (cgicommon.escape(tourney.get_name())))
+            response.writeln("You can add players with the link above or you can paste a list of players on the <a href=\"/atropine/%s/tourneysetup\">Tourney Setup</a> page." % (htmlcommon.escape(tourney.get_name())))
         else:
             response.writeln("Yet somehow you've managed to create fixtures. I'm not quite sure how you've managed that, but meh. You can add players using the form below.")
         response.writeln("</p>")
@@ -321,9 +320,9 @@ function showDeletePlayerDialog() {
         response.writeln("<tr class=\"playerlistdivision\"><td colspan=\"2\" class=\"playerlistdivision\">")
         response.writeln("<span style=\"font-weight: bold; float: left;\">")
         if num_divisions == 1:
-            response.writeln(cgicommon.escape(tourney.get_name()))
+            response.writeln(htmlcommon.escape(tourney.get_name()))
         else:
-            response.writeln(cgicommon.escape(tourney.get_division_name(div)))
+            response.writeln(htmlcommon.escape(tourney.get_division_name(div)))
         response.writeln("</span>")
         response.writeln("<span style=\"color: gray; float: right;\" title=\"Number of active players in %s\">%d</span>" % ("the tournament" if num_divisions == 1 else "this division", num_active_players))
         response.writeln("</td></tr>")
@@ -334,7 +333,7 @@ function showDeletePlayerDialog() {
             response.writeln("<tr class=\"playerlistrow %s\">" % ("playerlistrowselected" if player_selected else ""));
 
             response.writeln("<td class=\"playerlistname\">");
-            response.writeln(cgicommon.player_to_link(p, tourney.get_name(), emboldenise=player_selected, withdrawn=p.is_withdrawn()))
+            response.writeln(htmlcommon.player_to_link(p, tourney.get_name(), emboldenise=player_selected, withdrawn=p.is_withdrawn()))
             response.writeln("</td>")
 
             response.writeln("<td class=\"playerlistflags\">")
@@ -359,29 +358,29 @@ function showDeletePlayerDialog() {
     response.writeln("<div class=\"playersetupformpane\">")
 
     if player:
-        response.writeln("<h1>%s%s</h1>" % (cgicommon.escape(player_name), " (withdrawn)" if player.is_withdrawn() else ""))
+        response.writeln("<h1>%s%s</h1>" % (htmlcommon.escape(player_name), " (withdrawn)" if player.is_withdrawn() else ""))
     elif add_player:
         response.writeln("<h1>Add new player</h1>")
 
     for (html, exc) in exceptions_to_show:
         response.writeln(html)
         if exc is not None:
-            cgicommon.show_tourney_exception(response, exc)
+            htmlcommon.show_tourney_exception(response, exc)
 
     if edit_notifications:
         write_h2(response, player, "Player details changed")
         response.writeln("<blockquote>")
 
     for item in edit_notifications:
-        response.writeln("<li>%s</li>" % (cgicommon.escape(item)))
+        response.writeln("<li>%s</li>" % (htmlcommon.escape(item)))
 
     if edit_notifications:
         response.writeln("</blockquote>")
         response.writeln("<blockquote>")
         if player:
-            response.writeln("<a href=\"/atropine/%s/player/%d\">OK</a>" % (cgicommon.escape(tourney.get_name()), player.get_id()))
+            response.writeln("<a href=\"/atropine/%s/player/%d\">OK</a>" % (htmlcommon.escape(tourney.get_name()), player.get_id()))
         else:
-            response.writeln("<a href=\"/atropine/%s/player\">OK</a>" % (cgicommon.escape(tourney.get_name())))
+            response.writeln("<a href=\"/atropine/%s/player\">OK</a>" % (htmlcommon.escape(tourney.get_name())))
         response.writeln("</blockquote>")
 
     if player_name_deleted:
@@ -390,8 +389,8 @@ function showDeletePlayerDialog() {
         response.writeln(("<li>%s has been deleted. If you didn't mean to do " +
                 "this, you can add them again on the " +
                 "<a href=\"/atropine/%s/player?addplayer=1\">Add New Player</a> page.</li>") % (
-                    cgicommon.escape(player_name_deleted),
-                    cgicommon.escape(tourney.get_name())
+                    htmlcommon.escape(player_name_deleted),
+                    htmlcommon.escape(tourney.get_name())
                 )
         )
         response.writeln("</blockquote>")
@@ -400,7 +399,7 @@ function showDeletePlayerDialog() {
     if player:
         response.writeln("<hr />")
         def player_to_link(p):
-            return cgicommon.player_to_link(p, tourneyname, p == player)
+            return htmlcommon.player_to_link(p, tourneyname, p == player)
 
         num_divisions = tourney.get_num_divisions()
 
@@ -417,14 +416,14 @@ function showDeletePlayerDialog() {
                 else:
                     acc_list = ", ".join([str(x) for x in table_list])
 
-            cgicommon.show_warning_box(response, "<p>%s requires an accessible table, but their preferred table is table %d, which is not an accessible table. This player's requirement for an accessible table will be given a higher priority than their specific preference for table %d.</p><p>The accessible table numbers defined in <a href=\"/atropine/%s/tourneysetup\">Tourney Setup</a> are: %s%s.</p>" % (
-                cgicommon.escape(player.get_name()), pref_table, pref_table,
-                cgicommon.escape(tourney.get_name()),
+            htmlcommon.show_warning_box(response, "<p>%s requires an accessible table, but their preferred table is table %d, which is not an accessible table. This player's requirement for an accessible table will be given a higher priority than their specific preference for table %d.</p><p>The accessible table numbers defined in <a href=\"/atropine/%s/tourneysetup\">Tourney Setup</a> are: %s%s.</p>" % (
+                htmlcommon.escape(player.get_name()), pref_table, pref_table,
+                htmlcommon.escape(tourney.get_name()),
                 acc_list_preamble, acc_list
                 ), wide=True)
 
         write_h2(response, player, "Edit player")
-        cgicommon.show_player_form(response, tourney, player)
+        htmlcommon.show_player_form(response, tourney, player)
 
         response.writeln("<hr />")
 
@@ -445,7 +444,7 @@ function showDeletePlayerDialog() {
                 standing = s
                 break
         else:
-            response.writeln("<p>%s isn't in the standings table for %s. This is... odd.</p>" % (cgicommon.escape(player.get_name()), cgicommon.escape(tourney.get_division_name(player.get_division()))))
+            response.writeln("<p>%s isn't in the standings table for %s. This is... odd.</p>" % (htmlcommon.escape(player.get_name()), htmlcommon.escape(tourney.get_division_name(player.get_division()))))
 
         if not games:
             write_h2(response, player, "Delete player")
@@ -457,7 +456,7 @@ function showDeletePlayerDialog() {
             form_dict = tourney.get_player_win_loss_strings(game_type=None, player=player)
             if len(form_dict) > 0:
                 # form_dict will contain only one element
-                form = cgicommon.win_loss_string_to_html(form_dict[next(iter(form_dict))])
+                form = htmlcommon.win_loss_string_to_html(form_dict[next(iter(form_dict))])
             else:
                 form = None
             win_loss_record = "%d-%d" % (standing.wins, standing.played - standing.wins - standing.draws)
@@ -467,7 +466,7 @@ function showDeletePlayerDialog() {
                 response.writeln("<p>%s %s</p>" % (form, win_loss_record))
 
             # Now show all games involving this player
-            cgicommon.show_games_as_html_table(response, games, False, None, True, lambda x : tourney.get_short_round_name(x), player_to_link)
+            htmlcommon.show_games_as_html_table(response, games, False, None, True, lambda x : tourney.get_short_round_name(x), player_to_link)
 
         response.writeln("<hr />")
         write_h2(response, player, "Stats Corner")
@@ -507,7 +506,7 @@ function showDeletePlayerDialog() {
                 indiv_string = ""
 
             response.writeln("<table class=\"misctable\">")
-            response.writeln("<tr><th colspan=\"2\">%s</th></tr>" % (cgicommon.escape(player.get_name())))
+            response.writeln("<tr><th colspan=\"2\">%s</th></tr>" % (htmlcommon.escape(player.get_name())))
             response.writeln("<tr><td class=\"text\">Rating</td>")
             response.writeln("<td class=\"number\">%g</td></tr>" % (player.get_rating()))
             response.writeln("<tr><td class=\"text\">Tournament rating</td>")
@@ -516,10 +515,10 @@ function showDeletePlayerDialog() {
             else:
                 response.writeln("<td class=\"number\"></td></tr>")
             response.writeln("<tr><td class=\"text\">Position%s</td>" % (indiv_string))
-            response.writeln("<td class=\"number\">%s</td></tr>" % (cgicommon.ordinal_number(standing.position)))
+            response.writeln("<td class=\"number\">%s</td></tr>" % (htmlcommon.ordinal_number(standing.position)))
             if seed is not None:
                 response.writeln("<tr><td class=\"text\">Rating rank%s</td>" % (indiv_string))
-                response.writeln("<td class=\"number\">%s</td></tr>" % (cgicommon.ordinal_number(seed)))
+                response.writeln("<td class=\"number\">%s</td></tr>" % (htmlcommon.ordinal_number(seed)))
 
             response.writeln("<tr><td class=\"text\">Games played</td>")
             response.writeln("<td class=\"number\">%d</td></tr>" % (standing.played))
@@ -550,13 +549,13 @@ function showDeletePlayerDialog() {
                 heading = sec_rank_headings[i]
                 if heading not in ("Points", "Spread"):
                     response.writeln("<tr>")
-                    response.writeln("<td class=\"text\">%s</td>" % (cgicommon.escape(heading)))
-                    response.writeln("<td class=\"number\">%s</td>" % (cgicommon.escape(sec_rank_values[i])))
+                    response.writeln("<td class=\"text\">%s</td>" % (htmlcommon.escape(heading)))
+                    response.writeln("<td class=\"number\">%s</td>" % (htmlcommon.escape(sec_rank_values[i])))
                     response.writeln("</tr>")
             response.writeln("</table>")
         response.writeln("<hr />")
     elif add_player:
-        cgicommon.show_player_form(response, tourney, None)
+        htmlcommon.show_player_form(response, tourney, None)
 
     response.writeln("</div>") # end form pane
     response.writeln("</div>") # end form pane container
@@ -565,7 +564,7 @@ function showDeletePlayerDialog() {
     response.writeln("</div>") # end main pane
 
     # Invisible dialog box which appears when we're about to delete a player
-    response.writeln(dialog.get_html("playerdialog"))
+    response.writeln(htmldialog.get_html("playerdialog"))
 
     response.writeln("</body>")
     response.writeln("</html>")

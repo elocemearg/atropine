@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 
-import random;
-import countdowntourney;
-import htmlform;
-import cgicommon
-import urllib.request, urllib.parse, urllib.error;
 import re
-import fixgen
+
+import countdowntourney
+import htmlform
+import htmlcommon
 import fixgen_manual
 
 name = "Raw"
@@ -107,7 +105,7 @@ def get_user_form(tourney, settings, div_rounds):
                 div_game_types[div_index] = None
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (htmlcommon.escape(tourney.get_division_name(div_index)))))
 
         elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
         num_games_element = htmlform.HTMLFormNumberInput("Number of games to create", num_games_name, 1, other_attrs={"min" : 1})

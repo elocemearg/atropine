@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-import urllib.request, urllib.parse, urllib.error
-import cgicommon
+import htmlcommon
 import countdowntourney
 
 def show_rerate_button(response, tourney):
@@ -44,11 +43,11 @@ def show_rerate_button(response, tourney):
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
 
-    cgicommon.print_html_head(response, "Overachievers: " + str(tourney_name))
+    htmlcommon.print_html_head(response, "Overachievers: " + str(tourney_name))
     response.writeln("<body>")
 
     try:
-        cgicommon.show_sidebar(response, tourney, show_misc_table_links=True)
+        htmlcommon.show_sidebar(response, tourney, show_misc_table_links=True)
 
         response.writeln("<div class=\"mainpane\">")
         response.writeln("<h1>Overachievers</h1>")
@@ -56,9 +55,9 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         if request_method == "POST" and "reratebyplayerid" in form and "reratebyplayeridconfirm" in form:
             try:
                 tourney.rerate_players_by_id()
-                cgicommon.show_success_box(response, "Players successfully rerated by player ID.")
+                htmlcommon.show_success_box(response, "Players successfully rerated by player ID.")
             except countdowntourney.TourneyException as e:
-                cgicommon.show_tourney_exception(response, e)
+                htmlcommon.show_tourney_exception(response, e)
 
         if tourney.get_num_games() == 0:
             response.writeln("<p>No games have been played yet.</p>")
@@ -71,20 +70,20 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                 div_name = tourney.get_division_name(div_index)
                 overachievements = tourney.get_players_overachievements(div_index)
                 if num_divisions > 1:
-                    response.writeln("<h2>%s</h2>" % (cgicommon.escape(div_name)))
+                    response.writeln("<h2>%s</h2>" % (htmlcommon.escape(div_name)))
                 if not overachievements:
                     response.writeln("<p>There are no players to show.</p>")
                     continue
                 if tourney.are_player_ratings_uniform(div_index):
-                    cgicommon.show_warning_box(response, "<p>All the players have the same rating. This means the Overachievers table won't be meaningful. If when you set up the tournament you pasted the players into the player list in order of rating but forgot to tell Atropine you'd done that, try the \"Rerate players by player ID\" button below.</p>")
+                    htmlcommon.show_warning_box(response, "<p>All the players have the same rating. This means the Overachievers table won't be meaningful. If when you set up the tournament you pasted the players into the player list in order of rating but forgot to tell Atropine you'd done that, try the \"Rerate players by player ID\" button below.</p>")
                     do_show_rerate_button = True
                 else:
-                    cgicommon.write_ranked_table(
+                    htmlcommon.write_ranked_table(
                             response,
                             [ "Player", "Seed", "Pos", "+/-" ],
                             [ "rankname", "ranknumber", "ranknumber", "ranknumber rankhighlight" ],
                             [
-                                (cgicommon.player_to_link(row[0], tourney_name),
+                                (htmlcommon.player_to_link(row[0], tourney_name),
                                     row[1], row[2], row[3]) for row in overachievements
                             ],
                             key_fn=lambda x : -x[3],
@@ -96,7 +95,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         response.writeln("</div>") #mainpane
     except countdowntourney.TourneyException as e:
-        cgicommon.show_tourney_exception(response, e)
+        htmlcommon.show_tourney_exception(response, e)
 
     response.writeln("</body>")
     response.writeln("</html>")

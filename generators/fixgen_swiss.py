@@ -1,11 +1,8 @@
-import sys
-import random;
-import countdowntourney;
-import htmlform;
-import swissN;
-import cgicommon
+import countdowntourney
+import htmlform
+import swissN
+import htmlcommon
 import fixgen
-import urllib
 import gencommon
 
 name = "Swiss Army Blunderbuss";
@@ -266,7 +263,7 @@ function generate_fixtures_clicked() {
         div_prefix = "d%d_" % (div_index)
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (htmlcommon.escape(tourney.get_division_name(div_index)))))
         else:
             elements.append(htmlform.HTMLFragment("<h2>Fixture generation</h2>"))
         elements.append(htmlform.HTMLFragment("<p>%s contains <strong>%d active players</strong>.</p>" % ("This division" if num_divisions > 1 else "The tournament", len(players))))
@@ -274,7 +271,7 @@ function generate_fixtures_clicked() {
         if not tourney.has_auto_prune():
             if len(players) % 2 != 0 and len(players) % 3 != 0:
                 elements.append(htmlform.HTMLWarningBox("swissunusualplayercount", "The number of active players is not a multiple of 2 or 3. Do you want to add one or more Prune players on the <a href=\"/atropine/%s/player\">Player Setup</a> page?</p>" % (
-                    cgicommon.escape(tourney.get_name())
+                    htmlcommon.escape(tourney.get_name())
                 )))
 
         div_valid_sizes = get_valid_group_sizes(len(players), len(rounds), tourney.has_auto_prune())

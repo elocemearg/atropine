@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
-import cgicommon
 import csv
 import json
 import io
 import time
-import urllib.request, urllib.parse, urllib.error
+
+import htmlcommon
 import countdowntourney
 
 def int_or_none(s):
@@ -28,7 +28,7 @@ def show_player_drop_down_box(response, players, control_name):
     response.writeln("<select name=\"%s\">" % (control_name))
     response.writeln("<option value=\"\">-- select player --</option>")
     for p in players:
-        response.writeln("<option value=\"%s\">%s (%g)</option>" % (cgicommon.escape(p.name, True), cgicommon.escape(p.name), p.rating));
+        response.writeln("<option value=\"%s\">%s (%g)</option>" % (htmlcommon.escape(p.name, True), htmlcommon.escape(p.name), p.rating));
     response.writeln("</select>")
 
 def make_double_quoted_string(s):
@@ -90,7 +90,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         accessible_tables_string = ""
     rules_submit = form.getfirst("rulessubmit");
 
-    cgicommon.print_html_head(response, "Tourney Setup: " + str(tourneyname));
+    htmlcommon.print_html_head(response, "Tourney Setup: " + str(tourneyname));
 
     response.writeln("<body onload=\"textAreaChange(); playerListExtraHelpShow();\">");
 
@@ -450,15 +450,15 @@ function setDateToday() {
     # sidebar, because the sidebar won't show most things until there are
     # players submitted.
 
-    cgicommon.show_sidebar(response, tourney);
+    htmlcommon.show_sidebar(response, tourney);
 
     response.writeln("<div class=\"mainpane\">");
     response.writeln("<h1>Tourney Setup</h1>");
 
     if show_success_box:
-        cgicommon.show_success_box(response, show_success_box)
+        htmlcommon.show_success_box(response, show_success_box)
     if show_exception:
-        cgicommon.show_tourney_exception(response, show_exception);
+        htmlcommon.show_tourney_exception(response, show_exception);
 
     players = tourney.get_players();
     players = sorted(players, key=lambda x : x.name);
@@ -469,7 +469,7 @@ function setDateToday() {
     if len(players) == 0:
         response.writeln("This isn't much of a tourney yet. It hasn't got any players.")
     else:
-        response.writeln("There are <a href=\"/atropine/%s/player\">%d players</a>," % (cgicommon.escape(tourney.get_name()), len(players)))
+        response.writeln("There are <a href=\"/atropine/%s/player\">%d players</a>," % (htmlcommon.escape(tourney.get_name()), len(players)))
         num_active = len([x for x in players if not x.is_withdrawn()])
         if num_active != len(players):
             response.writeln("of whom %d %s active and %d %s withdrawn." % (num_active, "is" if num_active == 1 else "are", len(players) - num_active, "has" if len(players) - num_active == 1 else "have"))
@@ -479,7 +479,7 @@ function setDateToday() {
 
     if tourney.get_num_games() == 0:
         if players:
-            cgicommon.show_info_box(response, """<p>
+            htmlcommon.show_info_box(response, """<p>
     Set the <a href="#tourneyprops">tourney properties</a> below, then you can
     optionally go to the
     <a href="/atropine/{tourneyname}/checkin">Player Check-In</a>
@@ -489,9 +489,9 @@ function setDateToday() {
     <a href="/atropine/{tourneyname}/fixturegen">Generate fixtures</a>
     to generate the first games. Once you've generated the first games, you won't
     be able to delete players, but you can always withdraw them, edit names and
-    ratings, or add new players.</p>""".format(tourneyname=cgicommon.escape(tourney.get_name())))
+    ratings, or add new players.</p>""".format(tourneyname=htmlcommon.escape(tourney.get_name())))
         else:
-            cgicommon.show_info_box(response, """
+            htmlcommon.show_info_box(response, """
     <p>Welcome to your new tourney!</p>
     <p>First, enter or paste a list of player names into the text box below.</p>
     <p>Don't worry, this isn't final. For now, just include everyone you're
@@ -499,7 +499,7 @@ function setDateToday() {
     at any time.</p>""")
 
     if num_divisions > 1:
-        response.writeln("<p>The players are distributed into <a href=\"/atropine/%s/divsetup\">%d divisions</a>.</p>" % (cgicommon.escape(tourney.get_name()), num_divisions))
+        response.writeln("<p>The players are distributed into <a href=\"/atropine/%s/divsetup\">%d divisions</a>.</p>" % (htmlcommon.escape(tourney.get_name()), num_divisions))
         response.writeln("<blockquote>")
         for div_index in range(num_divisions):
             response.writeln("<li>%s: %d active players.</li>" % (tourney.get_division_name(div_index), tourney.get_num_active_players(div_index)))
@@ -512,18 +512,18 @@ function setDateToday() {
         response.writeln("<hr />")
         response.writeln("<h2 id=\"tourneyprops\">Tourney properties</h2>");
         response.writeln('<form method="post">')
-        #response.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
+        #response.writeln(('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname, True)));
 
         response.writeln("<h3>Event details</h3>")
         response.writeln("<p>These details will appear at the top of exported tournament reports, on the public-facing welcome screen, and on the event's webpage if you use the broadcast feature.</p>")
 
         response.writeln("<div class=\"generalsetupcontrolgroup generalsetuptourneydetails\">")
-        response.writeln("<div class=\"generalsetuptourneydetailslabel\"><label for=\"fullname\">Event name </label></div><div class=\"generalsetuptourneydetailsbox\"><input type=\"text\" name=\"fullname\" value=\"%s\" id=\"fullname\" /></div>" % (cgicommon.escape(tourney.get_full_name(), True)))
+        response.writeln("<div class=\"generalsetuptourneydetailslabel\"><label for=\"fullname\">Event name </label></div><div class=\"generalsetuptourneydetailsbox\"><input type=\"text\" name=\"fullname\" value=\"%s\" id=\"fullname\" /></div>" % (htmlcommon.escape(tourney.get_full_name(), True)))
 
         response.writeln("<span class=\"generalsetupinputexample\">(e.g. \"CoTrod %d\")</span>" % (time.localtime().tm_year))
         response.writeln("</div>")
         response.writeln("<div class=\"generalsetupcontrolgroup generalsetuptourneydetails\">")
-        response.writeln("<div class=\"generalsetuptourneydetailslabel\"><label for=\"venue\">Venue</label></div><div class=\"generalsetuptourneydetailsbox\"><input type=\"text\" name=\"venue\" value=\"%s\" id=\"venue\" /></div>" % (cgicommon.escape(tourney.get_venue(), True)))
+        response.writeln("<div class=\"generalsetuptourneydetailslabel\"><label for=\"venue\">Venue</label></div><div class=\"generalsetuptourneydetailsbox\"><input type=\"text\" name=\"venue\" value=\"%s\" id=\"venue\" /></div>" % (htmlcommon.escape(tourney.get_venue(), True)))
         response.writeln("<span class=\"generalsetupinputexample\">(e.g. \"St Quinquangle's Village Hall, Trodmore\")</span>")
         response.writeln("</div>")
         response.writeln("<div class=\"generalsetupcontrolgroup generalsetuptourneydetails\">")
@@ -542,9 +542,9 @@ function setDateToday() {
             day_str = str(date_day)
         else:
             day_str = ""
-        response.writeln("<input type=\"number\" name=\"dateyear\" value=\"%s\" id=\"dateyear\" placeholder=\"YYYY\" min=\"0\" max=\"9999\" style=\"width: 5em;\" /> -" % (cgicommon.escape(year_str)))
-        response.writeln("<input type=\"number\" name=\"datemonth\" value=\"%s\" id=\"datemonth\" placeholder=\"MM\" min=\"1\" max=\"12\" style=\"width: 3em;\" /> -" % (cgicommon.escape(month_str)))
-        response.writeln("<input type=\"number\" name=\"dateday\" value=\"%s\" id=\"dateday\" placeholder=\"DD\" min=\"1\" max=\"31\" style=\"width: 3em;\" />" % (cgicommon.escape(day_str)))
+        response.writeln("<input type=\"number\" name=\"dateyear\" value=\"%s\" id=\"dateyear\" placeholder=\"YYYY\" min=\"0\" max=\"9999\" style=\"width: 5em;\" /> -" % (htmlcommon.escape(year_str)))
+        response.writeln("<input type=\"number\" name=\"datemonth\" value=\"%s\" id=\"datemonth\" placeholder=\"MM\" min=\"1\" max=\"12\" style=\"width: 3em;\" /> -" % (htmlcommon.escape(month_str)))
+        response.writeln("<input type=\"number\" name=\"dateday\" value=\"%s\" id=\"dateday\" placeholder=\"DD\" min=\"1\" max=\"31\" style=\"width: 3em;\" />" % (htmlcommon.escape(day_str)))
 
         response.writeln("<button type=\"button\" onclick=\"setDateToday();\" style=\"margin-left: 10px;\">Today</button>");
         response.writeln("</div>") #generalsetuptourneydetailsbox
@@ -552,7 +552,7 @@ function setDateToday() {
 
         (table_list, accessible_default) = tourney.get_accessible_tables()
         response.writeln("<h3>Accessibility</h3>")
-        response.writeln("<p>If a player requires an accessible table, you can set this on the <a href=\"/atropine/%s/player\">configuration page for that player</a>.</p>" % (cgicommon.escape(tourney.get_name())))
+        response.writeln("<p>If a player requires an accessible table, you can set this on the <a href=\"/atropine/%s/player\">configuration page for that player</a>.</p>" % (htmlcommon.escape(tourney.get_name())))
         response.writeln("<div class=\"generalsetupcontrolgroup\">")
         response.writeln("<span style=\"padding-right: 10px;\">Table numbers</span> <input type=\"text\" name=\"accessibletables\" value=\"%s\" />" % (", ".join([ str(x) for x in table_list ])))
         response.writeln(" <span style=\"color: #808080; font-size: 10pt\">(Enter table numbers separated by commas, e.g. <span class=\"fixedwidth\">1,2,5</span>)</span>")
@@ -571,7 +571,7 @@ function setDateToday() {
 
         for div_index in range(num_divisions):
             if num_divisions > 1:
-                response.writeln("<h4>%s</h4>" % (cgicommon.escape(tourney.get_division_name(div_index))))
+                response.writeln("<h4>%s</h4>" % (htmlcommon.escape(tourney.get_division_name(div_index))))
             div_prefix = "div%d_" % (div_index)
 
             last_round = str(tourney.get_attribute(div_prefix + "lastround", ""))
@@ -587,13 +587,13 @@ function setDateToday() {
                 qual_places = ""
 
             response.writeln("<div class=\"tourneyqualifyingcontrols\">")
-            response.writeln("The last round is expected to be round number <input class=\"tourneysetupnumber\" type=\"number\" name=\"%slastround\" value=\"%s\" />" % (div_prefix, cgicommon.escape(last_round, True)))
+            response.writeln("The last round is expected to be round number <input class=\"tourneysetupnumber\" type=\"number\" name=\"%slastround\" value=\"%s\" />" % (div_prefix, htmlcommon.escape(last_round, True)))
             response.writeln("</div>")
             response.writeln("<div class=\"tourneyqualifyingcontrols\">")
-            response.writeln("Each player is expected to play <input class=\"tourneysetupnumber\" type=\"number\" name=\"%snumgamesperplayer\" value=\"%s\" /> games" % (div_prefix, cgicommon.escape(num_games_per_player, True)))
+            response.writeln("Each player is expected to play <input class=\"tourneysetupnumber\" type=\"number\" name=\"%snumgamesperplayer\" value=\"%s\" /> games" % (div_prefix, htmlcommon.escape(num_games_per_player, True)))
             response.writeln("</div>")
             response.writeln("<div class=\"tourneyqualifyingcontrols\">")
-            response.writeln("The qualification zone is the top <input class=\"tourneysetupnumber\" type=\"number\" name=\"%squalplaces\" value=\"%s\" /> places in the standings table" % (div_prefix, cgicommon.escape(qual_places, True)))
+            response.writeln("The qualification zone is the top <input class=\"tourneysetupnumber\" type=\"number\" name=\"%squalplaces\" value=\"%s\" /> places in the standings table" % (div_prefix, htmlcommon.escape(qual_places, True)))
             response.writeln("</div>")
         response.writeln("<div class=\"generalsetupcontrolgroup\">")
         response.writeln(("<input type=\"checkbox\" name=\"showdrawscolumn\" id=\"showdrawscolumn\" value=\"1\" %s />" % ("checked" if tourney.get_show_draws_column() else "")))
@@ -607,8 +607,8 @@ function setDateToday() {
             response.writeln("<hr />")
             response.writeln('<h2>Delete rounds</h2>')
             response.writeln('<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>')
-            response.writeln('<form action="/atropine/%s/delround" method="get">' % (cgicommon.escape(tourneyname)))
-            #response.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname)))
+            response.writeln('<form action="/atropine/%s/delround" method="get">' % (htmlcommon.escape(tourneyname)))
+            #response.writeln(('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname)))
             response.writeln('<input type="submit" class="bigbutton" name="delroundsetupsubmit" value="Delete most recent round" />')
             response.writeln('</form>')
 
@@ -651,14 +651,14 @@ function setDateToday() {
 
         response.writeln("<div class=\"playerlist\">")
         response.writeln("<div class=\"playerlistpane\">")
-        response.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname));
+        response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname));
         response.writeln('<textarea rows="30" cols="40" name="playerlist" id="playerlist" oninput="textAreaChange();">');
         if request_method == "POST" and playerlist:
             # If the user has submitted something, display what the user
             # submitted rather than what's in the database - this gives them
             # a chance to correct any errors without typing in the whole
             # change again.
-            response.write(cgicommon.escape(playerlist).strip())
+            response.write(htmlcommon.escape(playerlist).strip())
         else:
             string_stream = io.StringIO()
             auto_rating = tourney.get_auto_rating_behaviour()
@@ -671,7 +671,7 @@ function setDateToday() {
                 if div_index != prev_div_index:
                     writer.writerow(("-",))
                 row = []
-                row.append(cgicommon.escape(p.get_name()))
+                row.append(htmlcommon.escape(p.get_name()))
                 if auto_rating == countdowntourney.RATINGS_MANUAL or p.is_prune():
                     row.append("%g" % (p.get_rating()))
                 if p.get_team_id() is not None:
@@ -748,7 +748,7 @@ function setDateToday() {
         response.writeln("</p>")
         response.writeln("<p>A player's newbie status can be used by fixture generators to put at least one non-newbie on each table.</p>")
         response.writeln("<p>")
-        response.writeln("You can always change these settings later on the <a href=\"/atropine/%s/player\">Player Setup</a> page." % (cgicommon.escape(tourney.get_name())));
+        response.writeln("You can always change these settings later on the <a href=\"/atropine/%s/player\">Player Setup</a> page." % (htmlcommon.escape(tourney.get_name())));
         response.writeln("</p>")
         response.writeln("</div>") #playerlistextrahelp
 

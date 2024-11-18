@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
-import sys;
 import html
-import cgicommon
+import htmlcommon
 
 class HTMLForm(object):
     def __init__(self, method, action, element_list):
@@ -299,7 +298,7 @@ class HTMLFormStandingsTable(HTMLFormElement):
         self.division = which_division
 
     def html(self):
-        return cgicommon.make_standings_table(self.tourney, True, True, False, linkify_players=True, show_qualified=True, which_division=self.division)
+        return htmlcommon.make_standings_table(self.tourney, True, True, False, linkify_players=True, show_qualified=True, which_division=self.division)
 
 class HTMLWarningBox(HTMLFormElement):
     def __init__(self, name, contents, wide=False):
@@ -308,7 +307,7 @@ class HTMLWarningBox(HTMLFormElement):
         self.wide = wide
 
     def html(self):
-        return cgicommon.make_warning_box(self.contents, self.wide)
+        return htmlcommon.make_warning_box(self.contents, self.wide)
 
 class HTMLFormControlStart(HTMLFormElement):
     def __init__(self, indent=False):

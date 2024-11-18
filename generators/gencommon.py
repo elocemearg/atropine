@@ -2,8 +2,7 @@
 
 import countdowntourney
 import htmlform
-import cgicommon
-import urllib
+import htmlcommon
 
 def check_ready_existing_games_and_table_size(tourney, div_rounds, include_5and3=True):
     num_divisions = tourney.get_num_divisions()
@@ -59,13 +58,13 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
             table_size_choices.append(htmlform.HTMLFormChoice("-5", "5&3", table_size == -5))
 
         if num_divisions > 1:
-            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index)))))
+            elements.append(htmlform.HTMLFragment("<h2>%s</h2>" % (htmlcommon.escape(tourney.get_division_name(div_index)))))
         num_active_players = tourney.get_num_active_players(div_index)
         elements.append(htmlform.HTMLFragment("<p>This %s has <strong>%d active players</strong>.</p>" % ("division" if num_divisions > 1 else "tournament", num_active_players)))
         if not tourney.has_auto_prune():
             if num_active_players % 2 != 0 and num_active_players % 3 != 0:
                 elements.append(htmlform.HTMLWarningBox("unusualplayercountwarningbox", "The number of active players is not a multiple of 2 or 3. Do you want to add one or more Prune players on the <a href=\"/atropine/%s/player\">Player Setup</a> page?</p>" % (
-                    cgicommon.escape(tourney.get_name())
+                    htmlcommon.escape(tourney.get_name())
                 )))
 
         if tourney.has_auto_prune():

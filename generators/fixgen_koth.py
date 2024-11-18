@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 
-import random;
-import countdowntourney;
-import htmlform;
-import urllib.request, urllib.parse, urllib.error;
+import random
+import countdowntourney
 import gencommon
 import fixgen
 

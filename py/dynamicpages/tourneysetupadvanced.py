@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-import cgicommon
 import csv
-import urllib.request, urllib.parse, urllib.error
+
+import htmlcommon
 import countdowntourney
 
 def int_or_none(s):
@@ -30,11 +30,11 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     rank_finals = int_or_none(form.getfirst("rankfinals"))
     set_prune_name = form.getfirst("prunename")
 
-    cgicommon.print_html_head(response, "Advanced setup: " + str(tourneyname));
+    htmlcommon.print_html_head(response, "Advanced setup: " + str(tourneyname));
 
     response.writeln("<body>");
 
-    cgicommon.show_sidebar(response, tourney);
+    htmlcommon.show_sidebar(response, tourney);
 
     response.writeln("<div class=\"mainpane\">");
     response.writeln("<h1>Advanced Setup</h1>");
@@ -49,12 +49,12 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                 existing_prune_name = tourney.get_auto_prune_name()
                 if set_prune_name != existing_prune_name:
                     tourney.set_auto_prune_name(set_prune_name)
-            cgicommon.show_success_box(response, "Options updated.");
+            htmlcommon.show_success_box(response, "Options updated.");
         except countdowntourney.TourneyException as e:
-            cgicommon.show_tourney_exception(response, e);
+            htmlcommon.show_tourney_exception(response, e);
 
     response.writeln('<form method="POST">')
-    #response.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True));
+    #response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname, True));
 
     response.writeln("<h2>Team Setup</h2>")
     response.writeln("""<p>Atropine can assign each player to one of
@@ -62,7 +62,7 @@ two teams. Every match between players on opposing teams gives a team point to
 the winner's team. The team scores are displayed alongside the standings.</p>""")
     response.writeln("""<p>
 <a href=\"/atropine/%s/teamsetup\">Go to the Team Setup page</a>
-</p>""" % (urllib.parse.quote_plus(tourneyname)))
+</p>""" % (htmlcommon.escape(tourneyname)))
 
     response.writeln("<h2>Standings table ranking order</h2>");
     rank_finals = tourney.get_rank_finals()
@@ -79,8 +79,8 @@ the winner's team. The team scores are displayed alongside the standings.</p>"""
         response.writeln('<input type="radio" name="rank" value="%d" id="rankbutton%d" %s/> <span style=\"font-weight: bold;\">%s</span>. %s' % (
             rank_method_id, rank_method_id,
             "checked" if rank_method_id == selected_rank_method_id else "",
-            cgicommon.escape(rank_method.get_name()),
-            cgicommon.escape(rank_method.get_description())
+            htmlcommon.escape(rank_method.get_name()),
+            htmlcommon.escape(rank_method.get_description())
         ))
         response.writeln("</label>")
         response.writeln("</div>")
@@ -111,7 +111,7 @@ appear in the standings table or in any player lists.</p>
 results and fixture lists. This name must not be blank or the same as any
 player's name.</p>""")
         response.writeln("<div class=\"generalsetupcontrolgroup\">")
-        response.writeln('<label for="prunename">Automatic Prune name: <input type="text" name="prunename" id="prunename" value="%s" /></label>' % (cgicommon.escape(prune_name, True)))
+        response.writeln('<label for="prunename">Automatic Prune name: <input type="text" name="prunename" id="prunename" value="%s" /></label>' % (htmlcommon.escape(prune_name, True)))
         response.writeln("</div>")
         response.writeln('<p><input type="submit" name="submit" value="Save Changes" class="bigbutton" /></p>')
 
@@ -144,7 +144,7 @@ player's name.</p>""")
 
     response.writeln("<h1>Raw database access</h1>")
     response.writeln("<p>This gives you direct SQL access to the tourney database. You shouldn't normally need to use this feature. If you don't know what you're doing, you can mess up your entire tournament. Don't say you weren't warned!</p>")
-    response.writeln("<p><a href=\"/atropine/%s/sql\">I understand. Take me to the raw database access page, and on my own head be it.</a></p>" % (urllib.parse.quote_plus(tourneyname)))
+    response.writeln("<p><a href=\"/atropine/%s/sql\">I understand. Take me to the raw database access page, and on my own head be it.</a></p>" % (htmlcommon.escape(tourneyname)))
 
     response.writeln("</div>")
 

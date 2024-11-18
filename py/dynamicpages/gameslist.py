@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-import cgicommon
-import urllib.request, urllib.parse, urllib.error
 import re
 import random
+
+import htmlcommon
 import countdowntourney
 
 CONFLICT_STRATEGY_FORCE = 0
@@ -136,7 +136,7 @@ function update_conflict_resolution_example(value) {
 
     response.writeln("<div class=\"conflictresolution\">")
     response.writeln("<form method=\"POST\">")
-    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)));
+    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name, True)));
     response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no));
     response.writeln("<input type=\"hidden\" name=\"revision\" value=\"%d\" />" % (stored_revision_no))
 
@@ -147,11 +147,11 @@ function update_conflict_resolution_example(value) {
         input_name = "gamescore_%d_%d" % (g.round_no, g.seq)
         submitted_score = form.getfirst(input_name)
         if submitted_score is not None:
-            response.writeln("<input type=\"hidden\" name=\"%s\" value=\"%s\" />" % (cgicommon.escape(input_name), cgicommon.escape(submitted_score, True)))
+            response.writeln("<input type=\"hidden\" name=\"%s\" value=\"%s\" />" % (htmlcommon.escape(input_name), htmlcommon.escape(submitted_score, True)))
 
     score = form.getfirst("gamescore_%d_%d" % (g.round_no, g.seq));
     response.writeln("<div class=\"conflictresolutiontoprow\">")
-    response.writeln("Last conflicting modification occurred at: %s" % (cgicommon.escape(stored_revision_timestamp)))
+    response.writeln("Last conflicting modification occurred at: %s" % (htmlcommon.escape(stored_revision_timestamp)))
     response.writeln("</div>")
 
     response.writeln("<div class=\"conflictresolutionchoicerow\">")
@@ -224,7 +224,7 @@ def show_conflict_resolution_example(response, existing_strategy):
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
 
-    cgicommon.print_html_head(response, "Games: " + str(tourney_name));
+    htmlcommon.print_html_head(response, "Games: " + str(tourney_name));
 
     response.writeln("<body>");
 
@@ -236,7 +236,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         round_no = None
 
     try:
-        cgicommon.show_sidebar(response, tourney);
+        htmlcommon.show_sidebar(response, tourney);
 
         response.writeln("<div class=\"mainpane\">");
 
@@ -261,12 +261,12 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         remarks = dict();
 
-        response.writeln("<h1>Score editor: %s</h1>" % cgicommon.escape(round_name));
+        response.writeln("<h1>Score editor: %s</h1>" % htmlcommon.escape(round_name));
 
         response.writeln("<p>");
-        response.writeln("<a href=\"/atropine/%s/fixtureedit/%d\">Edit fixtures</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+        response.writeln("<a href=\"/atropine/%s/fixtureedit/%d\">Edit fixtures</a>" % (htmlcommon.escape(tourney_name), round_no));
         response.writeln("<br>")
-        response.writeln("<a href=\"/atropine/%s/games/%d\">Back to the standard Results Entry interface</a>" % (urllib.parse.quote_plus(tourney_name), round_no))
+        response.writeln("<a href=\"/atropine/%s/games/%d\">Back to the standard Results Entry interface</a>" % (htmlcommon.escape(tourney_name), round_no))
         response.writeln("</p>");
 
         response.writeln("<script>")
@@ -311,7 +311,7 @@ set_unsaved_data_warning();
                 # One or more games in this round have changed since the
                 # user last refreshed the page. Ask the user how we should
                 # cope with this.
-                cgicommon.show_warning_box(response,
+                htmlcommon.show_warning_box(response,
                         "<p>The results for this round have been modified in another window since you last refreshed this page.</p>" +
                         "<p>The current state of the games is shown below, with your changes on the right-hand side.</p>" +
                         "<p>What do you want to do with your changes? Select one of the options below, then Resolve Conflicts.</p>");
@@ -361,17 +361,17 @@ set_unsaved_data_warning();
 
         if not conflict_resolution:
             response.writeln("<form method=\"POST\">")
-            response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgicommon.escape(tourney_name, True));
+            response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % htmlcommon.escape(tourney_name, True));
             response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
             response.writeln("<input type=\"hidden\" id=\"lastmodified\" name=\"lastmodified\" value=\"\" />");
             response.writeln("<input type=\"hidden\" name=\"revision\" value=\"%d\" />" % (stored_revision_no))
         for div_index in range(num_divisions):
             if num_divisions > 1:
-                response.writeln("<h2>%s</h2>" % (cgicommon.escape(tourney.get_division_name(div_index))))
+                response.writeln("<h2>%s</h2>" % (htmlcommon.escape(tourney.get_division_name(div_index))))
 
             if tourney.are_players_assigned_teams():
                 team_scores = tourney.get_team_scores()
-                cgicommon.show_team_score_table(response, team_scores)
+                htmlcommon.show_team_score_table(response, team_scores)
                 response.writeln('<br />')
 
             div_games = tourney.get_games(round_no=round_no, division=div_index);
@@ -399,16 +399,16 @@ set_unsaved_data_warning();
                                         "*" if (parsed_score[1] >= parsed_score[0] and parsed_score[2]) else "",
                                         player_names[1])
 
-                cgicommon.show_games_as_html_table(response, div_games,
+                htmlcommon.show_games_as_html_table(response, div_games,
                         editable=False, remarks=remarks,
                         include_round_column=False, round_namer=None,
-                        player_to_link=lambda x : cgicommon.player_to_link(x, tourney.get_name(), False, True),
+                        player_to_link=lambda x : htmlcommon.player_to_link(x, tourney.get_name(), False, True),
                         remarks_heading="Your submission")
             else:
-                cgicommon.show_games_as_html_table(response, div_games,
+                htmlcommon.show_games_as_html_table(response, div_games,
                         editable=True, remarks=remarks,
                         include_round_column=False, round_namer=None,
-                        player_to_link=lambda x : cgicommon.player_to_link(x, tourney.get_name(), False, True))
+                        player_to_link=lambda x : htmlcommon.player_to_link(x, tourney.get_name(), False, True))
 
         if not conflict_resolution:
             response.writeln("<p><input type=\"submit\" name=\"save\" value=\"Save\" onclick=\"unset_unsaved_data_warning();\" /></p>");
@@ -452,7 +452,7 @@ set_unsaved_data_warning();
         response.writeln("</div>"); #mainpane
 
     except countdowntourney.TourneyException as e:
-        cgicommon.show_tourney_exception(response, e);
+        htmlcommon.show_tourney_exception(response, e);
 
     response.writeln("</body>");
     response.writeln("</html>");

@@ -2,9 +2,9 @@
 
 import sys
 import os
-import urllib.request, urllib.parse, urllib.error
 import time
-import cgicommon
+
+import htmlcommon
 import countdowntourney
 
 def int_or_none(s):
@@ -14,7 +14,7 @@ def int_or_none(s):
         return None;
 
 def get_tourney_modified_time(name):
-    path_name = os.path.join(cgicommon.dbdir, name)
+    path_name = os.path.join(htmlcommon.dbdir, name)
     st = os.stat(path_name)
     return st.st_mtime
 
@@ -32,15 +32,15 @@ def print_tourney_table(response, tourney_list, destination_page, show_last_modi
     response.writeln("</tr>")
     for tourney_basename in tourney_list:
         name = tourney_basename[:-3];
-        filename = os.path.join(cgicommon.dbdir, tourney_basename)
+        filename = os.path.join(htmlcommon.dbdir, tourney_basename)
         st = os.stat(filename)
         modified_time = time.localtime(st.st_mtime)
         response.writeln("<tr>")
         response.writeln('<td class=\"tourneylistname\">')
         if destination_page:
-            response.writeln('<a href="/atropine/%s/%s">%s</a>' % (cgicommon.escape(name), cgicommon.escape(destination_page), cgicommon.escape(name)));
+            response.writeln('<a href="/atropine/%s/%s">%s</a>' % (htmlcommon.escape(name), htmlcommon.escape(destination_page), htmlcommon.escape(name)));
         else:
-            response.writeln(cgicommon.escape(name))
+            response.writeln(htmlcommon.escape(name))
         response.writeln('</td>')
 
         if show_last_modified:
@@ -48,11 +48,11 @@ def print_tourney_table(response, tourney_list, destination_page, show_last_modi
 
         if show_export_html_link:
             response.writeln("<td class=\"tourneylistlink\">")
-            response.writeln("<a href=\"/atropine/%s/export?format=html\">Tourney report</a>" % (cgicommon.escape(name)))
+            response.writeln("<a href=\"/atropine/%s/export?format=html\">Tourney report</a>" % (htmlcommon.escape(name)))
             response.writeln("</td>")
         if show_display_link:
             response.writeln("<td class=\"tourneylistlink\">")
-            response.writeln("<a href=\"/atropine/%s/display\">Full screen display</a>" % (cgicommon.escape(name)))
+            response.writeln("<a href=\"/atropine/%s/display\">Full screen display</a>" % (htmlcommon.escape(name)))
             response.writeln("</td>")
 
         response.writeln("</tr>")
@@ -60,7 +60,7 @@ def print_tourney_table(response, tourney_list, destination_page, show_last_modi
 
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     # For this handler, tourney is None.
-    cgicommon.print_html_head(response, "Create Tourney" if httpreq.is_client_from_localhost() else "Atropine");
+    htmlcommon.print_html_head(response, "Create Tourney" if httpreq.is_client_from_localhost() else "Atropine");
 
     tourneyname = form.getfirst("name", "");
     longtourneyname = form.getfirst("longtourneyname", "")
@@ -77,7 +77,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         if request_method == "POST" and tourneyname:
             # We've been asked to create a new tourney.
             try:
-                tourney = countdowntourney.tourney_create(tourneyname, cgicommon.dbdir, load_display_profile_name=display_profile_name)
+                tourney = countdowntourney.tourney_create(tourneyname, htmlcommon.dbdir, load_display_profile_name=display_profile_name)
                 if longtourneyname:
                     tourney.set_full_name(longtourneyname)
                 if not display_profile_name:
@@ -90,28 +90,25 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     response.writeln("<body onload=\"initPage();\">");
     response.writeln("""
     <script>
-    function initPage() {
-        let tourneyNameBox = document.getElementById("tourneyname");
-        if (tourneyNameBox) {
-            tourneyNameBox.focus();
-            tourneyNameBox.select();
-        }
-    """)
+function initPage() {
+    let tourneyNameBox = document.getElementById("tourneyname");
+    if (tourneyNameBox) {
+        tourneyNameBox.focus();
+        tourneyNameBox.select();
+    }
+""")
     if tourney_created:
         response.writeln("""
         /* Redirect the user to the new tourney they just created */
         setTimeout(function() {
             window.location.replace("/atropine/%s/tourneysetup");
         }, 0);
-        """ % (urllib.parse.quote_plus(tourneyname)))
-    response.writeln("""
-    }
-    </script>
-    """)
+        """ % (htmlcommon.escape(tourneyname)))
+    response.writeln("}\n</script>")
 
     if tourney_created:
         response.writeln("<p>");
-        response.writeln('You should be redirected to your new tourney semi-immediately. If not, <a href="/atropine/%s/tourneysetup">click here to continue</a>.' % urllib.parse.quote_plus(tourneyname));
+        response.writeln('You should be redirected to your new tourney semi-immediately. If not, <a href="/atropine/%s/tourneysetup">click here to continue</a>.' % htmlcommon.escape(tourneyname));
         response.writeln("</p>");
         response.writeln("</body></html>")
         return
@@ -119,7 +116,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     response.writeln("<h1>Welcome to Atropine</h1>");
 
     if tourney_create_exception:
-        cgicommon.show_tourney_exception(response, tourney_create_exception)
+        htmlcommon.show_tourney_exception(response, tourney_create_exception)
 
     if httpreq.is_client_from_localhost():
         if not tourney_created:
@@ -140,7 +137,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                 display_profile_options = []
                 display_profile_options.append("<option value=\"\"%s>Default settings</option>" % (" selected" if not most_recently_used_display_profile_name else ""))
                 for name in sorted(display_profiles):
-                    display_profile_options.append("<option value=\"%s\"%s>%s</option>" % (cgicommon.escape(name), " selected" if name == most_recently_used_display_profile_name else "", cgicommon.escape(name)))
+                    display_profile_options.append("<option value=\"%s\"%s>%s</option>" % (htmlcommon.escape(name), " selected" if name == most_recently_used_display_profile_name else "", htmlcommon.escape(name)))
                 display_profile_controls_html = "<tr><td>Display profile</td><td><select name=\"displayprofile\">" + "\n".join(display_profile_options) + "</select></td></tr>"
                 display_profile_controls_html += "<tr><td class=\"optionnote\" colspan=\"2\">Automatically apply the display settings from a previously-defined display profile.<br />Note that if you select a profile here, the screen shape defined in that profile will override what you selected above.</td></tr>"
             else:
@@ -194,8 +191,8 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 %(displayprofilecontrols)s
 </table>
     """ % {
-        "tourneyname" : cgicommon.escape(tourneyname, True),
-        "longtourneyname" : cgicommon.escape(longtourneyname, True),
+        "tourneyname" : htmlcommon.escape(tourneyname, True),
+        "longtourneyname" : htmlcommon.escape(longtourneyname, True),
         "displayshapeoptionhtml" : display_shape_option_html,
         "currentyear" : time.localtime().tm_year,
         "displayprofilecontrols" : display_profile_controls_html
@@ -206,7 +203,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             response.writeln("</form>");
         response.writeln("<hr />")
 
-    tourney_list = os.listdir(cgicommon.dbdir);
+    tourney_list = os.listdir(htmlcommon.dbdir);
     tourney_list = [x for x in tourney_list if (len(x) > 3 and x[-3:] == ".db")];
     if order_by in ("mtime_a", "mtime_d"):
         tourney_list = sorted(tourney_list, key=get_tourney_modified_time, reverse=(order_by == "mtime_d"));
@@ -226,7 +223,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         try:
             response.writeln("<p>")
-            response.writeln("Tournament database directory: <span class=\"fixedwidth\">%s</span>" % (cgicommon.escape(os.path.realpath(cgicommon.dbdir))))
+            response.writeln("Tournament database directory: <span class=\"fixedwidth\">%s</span>" % (htmlcommon.escape(os.path.realpath(htmlcommon.dbdir))))
             response.writeln("</p>")
         except:
             response.writeln("<p>Failed to expand tournament database directory name</p>")

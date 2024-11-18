@@ -1,13 +1,11 @@
 #!/usr/bin/python3
 
-import sys;
-import os;
-import urllib.request, urllib.parse, urllib.error;
-import sqlite3;
+import os
+import sqlite3
 import html
 import re
-from io import StringIO
 
+# Environment variable set by atropine.py before this module is first loaded
 dbdir = os.getenv("TOURNEYSPATH")
 if not dbdir:
     dbdir = os.path.join("..", "tourneys");
@@ -476,7 +474,7 @@ def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links
         current_round = tourney.get_current_round()
         if rounds:
             if current_round:
-                response.writeln(("<div><a href=\"/atropine/%s/games/%s\"><strong>Results entry</strong></a></div>" % (escape(tourney.name), urllib.parse.quote_plus(str(current_round["num"])))))
+                response.writeln(("<div><a href=\"/atropine/%s/games/%s\"><strong>Results entry</strong></a></div>" % (escape(tourney.name), escape(str(current_round["num"])))))
             else:
                 response.writeln("<div><strong>Games</strong></div>")
         response.writeln("<div class=\"roundlinks\">")

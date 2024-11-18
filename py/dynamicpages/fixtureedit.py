@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 
-import cgicommon
-import urllib.request, urllib.parse, urllib.error
-import re
+import htmlcommon
 import countdowntourney
 
 def show_player_selection(response, players, control_name, value=None):
-    response.writeln("<select name=\"%s\">" % cgicommon.escape(control_name, True));
+    response.writeln("<select name=\"%s\">" % htmlcommon.escape(control_name, True));
     if value is None:
         response.writeln("<option value=\"\" selected>--- select player ---</option>")
     for p in players:
@@ -15,7 +13,7 @@ def show_player_selection(response, players, control_name, value=None):
             sel = " selected";
         else:
             sel = "";
-        response.writeln("<option value=\"%s\"%s>%s</option>" % (cgicommon.escape(player_name, True), sel, cgicommon.escape(player_name)));
+        response.writeln("<option value=\"%s\"%s>%s</option>" % (htmlcommon.escape(player_name, True), sel, htmlcommon.escape(player_name)));
     response.writeln("</select>");
 
 def lookup_player(players, name):
@@ -62,10 +60,10 @@ def write_game_type_selection(response, game_types, selected_code, control_name,
     response.writeln("<select name=\"%s\" id=\"%s\">" % (control_name, control_id))
     for game_type in game_types:
         response.writeln("<option value=\"%s\" %s >%s (%s)</option>" % (
-                cgicommon.escape(game_type["code"], True),
+                htmlcommon.escape(game_type["code"], True),
                 "selected" if selected_code == game_type["code"] else "",
-                cgicommon.escape(game_type["name"]),
-                cgicommon.escape(game_type["code"])
+                htmlcommon.escape(game_type["name"]),
+                htmlcommon.escape(game_type["code"])
         ))
     response.writeln("</select>")
 
@@ -73,7 +71,7 @@ def write_game_type_selection(response, game_types, selected_code, control_name,
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.name
 
-    cgicommon.print_html_head(response, "Edit fixtures: " + str(tourney_name));
+    htmlcommon.print_html_head(response, "Edit fixtures: " + str(tourney_name));
 
     response.writeln("<body onload=\"relabel_save_button();\">");
 
@@ -99,7 +97,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         return
 
     try:
-        cgicommon.show_sidebar(response, tourney);
+        htmlcommon.show_sidebar(response, tourney);
 
         response.writeln("<div class=\"mainpane\">");
 
@@ -318,7 +316,7 @@ function add_game_checkbox_click(div_index) {
                 remarks[seq] = "Updated";
 
         response.writeln("<p>")
-        response.writeln("<a href=\"/atropine/%s/games/%d\">Back to the score editor</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+        response.writeln("<a href=\"/atropine/%s/games/%d\">Back to the score editor</a>" % (htmlcommon.escape(tourney_name), round_no));
         response.writeln("</p>")
 
         if num_games_updated:
@@ -329,8 +327,8 @@ function add_game_checkbox_click(div_index) {
         game_types = countdowntourney.get_game_types()
 
         response.writeln("<div class=\"scorestable\">");
-        response.writeln("<form method=\"POST\" action=\"/atropine/%s/fixtureedit/%d\">" % (urllib.parse.quote_plus(tourney_name), round_no));
-        response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgicommon.escape(tourney_name, True));
+        response.writeln("<form method=\"POST\" action=\"/atropine/%s/fixtureedit/%d\">" % (htmlcommon.escape(tourney_name), round_no));
+        response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % htmlcommon.escape(tourney_name, True));
         response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
         for div_index in range(num_divisions):
             largest_table_size = 0
@@ -382,7 +380,7 @@ function add_game_checkbox_click(div_index) {
                     score_str = g.format_score();
                 else:
                     score_str = "-";
-                response.writeln("<td class=\"gamescore\">%s</td>" % (cgicommon.escape(score_str)));
+                response.writeln("<td class=\"gamescore\">%s</td>" % (htmlcommon.escape(score_str)));
 
                 # Dropdown box for player 2
                 response.writeln("<td class=\"gameplayer2\">")
@@ -403,7 +401,7 @@ function add_game_checkbox_click(div_index) {
                 # Remarks, such as "couldn't edit this game because..."
                 this_game_remarks = remarks.get((g.round_no, g.seq), "")
                 response.writeln("<td class=\"gameremarks\" %s>" % ("style=\"background-color: #ffff88;\"" if this_game_remarks else ""));
-                response.writeln(cgicommon.escape(this_game_remarks));
+                response.writeln(htmlcommon.escape(this_game_remarks));
                 response.writeln("</td>");
                 response.writeln("</tr>");
                 gamenum += 1;
@@ -475,7 +473,7 @@ function add_game_checkbox_click(div_index) {
         response.writeln("</div>"); # mainpane
 
     except countdowntourney.TourneyException as e:
-        cgicommon.show_tourney_exception(response, e);
+        htmlcommon.show_tourney_exception(response, e);
 
     response.writeln("</body>");
     response.writeln("</html>");

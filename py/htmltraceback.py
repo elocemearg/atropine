@@ -15,7 +15,8 @@ def escape(string, quote=True):
         return html.escape(string, quote)
 
 def write_html_traceback(response, typ, value, tb):
-    response.writeln(">")
+    response.writeln("</script>") # close <script> tag if we're in one
+    response.writeln(">")  # close a tag if we're in the middle of writing one
     response.writeln("""
 <div id="traceback_background" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgb(64, 64, 64, 0.7); text-align: center;">
 <div style="position: relative; display: inline-block; min-width: 600px; max-width: min(80vw, 1200px); box-shadow: 5px 5px 10px black; border: 3px groove gray; border-radius: 6px; background-color: hsl(0deg, 50%, 80%);">

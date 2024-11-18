@@ -1,10 +1,7 @@
 #!/usr/bin/python3
 
-import cgicommon
-from cgicommon import escape
-import urllib.request, urllib.parse, urllib.error
-import re
 import os
+import htmlcommon
 import countdowntourney
 
 def include_scripts(response, dir_name, url_path):
@@ -13,16 +10,16 @@ def include_scripts(response, dir_name, url_path):
             include_scripts(response, dir_name + "/" + filename, url_path + "/" + filename)
         elif filename[-3:] == ".js":
             base_filename = os.path.basename(filename)
-            response.writeln("<script src=\"%s/%s\"></script>" % (cgicommon.escape(url_path, True), cgicommon.escape(base_filename, True)))
+            response.writeln("<script src=\"%s/%s\"></script>" % (htmlcommon.escape(url_path, True), htmlcommon.escape(base_filename, True)))
 
 def print_html_head(response, title, font_defs_css):
     response.writeln("<!DOCTYPE html>")
     response.writeln("<html lang=\"en\">")
     response.writeln("<head>");
-    response.writeln("<title>%s</title>" % (escape(title)));
+    response.writeln("<title>%s</title>" % (htmlcommon.escape(title)));
     response.writeln("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />");
     if font_defs_css:
-        escaped = escape(font_defs_css, True)
+        escaped = htmlcommon.escape(font_defs_css, True)
         response.writeln("<link rel=\"stylesheet\" type=\"text/css\" id=\"linkcssfont\" href=\"/teleost/style/%s\" relativepath=\"/teleost/style/%s\"/>" % (escaped, escaped))
     response.writeln("<link rel=\"stylesheet\" type=\"text/css\" href=\"/teleost/style/main.css\" />");
     response.writeln("<link rel=\"shortcut icon\" href=\"/favicon.ico\" type=\"image/x-icon\" />")

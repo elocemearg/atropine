@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 
-import cgicommon
-import urllib.request, urllib.parse, urllib.error
-import html
+import htmlcommon
 import countdowntourney
 
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
@@ -15,12 +13,12 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     except:
         starting_from_round = 1
 
-    cgicommon.print_html_head(response, "Standings: " + str(tourney_name));
+    htmlcommon.print_html_head(response, "Standings: " + str(tourney_name));
 
     response.writeln("<body>");
 
     try:
-        cgicommon.show_sidebar(response, tourney);
+        htmlcommon.show_sidebar(response, tourney);
 
         response.writeln("<div class=\"mainpane\">");
 
@@ -28,21 +26,21 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         response.writeln("<p>")
         rank_method = tourney.get_rank_method();
-        response.writeln(cgicommon.escape(rank_method.get_short_description()))
+        response.writeln(htmlcommon.escape(rank_method.get_short_description()))
         response.writeln("</p>")
 
         rounds = tourney.get_rounds()
 
         if tourney.has_per_round_standings() and len(rounds) > 1:
             response.writeln("<form method=\"GET\" class=\"spaced\">")
-            response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\">" % (html.escape(tourney_name)))
+            response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\">" % (htmlcommon.escape(tourney_name)))
             response.writeln("Count games from ")
             response.writeln("<select name=\"fromround\">")
             max_round_no = 1
             for r in rounds:
                 response.writeln("<option value=\"%d\"%s>%s</option>" % (r["num"],
                     " selected" if r["num"] == starting_from_round else "",
-                    html.escape(r["name"])
+                    htmlcommon.escape(r["name"])
                 ))
                 if r["num"] > max_round_no:
                     max_round_no = r["num"]
@@ -57,7 +55,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             starting_from_round = 1
 
         if tourney.are_players_assigned_teams():
-            cgicommon.show_team_score_table(response, tourney.get_team_scores())
+            htmlcommon.show_team_score_table(response, tourney.get_team_scores())
             response.writeln('<br />')
 
         show_finals_placings = tourney.is_rankable_by_finals() and starting_from_round == 1
@@ -71,7 +69,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             else:
                 response.writeln("<p>Showing standings based on games in <b>rounds %d-%d only</b>.</p>" % (starting_from_round, max_round_no))
 
-        cgicommon.show_standings_table(response, tourney, True, True, True,
+        htmlcommon.show_standings_table(response, tourney, True, True, True,
                 show_first_second_column=True,
                 linkify_players=True,
                 show_tournament_rating_column=None,
@@ -83,7 +81,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         if show_finals_placings:
             response.writeln("<h2>After finals</h2>")
-            cgicommon.show_standings_table(response, tourney, True, True, True,
+            htmlcommon.show_standings_table(response, tourney, True, True, True,
                     show_first_second_column=True,
                     linkify_players=True,
                     show_tournament_rating_column=None,
@@ -95,7 +93,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         response.writeln("</div>"); #mainpane
     except countdowntourney.TourneyException as e:
-        cgicommon.show_tourney_exception(response, e);
+        htmlcommon.show_tourney_exception(response, e);
 
     response.writeln("</body>")
     response.writeln("</html>")

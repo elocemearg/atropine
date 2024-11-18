@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 
-import cgicommon
-import urllib.request, urllib.parse, urllib.error
-import os
-import dialog
+import htmlcommon
+import htmldialog
 import countdowntourney
 
 HTML_TICK_SYMBOL = '<span style="background-color: hsl(120, 60%, 90%); color: green; padding: 2px;">✓</span>'
@@ -45,7 +43,7 @@ def reinstate_player(tourney, form):
     tourney.unwithdraw_player(player_name)
 
 def add_new_player(tourney, form, notifications):
-    cgicommon.add_new_player_from_form(tourney, form)
+    htmlcommon.add_new_player_from_form(tourney, form)
     notifications.append("Added new player %s." % (form.getfirst("setname")))
 
 def withdraw_all(tourney, form):
@@ -74,7 +72,7 @@ def generate_scripts(response, tourney, query_string):
     withdrawn_players = [ p for p in players if not p.is_prune() and p.is_withdrawn() ]
     num_games = tourney.get_num_games()
 
-    script = "<script>\n" + dialog.DIALOG_JAVASCRIPT + """
+    script = "<script>\n" + htmldialog.DIALOG_JAVASCRIPT + """
 function escapeHTML(str) {
     if (str === null) {
         return "(null)";
@@ -128,7 +126,7 @@ function showDeletePlayerConfirm(playerId, playerName) {
 }
 </script>
 """ % {
-        "form_action" : cgicommon.js_string(("?" + query_string) if query_string else ""),
+        "form_action" : htmlcommon.js_string(("?" + query_string) if query_string else ""),
         "num_active_players" : len(active_players),
         "num_withdrawn_players" : len(withdrawn_players),
         "delete_gamed_player_warning" : "Note that any players who have had a game created for them will <em>not</em> be deleted." if num_games > 0 else "" }
@@ -167,7 +165,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
 
     # Now present the current state of the player list to the user...
-    cgicommon.print_html_head(response, "Player Check-In")
+    htmlcommon.print_html_head(response, "Player Check-In")
 
     response.writeln("<body>")
 
@@ -177,7 +175,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
     generate_scripts(response, tourney, form_query_string)
 
-    cgicommon.show_sidebar(response, tourney)
+    htmlcommon.show_sidebar(response, tourney)
 
     response.writeln("<div class=\"mainpane\">")
 
@@ -222,20 +220,20 @@ or delete the still-withdrawn players as necessary, then move on to
 Only players currently active {tick}
 appear in the list of players on the public display screen.
 </p>
-""".format(tourneyname=cgicommon.escape(tourneyname),
+""".format(tourneyname=htmlcommon.escape(tourneyname),
         tick=HTML_TICK_SYMBOL, cross=HTML_CROSS_SYMBOL))
 
     # Show any exceptions or notifications generated if we just acted on a form
     # submission.
     for e in exceptions_to_show:
         if e is not None:
-            cgicommon.show_tourney_exception(response, e)
+            htmlcommon.show_tourney_exception(response, e)
 
     if notifications:
         response.writeln("<hr>")
         response.writeln("<ul>")
     for n in notifications:
-        response.writeln("<li>%s</li>" % (cgicommon.escape(n)))
+        response.writeln("<li>%s</li>" % (htmlcommon.escape(n)))
     if notifications:
         response.writeln("</ul>")
 
@@ -261,7 +259,7 @@ appear in the list of players on the public display screen.
             response.writeln("<td class=\"playercheckincol\">")
             if player:
                 if form_query_string:
-                    action = "action=\"?%s\"" % (cgicommon.escape(form_query_string))
+                    action = "action=\"?%s\"" % (htmlcommon.escape(form_query_string))
                 else:
                     action = ""
                 response.writeln("<form method=\"POST\" id=\"formcell%d\" %s>" % (
@@ -274,10 +272,10 @@ appear in the list of players on the public display screen.
                     "playercheckinbuttonwithdrawn" if player.is_withdrawn() else "playercheckinbuttonactive",
                     cell_number,
                     "&#x2716;" if player.is_withdrawn() else "<span style=\"color: green;\">✓</span>",
-                    cgicommon.escape(player.get_name())
+                    htmlcommon.escape(player.get_name())
                 ))
-                response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname)))
-                response.writeln("<input type=\"hidden\" name=\"playername\" value=\"%s\" />" % (cgicommon.escape(player.get_name())))
+                response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourneyname)))
+                response.writeln("<input type=\"hidden\" name=\"playername\" value=\"%s\" />" % (htmlcommon.escape(player.get_name())))
                 response.writeln("<input type=\"hidden\" name=\"%s\" value=\"1\" />" % ("reinstatesubmit" if player.is_withdrawn() else "withdrawsubmit"))
                 response.writeln("</form>")
             response.writeln("</td>")
@@ -285,8 +283,8 @@ appear in the list of players on the public display screen.
             if player:
                 # Small button to delete this player
                 response.writeln("<td class=\"playercheckincolspace\"><button type=\"button\" class=\"playercheckindeletebutton\" title=\"Delete %s\" onclick=\"showDeletePlayerConfirm(%d, %s);\">%s</button></td>" % (
-                    cgicommon.escape(player.get_name()), player.get_id(),
-                    cgicommon.escape(cgicommon.js_string(player.get_name())),
+                    htmlcommon.escape(player.get_name()), player.get_id(),
+                    htmlcommon.escape(htmlcommon.js_string(player.get_name())),
                     HTML_TRASHCAN_SYMBOL))
             else:
                 response.writeln("<td class=\"playercheckincolspace\"></td>")
@@ -314,13 +312,13 @@ appear in the list of players on the public display screen.
     # And finally, have an "add new player" form for the common case where
     # someone just rocks up to the venue unannounced.
     response.writeln("<h2>Add new player</h2>")
-    cgicommon.show_player_form(response, tourney, None, "hidehelp=1" if hide_help else "")
+    htmlcommon.show_player_form(response, tourney, None, "hidehelp=1" if hide_help else "")
 
     response.writeln("</div>") #mainpane
 
     # Currently-invisible dialog box which appears if we need to ask the user
     # if they're sure they want to do what the button they just pressed does.
-    response.writeln(dialog.get_html("checkinconfirmdialog"))
+    response.writeln(htmldialog.get_html("checkinconfirmdialog"))
 
     response.writeln("</body>")
     response.writeln("</html>")

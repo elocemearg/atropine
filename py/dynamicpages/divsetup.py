@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-import cgicommon
-import urllib.request, urllib.parse, urllib.error
+import htmlcommon
 import countdowntourney
 
 def int_or_none(s):
@@ -28,7 +27,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     if division_size_multiple is None:
         division_size_multiple = 2
 
-    cgicommon.print_html_head(response, "Division Setup: " + str(tourneyname));
+    htmlcommon.print_html_head(response, "Division Setup: " + str(tourneyname));
 
     response.writeln("<body onload=\"hide_div_renames();\">");
 
@@ -69,7 +68,7 @@ function hide_div_renames() {
 </script>
 """)
 
-    cgicommon.show_sidebar(response, tourney)
+    htmlcommon.show_sidebar(response, tourney)
 
     response.writeln("<div class=\"mainpane\">");
     response.writeln("<h1>Division Setup</h1>");
@@ -100,7 +99,7 @@ function hide_div_renames() {
                     tourney.set_player_divisions(num_divisions_required, division_size_multiple, div_sort == "rating", promotees)
                     num_divisions = tourney.get_num_divisions()
                 except countdowntourney.TourneyException as e:
-                    cgicommon.show_tourney_exception(response, e)
+                    htmlcommon.show_tourney_exception(response, e)
 
         # If we've been asked to rename any division, rename it now
         for div_index in range(num_divisions):
@@ -117,7 +116,7 @@ function hide_div_renames() {
             response.writeln("<p>")
             response.writeln("The tourney doesn't have any players yet, so you can't set up divisions.")
             if num_games == 0:
-                response.writeln("You can define the list of players on the <a href=\"/atropine/%s/tourneysetup\">Tourney Setup</a> page." % (cgicommon.escape(tourney.get_name())))
+                response.writeln("You can define the list of players on the <a href=\"/atropine/%s/tourneysetup\">Tourney Setup</a> page." % (htmlcommon.escape(tourney.get_name())))
 
             response.writeln("</p>")
         else:
@@ -146,14 +145,14 @@ function hide_div_renames() {
             for div_index in range(num_divisions):
                 div_name = tourney.get_division_name(div_index)
                 response.writeln("<tr>")
-                response.writeln("<td class=\"text\">%s</td>" % (cgicommon.escape(div_name)))
+                response.writeln("<td class=\"text\">%s</td>" % (htmlcommon.escape(div_name)))
                 response.writeln("<td class=\"number\">%d</td>" % (div_active_player_count[div_index]))
                 response.writeln("<td class=\"number\">%d</td>" % (div_withdrawn_player_count[div_index]))
                 response.writeln("<td class=\"control\" style=\"text-align: left\">")
                 response.writeln("<div class=\"divrenamecontrols\" id=\"divrenamecontrols%d\">" % (div_index))
                 response.writeln("<form method=\"POST\">")
-                response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname, True)))
-                response.writeln("<input type=\"text\" id=\"newdivnameinput%d\" name=\"newdivname%d\" value=\"%s\" />" % (div_index, div_index, cgicommon.escape(div_name, True)))
+                response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourneyname, True)))
+                response.writeln("<input type=\"text\" id=\"newdivnameinput%d\" name=\"newdivname%d\" value=\"%s\" />" % (div_index, div_index, htmlcommon.escape(div_name, True)))
                 response.writeln("<input type=\"submit\" name=\"setdivname%d\" value=\"Save\" />" % (div_index))
                 response.writeln("<input type=\"button\" name=\"canceldivrename%d\" value=\"Cancel\" onclick=\"hide_div_rename(%d);\" />" % (div_index, div_index))
                 response.writeln("</form>")
@@ -167,18 +166,18 @@ function hide_div_renames() {
             response.writeln("<hr />")
 
             response.writeln("<h2>Division assignment by rating or standings position</h2>")
-            response.writeln("<p><strong>N.B.</strong> To change the division assignment of an individual player, use the <a href=\"/atropine/%s/player\">Player Setup</a> page. The form below will overwrite, and lose, any previous assignments of players to divisions, whether made from this page or in Player Setup.</p>" % (urllib.parse.quote_plus(tourneyname)))
+            response.writeln("<p><strong>N.B.</strong> To change the division assignment of an individual player, use the <a href=\"/atropine/%s/player\">Player Setup</a> page. The form below will overwrite, and lose, any previous assignments of players to divisions, whether made from this page or in Player Setup.</p>" % (htmlcommon.escape(tourneyname)))
             if num_games > 0:
-                cgicommon.show_warning_box(response, "The tourney has already started. Reassigning player divisions will only take effect for rounds whose fixtures have yet to be generated. Existing games will not be changed.")
+                htmlcommon.show_warning_box(response, "The tourney has already started. Reassigning player divisions will only take effect for rounds whose fixtures have yet to be generated. Existing games will not be changed.")
             response.writeln("<form method=\"POST\">")
-            response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname)))
+            response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourneyname)))
 
             # Show a table for each division, containing its players
             response.writeln("<p>Players may be manually assigned to the top division by ticking the boxes below before distributing. Any players manually promoted in this way will <em>replace</em> that many non-ticked players in the top division. If you want the top-rated players to remain in the top division along with the manually-promoted players, and have a larger top division, tick the promote box on all the players in the top division before distributing.</p>")
             player_seq = 0
             for div_index in range(0, num_divisions):
                 div_name = tourney.get_division_name(div_index)
-                response.writeln("<h3>%s</h3>" % (cgicommon.escape(div_name)))
+                response.writeln("<h3>%s</h3>" % (htmlcommon.escape(div_name)))
                 response.writeln("<table class=\"misctable\">")
                 response.writeln("<tr>")
                 response.writeln("<th rowspan=\"2\">Name</th>")
@@ -191,13 +190,13 @@ function hide_div_renames() {
                 response.writeln("</tr>")
                 for p in div_players[div_index]:
                     response.writeln("<tr>")
-                    response.writeln("<td class=\"text\">%s%s</td>" % (cgicommon.player_to_link(p, tourney.get_name()), " (withdrawn)" if p.is_withdrawn() else ""))
+                    response.writeln("<td class=\"text\">%s%s</td>" % (htmlcommon.player_to_link(p, tourney.get_name()), " (withdrawn)" if p.is_withdrawn() else ""))
                     response.writeln("<td class=\"number\">%g</td>" % (p.get_rating()))
                     response.writeln("<td class=\"number\">%d</td>" % (name_to_div_position[p.get_name()]))
                     response.writeln("<td class=\"number\">%d</td>" % (name_to_position[p.get_name()]))
                     response.writeln("<td class=\"control\"><input type=\"checkbox\" name=\"promote%d\" value=\"1\" %s />" % (
                             player_seq, "checked" if p.is_division_fixed() else ""))
-                    response.writeln("<input type=\"hidden\" name=\"promotename%d\" value=\"%s\" />" % (player_seq, cgicommon.escape(p.get_name(), True)))
+                    response.writeln("<input type=\"hidden\" name=\"promotename%d\" value=\"%s\" />" % (player_seq, htmlcommon.escape(p.get_name(), True)))
                     response.writeln("</tr>")
                     player_seq += 1
                 response.writeln("</table>")
