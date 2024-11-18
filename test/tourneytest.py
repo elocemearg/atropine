@@ -149,7 +149,7 @@ def export_text(tourney, output_file):
         response = httpresponse.HTTPResponse()
         query_string = "tourney=%s&format=text&submitview=1" % (tourney.get_name())
         form = fieldstorage.FieldStorage(request_method="GET", query_string=query_string, post_data=None)
-        export_page_module.handle(None, response, tourney, "GET", form, query_string)
+        export_page_module.handle(None, response, tourney, "GET", form, query_string, [])
         out.write(response.get_string())
 
 def diff_files(observed, expected):
