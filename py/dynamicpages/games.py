@@ -1059,7 +1059,7 @@ function set_blinkenlights_mouseover(text) {
 
 
 def parse_score(score):
-    m = re.match("^\s*(-?\d+)\s*(\*?)\s*-\s*(-?\d+)\s*(\*?)\s*$", score);
+    m = re.match(r"^\s*(-?\d+)\s*(\*?)\s*-\s*(-?\d+)\s*(\*?)\s*$", score);
     if not m:
         return None
     else:

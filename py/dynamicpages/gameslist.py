@@ -33,10 +33,10 @@ def parse_score(score):
     # and a number.
 
     # If the score consists only of whitespace, then the game is unplayed.
-    if not score or re.match("^\s*$", score):
+    if not score or re.match(r"^\s*$", score):
         return (None, None, False)
     else:
-        m = re.match("^\s*(-?\d+)\s*(\*?)\s*-\s*(-?\d+)\s*(\*?)\s*$", score);
+        m = re.match(r"^\s*(-?\d+)\s*(\*?)\s*-\s*(-?\d+)\s*(\*?)\s*$", score);
         if not m:
             return None
         else:

@@ -395,7 +395,7 @@ setupUploadWidget();
 
 // -->
 </script>"""
-    upload_widget_script_text = re.sub("\$TOURNEY_NAME", tourney_name, upload_widget_script_text)
+    upload_widget_script_text = re.sub(r"\$TOURNEY_NAME", tourney_name, upload_widget_script_text)
     response.writeln(upload_widget_script_text)
 
 
