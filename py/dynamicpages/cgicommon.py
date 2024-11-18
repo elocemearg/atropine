@@ -375,7 +375,7 @@ function refreshUploadWidget() {
        it on the uploader widget */
     if (uploadStatusRequest == null) {
         uploadStatusRequest = new XMLHttpRequest();
-        uploadStatusRequest.open("GET", "/atropine/$TOURNEY_NAME/state/uploader", true);
+        uploadStatusRequest.open("GET", "/service/$TOURNEY_NAME/state/uploader", true);
         uploadStatusRequest.onload = refreshUploadWidgetCallback;
         uploadStatusRequest.onerror = refreshUploadWidgetError;
         uploadStatusRequest.send(null);
@@ -404,7 +404,7 @@ setupUploadWidget();
 def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links=False, non_local_client=False):
     new_window_html = "<img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Opens in new window\" />"
     response.writeln("<div class=\"sidebar\">");
-    response.writeln("<a href=\"/cgi-bin/home.py\"><img src=\"/images/eyebergine128.png\" alt=\"Eyebergine\" /></a><br />");
+    response.writeln("<a href=\"/\"><img src=\"/images/eyebergine128.png\" alt=\"Eyebergine\" /></a><br />");
 
     players = []
     if tourney:
@@ -413,19 +413,19 @@ def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links
     if tourney and not non_local_client:
         players = tourney.get_players()
         num_games = tourney.get_num_games()
-        response.writeln(("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\"><strong>Tourney Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
+        response.writeln(("<a href=\"/atropine/%s/tourneysetup\"><strong>Tourney Setup</strong></a>" % escape(tourney.name)));
 
         if show_setup_links:
             response.writeln("<div class=\"sidebarlinklist\">")
             response.writeln("<div>")
-            response.writeln("<a href=\"/cgi-bin/player.py?tourney=%s\">Players...</a>" % (urllib.parse.quote_plus(tourney.name)))
+            response.writeln("<a href=\"/atropine/%s/player\">Players...</a>" % (escape(tourney.name)))
             response.writeln("</div>")
             if players:
                 response.writeln("<div>")
-                response.writeln(("<a href=\"/cgi-bin/divsetup.py?tourney=%s\">Divisions...</a>" % (urllib.parse.quote_plus(tourney.name))))
+                response.writeln("<a href=\"/atropine/%s/divsetup\">Divisions...</a>" % (escape(tourney.name)))
                 response.writeln("</div>")
             response.writeln("<div>")
-            response.writeln(("<a href=\"/cgi-bin/tourneysetupadvanced.py?tourney=%s\">Advanced...</a>" % (urllib.parse.quote_plus(tourney.name))))
+            response.writeln(("<a href=\"/atropine/%s/tourneysetupadvanced\">Advanced...</a>" % (escape(tourney.name))))
             response.writeln("</div>")
             response.writeln("</div>")
         else:
@@ -434,31 +434,31 @@ def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links
         if players and num_games == 0:
             response.writeln("<br />")
             response.writeln("<div>")
-            response.writeln("<a href=\"/cgi-bin/checkin.py?tourney=%s\"><strong>Player Check-In</strong></a>" % (urllib.parse.quote_plus(tourney.name)))
+            response.writeln("<a href=\"/atropine/%s/checkin\"><strong>Player Check-In</strong></a>" % (escape(tourney.name)))
             response.writeln("</div>")
 
         if players:
             response.writeln("<br />")
             response.writeln("<div>")
-            response.writeln(("<a href=\"/cgi-bin/uploadsetup.py?tourney=%s\"><strong>Broadcast Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
+            response.writeln("<a href=\"/atropine/%s/uploadsetup\"><strong>Broadcast Setup</strong></a>" % escape(tourney.name))
             response.writeln("</div>")
 
-            response.writeln(("<a class=\"widgetlink\" href=\"/cgi-bin/uploadsetup.py?tourney=%s\">" % urllib.parse.quote_plus(tourney.name)));
+            response.writeln("<a class=\"widgetlink\" href=\"/atropine/%s/uploadsetup\">" % escape(tourney.name))
             write_live_upload_widget(response, tourney.name)
             response.writeln("</a>")
 
         response.writeln("<br />")
 
         response.writeln("<div>")
-        response.writeln(("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\"><strong>Display Setup</strong></a>" % urllib.parse.quote_plus(tourney.name)));
+        response.writeln(("<a href=\"/atropine/%s/displayoptions\"><strong>Display Setup</strong></a>" % escape(tourney.name)));
         response.writeln("<span class=\"sidebaropendisplaylink\" title=\"Open public display window\">")
-        response.writeln("<a href=\"/cgi-bin/display.py?tourney=%s\" target=\"_blank\">Window <img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Open public display in new window\"/></a>" % (urllib.parse.quote_plus(tourney.name)))
+        response.writeln("<a href=\"/atropine/%s/display\" target=\"_blank\">Window <img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Open public display in new window\"/></a>" % (escape(tourney.name)))
         response.writeln("</span>")
         response.writeln("</div>")
 
         banner_text = tourney.get_banner_text()
         if banner_text:
-            response.writeln(("<a href=\"/cgi-bin/displayoptions.py?tourney=%s\">" % (urllib.parse.quote_plus(tourney.name))))
+            response.writeln("<a href=\"/atropine/%s/displayoptions\">" % (escape(tourney.name)))
             response.writeln("<div class=\"sidebarbanner\" title=\"Banner is active\">")
             response.writeln((escape(banner_text)))
             response.writeln("</div>")
@@ -476,7 +476,7 @@ def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links
         current_round = tourney.get_current_round()
         if rounds:
             if current_round:
-                response.writeln(("<div><a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\"><strong>Results entry</strong></a></div>" % (urllib.parse.quote_plus(tourney.name), urllib.parse.quote_plus(str(current_round["num"])))))
+                response.writeln(("<div><a href=\"/atropine/%s/games/%s\"><strong>Results entry</strong></a></div>" % (escape(tourney.name), urllib.parse.quote_plus(str(current_round["num"])))))
             else:
                 response.writeln("<div><strong>Games</strong></div>")
         response.writeln("<div class=\"roundlinks\">")
@@ -486,36 +486,36 @@ def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links
             if not round_name:
                 round_name = "Round " + str(round_no);
 
-            response.writeln("<div class=\"roundlink\">");
-            response.writeln("<a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%s\">%s</a>" % (urllib.parse.quote_plus(tourney.name), urllib.parse.quote_plus(str(round_no)), escape(round_name)));
-            response.writeln("</div>");
+            response.writeln("<div class=\"roundlink\">")
+            response.writeln("<a href=\"/atropine/%s/games/%s\">%s</a>" % (escape(tourney.name), escape(str(round_no)), escape(round_name)))
+            response.writeln("</div>")
         response.writeln("</div>")
         if players:
             response.writeln("<br />");
             response.writeln("<div class=\"genroundlink\">");
-            response.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\"><strong>Generate fixtures...</strong></a>" % (urllib.parse.quote_plus(tourney.name)));
+            response.writeln("<a href=\"/atropine/%s/fixturegen\"><strong>Generate fixtures...</strong></a>" % (escape(tourney.name)));
             response.writeln("</div>");
             response.writeln("<br />")
 
             response.writeln("<div class=\"misclinks\">")
-            response.writeln("<a href=\"/cgi-bin/standings.py?tourney=%s\">Standings</a>" % (urllib.parse.quote_plus(tourney.name)));
+            response.writeln("<a href=\"/atropine/%s/standings\">Standings</a>" % (escape(tourney.name)))
             response.writeln("</div>")
 
             misc_links_html = """
-<a href="/cgi-bin/tableindex.py?tourney=$TOURNEY">Name-table index</a>
+<a href="/atropine/$TOURNEY/tableindex">Name-table index</a>
 <br />
-<a href="/cgi-bin/tuffluck.py?tourney=$TOURNEY">Tuff Luck</a>
+<a href="/atropine/$TOURNEY/tuffluck">Tuff Luck</a>
 <br />
-<a href="/cgi-bin/timdownaward.py?tourney=$TOURNEY">Tim Down Award</a>
+<a href="/atropine/$TOURNEY/timdownaward">Tim Down Award</a>
 <br />
-<a href="/cgi-bin/luckystiff.py?tourney=$TOURNEY">Lucky Stiff</a>
+<a href="/atropine/$TOURNEY/luckystiff">Lucky Stiff</a>
 <br />
-<a href="/cgi-bin/overachievers.py?tourney=$TOURNEY">Overachievers</a>
+<a href="/atropine/$TOURNEY/overachievers">Overachievers</a>
 """
-            misc_links_html = misc_links_html.replace("$TOURNEY", urllib.parse.quote_plus(tourney.name))
+            misc_links_html = misc_links_html.replace("$TOURNEY", escape(tourney.name))
 
             response.writeln("<div class=\"misclinks\">")
-            response.writeln("<a href=\"/cgi-bin/export.py?tourney=%s\">Export results...</a>" % (urllib.parse.quote_plus(tourney.name)))
+            response.writeln("<a href=\"/atropine/%s/export\">Export results...</a>" % (escape(tourney.name)))
             response.writeln("</div>")
 
             response.writeln("<noscript><div class=\"misclinks\">")
@@ -552,8 +552,8 @@ function toggleMiscStats() {
 
     if tourney and players and not non_local_client:
         response.writeln("<div class=\"globalprefslink\">")
-        response.writeln("<a href=\"/cgi-bin/preferences.py\" target=\"_blank\" ")
-        response.writeln("onclick=\"window.open('/cgi-bin/preferences.py', 'newwindow', 'width=700,height=750'); return false;\" >Preferences... " + new_window_html + "</a>")
+        response.writeln("<a href=\"/atropine/global/preferences\" target=\"_blank\" ")
+        response.writeln("onclick=\"window.open('/atropine/global/preferences', 'newwindow', 'width=700,height=750'); return false;\" >Preferences... " + new_window_html + "</a>")
         response.writeln("</div>")
 
     response.writeln("<br />")
@@ -973,10 +973,10 @@ def player_to_link(player, tourney_name, emboldenise=False, disable_tab_order=Fa
         else:
             return escape(player.get_name())
     else:
-        return "<a class=\"playerlink%s%s\" href=\"player.py?tourney=%s&id=%d\" %s%s>%s</a>" % (
+        return "<a class=\"playerlink%s%s\" href=\"/atropine/%s/player/%d\" %s%s>%s</a>" % (
             "withdrawn" if withdrawn else " ",
             " thisplayerlink" if emboldenise else "",
-            urllib.parse.quote_plus(tourney_name), player.get_id(),
+            escape(tourney_name), player.get_id(),
             "tabindex=\"-1\" " if disable_tab_order else "",
             "target=\"_blank\"" if open_in_new_window else "",
             escape(custom_text) if custom_text is not None else escape(player.get_name())
@@ -1025,7 +1025,7 @@ def show_division_drop_down_box(response, control_name, tourney, player):
                 tourney.get_num_active_players(div)))
     response.writeln("</select>")
 
-def show_player_form(response, baseurl, tourney, player, custom_query_string=""):
+def show_player_form(response, tourney, player, custom_query_string=""):
     # Output HTML for a form for adding a new player (if player is None) or
     # editing an existing player (if player is not None).
     num_divisions = tourney.get_num_divisions()
@@ -1035,15 +1035,7 @@ def show_player_form(response, baseurl, tourney, player, custom_query_string="")
     else:
         player_id = None
 
-    if player:
-        response.writeln("<form method=\"POST\" action=\"%s?tourney=%s&id=%d\">" % (escape(baseurl), urllib.parse.quote_plus(tourney.get_name()), player_id))
-    else:
-        response.writeln("<form method=\"POST\" action=\"%s?tourney=%s%s%s\">" % (
-            escape(baseurl),
-            urllib.parse.quote_plus(tourney.get_name()),
-            "&" if custom_query_string else "",
-            custom_query_string
-        ))
+    response.writeln("<form method=\"POST\" %s>" % (("action=\"?" + escape(custom_query_string) + "\"") if custom_query_string else ""))
     response.writeln("<table>")
     response.writeln("<tr><td>Name</td><td><input type=\"text\" name=\"setname\" value=\"%s\" /></td></tr>" % ("" if not player else escape(player.get_name(), True)))
     response.writeln("<tr><td>Rating</td><td><input style=\"width: 5em;\" type=\"text\" name=\"setrating\" value=\"%g\"/>" % (1000 if not player else player.get_rating()))
@@ -1061,9 +1053,9 @@ def show_player_form(response, baseurl, tourney, player, custom_query_string="")
         response.writeln("<tr><td>Withdrawn?</td><td><input type=\"checkbox\" name=\"setwithdrawn\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will not include this player)</span></td></tr>" % ("checked" if player and player.is_withdrawn() else ""))
 
     if tourney.has_accessible_table_feature():
-        response.writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Tourney Setup</a>)</span></td></tr>" % (
+        response.writeln("<tr><td>Requires accessible table?</td><td><input type=\"checkbox\" name=\"setrequiresaccessibletable\" value=\"1\" %s /> <span class=\"playercontrolhelp\">(if ticked, fixture generators will place this player and their opponents on an accessible table, as defined in <a href=\"/atropine/%s/tourneysetup\">Tourney Setup</a>)</span></td></tr>" % (
             "checked" if player and player.is_requiring_accessible_table() else "",
-            urllib.parse.quote_plus(tourneyname)
+            escape(tourneyname)
         ))
 
     if tourney.has_preferred_table_feature():

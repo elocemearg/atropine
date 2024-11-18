@@ -4,8 +4,6 @@ import urllib.request, urllib.parse, urllib.error
 import cgicommon
 import countdowntourney
 
-baseurl = "/cgi-bin/tableindex.py"
-
 def int_or_none(s):
     if s is None:
         return None
@@ -15,7 +13,7 @@ def int_or_none(s):
         except:
             return None
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     # Read parameters to adjust how the table is formatted
     max_columns = int_or_none(form.getfirst("maxcols"))
     if max_columns is None or max_columns < 1:

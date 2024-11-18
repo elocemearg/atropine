@@ -12,9 +12,7 @@ def int_or_none(s):
     except ValueError:
         return None;
 
-baseurl = "/cgi-bin/divsetup.py"
-
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourneyname = tourney.name
 
     num_divisions_required = int_or_none(form.getfirst("numdivisions"))
@@ -35,41 +33,41 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     response.writeln("<body onload=\"hide_div_renames();\">");
 
     response.writeln("""
-    <script>
-    function show_div_rename(div) {
-        buttondiv = document.getElementById("divrenamebutton" + div.toString());
-        renamediv = document.getElementById("divrenamecontrols" + div.toString());
-        textbox = document.getElementById("newdivnameinput" + div.toString())
-        buttondiv.style.display = "none";
-        renamediv.style.display = "inline";
-        textbox.focus();
-        textbox.select();
-    }
+<script>
+function show_div_rename(div) {
+    buttondiv = document.getElementById("divrenamebutton" + div.toString());
+    renamediv = document.getElementById("divrenamecontrols" + div.toString());
+    textbox = document.getElementById("newdivnameinput" + div.toString())
+    buttondiv.style.display = "none";
+    renamediv.style.display = "inline";
+    textbox.focus();
+    textbox.select();
+}
 
-    function hide_div_rename(div) {
-        buttondiv = document.getElementById("divrenamebutton" + div.toString());
-        renamediv = document.getElementById("divrenamecontrols" + div.toString());
-        buttondiv.style.display = "inline";
-        renamediv.style.display = "none";
-    }
+function hide_div_rename(div) {
+    buttondiv = document.getElementById("divrenamebutton" + div.toString());
+    renamediv = document.getElementById("divrenamecontrols" + div.toString());
+    buttondiv.style.display = "inline";
+    renamediv.style.display = "none";
+}
 
-    function hide_div_renames() {
-        buttons = document.getElementsByClassName("divrenamebutton");
-        renames = document.getElementsByClassName("divrenamecontrols");
-        if (buttons != null) {
-            for (var i = 0; i < buttons.length; ++i) {
-                buttons[i].style.display = "inline";
-            }
-        }
-
-        if (renames != null) {
-            for (var i = 0; i < renames.length; ++i) {
-                renames[i].style.display = "none";
-            }
+function hide_div_renames() {
+    buttons = document.getElementsByClassName("divrenamebutton");
+    renames = document.getElementsByClassName("divrenamecontrols");
+    if (buttons != null) {
+        for (var i = 0; i < buttons.length; ++i) {
+            buttons[i].style.display = "inline";
         }
     }
-    </script>
-    """)
+
+    if (renames != null) {
+        for (var i = 0; i < renames.length; ++i) {
+            renames[i].style.display = "none";
+        }
+    }
+}
+</script>
+""")
 
     cgicommon.show_sidebar(response, tourney)
 
@@ -119,7 +117,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
             response.writeln("<p>")
             response.writeln("The tourney doesn't have any players yet, so you can't set up divisions.")
             if num_games == 0:
-                response.writeln("You can define the list of players on the <a href=\"tourneysetup.py?tourney=%s\">Tourney Setup</a> page." % (urllib.parse.quote_plus(tourney.get_name())))
+                response.writeln("You can define the list of players on the <a href=\"/atropine/%s/tourneysetup\">Tourney Setup</a> page." % (cgicommon.escape(tourney.get_name())))
 
             response.writeln("</p>")
         else:
@@ -153,7 +151,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
                 response.writeln("<td class=\"number\">%d</td>" % (div_withdrawn_player_count[div_index]))
                 response.writeln("<td class=\"control\" style=\"text-align: left\">")
                 response.writeln("<div class=\"divrenamecontrols\" id=\"divrenamecontrols%d\">" % (div_index))
-                response.writeln("<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourneyname)))
+                response.writeln("<form method=\"POST\">")
                 response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname, True)))
                 response.writeln("<input type=\"text\" id=\"newdivnameinput%d\" name=\"newdivname%d\" value=\"%s\" />" % (div_index, div_index, cgicommon.escape(div_name, True)))
                 response.writeln("<input type=\"submit\" name=\"setdivname%d\" value=\"Save\" />" % (div_index))
@@ -169,10 +167,10 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
             response.writeln("<hr />")
 
             response.writeln("<h2>Division assignment by rating or standings position</h2>")
-            response.writeln("<p><strong>N.B.</strong> To change the division assignment of an individual player, use the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page. The form below will overwrite, and lose, any previous assignments of players to divisions, whether made from this page or in Player Setup.</p>" % (urllib.parse.quote_plus(tourneyname)))
+            response.writeln("<p><strong>N.B.</strong> To change the division assignment of an individual player, use the <a href=\"/atropine/%s/player\">Player Setup</a> page. The form below will overwrite, and lose, any previous assignments of players to divisions, whether made from this page or in Player Setup.</p>" % (urllib.parse.quote_plus(tourneyname)))
             if num_games > 0:
                 cgicommon.show_warning_box(response, "The tourney has already started. Reassigning player divisions will only take effect for rounds whose fixtures have yet to be generated. Existing games will not be changed.")
-            response.writeln("<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourneyname)))
+            response.writeln("<form method=\"POST\">")
             response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourneyname)))
 
             # Show a table for each division, containing its players

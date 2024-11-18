@@ -8,8 +8,6 @@ import generators
 import countdowntourney
 import htmlform
 
-baseurl = "/cgi-bin/fixturegen.py";
-
 # When we load this module for the first time, also load all the fixture
 # generation modules we have.
 
@@ -76,11 +74,11 @@ class FixtureGeneratorSettings(object):
 
 def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds, fixgen_settings):
     tourney_name = tourney.get_name()
-    response.writeln("<form method=\"POST\" action=\"/cgi-bin/fixturegen.py\">");
+    response.writeln("<form method=\"POST\">");
     response.writeln("<div class=\"fixtureacceptbox\">")
     response.writeln("<p>I've generated the following fixtures. You must click <em>Accept Fixtures</em> below if you want to use them.</p>");
     response.writeln("<input type=\"submit\" name=\"accept\" class=\"bigbutton\" value=\"&#x2705; Accept Fixtures\" />");
-    response.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\" class=\"fixturecancellink\">&#x274c; Discard and return to fixture generator menu</a>" % (
+    response.writeln("<a href=\"/atropine/%s/fixturegen\" class=\"fixturecancellink\">&#x274c; Discard and return to fixture generator menu</a>" % (
         urllib.parse.quote_plus(tourney_name)
     ))
     response.writeln("</div>")
@@ -196,7 +194,7 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
     response.writeln("<input type=\"hidden\" name=\"jsonfixtureplan\" value=\"%s\" />" % cgicommon.escape(json_fixture_plan, True));
     response.writeln("<div class=\"fixtureacceptbox\">")
     response.writeln("<input type=\"submit\" name=\"accept\" class=\"bigbutton\" value=\"&#x2705; Accept Fixtures\" />");
-    response.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\" class=\"fixturecancellink\">&#x274c; Discard and return to fixture generator menu</a>" % (
+    response.writeln("<a href=\"/atropine/%s/fixturegen\" class=\"fixturecancellink\">&#x274c; Discard and return to fixture generator menu</a>" % (
         urllib.parse.quote_plus(tourney_name)
     ))
     response.writeln("</div>")
@@ -214,20 +212,20 @@ def show_fixgen_table(response, tourney_name, module_list, title, description):
         fixgen_module = fixgen_modules[module_name]
         response.writeln("<tr>");
         response.writeln("<td class=\"fixgentable fixgen\">");
-        response.writeln("<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">" % (urllib.parse.quote_plus(module_name), urllib.parse.quote_plus(tourney_name)))
+        response.writeln("<a href=\"/atropine/%s/fixturegen/%s\">" % (urllib.parse.quote_plus(tourney_name), urllib.parse.quote_plus(module_name)))
         response.writeln("<img src=\"/images/fixgen/%s.png\" alt=\"%s\" />" % (cgicommon.escape(module_name), cgicommon.escape(fixgen_module.name)))
         response.writeln("</a>")
         response.writeln("</td>")
         response.writeln("<td class=\"fixgentable fixgen\">");
-        response.writeln("<a href=\"/cgi-bin/fixturegen.py?generator=%s&amp;tourney=%s\">%s</a>" % (urllib.parse.quote_plus(module_name), urllib.parse.quote_plus(tourney_name), cgicommon.escape(fixgen_module.name)));
+        response.writeln("<a href=\"/atropine/%s/fixturegen/%s\">%s</a>" % (urllib.parse.quote_plus(tourney_name), urllib.parse.quote_plus(module_name), cgicommon.escape(fixgen_module.name)));
         response.writeln("</td>");
         response.writeln("<td class=\"fixgentable fixgendescription\">%s</td>" % (cgicommon.escape(fixgen_module.description)));
         response.writeln("</tr>");
     response.writeln("</table>");
 
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
-    tourney_name = tourney.name
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
+    tourney_name = tourney.get_name()
     cgicommon.print_html_head(response, "Generate Fixtures: " + str(tourney_name));
 
     response.writeln("<body>");
@@ -246,8 +244,12 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     check_ready_failed = False
     no_players = False
 
+    if len(extra_components) > 0:
+        generator_name = extra_components[0]
+    else:
+        generator_name = None
+
     try:
-        generator_name = form.getfirst("generator");
         if generator_name:
             fixgen_settings = FixtureGeneratorSettings(tourney.get_fixgen_settings(generator_name));
         else:
@@ -261,7 +263,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
             num_players_requiring_accessible_table = tourney.get_num_active_players_requiring_accessible_table()
             num_accessible_tables = tourney.get_num_accessible_tables()
             if num_accessible_tables is not None and num_players_requiring_accessible_table > num_accessible_tables:
-                warning_content = "You have %d active player%s who %s, but %s. This means the fixture generator cannot ensure %s. You can define accessible tables in <a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Tourney Setup</a>." % (
+                warning_content = "You have %d active player%s who %s, but %s. This means the fixture generator cannot ensure %s. You can define accessible tables in <a href=\"/atropine/%s/tourneysetup\">Tourney Setup</a>." % (
                     num_players_requiring_accessible_table,
                     "s" if num_players_requiring_accessible_table != 1 else "",
                     "requires an accessible table" if num_players_requiring_accessible_table == 1 else "require accessible tables",
@@ -423,11 +425,11 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     if exception_content or exceptions_to_show:
         response.writeln("<p>")
         if generator_name and not check_ready_failed:
-            response.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s&amp;generator=%s\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name), urllib.parse.quote_plus(generator_name)))
+            response.writeln("<a href=\"/atropine/%s/fixturegen/%s\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name), urllib.parse.quote_plus(generator_name)))
         elif no_players:
-            response.writeln("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Set the player list at the tourney setup page</a>" % (urllib.parse.quote_plus(tourney_name)))
+            response.writeln("<a href=\"/atropine/%s/tourneysetup\">Set the player list at the tourney setup page</a>" % (urllib.parse.quote_plus(tourney_name)))
         else:
-            response.writeln("<a href=\"/cgi-bin/fixturegen.py?tourney=%s\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name)))
+            response.writeln("<a href=\"/atropine/%s/fixturegen\">Sigh...</a>" % (urllib.parse.quote_plus(tourney_name)))
         response.writeln("</p>")
 
     # Show any warning...
@@ -485,7 +487,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
             elements.append(htmlform.HTMLFragment("</td></tr>"))
         elements.append(htmlform.HTMLFragment("</table>"))
         elements.append(htmlform.HTMLFormSubmitButton("_divsubmit", "Next", other_attrs={"class" : "bigbutton"}))
-        settings_form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s&generator=%s" % (urllib.parse.quote_plus(tourney.get_name()), urllib.parse.quote_plus(generator_name)), elements)
+        settings_form = htmlform.HTMLForm("POST", "/atropine/%s/fixturegen/%s" % (urllib.parse.quote_plus(tourney.get_name()), urllib.parse.quote_plus(generator_name)), elements)
         response.writeln(settings_form.html());
 
     # If the user has selected which divisions they want to generate fixtures
@@ -507,7 +509,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     # the round we just generated, or the earliest such round if we generated
     # for more than one round.
     if show_link_to_round is not None:
-        response.writeln("<p><a href=\"/cgi-bin/games.py?tourney=%s&round=%d\">Go to result entry page</a></p>" % (urllib.parse.quote_plus(tourney_name), show_link_to_round));
+        response.writeln("<p><a href=\"/atropine/%s/games/%d\">Go to result entry page</a></p>" % (urllib.parse.quote_plus(tourney_name), show_link_to_round));
 
     # end mainpane div
     response.writeln("</div>");

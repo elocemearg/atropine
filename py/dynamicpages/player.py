@@ -5,8 +5,6 @@ import cgicommon
 import dialog
 import countdowntourney
 
-baseurl = "/cgi-bin/player.py";
-
 def int_or_none(s):
     if s is None:
         return None;
@@ -32,8 +30,7 @@ def float_or_none(s):
         return None;
 
 def show_player_search_form(response, tourney):
-    response.writeln("<form method=\"GET\" action=\"%s\">" % (cgicommon.escape(baseurl, True)))
-    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney.get_name())))
+    response.writeln("<form method=\"GET\">")
     response.writeln("<p>")
     response.writeln("Search player name: <input type=\"text\" name=\"searchname\" value=\"\" /> ")
     response.writeln("<input type=\"submit\" name=\"searchsubmit\" value=\"Search\" />")
@@ -76,18 +73,24 @@ def show_player_withdrawal_form(response, tourney, player):
     else:
         response.writeln('<p>%s is currently an <span style="font-weight: bold; color: #008800"">active player</span>, which means they will be included when fixtures are generated.</p>' % (cgicommon.escape(player_name)))
         response.writeln('<p>If you withdraw this player, they will be excluded from later rounds. You can reinstate a withdrawn player at any time.</p>')
-    response.writeln('<form method="POST" action="%s?tourney=%s">' % (cgicommon.escape(baseurl), urllib.parse.quote_plus(tourneyname)))
-    response.writeln('<input type="hidden" name="id" value="%d">' % (player_id))
+    response.writeln('<form method="POST">')
+    #response.writeln('<input type="hidden" name="id" value="%d">' % (player_id))
     if player.is_withdrawn():
         response.writeln('<input type="submit" name="reinstateplayer" class="bigbutton" value="Reinstate %s">' % (cgicommon.escape(player_name)))
     else:
         response.writeln('<input type="submit" name="withdrawplayer" class="bigbutton" value="Withdraw %s">' % (cgicommon.escape(player_name)))
     response.writeln('</form>')
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourneyname = tourney.get_name()
 
-    player_id = int_or_none(form.getfirst("id"))
+    # If player_id is given, it's the first extra component after
+    # /atropine/<tourney>/player/
+    if len(extra_components) > 0:
+        player_id = int_or_none(extra_components[0])
+    else:
+        player_id = None
+
     add_player = int_or_none(form.getfirst("addplayer"))
     if add_player is None:
         add_player = False
@@ -278,12 +281,9 @@ function showDeletePlayerDialog() {
     p.innerText = "Are you sure you want to delete this player? The only way to undo this is to add a new player with this name.";
     elements.push(p);
     dialogBoxShow("playerdialog", playerName, "Delete", "Cancel",
-            "POST", %(form_action)s, "deleteplayer",
-            elements, { "id" : playerId });
+            "POST", "", "deleteplayer", elements, { "id" : playerId });
 }
-""" % {
-        "form_action" : cgicommon.js_string(baseurl + "?" + query_string)
-    })
+""")
 
     response.writeln("</script>")
 
@@ -300,14 +300,14 @@ function showDeletePlayerDialog() {
     num_withdrawn = len(players) - len(active_players)
 
     response.writeln("<p>")
-    response.writeln("<a href=\"/cgi-bin/player.py?tourney=%s&addplayer=1\">Add new player...</a>" % (urllib.parse.quote_plus(tourney.get_name())))
+    response.writeln("<a href=\"/atropine/%s/player?addplayer=1\">Add new player...</a>" % (cgicommon.escape(tourney.get_name())))
     response.writeln("</p>")
 
     if not players:
         response.writeln("<p>")
         response.writeln("Your tourney doesn't have any players yet.")
         if tourney.get_num_games() == 0:
-            response.writeln("You can add players with the link above or you can paste a list of players on the <a href=\"tourneysetup.py?tourney=%s\">Tourney Setup</a> page." % (urllib.parse.quote_plus(tourney.get_name())))
+            response.writeln("You can add players with the link above or you can paste a list of players on the <a href=\"/atropine/%s/tourneysetup\">Tourney Setup</a> page." % (cgicommon.escape(tourney.get_name())))
         else:
             response.writeln("Yet somehow you've managed to create fixtures. I'm not quite sure how you've managed that, but meh. You can add players using the form below.")
         response.writeln("</p>")
@@ -379,9 +379,9 @@ function showDeletePlayerDialog() {
         response.writeln("</blockquote>")
         response.writeln("<blockquote>")
         if player:
-            response.writeln("<a href=\"%s?tourney=%s&id=%d\">OK</a>" % (cgicommon.escape(baseurl, True), urllib.parse.quote_plus(tourney.get_name()), player.get_id()))
+            response.writeln("<a href=\"/atropine/%s/player/%d\">OK</a>" % (cgicommon.escape(tourney.get_name()), player.get_id()))
         else:
-            response.writeln("<a href=\"%s?tourney=%s\">OK</a>" % (cgicommon.escape(baseurl, True), urllib.parse.quote_plus(tourney.get_name())))
+            response.writeln("<a href=\"/atropine/%s/player\">OK</a>" % (cgicommon.escape(tourney.get_name())))
         response.writeln("</blockquote>")
 
     if player_name_deleted:
@@ -389,10 +389,9 @@ function showDeletePlayerDialog() {
         response.writeln("<blockquote>")
         response.writeln(("<li>%s has been deleted. If you didn't mean to do " +
                 "this, you can add them again on the " +
-                "<a href=\"%s?tourney=%s&addplayer=1\">Add New Player</a> page.</li>") % (
+                "<a href=\"/atropine/%s/player?addplayer=1\">Add New Player</a> page.</li>") % (
                     cgicommon.escape(player_name_deleted),
-                    cgicommon.escape(baseurl, True),
-                    urllib.parse.quote_plus(tourney.get_name())
+                    cgicommon.escape(tourney.get_name())
                 )
         )
         response.writeln("</blockquote>")
@@ -418,14 +417,14 @@ function showDeletePlayerDialog() {
                 else:
                     acc_list = ", ".join([str(x) for x in table_list])
 
-            cgicommon.show_warning_box(response, "<p>%s requires an accessible table, but their preferred table is table %d, which is not an accessible table. This player's requirement for an accessible table will be given a higher priority than their specific preference for table %d.</p><p>The accessible table numbers defined in <a href=\"%s?tourney=%s\">Tourney Setup</a> are: %s%s.</p>" % (
+            cgicommon.show_warning_box(response, "<p>%s requires an accessible table, but their preferred table is table %d, which is not an accessible table. This player's requirement for an accessible table will be given a higher priority than their specific preference for table %d.</p><p>The accessible table numbers defined in <a href=\"/atropine/%s/tourneysetup\">Tourney Setup</a> are: %s%s.</p>" % (
                 cgicommon.escape(player.get_name()), pref_table, pref_table,
-                "/cgi-bin/tourneysetup.py", urllib.parse.quote_plus(tourney.get_name()),
+                cgicommon.escape(tourney.get_name()),
                 acc_list_preamble, acc_list
                 ), wide=True)
 
         write_h2(response, player, "Edit player")
-        cgicommon.show_player_form(response, baseurl, tourney, player)
+        cgicommon.show_player_form(response, tourney, player)
 
         response.writeln("<hr />")
 
@@ -557,7 +556,7 @@ function showDeletePlayerDialog() {
             response.writeln("</table>")
         response.writeln("<hr />")
     elif add_player:
-        cgicommon.show_player_form(response, baseurl, tourney, None)
+        cgicommon.show_player_form(response, tourney, None)
 
     response.writeln("</div>") # end form pane
     response.writeln("</div>") # end form pane container

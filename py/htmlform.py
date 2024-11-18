@@ -33,7 +33,10 @@ class HTMLForm(object):
         self.element_list.append(element);
 
     def html(self):
-        s = "<form method=\"%s\" action=\"%s\">\n" % (html.escape(self.method, True), html.escape(self.action, True));
+        s = "<form method=\"%s\"" % (html.escape(self.method, True))
+        if self.action:
+            s += " action=\"%s\"" % (html.escape(self.action, True))
+        s += ">\n"
         for el in self.element_list:
             s += el.html();
         s += "\n</form>";

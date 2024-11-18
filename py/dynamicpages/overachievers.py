@@ -4,8 +4,6 @@ import urllib.request, urllib.parse, urllib.error
 import cgicommon
 import countdowntourney
 
-baseurl = "/cgi-bin/overachievers.py"
-
 def show_rerate_button(response, tourney):
     tourney_name = tourney.get_name()
     response.writeln("<h2>Rerate players by player ID</h2>")
@@ -35,7 +33,7 @@ def show_rerate_button(response, tourney):
     response.writeln("</p>")
 
     response.writeln("<p>")
-    response.writeln("<form method=\"POST\" action=\"%s?tourney=%s\">" % (cgicommon.escape(baseurl), urllib.parse.quote_plus(tourney_name)))
+    response.writeln("<form method=\"POST\">")
     response.writeln("<input type=\"submit\" name=\"reratebyplayerid\" value=\"Rerate players by player ID\" />")
     response.writeln("<input type=\"checkbox\" name=\"reratebyplayeridconfirm\" id=\"reratebyplayeridconfirm\" style=\"margin-left: 20px\" />")
     response.writeln("<label for=\"reratebyplayeridconfirm\">Yes, I'm sure</label>")
@@ -43,7 +41,7 @@ def show_rerate_button(response, tourney):
     response.writeln("</form>")
     response.writeln("</p>")
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
 
     cgicommon.print_html_head(response, "Overachievers: " + str(tourney_name))

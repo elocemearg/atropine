@@ -4,7 +4,7 @@ import urllib.request, urllib.parse, urllib.error
 import cgicommon
 import countdowntourney
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
 
     cgicommon.print_html_head(response, "Lucky Stiff: " + str(tourney_name))
@@ -21,10 +21,10 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
 
         response.writeln("<h1>Lucky Stiff</h1>")
 
-        response.writeln("<form action=\"/cgi-bin/luckystiff.py\" method=\"GET\" class=\"spaced\">")
+        response.writeln("<form method=\"GET\" class=\"spaced\">")
         response.writeln("The Lucky Stiff is the player whose")
         response.writeln("<input type=\"number\" name=\"numwins\" value=\"%d\" min=\"1\" max=\"999\" size=\"3\" />" % (num_wins))
-        response.writeln("closest winning games had the lowest aggregate winning margin. It is the opposite of <a href=\"/cgi-bin/tuffluck.py?tourney=%s\">Tuff Luck</a>." % (cgicommon.escape(tourney_name, True)))
+        response.writeln("closest winning games had the lowest aggregate winning margin. It is the opposite of <a href=\"/atropine/%s/tuffluck\">Tuff Luck</a>." % (cgicommon.escape(tourney_name, True)))
         response.writeln("<br>")
         response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (cgicommon.escape(tourney_name, True)))
         response.writeln("<input type=\"submit\" name=\"submit\" value=\"Refresh\" />")

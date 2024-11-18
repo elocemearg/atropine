@@ -5,7 +5,7 @@ import urllib.request, urllib.parse, urllib.error
 import html
 import countdowntourney
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
     starting_from_round = form.getfirst("fromround")
     try:
@@ -34,7 +34,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
         rounds = tourney.get_rounds()
 
         if tourney.has_per_round_standings() and len(rounds) > 1:
-            response.writeln("<form action=\"standings.py\" method=\"GET\" class=\"spaced\">")
+            response.writeln("<form method=\"GET\" class=\"spaced\">")
             response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\">" % (html.escape(tourney_name)))
             response.writeln("Count games from ")
             response.writeln("<select name=\"fromround\">")

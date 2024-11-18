@@ -7,8 +7,6 @@ import time
 import cgicommon
 import countdowntourney
 
-baseurl = "/cgi-bin/home.py"
-
 def int_or_none(s):
     try:
         return int(s);
@@ -23,10 +21,10 @@ def get_tourney_modified_time(name):
 def print_tourney_table(response, tourney_list, destination_page, show_last_modified, show_export_html_link=False, show_display_link=False, order_by="mtime_d"):
     response.writeln("<table class=\"tourneylist\">");
     response.writeln("<tr>")
-    response.writeln("<th><a href=\"/cgi-bin/home.py?orderby=%s\">Name</a></th>" % ("name_d" if order_by == "name_a" else "name_a"))
+    response.writeln("<th><a href=\"?orderby=%s\">Name</a></th>" % ("name_d" if order_by == "name_a" else "name_a"))
 
     if show_last_modified:
-        response.writeln("<th><a href=\"/cgi-bin/home.py?orderby=%s\">Last modified</a></th>" % ("mtime_a" if order_by == "mtime_d" else "mtime_d"))
+        response.writeln("<th><a href=\"?orderby=%s\">Last modified</a></th>" % ("mtime_a" if order_by == "mtime_d" else "mtime_d"))
 
     if show_display_link or show_export_html_link:
         response.writeln("<th colspan=\"%d\">Useful links</th>" % ( 2 if show_display_link and show_export_html_link else 1 ))
@@ -40,7 +38,7 @@ def print_tourney_table(response, tourney_list, destination_page, show_last_modi
         response.writeln("<tr>")
         response.writeln('<td class=\"tourneylistname\">')
         if destination_page:
-            response.writeln('<a href="%s?tourney=%s">%s</a>' % (cgicommon.escape(destination_page, True), urllib.parse.quote_plus(name), cgicommon.escape(name)));
+            response.writeln('<a href="/atropine/%s/%s">%s</a>' % (cgicommon.escape(name), cgicommon.escape(destination_page), cgicommon.escape(name)));
         else:
             response.writeln(cgicommon.escape(name))
         response.writeln('</td>')
@@ -50,17 +48,17 @@ def print_tourney_table(response, tourney_list, destination_page, show_last_modi
 
         if show_export_html_link:
             response.writeln("<td class=\"tourneylistlink\">")
-            response.writeln("<a href=\"/cgi-bin/export.py?tourney=%s&format=html\">Tourney report</a>" % (urllib.parse.quote_plus(name)))
+            response.writeln("<a href=\"/atropine/%s/export?format=html\">Tourney report</a>" % (cgicommon.escape(name)))
             response.writeln("</td>")
         if show_display_link:
             response.writeln("<td class=\"tourneylistlink\">")
-            response.writeln("<a href=\"/cgi-bin/display.py?tourney=%s\">Full screen display</a>" % (urllib.parse.quote_plus(name)))
+            response.writeln("<a href=\"/atropine/%s/display\">Full screen display</a>" % (cgicommon.escape(name)))
             response.writeln("</td>")
 
         response.writeln("</tr>")
     response.writeln("</table>");
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     # For this handler, tourney is None.
     cgicommon.print_html_head(response, "Create Tourney" if httpreq.is_client_from_localhost() else "Atropine");
 
@@ -103,7 +101,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
         response.writeln("""
         /* Redirect the user to the new tourney they just created */
         setTimeout(function() {
-            window.location.replace("/cgi-bin/tourneysetup.py?tourney=%s");
+            window.location.replace("/atropine/%s/tourneysetup");
         }, 0);
         """ % (urllib.parse.quote_plus(tourneyname)))
     response.writeln("""
@@ -113,7 +111,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
 
     if tourney_created:
         response.writeln("<p>");
-        response.writeln('You should be redirected to your new tourney semi-immediately. If not, <a href="/cgi-bin/tourneysetup.py?tourney=%s">click here to continue</a>.' % urllib.parse.quote_plus(tourneyname));
+        response.writeln('You should be redirected to your new tourney semi-immediately. If not, <a href="/atropine/%s/tourneysetup">click here to continue</a>.' % urllib.parse.quote_plus(tourneyname));
         response.writeln("</p>");
         response.writeln("</body></html>")
         return
@@ -131,7 +129,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
                 display_shape_option_html += "<option value=\"%d\"%s>%s</option>" % (i, " selected" if i == displayshape else "", d["name"])
             response.writeln("<h2>Create new tourney</h2>");
 
-            response.writeln('<form action="%s" method="POST">' % cgicommon.escape(baseurl, True));
+            response.writeln('<form method="POST">');
 
             # If at least one display profile is defined, also show a drop-down
             # box so the user can choose from which display profile to take the
@@ -218,7 +216,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     if httpreq.is_client_from_localhost():
         if tourney_list:
             response.writeln("<h2>Open existing tourney</h2>");
-            print_tourney_table(response, tourney_list, "/cgi-bin/tourneysetup.py", True, False, False, order_by)
+            print_tourney_table(response, tourney_list, "tourneysetup", True, False, False, order_by)
         else:
             response.writeln("<p>")
             response.writeln("No tourneys exist yet.");

@@ -456,7 +456,7 @@ def get_user_form(tourney, settings, div_rounds):
         elements.append(htmlform.HTMLFragment("<p>"))
         elements.append(htmlform.HTMLFormSubmitButton("submit", "Submit table sizes and select players"))
         elements.append(htmlform.HTMLFragment("</p>"))
-        return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.parse.quote_plus(tourney.name)), elements)
+        return htmlform.HTMLForm("POST", None, elements)
 
     arrangement = PlayerArrangement(tourney, settings, div_rounds)
     if arrangement.is_complete() and settings.get("submitplayers"):
@@ -780,7 +780,7 @@ for (var i = 0; i < playerBoxOrder.length; ++i) {
 """ % (json.dumps(last_edited_input_name))
     elements.append(htmlform.HTMLFragment(set_element_focus_script))
 
-    form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.parse.quote_plus(tourney.name)), elements);
+    form = htmlform.HTMLForm("POST", None, elements);
     return form;
 
 def check_ready(tourney, div_rounds):

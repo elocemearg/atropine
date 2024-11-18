@@ -4,9 +4,7 @@ import cgicommon
 import urllib.request, urllib.parse, urllib.error
 import countdowntourney
 
-baseurl = "/cgi-bin/timdownaward.py"
-
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
 
     cgicommon.print_html_head(response, "Tim Down Award: %s" % (tourney_name))
@@ -24,7 +22,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
 
         response.writeln("<h1>Tim Down Award</h1>")
 
-        response.writeln("<form action=\"%s\" method=\"GET\" class=\"spaced\">" % (baseurl))
+        response.writeln("<form method=\"GET\" class=\"spaced\">")
         response.writeln("The Tim Down Award goes to the player whose opponents have the highest average standings position, and who lost ")
         response.writeln("<input type=\"number\" name=\"numlosinggames\" value=\"%d\" min=\"0\" max=\"999\" size=\"3\" />" % (num_losing_games))
         response.writeln("or more games.")

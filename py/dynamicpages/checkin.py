@@ -15,8 +15,6 @@ HTML_TRASHCAN_SYMBOL = "&#x1F5D1;"
 # but never more than four columns.
 ROWS_PER_COLUMN = 12
 
-baseurl = "/cgi-bin/checkin.py"
-
 def int_or_zero(s):
     if s is None:
         return 0
@@ -130,13 +128,13 @@ function showDeletePlayerConfirm(playerId, playerName) {
 }
 </script>
 """ % {
-        "form_action" : cgicommon.js_string(baseurl + "?" + query_string),
+        "form_action" : cgicommon.js_string(("?" + query_string) if query_string else ""),
         "num_active_players" : len(active_players),
         "num_withdrawn_players" : len(withdrawn_players),
         "delete_gamed_player_warning" : "Note that any players who have had a game created for them will <em>not</em> be deleted." if num_games > 0 else "" }
     response.writeln(script)
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     # When making changes, one or other of these might be filled up with
     # exceptions or strings explaining what changed. When we present the page,
     # we'll display them.
@@ -193,13 +191,13 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     if hide_help:
         response.writeln("""
 <p style="font-size: 10pt;">
-<a href="{baseurl}?tourney={tourneyname}">Show help</a>
+<a href="?">Show help</a>
 </p>
-""".format(baseurl=baseurl, tourneyname=urllib.parse.quote_plus(tourneyname)))
+""")
     else:
         response.writeln("""
 <p style="font-size: 10pt;">
-<a href="{baseurl}?tourney={tourneyname}&hidehelp=1">Hide this help</a>
+<a href="?hidehelp=1">Hide this help</a>
 </p>
 <p>
 This page is intended for before you've generated the first round, to help you
@@ -218,13 +216,13 @@ Suggested usage is as follows:
 <li>Mark individual players as active as they arrive.</li>
 <li>When you want to generate fixtures for the first round, either keep
 or delete the still-withdrawn players as necessary, then move on to
-<a href="/cgi-bin/fixturegen.py?tourney={tourneyname}">Generate Fixtures</a>.</li>
+<a href="/atropine/{tourneyname}/fixturegen">Generate Fixtures</a>.</li>
 </ol>
 <p>
 Only players currently active {tick}
 appear in the list of players on the public display screen.
 </p>
-""".format(baseurl=baseurl, tourneyname=urllib.parse.quote_plus(tourneyname),
+""".format(tourneyname=cgicommon.escape(tourneyname),
         tick=HTML_TICK_SYMBOL, cross=HTML_CROSS_SYMBOL))
 
     # Show any exceptions or notifications generated if we just acted on a form
@@ -262,10 +260,12 @@ appear in the list of players on the public display screen.
                 player = players[cell_number]
             response.writeln("<td class=\"playercheckincol\">")
             if player:
-                response.writeln("<form method=\"POST\" id=\"formcell%d\" action=\"%s?%s\">" % (
-                    cell_number,
-                    cgicommon.escape(baseurl),
-                    cgicommon.escape(form_query_string)
+                if form_query_string:
+                    action = "action=\"?%s\"" % (cgicommon.escape(form_query_string))
+                else:
+                    action = ""
+                response.writeln("<form method=\"POST\" id=\"formcell%d\" %s>" % (
+                    cell_number, action
                 ))
                 # Withdraw/reinstate button
                 response.writeln("<button type=\"submit\" form=\"formcell%d\" name=\"%s\" class=\"playercheckinbutton %s\" id=\"regslot%d\" value=\"1\">%s %s</button>" % (
@@ -314,7 +314,7 @@ appear in the list of players on the public display screen.
     # And finally, have an "add new player" form for the common case where
     # someone just rocks up to the venue unannounced.
     response.writeln("<h2>Add new player</h2>")
-    cgicommon.show_player_form(response, baseurl, tourney, None, "hidehelp=1" if hide_help else "")
+    cgicommon.show_player_form(response, tourney, None, "hidehelp=1" if hide_help else "")
 
     response.writeln("</div>") #mainpane
 

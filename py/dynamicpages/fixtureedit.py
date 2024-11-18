@@ -5,8 +5,6 @@ import urllib.request, urllib.parse, urllib.error
 import re
 import countdowntourney
 
-baseurl = "/cgi-bin/fixtureedit.py";
-
 def show_player_selection(response, players, control_name, value=None):
     response.writeln("<select name=\"%s\">" % cgicommon.escape(control_name, True));
     if value is None:
@@ -72,23 +70,23 @@ def write_game_type_selection(response, game_types, selected_code, control_name,
     response.writeln("</select>")
 
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.name
-    round_no = form.getfirst("round");
 
     cgicommon.print_html_head(response, "Edit fixtures: " + str(tourney_name));
 
     response.writeln("<body onload=\"relabel_save_button();\">");
 
-    if not tourney_name:
-        response.writeln("<h1>No tourney specified</h1>");
-        response.writeln("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
-        response.writeln("</body></html>");
-        return
+    # Round number is mandatory and it's the first component of the path after
+    # /atropine/<tourney>/fixtureedit/
+    if len(extra_components) > 0:
+        round_no = extra_components[0]
+    else:
+        round_no = None
 
     if not round_no:
         response.writeln("<h1>No round number specified</h1>");
-        response.writeln("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
+        response.writeln("<p><a href=\"/\">Home</a></p>");
         response.writeln("</body></html>");
         return
 
@@ -96,7 +94,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
         round_no = int(round_no);
     except ValueError:
         response.writeln("<h1>Round number is not a number</h1>");
-        response.writeln("<p><a href=\"/cgi-bin/home.py\">Home</a></p>");
+        response.writeln("<p><a href=\"/\">Home</a></p>");
         response.writeln("</body></html>");
         return
 
@@ -320,7 +318,7 @@ function add_game_checkbox_click(div_index) {
                 remarks[seq] = "Updated";
 
         response.writeln("<p>")
-        response.writeln("<a href=\"/cgi-bin/games.py?tourney=%s&amp;round=%d\">Back to the score editor</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
+        response.writeln("<a href=\"/atropine/%s/games/%d\">Back to the score editor</a>" % (urllib.parse.quote_plus(tourney_name), round_no));
         response.writeln("</p>")
 
         if num_games_updated:
@@ -331,7 +329,7 @@ function add_game_checkbox_click(div_index) {
         game_types = countdowntourney.get_game_types()
 
         response.writeln("<div class=\"scorestable\">");
-        response.writeln("<form method=\"POST\" action=\"%s?tourney=%s&amp;round=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), round_no));
+        response.writeln("<form method=\"POST\" action=\"/atropine/%s/fixtureedit/%d\">" % (urllib.parse.quote_plus(tourney_name), round_no));
         response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % cgicommon.escape(tourney_name, True));
         response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
         for div_index in range(num_divisions):

@@ -29,9 +29,9 @@ def print_html_head(response, title, font_defs_css):
     response.writeln("<link rel=\"shortcut icon\" href=\"/favicon.png\" type=\"image/png\" />")
     response.writeln("</head>");
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     content_type = "text/html; charset=utf-8"
-    tourney_name = tourney.name
+    tourney_name = tourney.get_name()
     mode = form.getfirst("mode")
     if mode is not None:
         try:

@@ -15,7 +15,7 @@ def unix_time_to_str(unix_time):
         return None
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(unix_time))
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
 
     cgicommon.print_html_head(response, "Live Broadcast Setup: %s" % (tourney_name))
@@ -104,7 +104,7 @@ when the internet connection is restored.
     })
 
     response.writeln("<div class=\"formbox\">")
-    response.writeln("<form action=\"uploadsetup.py?tourney=%s\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name)))
+    response.writeln("<form method=\"POST\">")
 
     form_info = [
             { "type" : "text", "name" : "username", "label" : "Username",

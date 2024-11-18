@@ -348,7 +348,7 @@ function fetchGameState() {
 
     gameStateFetchRequest = new XMLHttpRequest();
     gameStateFetchRequest.open("GET",
-            "/atropine/" + encodeURIComponent(tourneyName) + "/state/default" + modeParam, true);
+            "/service/" + encodeURIComponent(tourneyName) + "/state/default" + modeParam, true);
     gameStateFetchRequest.onreadystatechange = fetchGameStateCallback;
     gameStateFetchRequest.onerror = fetchGameStateError;
     gameStateFetchRequest.send(null);

@@ -64,8 +64,8 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
         elements.append(htmlform.HTMLFragment("<p>This %s has <strong>%d active players</strong>.</p>" % ("division" if num_divisions > 1 else "tournament", num_active_players)))
         if not tourney.has_auto_prune():
             if num_active_players % 2 != 0 and num_active_players % 3 != 0:
-                elements.append(htmlform.HTMLWarningBox("unusualplayercountwarningbox", "The number of active players is not a multiple of 2 or 3. Do you want to add one or more Prune players on the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page?</p>" % (
-                    urllib.parse.quote_plus(tourney.get_name())
+                elements.append(htmlform.HTMLWarningBox("unusualplayercountwarningbox", "The number of active players is not a multiple of 2 or 3. Do you want to add one or more Prune players on the <a href=\"/atropine/%s/player\">Player Setup</a> page?</p>" % (
+                    cgicommon.escape(tourney.get_name())
                 )))
 
         if tourney.has_auto_prune():
@@ -87,7 +87,7 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
     elements.append(htmlform.HTMLFragment("<p>"))
     elements.append(htmlform.HTMLFormSubmitButton("submit", "Generate Fixtures", other_attrs={"class" : "bigbutton"}));
     elements.append(htmlform.HTMLFragment("</p>"))
-    form = htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py", elements)
+    form = htmlform.HTMLForm("POST", None, elements)
     return form;
 
 

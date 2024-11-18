@@ -24,7 +24,7 @@ class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     # Modules with a handle() method which want to handle requests to
-    # /atropine/<tourneyname>/<handlername> are put in this dictionary.
+    # /service/<tourneyname>/<handlername> are put in this dictionary.
     # ATROPINE_HANDLER_MODULES[<handlername>] = module
     ATROPINE_HANDLER_MODULES = {}
 
@@ -37,10 +37,10 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     """
     All HTTP requests are handled by AtropineHTTPRequestHandler.
-    Requests to /atropine/<tourneyname>/<handlername> are passed to the
+    Requests to /service/<tourneyname>/<handlername> are passed to the
     appropriate handler module in ATROPINE_HANDLER_MODULES.
-    Requests to /cgi-bin/<script>.py are passed to the handler module in
-    py/dynamicpages/.
+    Requests to /cgi-bin/<script>.py or /atropine/<tourney>/<script> are passed
+    to the handler module in py/dynamicpages/.
 
     All other requests are handled by the SimpleHTTPRequestHandler, which
     returns the contents of a file.
@@ -69,13 +69,13 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         # If the user requests the root then rewrite this to /cgi-bin/home.py
         if len(path_components) == 0 or (len(path_components) == 1 and path_components[0] == ""):
-            path_components = [ "cgi-bin", "home.py" ]
+            path_components = [ "atropine", "global", "home" ]
 
         # If we have a handler for this path, call it, otherwise let
         # SimpleHTTPRequestHandler handle it.
-        if len(path_components) >= 1 and path_components[0] == "atropine":
+        if len(path_components) >= 1 and path_components[0] == "service":
             if len(path_components) < 3:
-                handlerutils.send_error_response(self, "Bad URL: format is /atropine/<tourneyname>/<service>/...", status_code=400)
+                handlerutils.send_error_response(self, "Bad URL: format is /service/<tourneyname>/<servicename>/...", status_code=400)
                 return True
             tourney_name = path_components[1]
             handler_name = path_components[2]
@@ -102,14 +102,15 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 handlerutils.send_error_response(self, "Failed to open tourney \"%s\": %s" % (tourney_name, str(e)), status_code=400)
             return True
-        elif len(path_components) == 2 and path_components[0] == "cgi-bin" and path_components[1].endswith(".py"):
+        elif len(path_components) >= 3 and path_components[0] == "atropine":
+            # atropine/<tourneyname>/<modulename>/...
             # It's an old link to what used to be a CGI script.
             # Pass this request to the appropriate module in py/dynamicpages.
-            # The tourney name is expected to be part of the query string or
-            # POST data.
-            handler_name = path_components[1][:-3]
+            tourney_name = path_components[1]
+            handler_name = path_components[2]
+            extra_components = path_components[3:]
             if handler_name not in AtropineHTTPRequestHandler.ATROPINE_WEBPAGE_MODULES:
-                handlerutils.send_html_error_response(self, "Bad URL: /cgi-bin/%s.py not found" % (handler_name), status_code=404)
+                handlerutils.send_html_error_response(self, "Bad URL: %s not found" % (self.path), status_code=404)
                 return True
 
             if handler_name not in WEBPAGE_HANDLERS_PUBLIC and not self.is_client_from_localhost():
@@ -143,22 +144,22 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             # that here and open the countdowntourney object, to avoid every
             # individual script having to do it.
             try:
-                if not webpage_handler_needs_tourney(handler_name):
-                    tourney_name = None
-                else:
-                    tourney_name = field_storage.getfirst("tourney")
+                if webpage_handler_needs_tourney(handler_name):
                     if not tourney_name:
                         handlerutils.send_html_error_response(self, "No tourney name specified.", status_code=400)
                         return True
 
                 handler_module = AtropineHTTPRequestHandler.ATROPINE_WEBPAGE_MODULES[handler_name]
-                if tourney_name is None:
-                    # This script doesn't have or need a tourney=... parameter
+                if not webpage_handler_needs_tourney(handler_name):
+                    # This script doesn't need a countdowntourney passed to it,
+                    # but set the tourney=... parameter because sql.py needs it
+                    field_storage.set("tourney", tourney_name)
                     try:
-                        handler_module.handle(self, response, None, request_method, field_storage, query_string)
+                        handler_module.handle(self, response, None, request_method, field_storage, query_string, extra_components)
                         handlerutils.send_response(self, response.get_content_type(), response.get_string(), other_headers=response.get_header_pairs())
                     except Exception as e:
-                        handlerutils.send_html_error_response(self, "Failed to execute request handler %s: %s" % (handler_name, str(e)), status_code=400)
+                        htmltraceback.write_html_traceback(response, type(e), e, e.__traceback__)
+                        handlerutils.send_response(self, response.get_content_type(), response.get_string(), status_code=500)
                 else:
                     # Open this tourney DB file.
                     with countdowntourney.tourney_open(tourney_name, tourneys_path) as tourney:
@@ -166,7 +167,7 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         # handler's handle() method which will send the
                         # response to the client.
                         try:
-                            handler_module.handle(self, response, tourney, request_method, field_storage, query_string)
+                            handler_module.handle(self, response, tourney, request_method, field_storage, query_string, extra_components)
                             handlerutils.send_response(self, response.get_content_type(), response.get_string(), other_headers=response.get_header_pairs())
                         except Exception as e:
                             htmltraceback.write_html_traceback(response, type(e), e, e.__traceback__)

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 """
-Handler for atropine/<tourneyname>/state/...
+Handler for service/<tourneyname>/state/...
 
 Replaces the old CGI script cgi-bin/jsonreq.py. Fetches tourney state as a
 JSON object. Only GET is supported.

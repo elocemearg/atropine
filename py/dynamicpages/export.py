@@ -8,8 +8,6 @@ import csv
 import countdowntourney
 from io import StringIO
 
-baseurl = "/cgi-bin/export.py"
-
 def int_or_none(s):
     try:
         i = int(s)
@@ -536,7 +534,7 @@ def export_csv(tourney, response, filename, show_standings, selected_divisions, 
 
 ###############################################################################
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     started_html = False;
     tourney_name = tourney.name
     export_format = form.getfirst("format");
@@ -743,7 +741,7 @@ function validateDate() {
 </script>
 
 <div class="formbox exportformbox">
-<form action="%(baseurl)s?tourney=%(tourneynameinurl)s" method="GET" target="_blank">
+<form method="GET" target="_blank">
 
 <input type="hidden" name="tourney" value="%(tourneyname)s" />
 
@@ -834,7 +832,6 @@ function validateDate() {
 """ % {
             "tourneynameinurl" : urllib.parse.quote_plus(tourney_name),
             "tourneyname" : cgicommon.escape(tourney_name),
-            "baseurl" : cgicommon.escape(baseurl),
             "wikitextday" : wikitext_date_d,
             "monthoptions" : month_options,
             "wikitextyear" : wikitext_date_y,

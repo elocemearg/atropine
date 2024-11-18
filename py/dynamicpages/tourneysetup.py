@@ -8,8 +8,6 @@ import time
 import urllib.request, urllib.parse, urllib.error
 import countdowntourney
 
-baseurl = "/cgi-bin/tourneysetup.py"
-
 def int_or_none(s):
     if s is None:
         return None;
@@ -72,7 +70,7 @@ Todd Bonzalez,1551"""
 
 player_list_rating_help = "To give a player a rating, put a comma after the player's name and put the rating number after that, e.g. <span class=\"fixedwidth\">Harry Peters,1860</span>"
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourneyname = tourney.get_name()
     playerlist = form.getfirst("playerlist");
     player_list_submit = form.getfirst("playerlistsubmit");
@@ -471,7 +469,7 @@ function setDateToday() {
     if len(players) == 0:
         response.writeln("This isn't much of a tourney yet. It hasn't got any players.")
     else:
-        response.writeln("There are <a href=\"player.py?tourney=%s\">%d players</a>," % (urllib.parse.quote_plus(tourney.get_name()), len(players)))
+        response.writeln("There are <a href=\"/atropine/%s/player\">%d players</a>," % (cgicommon.escape(tourney.get_name()), len(players)))
         num_active = len([x for x in players if not x.is_withdrawn()])
         if num_active != len(players):
             response.writeln("of whom %d %s active and %d %s withdrawn." % (num_active, "is" if num_active == 1 else "are", len(players) - num_active, "has" if len(players) - num_active == 1 else "have"))
@@ -484,14 +482,14 @@ function setDateToday() {
             cgicommon.show_info_box(response, """<p>
     Set the <a href="#tourneyprops">tourney properties</a> below, then you can
     optionally go to the
-    <a href="/cgi-bin/checkin.py?tourney={tourneyname}">Player Check-In</a>
+    <a href="/atropine/{tourneyname}/checkin">Player Check-In</a>
     page to mark people as present or withdrawn.
     </p><p>
     If you're happy with the player list, head to
-    <a href="/cgi-bin/fixturegen.py?tourney={tourneyname}">Generate fixtures</a>
+    <a href="/atropine/{tourneyname}/fixturegen">Generate fixtures</a>
     to generate the first games. Once you've generated the first games, you won't
     be able to delete players, but you can always withdraw them, edit names and
-    ratings, or add new players.</p>""".format(tourneyname=urllib.parse.quote_plus(tourney.get_name())))
+    ratings, or add new players.</p>""".format(tourneyname=cgicommon.escape(tourney.get_name())))
         else:
             cgicommon.show_info_box(response, """
     <p>Welcome to your new tourney!</p>
@@ -501,7 +499,7 @@ function setDateToday() {
     at any time.</p>""")
 
     if num_divisions > 1:
-        response.writeln("<p>The players are distributed into <a href=\"divsetup.py?tourney=%s\">%d divisions</a>.</p>" % (urllib.parse.quote_plus(tourney.get_name()), num_divisions))
+        response.writeln("<p>The players are distributed into <a href=\"/atropine/%s/divsetup\">%d divisions</a>.</p>" % (cgicommon.escape(tourney.get_name()), num_divisions))
         response.writeln("<blockquote>")
         for div_index in range(num_divisions):
             response.writeln("<li>%s: %d active players.</li>" % (tourney.get_division_name(div_index), tourney.get_num_active_players(div_index)))
@@ -513,8 +511,8 @@ function setDateToday() {
         # these before the player list so that the user sees they're there.
         response.writeln("<hr />")
         response.writeln("<h2 id=\"tourneyprops\">Tourney properties</h2>");
-        response.writeln(('<form action="%s?tourney=%s" method="post">' % (baseurl, urllib.parse.quote_plus(tourneyname))));
-        response.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
+        response.writeln('<form method="post">')
+        #response.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
 
         response.writeln("<h3>Event details</h3>")
         response.writeln("<p>These details will appear at the top of exported tournament reports, on the public-facing welcome screen, and on the event's webpage if you use the broadcast feature.</p>")
@@ -554,7 +552,7 @@ function setDateToday() {
 
         (table_list, accessible_default) = tourney.get_accessible_tables()
         response.writeln("<h3>Accessibility</h3>")
-        response.writeln("<p>If a player requires an accessible table, you can set this on the <a href=\"/cgi-bin/player.py?tourney=%s\">configuration page for that player</a>.</p>" % (urllib.parse.quote_plus(tourney.get_name())))
+        response.writeln("<p>If a player requires an accessible table, you can set this on the <a href=\"/atropine/%s/player\">configuration page for that player</a>.</p>" % (cgicommon.escape(tourney.get_name())))
         response.writeln("<div class=\"generalsetupcontrolgroup\">")
         response.writeln("<span style=\"padding-right: 10px;\">Table numbers</span> <input type=\"text\" name=\"accessibletables\" value=\"%s\" />" % (", ".join([ str(x) for x in table_list ])))
         response.writeln(" <span style=\"color: #808080; font-size: 10pt\">(Enter table numbers separated by commas, e.g. <span class=\"fixedwidth\">1,2,5</span>)</span>")
@@ -609,8 +607,8 @@ function setDateToday() {
             response.writeln("<hr />")
             response.writeln('<h2>Delete rounds</h2>')
             response.writeln('<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>')
-            response.writeln('<form action="/cgi-bin/delround.py" method="get">')
-            response.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname)))
+            response.writeln('<form action="/atropine/%s/delround" method="get">' % (cgicommon.escape(tourneyname)))
+            #response.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname)))
             response.writeln('<input type="submit" class="bigbutton" name="delroundsetupsubmit" value="Delete most recent round" />')
             response.writeln('</form>')
 
@@ -621,7 +619,7 @@ function setDateToday() {
         response.writeln("<hr />")
         response.writeln("<h2>Ratings setup</h2>");
 
-        response.writeln(("<form action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourneyname))))
+        response.writeln("<form method=\"POST\">")
 
         response.writeln("<p>")
         response.writeln("How do you want to assign ratings to players? Ratings are used by the Overachievers table and some fixture generators. If you don't know what ratings are, or you don't care, select \"This tournament is not seeded\".")
@@ -750,7 +748,7 @@ function setDateToday() {
         response.writeln("</p>")
         response.writeln("<p>A player's newbie status can be used by fixture generators to put at least one non-newbie on each table.</p>")
         response.writeln("<p>")
-        response.writeln("You can always change these settings later on the <a href=\"/cgi-bin/player.py?tourney=%s\">Player Setup</a> page." % (urllib.parse.quote_plus(tourney.get_name())));
+        response.writeln("You can always change these settings later on the <a href=\"/atropine/%s/player\">Player Setup</a> page." % (cgicommon.escape(tourney.get_name())));
         response.writeln("</p>")
         response.writeln("</div>") #playerlistextrahelp
 

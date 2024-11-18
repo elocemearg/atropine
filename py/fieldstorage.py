@@ -80,3 +80,5 @@ class FieldStorage(object):
     def keys(self):
         return self.parameters.keys()
 
+    def set(self, name, value):
+        self.parameters[name] = value

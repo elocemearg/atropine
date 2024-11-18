@@ -1,7 +1,7 @@
 Any Python module in this directory with a name of the form:
     http_handler_XXX.py
 is expected to have a handle() function which will be passed HTTP requests made
-to the path /atropine/<tourneyname>/XXX/...
+to the path /service/<tourneyname>/XXX/...
 
 def handle(handler, tourney, remaining_path_components, query_string)
     handler: the Python HTTPRequestHandler, which contains details of the

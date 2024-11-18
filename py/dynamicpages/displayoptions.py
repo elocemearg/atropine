@@ -6,16 +6,14 @@ import cgicommon
 import dialog
 import countdowntourney
 
-baseurl = "/cgi-bin/displayoptions.py"
-
 def show_now_showing_frame(response, tourney, is_widescreen):
-    response.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s\" height=\"270\" width=\"%d\"></iframe>" % (
+    response.writeln("<iframe class=\"displaypreviewframe\" src=\"/atropine/%s/display\" height=\"270\" width=\"%d\"></iframe>" % (
         urllib.parse.quote_plus(tourney.get_name()),
         480 if is_widescreen else 360
     ))
 
 def show_view_preview(response, tourney, form, selected_view, is_widescreen):
-    response.writeln("<iframe class=\"displaypreviewframe\" src=\"/cgi-bin/display.py?tourney=%s&mode=%d\" height=\"270\" width=\"%d\"></iframe>" % (
+    response.writeln("<iframe class=\"displaypreviewframe\" src=\"/atropine/%s/display?mode=%d\" height=\"270\" width=\"%d\"></iframe>" % (
         urllib.parse.quote_plus(tourney.get_name()),
         selected_view, 480 if is_widescreen else 360
     ))
@@ -27,7 +25,7 @@ def show_live_and_preview(response, tourney, form, query_string, teleost_modes, 
     # Tell the user what mode is being shown, what mode is selected for preview
     # (if different) and if not auto, offer the user a button to return to auto.
     # We assume the "auto" display mode is number 0.
-    response.writeln("<form action=\"" + baseurl + "?tourney=%s&selectedview=0\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name)))
+    response.writeln("<form action=\"/atropine/%s/displayoptions/0\" method=\"POST\">" % (urllib.parse.quote_plus(tourney_name)))
     response.writeln("<p>")
     response.write("You are currently <span style=\"color: green;\">showing</span> the <span style=\"font-weight: bold;\">%s</span> display mode" % (
             "?" if showing_view is None else teleost_modes[showing_view]["name"]
@@ -54,7 +52,7 @@ def show_live_and_preview(response, tourney, form, query_string, teleost_modes, 
         show_view_preview(response, tourney, form, selected_view, is_widescreen)
 
         response.writeln("<div class=\"viewpreviewswitch\">")
-        response.writeln("<form action=\"" + baseurl + "?%s\" method=\"POST\">" % (cgicommon.escape(query_string)))
+        response.writeln("<form method=\"POST\">")
         response.writeln("<input class=\"switchviewbutton\" type=\"submit\" name=\"switchview\" value=\"Switch to %s\" />" % ("this screen mode" if selected_view != 0 else "automatic control"))
         response.writeln("</form>")
         response.writeln("</div>") # viewpreviewswitch
@@ -108,7 +106,7 @@ def show_view_thumbnail(response, tourney_name, mode, selected_view, auto_curren
         # This is neither showing nor selected
         classes.append("viewmenucellbystander")
     response.writeln("<div class=\"%s\">" % (" ".join(classes)))
-    response.writeln("<a href=\"%s?tourney=%s&selectedview=%d\">" % (baseurl, urllib.parse.quote_plus(tourney_name), mode["num"]))
+    response.writeln("<a href=\"/atropine/%s/displayoptions/%d\">" % (urllib.parse.quote_plus(tourney_name), mode["num"]))
     img_src = mode.get("image", None)
     if img_src:
         response.writeln("<img src=\"%s\" alt=\"%s\" title=\"%s\" />" % (
@@ -264,13 +262,13 @@ function showDeleteProfileDialog() {
 }
 
 """ % {
-        "form_action" : baseurl + "?" + query_string
+        "form_action" : ""
     })
     response.writeln("</script>")
 
 ###############################################################################
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     content_type = "text/html; charset=utf-8"
     tourney_name = tourney.get_name()
 
@@ -280,12 +278,15 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     try:
         teleost_modes = tourney.get_teleost_modes();
 
-        selected_view = form.getfirst("selectedview")
-        if selected_view is not None:
+        # selectedview is the component after /atropine/<tourney>/displayoptions/
+        if len(extra_components) > 0:
+            selected_view = extra_components[0]
             try:
                 selected_view = int(selected_view)
             except ValueError:
                 selected_view = None
+        else:
+            selected_view = None
 
         if selected_view is not None and (selected_view < 0 or selected_view >= len(teleost_modes)):
             selected_view = None
@@ -386,7 +387,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
         response.writeln("<h1>Display Setup</h1>");
         response.writeln("<div class=\"opendisplaylink\">")
         response.writeln("""
-        <a href="/cgi-bin/display.py?tourney=%s"
+        <a href="/atropine/%s/display"
            target=\"_blank\">
            Open Display Window
            <img src=\"/images/opensinnewwindow.png\"
@@ -404,7 +405,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
         # Banner text controls
         response.writeln("<h2>Configuration</h2>")
         response.writeln("<div class=\"displayoptsform bannercontrol\">")
-        response.writeln("<form action=\"" + baseurl + "?%s\" method=\"POST\">" % (cgicommon.escape(query_string)))
+        response.writeln("<form method=\"POST\">")
         response.writeln("Banner text: <input type=\"text\" name=\"bannertext\" id=\"bannereditbox\" value=\"%s\" size=\"50\" onclick=\"this.select();\" />" % (cgicommon.escape(banner_text, True)))
         response.writeln("<input type=\"submit\" style=\"min-width: 60px;\" name=\"setbanner\" value=\"Set\" />")
         response.writeln("<input type=\"submit\" style=\"min-width: 60px;\" name=\"clearbanner\" value=\"Clear\" />")
@@ -415,9 +416,9 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
         display_font_profile = tourney.get_display_font_profile_id()
         font_profile_descs = countdowntourney.DISPLAY_FONT_PROFILES
         response.writeln("""<div class=\"displayoptsform\">
-    <form action=\"%s?%s\" method=\"POST\">
+    <form method=\"POST\">
     <label for="fontprofileselect">Font width:</label>
-    <select name="fontprofileselect" id="fontprofileselect">""" % (baseurl, cgicommon.escape(query_string)))
+    <select name="fontprofileselect" id="fontprofileselect">""")
         for i in range(len(font_profile_descs)):
             response.writeln("<option value=\"%d\" %s>%s</option>" % (i, "selected" if i == display_font_profile else "", cgicommon.escape(font_profile_descs[i]["name"])))
         response.writeln("</select>")
@@ -429,9 +430,9 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
         screen_shape_profile = tourney.get_screen_shape_profile_id()
         screen_shape_descs = countdowntourney.SCREEN_SHAPE_PROFILES
         response.writeln("""<div class=\"displayoptsform\">
-    <form action=\"%s?%s\" method=\"POST\">
+    <form method=\"POST\">
     <label for="screenshapeselect">Optimise for screen shape:</label>
-    <select name="screenshapeselect" id="screenshapeselect">""" % (baseurl, cgicommon.escape(query_string)))
+    <select name="screenshapeselect" id="screenshapeselect">""")
         for i in range(len(screen_shape_descs)):
             response.writeln("<option value=\"%d\" %s>%s</option>" % (i, "selected" if i == screen_shape_profile else "", cgicommon.escape(screen_shape_descs[i]["name"])))
         response.writeln("</select>")
@@ -471,7 +472,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
         if options:
             response.writeln("<h3>Options for the <span style=\"font-weight: bold;\">%s</span> display mode</h3>" % ("?" if selected_view is None or selected_view < 0 or selected_view >= len(teleost_modes) else cgicommon.escape(teleost_modes[selected_view]["name"])))
             response.writeln("<div class=\"viewcontrols\">")
-            response.writeln("<form action=\"" + baseurl + "?%s\" method=\"POST\">" % (cgicommon.escape(query_string)))
+            response.writeln("<form method=\"POST\">")
             response.writeln("<div class=\"viewoptions\" id=\"viewoptions\">")
             show_view_option_controls(response, options)
             response.writeln("</div>")

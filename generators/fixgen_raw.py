@@ -132,7 +132,7 @@ def get_user_form(tourney, settings, div_rounds):
         elements.append(htmlform.HTMLFragment("<div class=\"fixgenoption\">"))
         elements.append(htmlform.HTMLFormSubmitButton("submit", "Continue"))
         elements.append(htmlform.HTMLFragment("</div>"))
-        return htmlform.HTMLForm("POST", "/cgi-bin/fixturegen.py?tourney=%s" % (urllib.parse.quote_plus(tourney.name)), elements)
+        return htmlform.HTMLForm("POST", None, elements)
     else:
         return fixgen_manual.get_user_form(tourney, settings, div_rounds)
 

@@ -5,8 +5,6 @@ import csv
 import urllib.request, urllib.parse, urllib.error
 import countdowntourney
 
-baseurl = "/cgi-bin/tourneysetupadvanced.py"
-
 def int_or_none(s):
     if s is None:
         return None;
@@ -23,7 +21,7 @@ def float_or_none(s):
     except ValueError:
         return None;
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourneyname = tourney.get_name()
     show_tournament_rating = bool(int_or_none(form.getfirst("showtournamentratingcolumn")))
     tr_bonus = float_or_none(form.getfirst("tournamentratingbonus"))
@@ -55,15 +53,15 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
         except countdowntourney.TourneyException as e:
             cgicommon.show_tourney_exception(response, e);
 
-    response.writeln(('<form action="%s?tourney=%s" method="POST">' % (baseurl, urllib.parse.quote_plus(tourneyname))));
-    response.writeln(('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True)));
+    response.writeln('<form method="POST">')
+    #response.writeln('<input type="hidden" name="tourney" value="%s" />' % cgicommon.escape(tourneyname, True));
 
     response.writeln("<h2>Team Setup</h2>")
     response.writeln("""<p>Atropine can assign each player to one of
 two teams. Every match between players on opposing teams gives a team point to
 the winner's team. The team scores are displayed alongside the standings.</p>""")
     response.writeln("""<p>
-<a href=\"/cgi-bin/teamsetup.py?tourney=%s\">Go to the Team Setup page</a>
+<a href=\"/atropine/%s/teamsetup\">Go to the Team Setup page</a>
 </p>""" % (urllib.parse.quote_plus(tourneyname)))
 
     response.writeln("<h2>Standings table ranking order</h2>");
@@ -146,7 +144,7 @@ player's name.</p>""")
 
     response.writeln("<h1>Raw database access</h1>")
     response.writeln("<p>This gives you direct SQL access to the tourney database. You shouldn't normally need to use this feature. If you don't know what you're doing, you can mess up your entire tournament. Don't say you weren't warned!</p>")
-    response.writeln("<p><a href=\"/cgi-bin/sql.py?tourney=%s\">I understand. Take me to the raw database access page, and on my own head be it.</a></p>" % (urllib.parse.quote_plus(tourneyname)))
+    response.writeln("<p><a href=\"/atropine/%s/sql\">I understand. Take me to the raw database access page, and on my own head be it.</a></p>" % (urllib.parse.quote_plus(tourneyname)))
 
     response.writeln("</div>")
 

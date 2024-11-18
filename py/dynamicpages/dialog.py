@@ -65,7 +65,9 @@ function dialogBoxShow(dialogId, title, submitButtonLabel, cancelButtonLabel,
     for (let i = 0; i < forms.length; i++) {
         let form = forms[i];
         form.method = requestMethod;
-        form.action = formAction;
+        if (formAction) {
+            form.action = formAction;
+        }
         let controlsDiv = form.getElementsByClassName("dialogboxformcontrols");
         if (controlsDiv.length > 0) {
             controlsDiv = controlsDiv[0];

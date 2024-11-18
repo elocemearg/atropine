@@ -3,9 +3,7 @@
 import cgicommon
 import countdowntourney
 
-baseurl = "/cgi-bin/preferences.py";
-
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     # tourney is None for this handler
 
     cgicommon.print_html_head(response, "Preferences");
@@ -43,7 +41,7 @@ function change_saved_indicator(on) {
     tab_order = prefs.get_result_entry_tab_order();
 
     response.writeln("<div class=\"prefsdiv\">")
-    response.writeln("<form method=\"POST\" action=\"%s\">" % (baseurl));
+    response.writeln("<form method=\"POST\">");
 
     response.writeln("<div class=\"prefsheading\">")
     response.writeln("Tabbing order for results entry interface")

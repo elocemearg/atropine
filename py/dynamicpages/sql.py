@@ -7,8 +7,6 @@ import cgicommon
 import sys
 import os
 
-baseurl = "/cgi-bin/sql.py"
-
 class Column(object):
     def __init__(self, seq, name, typ):
         self.seq = seq
@@ -35,7 +33,7 @@ class Table(object):
     def get_columns(self):
         return self.columns[:]
 
-def handle(httpreq, response, tourney, request_method, form, query_string):
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     # tourney is None for this handler
 
     cgicommon.print_html_head(response, "Raw SQL interface")
@@ -55,7 +53,9 @@ def handle(httpreq, response, tourney, request_method, form, query_string):
     tables = []
     views = []
 
-    tourney_name = form.getfirst("tourney")
+    # tourney name is the second component of the path /atropine/<tourney>/sql
+    components = [ urllib.parse.unquote(x) for x in httpreq.path.split("/") if x != "" ]
+    tourney_name = components[1]
 
     if form.getfirst("nowarning"):
         show_warning = False
@@ -209,7 +209,7 @@ function rowHighlight(rowNum, highlightOn) {
 
     response.writeln("<div class=\"sqlsidebarname\">")
     if tourney_name:
-        response.writeln("<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">%s</a>" % (urllib.parse.quote_plus(tourney_name), cgicommon.escape(tourney_name)))
+        response.writeln("<a href=\"/atropine/%s/tourneysetup\">%s</a>" % (cgicommon.escape(tourney_name), cgicommon.escape(tourney_name)))
     response.writeln("</div>")
 
     # Display list of tables and views, which can be expanded to show columns
@@ -251,18 +251,18 @@ function rowHighlight(rowNum, highlightOn) {
                     "surgery by people who know what they're doing.</p>"
                     "<p>If you don't know what SQL is or what the various tables " +
                     "in the database do, then I strongly recommend that you " +
-                    "<a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">flee to safety</a>.</p>" % (urllib.parse.quote_plus(tourney_name)) +
+                    "<a href=\"/atropine/%s/tourneysetup\">flee to safety</a>.</p>" % (cgicommon.escape(tourney_name)) +
                     "</div>",
                     wide=True
                     )
         else:
             response.writeln("<p><a href=\"https://sqlite.org/lang.html\" target=\"_blank\">SQLite language reference</a></p>")
-            response.writeln("<p><a href=\"/cgi-bin/tourneysetup.py?tourney=%s\">Back to tourney setup</a></p>" % (urllib.parse.quote_plus(tourney_name)))
+            response.writeln("<p><a href=\"/atropine/%s/tourneysetup\">Back to tourney setup</a></p>" % (cgicommon.escape(tourney_name)))
 
         response.writeln("<div class=\"sqlentry\">")
 
         response.writeln("<h2>Enter SQL query</h2>")
-        response.writeln("<form id=\"sqlform\" action=\"%s?tourney=%s\" method=\"POST\">" % (baseurl, urllib.parse.quote_plus(tourney_name)))
+        response.writeln("<form id=\"sqlform\" method=\"POST\">")
         response.writeln("<div class=\"sqlentrybox\">")
         response.writeln("<textarea autofocus id=\"sql\" name=\"sql\" style=\"width: 600px; height: 100px;\">")
         if sql_text:
