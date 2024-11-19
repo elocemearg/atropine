@@ -25,7 +25,7 @@ def fatal_error(context, exc=None):
     if exc:
         print("The following exception was thrown, and its text may help:")
         print(str(exc))
-        print(traceback.format_exc(exc))
+        traceback.print_tb(exc.__traceback__)
     print()
     print("Press ENTER to exit...")
     input()

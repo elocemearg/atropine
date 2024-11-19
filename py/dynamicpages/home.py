@@ -18,7 +18,9 @@ def get_tourney_modified_time(name):
     st = os.stat(path_name)
     return st.st_mtime
 
-def print_tourney_table(response, tourney_list, destination_page, show_last_modified, show_export_html_link=False, show_display_link=False, order_by="mtime_d"):
+def print_tourney_table(response, tourney_list, destination_page,
+        show_last_modified, show_export_html_link=False,
+        show_display_link=False, order_by="mtime_d", show_advanced_links=False):
     response.writeln("<table class=\"tourneylist\">");
     response.writeln("<tr>")
     response.writeln("<th><a href=\"?orderby=%s\">Name</a></th>" % ("name_d" if order_by == "name_a" else "name_a"))
@@ -28,6 +30,9 @@ def print_tourney_table(response, tourney_list, destination_page, show_last_modi
 
     if show_display_link or show_export_html_link:
         response.writeln("<th colspan=\"%d\">Useful links</th>" % ( 2 if show_display_link and show_export_html_link else 1 ))
+
+    if show_advanced_links:
+        response.writeln("<th>Data file</th>")
 
     response.writeln("</tr>")
     for tourney_basename in tourney_list:
@@ -50,9 +55,17 @@ def print_tourney_table(response, tourney_list, destination_page, show_last_modi
             response.writeln("<td class=\"tourneylistlink\">")
             response.writeln("<a href=\"/atropine/%s/export?format=html\">Tourney report</a>" % (htmlcommon.escape(name)))
             response.writeln("</td>")
+
         if show_display_link:
             response.writeln("<td class=\"tourneylistlink\">")
             response.writeln("<a href=\"/atropine/%s/display\">Full screen display</a>" % (htmlcommon.escape(name)))
+            response.writeln("</td>")
+
+        if show_advanced_links:
+            response.writeln("<td class=\"tourneylistlink\">")
+            response.writeln("<a href=\"/atropine/%(name)s/exportdbfile\" title=\"Download a copy of this tourney's database file, %(name)s.db\">&#x1F4BE;</a>" % {
+                "name" : htmlcommon.escape(name)
+            })
             response.writeln("</td>")
 
         response.writeln("</tr>")
@@ -213,7 +226,7 @@ function initPage() {
     if httpreq.is_client_from_localhost():
         if tourney_list:
             response.writeln("<h2>Open existing tourney</h2>");
-            print_tourney_table(response, tourney_list, "tourneysetup", True, False, False, order_by)
+            print_tourney_table(response, tourney_list, "tourneysetup", True, False, False, order_by, show_advanced_links=True)
         else:
             response.writeln("<p>")
             response.writeln("No tourneys exist yet.");

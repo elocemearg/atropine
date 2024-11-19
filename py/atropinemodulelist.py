@@ -7,6 +7,7 @@ ATROPINE_DYNAMIC_PAGES = [
     "display",
     "divsetup",
     "export",
+    "exportdbfile",
     "fixtureedit",
     "fixturegen",
     "gameslist",

@@ -1,12 +1,16 @@
 #!/usr/bin/python3
 
-from io import StringIO
+from io import StringIO, BytesIO
 
 class HTTPResponse(object):
     """
     Object passed to former CGI scripts under cgi-bin/webroot, which are now
     modules with a handle() function. The handle() function calls write() and
     writeln() to build up a (usually HTML) response to the request.
+
+    Data supplied with write() or writeln() is expected to be text. If you
+    want to return binary data, call writebinary(), set an appropriate
+    content type, and do not call write() or writeln().
 
     When the handle() function returns, the main AtropineHTTPRequestHandler
     calls get_string() on it and sends the resulting string as the response
@@ -18,6 +22,7 @@ class HTTPResponse(object):
 
     def __init__(self):
         self.response_data = StringIO()
+        self.response_data_binary = None
         self.content_type = "text/html; charset=utf-8"
         self.headers = {}
 
@@ -28,8 +33,19 @@ class HTTPResponse(object):
     def write(self, s):
         self.response_data.write(s)
 
+    def writebinary(self, b):
+        if self.response_data_binary is None:
+            self.response_data_binary = BytesIO()
+        self.response_data_binary.write(b)
+
     def get_string(self):
         return self.response_data.getvalue()
+
+    def get_bytes(self):
+        return self.response_data_binary.getvalue()
+
+    def is_binary(self):
+        return self.response_data_binary is not None
 
     def set_content_type(self, content_type):
         self.content_type = content_type

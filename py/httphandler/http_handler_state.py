@@ -10,6 +10,7 @@ JSON object. Only GET is supported.
 from urllib.parse import parse_qsl
 
 import handlerutils
+import httpresponse
 import countdowntourney
 import tourney2json
 import json
@@ -38,4 +39,7 @@ def handle(handler, tourney, remaining_path_components, query_string):
             reply_object = handlerutils.make_error_response("tourney2json handler threw exception: " + str(e))
             status_code = 500
 
-    handlerutils.send_response(handler, "application/json", json.dumps(reply_object), status_code=status_code)
+    response = httpresponse.HTTPResponse()
+    response.write(json.dumps(reply_object))
+    response.set_content_type("application/json")
+    handlerutils.send_response(handler, response, status_code=status_code)

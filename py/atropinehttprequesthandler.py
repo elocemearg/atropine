@@ -11,7 +11,7 @@ import fieldstorage
 import htmltraceback
 
 # List of former CGI handlers which do not take a countdowntourney object
-WEBPAGE_HANDLERS_WITHOUT_TOURNEY = frozenset(["home", "sql", "preferences"])
+WEBPAGE_HANDLERS_WITHOUT_TOURNEY = frozenset(["home", "sql", "preferences", "exportdbfile"])
 def webpage_handler_needs_tourney(handler_name):
     return handler_name not in WEBPAGE_HANDLERS_WITHOUT_TOURNEY
 
@@ -156,10 +156,11 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     field_storage.set("tourney", tourney_name)
                     try:
                         handler_module.handle(self, response, None, request_method, field_storage, query_string, extra_components)
-                        handlerutils.send_response(self, response.get_content_type(), response.get_string(), other_headers=response.get_header_pairs())
+                        handlerutils.send_response(self, response, other_headers=response.get_header_pairs())
                     except Exception as e:
+                        print(str(e))
                         htmltraceback.write_html_traceback(response, type(e), e, e.__traceback__)
-                        handlerutils.send_response(self, response.get_content_type(), response.get_string(), status_code=500)
+                        handlerutils.send_response(self, response, status_code=500)
                 else:
                     # Open this tourney DB file.
                     with countdowntourney.tourney_open(tourney_name, tourneys_path) as tourney:
@@ -168,18 +169,18 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         # response to the client.
                         try:
                             handler_module.handle(self, response, tourney, request_method, field_storage, query_string, extra_components)
-                            handlerutils.send_response(self, response.get_content_type(), response.get_string(), other_headers=response.get_header_pairs())
+                            handlerutils.send_response(self, response, other_headers=response.get_header_pairs())
                         except Exception as e:
                             htmltraceback.write_html_traceback(response, type(e), e, e.__traceback__)
-                            handlerutils.send_response(self, response.get_content_type(), response.get_string(), status_code=500)
+                            handlerutils.send_response(self, response, status_code=500)
             except countdowntourney.DBNameDoesNotExistException as e:
                 handlerutils.send_html_error_response(self, e.description, status_code=404)
             except countdowntourney.TourneyException as e:
                 htmltraceback.write_html_traceback(response, type(e), e, e.__traceback__)
-                handlerutils.send_response(self, response.get_content_type(), response.get_string(), status_code=400)
+                handlerutils.send_response(self, response, status_code=400)
             except Exception as e:
                 htmltraceback.write_html_traceback(response, type(e), e, e.__traceback__)
-                handlerutils.send_response(self, response.get_content_type(), response.get_string(), status_code=500)
+                handlerutils.send_response(self, response, status_code=500)
 
             # Return true to say we handled this
             return True
