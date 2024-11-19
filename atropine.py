@@ -55,7 +55,7 @@ try:
     http_listen_port = args.port
     uploader_listen_port = args.uploader_port
     tourneys_path = args.tourneys
-    atropine_app_data_dir = parser.data_dir
+    atropine_app_data_dir = args.data_dir
 except Exception as e:
     fatal_error("Error parsing command-line arguments.", e)
 
