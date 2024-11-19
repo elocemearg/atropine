@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 import json
+import httpresponse
+import htmltraceback
 
 # http_response is an HTTPResponse object, defined in httpresponse.py
 def send_response(http_handler, http_response, status_code=200,
@@ -49,4 +51,9 @@ def send_html_error_response(http_handler, error_text, status_code=400):
 <p>%s</p>
 </body>
 </html>""" % (error_text))
+    send_response(http_handler, response, status_code=status_code)
+
+def send_exception_response(http_handler, exc, status_code=500):
+    response = httpresponse.HTTPResponse()
+    htmltraceback.write_html_exception_page(http_handler, response, exc)
     send_response(http_handler, response, status_code=status_code)

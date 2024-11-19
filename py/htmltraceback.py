@@ -7,38 +7,30 @@
 import sys
 import traceback
 import html
+import htmlcommon
+from htmlcommon import escape
 
-def escape(string, quote=True):
-    if string is None:
-        return "(None)"
-    else:
-        return html.escape(string, quote)
-
-def write_html_traceback(response, typ, value, tb):
-    response.writeln("</script>") # close <script> tag if we're in one
-    response.writeln(">")  # close a tag if we're in the middle of writing one
+def write_html_exception_page(httpreq, response, exc):
+    typ = str(type(exc))
+    value = str(exc)
+    htmlcommon.print_html_head(response, "Exception")
     response.writeln("""
-<div id="traceback_background" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgb(64, 64, 64, 0.7); text-align: center;">
-<div style="position: relative; display: inline-block; min-width: 600px; max-width: min(80vw, 1200px); box-shadow: 5px 5px 10px black; border: 3px groove gray; border-radius: 6px; background-color: hsl(0deg, 50%, 80%);">
-<div style="display: block; text-align: left; padding: 20px;">
+    <body style=\"background-color: rgb(255, 192, 208);\">
 <h1>Uncaught exception!</h1>
-<div style="padding: 10px; margin-top: 20px;">
-<button type="button" onclick="document.getElementById('traceback_background').style.display = 'none'; return false;">Close</button>
-</div>
-<p>
-In the course of generating this page, an exception has been thrown which
-wasn't caught. The rest of this page will not be generated.
-</p>
+<p>An exception has been thrown which wasn't caught. This page will not be generated.</p>
 <p>
 Please report this as a bug if you haven't done so already. When you do so,
 please also screenshot or copy-paste all the information below. It will help to
-diagnose and fix the
-problem.
+diagnose and fix the problem.
 </p>
-""")
+""" % {
+        "path" : httpreq.path,
+    })
 
     table = [
             ( "Python version", "%s, %s" % (escape(sys.version.split()[0]), escape(sys.executable)) ),
+            ( "Request method", escape(httpreq.command)),
+            ( "Request path and query", escape(httpreq.path) ),
             ( "Exception type", escape(str(typ)) ),
             ( "Exception value", escape(str(value)) )
     ]
@@ -52,7 +44,7 @@ problem.
 
     response.writeln("<p style=\"font-weight: bold;\">Traceback:</p>")
     response.writeln("<table style=\"background-color: white; font-family: monospace\">")
-    lines = traceback.format_tb(tb)
+    lines = traceback.format_tb(exc.__traceback__)
     row_num = 0
     traceback_background_colors = [ "#ddffdd", "#bbffbb" ]
     for line in lines:
@@ -75,11 +67,5 @@ problem.
     for line in lines:
         response.writeln(line.replace("-->", "- - >"))
     response.writeln("-->")
-
-    response.writeln("""
-</div>
-</div>
-</div>
-""")
-    
+    response.writeln("<p><a href=\"/\">Back to the home page</a>")
     response.writeln("</body></html>")

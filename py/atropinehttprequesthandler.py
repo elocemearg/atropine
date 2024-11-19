@@ -8,7 +8,6 @@ import httpresponse
 import countdowntourney
 import handlerutils
 import fieldstorage
-import htmltraceback
 
 # List of former CGI handlers which do not take a countdowntourney object
 WEBPAGE_HANDLERS_WITHOUT_TOURNEY = frozenset(["home", "sql", "preferences", "exportdbfile"])
@@ -154,33 +153,24 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     # This script doesn't need a countdowntourney passed to it,
                     # but set the tourney=... parameter because sql.py needs it
                     field_storage.set("tourney", tourney_name)
-                    try:
-                        handler_module.handle(self, response, None, request_method, field_storage, query_string, extra_components)
-                        handlerutils.send_response(self, response, other_headers=response.get_header_pairs())
-                    except Exception as e:
-                        print(str(e))
-                        htmltraceback.write_html_traceback(response, type(e), e, e.__traceback__)
-                        handlerutils.send_response(self, response, status_code=500)
+                    handler_module.handle(self, response, None, request_method, field_storage, query_string, extra_components)
+                    handlerutils.send_response(self, response, other_headers=response.get_header_pairs())
                 else:
                     # Open this tourney DB file.
                     with countdowntourney.tourney_open(tourney_name, tourneys_path) as tourney:
                         # If this tourney exists and we opened it, call the
                         # handler's handle() method which will send the
                         # response to the client.
-                        try:
-                            handler_module.handle(self, response, tourney, request_method, field_storage, query_string, extra_components)
-                            handlerutils.send_response(self, response, other_headers=response.get_header_pairs())
-                        except Exception as e:
-                            htmltraceback.write_html_traceback(response, type(e), e, e.__traceback__)
-                            handlerutils.send_response(self, response, status_code=500)
+                        handler_module.handle(self, response, tourney, request_method, field_storage, query_string, extra_components)
+                        handlerutils.send_response(self, response, other_headers=response.get_header_pairs())
             except countdowntourney.DBNameDoesNotExistException as e:
                 handlerutils.send_html_error_response(self, e.description, status_code=404)
             except countdowntourney.TourneyException as e:
-                htmltraceback.write_html_traceback(response, type(e), e, e.__traceback__)
-                handlerutils.send_response(self, response, status_code=400)
+                # If TourneyException is thrown by a page module, it's a bug
+                handlerutils.send_exception_response(self, e, status_code=500)
             except Exception as e:
-                htmltraceback.write_html_traceback(response, type(e), e, e.__traceback__)
-                handlerutils.send_response(self, response, status_code=500)
+                # If any other exception is thrown by a page module, it's a bug
+                handlerutils.send_exception_response(self, e, status_code=500)
 
             # Return true to say we handled this
             return True
