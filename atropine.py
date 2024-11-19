@@ -7,6 +7,7 @@ import errno
 import argparse
 import textwrap
 import importlib
+import traceback
 
 http_listen_port = 3960
 uploader_listen_port = 3961
@@ -24,6 +25,7 @@ def fatal_error(context, exc=None):
     if exc:
         print("The following exception was thrown, and its text may help:")
         print(str(exc))
+        print(traceback.format_exc(exc))
     print()
     print("Press ENTER to exit...")
     input()
@@ -39,8 +41,12 @@ def looks_like_temp_zip_dir(path):
             return True
     return False
 
+def running_from_pyinstaller_bundle():
+    return (getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"))
+
 try:
     parser = argparse.ArgumentParser(description="Run Atropine's web server.")
+    parser.add_argument("-d", "--data-dir", default=None, type=str)
     parser.add_argument("-p", "--port", default=http_listen_port, type=int)
     parser.add_argument("-u", "--uploader-port", default=uploader_listen_port, type=int)
     parser.add_argument("-t", "--tourneys", default=None, type=str)
@@ -49,6 +55,7 @@ try:
     http_listen_port = args.port
     uploader_listen_port = args.uploader_port
     tourneys_path = args.tourneys
+    atropine_app_data_dir = parser.data_dir
 except Exception as e:
     fatal_error("Error parsing command-line arguments.", e)
 
@@ -82,43 +89,44 @@ except Exception as e:
 # directories py and webroot, but not their contents. So we'll check for files
 # that should be in there as well.
 
-for d in [ "py", "webroot" ]:
-    path = os.path.join(atropine_home_dir, d)
-    if not os.path.exists(path) or not os.path.isdir(path):
-        # We're in either case (1) or (2). Doesn't really matter because we
-        # aren't going to be able to run anyway, but let's use a little
-        # heuristic so that the error message is a bit more helpful...
-        if looks_like_temp_zip_dir(atropine_home_dir):
-            fatal_error("I'm in " + atropine_home_dir + " but the " + d +
-                    " folder isn't. " +
-                    "I think this is because I've been run from inside a zip " +
-                    "file, which isn't going to work. " +
-                    "You need to extract all contents of the zip file to a " +
-                    "new folder first, then run this script from that " +
-                    "location.")
-        else:
-            fatal_error("I'm in " + atropine_home_dir + " but the \"" + d +
-                    "\" folder isn't. Where is it? " +
-                    "Did you move atropine.py out of the folder containing " +
-                    "the \"py\" and \"webroot\" folders? If so, please put it "+
-                    "back where you found it and try again.")
+if not running_from_pyinstaller_bundle():
+    for d in [ "py", "webroot" ]:
+        path = os.path.join(atropine_home_dir, d)
+        if not os.path.exists(path) or not os.path.isdir(path):
+            # We're in either case (1) or (2). Doesn't really matter because we
+            # aren't going to be able to run anyway, but let's use a little
+            # heuristic so that the error message is a bit more helpful...
+            if looks_like_temp_zip_dir(atropine_home_dir):
+                fatal_error("I'm in " + atropine_home_dir + " but the " + d +
+                        " folder isn't. " +
+                        "I think this is because I've been run from inside a zip " +
+                        "file, which isn't going to work. " +
+                        "You need to extract all contents of the zip file to a " +
+                        "new folder first, then run this script from that " +
+                        "location.")
+            else:
+                fatal_error("I'm in " + atropine_home_dir + " but the \"" + d +
+                        "\" folder isn't. Where is it? " +
+                        "Did you move atropine.py out of the folder containing " +
+                        "the \"py\" and \"webroot\" folders? If so, please put it "+
+                        "back where you found it and try again.")
 
-# The directories exist, but what about the contents? We won't check every
-# file because then we'd have to maintain a manifest of all the files we
-# expect, but let's at least check for py/countdowntourney.py and
-# py/dynamicpages/home.py.
-rel_paths = [
-        os.path.join("py", "countdowntourney.py"),
-        os.path.join("py", "dynamicpages", "home.py")
-]
-for p in rel_paths:
-    abs_path = os.path.join(atropine_home_dir, p)
-    if not os.path.exists(abs_path):
-        fatal_error("Current directory is: " + atropine_home_dir + "\r\n" +
-                "Couldn't find file: " + p + "\r\n" +
-                "I should be able to see the file " + abs_path +
-                " but I can't. Did you extract the entire contents of the zip "+
-                "file? (Hint: no.)")
+    # The directories exist, but what about the contents? We won't check every
+    # file because then we'd have to maintain a manifest of all the files we
+    # expect, but let's at least check for py/countdowntourney.py and
+    # py/dynamicpages/home.py.
+    rel_paths = [
+            os.path.join("py", "countdowntourney.py"),
+            os.path.join("py", "dynamicpages", "home.py")
+    ]
+    for p in rel_paths:
+        abs_path = os.path.join(atropine_home_dir, p)
+        if not os.path.exists(abs_path):
+            fatal_error("Current directory is: " + atropine_home_dir + "\r\n" +
+                    "Couldn't find file: " + p + "\r\n" +
+                    "I should be able to see the file " + abs_path +
+                    " but I can't. Did you extract the entire contents of the zip "+
+                    "file? (Hint: no.)")
 
 # Add the py and generators directories to Python's path, so we can load
 # modules in those directories.
@@ -131,24 +139,51 @@ try:
 except Exception as e:
     fatal_error("Failed to add a necessary directory to Python's list of module paths.", e)
 
-# Set up the path containing the tourney databases.
+# Work out our app data directory, into which we'll put the prefs.db file and
+# our tourney databases in a subdirectory called "tourneys".
+if not atropine_app_data_dir:
+    try:
+        if os.name == "posix":
+            # Default tourney directory is $HOME/.atropine/tourneys/
+            home_dir = os.getenv("HOME")
+            if not home_dir:
+                # Fall back to current directory
+                print("Warning: HOME environment variable not set.", file=sys.stderr)
+                print("Using current directory.", file=sys.stderr)
+                home_dir = os.getcwd()
+            atropine_app_data_dir = os.path.join(home_dir, ".atropine")
+        elif os.name == "nt":
+            # Default tourney directory is %APPDATA%\Atropine\tourneys
+            app_data_dir = os.getenv("APPDATA")
+            if not app_data_dir:
+                fatal_error("APPDATA environment variable not set, which it usually is in Windows, and no tourneys path given.")
+            atropine_app_data_dir = os.path.join(app_data_dir, "Atropine")
+        else:
+            # Fall back to current directory
+            atropine_app_data_dir = os.getcwd()
+    except Exception as e:
+        fatal_error("Failed to check or create app data folder: " + atropine_app_data_dir, e)
+try:
+    if not os.path.exists(atropine_app_data_dir):
+        os.mkdir(atropine_app_data_dir)
+except Exception as e:
+    fatal_error("Failed to create app data folder: " + atropine_app_data_dir, e)
 try:
     if not tourneys_path:
-        tourneys_path = os.path.join(os.getcwd(), "tourneys")
-    if not os.path.exists(tourneys_path):
-        os.mkdir(tourneys_path)
+        tourneys_path = os.path.join(atropine_app_data_dir, "tourneys")
+        if not os.path.exists(tourneys_path):
+            os.mkdir(tourneys_path)
 except Exception as e:
     fatal_error("Failed to check or create tourneys folder: " + tourneys_path, e)
 
-# Set environment variables which tell the CGI scripts and everything else
-# where to find the fixture generators, the main code (py/) and the tourneys.
+# Set environment variables which tell the rest of the application where to
+# find the app data directory which contains prefs.db, and the tourneys
+# directory (by default in $ATROPINEAPPDATA/tourneys).
 try:
-    os.environ["GENERATORPATH"] = os.path.join(os.getcwd(), "generators")
-    os.environ["CODEPATH"] = os.path.join(os.getcwd(), "py")
     os.environ["TOURNEYSPATH"] = tourneys_path
-    os.environ["ATROPINEROOT"] = os.getcwd()
+    os.environ["ATROPINEAPPDATA"] = atropine_app_data_dir
 except Exception as e:
-    fatal_error("Failed to set an environment variable GENERATORPATH or CODEPATH. This is... odd.", e)
+    fatal_error("Failed to set an environment variable. This is... odd.", e)
 
 try:
     import uploader
@@ -171,32 +206,24 @@ except Exception as e:
 # directory which starts with "http_handler_" is a module in which we expect
 # to find a handle() function.
 try:
+    import atropinemodulelist
     import handlerutils
-    http_handler_path = os.path.join(os.getcwd(), "py", "httphandler")
-
-    file_list = os.listdir(http_handler_path)
-    prefix = "http_handler_"
-    suffix = ".py"
-    for file_name in file_list:
-        if file_name.startswith(prefix) and file_name.endswith(suffix):
-            handler_name = file_name[len(prefix):-len(suffix)]
-            module = importlib.import_module(prefix + handler_name)
+    for module_name in atropinemodulelist.ATROPINE_HTTP_SERVICE_HANDLERS:
+        if module_name.startswith("http_handler_"):
+            handler_name = module_name[13:]
+            module = importlib.import_module(module_name)
             AtropineHTTPRequestHandler.add_handler_module(handler_name, module)
 except Exception as e:
-    fatal_error("Failed to import the handlerutils or other handler modules in the py directory.", e)
+    fatal_error("Failed to import the handlerutils or other HTTP service handler modules.", e)
 
 # Set up the handler modules which used to be CGI scripts.
 try:
-    dynamic_pages_path = os.path.join(os.getcwd(), "py", "dynamicpages")
-    file_list = os.listdir(dynamic_pages_path)
-    for file_name in file_list:
-        if file_name.endswith(".py"):
-            handler_name = file_name[:-3]
-            module = importlib.import_module(handler_name)
-            if hasattr(module, "handle"):
-                AtropineHTTPRequestHandler.add_webpage_module(handler_name, module)
+    for module_name in atropinemodulelist.ATROPINE_DYNAMIC_PAGES:
+        module = importlib.import_module(module_name)
+        if hasattr(module, "handle"):
+            AtropineHTTPRequestHandler.add_webpage_module(module_name, module)
 except Exception as e:
-    fatal_error("Failed to import legacy former-CGI scripts in the py/dynamicpages directory.", e)
+    fatal_error("Failed to import former CGI script modules.", e)
 
 # Success! If you reach this point then Atropine was installed correctly.
 

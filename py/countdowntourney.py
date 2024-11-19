@@ -17,7 +17,7 @@ SW_VERSION = ".".join([str(x) for x in SW_VERSION_SPLIT])
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
 # SQLite3 db file containing installation-wide preferences, applicable to all tourneys.
-GLOBAL_DB_FILE = os.path.join(os.getenv("ATROPINEROOT", ".."), "prefs.db")
+GLOBAL_DB_FILE = os.path.join(os.getenv("ATROPINEAPPDATA", ".."), "prefs.db")
 
 RANK_WINS_POINTS = 0
 RANK_POINTS = 1
