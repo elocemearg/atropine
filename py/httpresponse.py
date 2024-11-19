@@ -25,6 +25,7 @@ class HTTPResponse(object):
         self.response_data_binary = None
         self.content_type = "text/html; charset=utf-8"
         self.headers = {}
+        self.status_code = 200
 
     def writeln(self, s=""):
         self.response_data.write(s)
@@ -58,4 +59,10 @@ class HTTPResponse(object):
 
     def get_header_pairs(self):
         return [ (name, self.headers[name]) for name in self.headers ]
+
+    def set_status_code(self, status_code):
+        self.status_code = status_code
+
+    def get_status_code(self):
+        return self.status_code
 

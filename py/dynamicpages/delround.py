@@ -53,7 +53,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             response.writeln('<input type="submit" class="bigbutton destroybutton" name="delroundsubmit" value="Yes, I\'m sure. Delete the round and all its games." />')
             response.writeln('</p>')
             response.writeln('</form>')
-            response.writeln('<form action="/atropine/%s/tourneysetup" method="post">')
+            response.writeln('<form action="/atropine/%s/tourneysetup" method="post">' % (htmlcommon.escape(tourneyname)))
             response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname))
             response.writeln('<input type="submit" class="bigbutton chickenoutbutton" name="arrghgetmeoutofhere" value="No. Cancel this and take me back to the tourney setup page." />')
             response.writeln('</form>')

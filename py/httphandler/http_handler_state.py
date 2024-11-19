@@ -42,4 +42,5 @@ def handle(handler, tourney, remaining_path_components, query_string):
     response = httpresponse.HTTPResponse()
     response.write(json.dumps(reply_object))
     response.set_content_type("application/json")
-    handlerutils.send_response(handler, response, status_code=status_code)
+    response.set_status_code(status_code)
+    handlerutils.send_response(handler, response)

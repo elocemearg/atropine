@@ -5,8 +5,9 @@ import httpresponse
 import htmltraceback
 
 # http_response is an HTTPResponse object, defined in httpresponse.py
-def send_response(http_handler, http_response, status_code=200,
-        charset="utf-8", other_headers=[], cache_max_sec=0):
+def send_response(http_handler, http_response, charset="utf-8",
+        other_headers=[], cache_max_sec=0):
+    status_code = http_response.get_status_code()
     http_handler.send_response(status_code)
     if http_response.is_binary():
         http_handler.send_header("Content-Type", http_response.get_content_type())
@@ -41,7 +42,8 @@ def send_error_response(http_handler, error_text, status_code=400):
     response = httpresponse.HTTPResponse()
     response.set_content_type("application/json; charset=utf-8")
     response.write(json.dumps(make_error_response(error_text), indent=4))
-    send_response(http_handler, response, status_code=status_code)
+    response.set_status_code(status_code)
+    send_response(http_handler, response)
 
 def send_html_error_response(http_handler, error_text, status_code=400):
     response = httpresponse.HTTPResponse()
@@ -51,9 +53,11 @@ def send_html_error_response(http_handler, error_text, status_code=400):
 <p>%s</p>
 </body>
 </html>""" % (error_text))
-    send_response(http_handler, response, status_code=status_code)
+    response.set_status_code(status_code)
+    send_response(http_handler, response)
 
 def send_exception_response(http_handler, exc, status_code=500):
     response = httpresponse.HTTPResponse()
     htmltraceback.write_html_exception_page(http_handler, response, exc)
-    send_response(http_handler, response, status_code=status_code)
+    response.set_status_code(status_code)
+    send_response(http_handler, response)
