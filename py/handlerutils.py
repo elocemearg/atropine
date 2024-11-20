@@ -5,8 +5,7 @@ import httpresponse
 import htmltraceback
 
 # http_response is an HTTPResponse object, defined in httpresponse.py
-def send_response(http_handler, http_response, charset="utf-8",
-        other_headers=[], cache_max_sec=0):
+def send_response(http_handler, http_response, charset="utf-8", cache_max_sec=0):
     status_code = http_response.get_status_code()
     http_handler.send_response(status_code)
     if http_response.is_binary():
@@ -27,7 +26,7 @@ def send_response(http_handler, http_response, charset="utf-8",
         # The browser may cache this response for up to cache_max_sec seconds.
         http_handler.send_header("Cache-Control", "max-age=%d" % (cache_max_sec))
 
-    for (name, value) in other_headers:
+    for (name, value) in http_response.get_header_pairs():
         http_handler.send_header(name, value)
     http_handler.end_headers()
     http_handler.wfile.write(response_binary)

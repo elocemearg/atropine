@@ -70,9 +70,19 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         if len(path_components) == 0 or (len(path_components) == 1 and path_components[0] == ""):
             path_components = [ "atropine", "global", "home" ]
 
-        # If we have a handler for this path, call it, otherwise let
-        # SimpleHTTPRequestHandler handle it.
-        if len(path_components) >= 1 and path_components[0] == "service":
+        if len(path_components) == 2 and path_components[0] == "cgi-bin" and path_components[1] == "home.py":
+            # Browsers which were previously used with old Atropine will
+            # "helpfully" autocomplete http://localhost:3960 to
+            # http://localhost:3960/cgi-bin/home.py, so redirect to the
+            # correct location.
+            response = httpresponse.HTTPResponse()
+            response.set_status_code(301)
+            response.add_header("Location", "/")
+            response.writeln("<html><head><title>301 Moved Permanently</title></head><body><p>This page doesn't exist any more. Redirecting to <a href=\"/\">/ (the root)</a></p></body></html>")
+            handlerutils.send_response(self, response)
+            return True
+        elif len(path_components) >= 1 and path_components[0] == "service":
+            # If we have a /service handler for this path, call it.
             if len(path_components) < 3:
                 handlerutils.send_error_response(self, "Bad URL: format is /service/<tourneyname>/<servicename>/...", status_code=400)
                 return True
@@ -102,7 +112,7 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 handlerutils.send_error_response(self, "Failed to open tourney \"%s\": %s" % (tourney_name, str(e)), status_code=400)
             return True
         elif len(path_components) >= 3 and path_components[0] == "atropine":
-            # atropine/<tourneyname>/<modulename>/...
+            # /atropine/<tourneyname>/<modulename>/...
             # It's an old link to what used to be a CGI script.
             # Pass this request to the appropriate module in py/dynamicpages.
             tourney_name = path_components[1]
@@ -151,7 +161,7 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 handler_module = AtropineHTTPRequestHandler.ATROPINE_WEBPAGE_MODULES[handler_name]
                 if not webpage_handler_needs_tourney(handler_name):
                     handler_module.handle(self, response, None, request_method, field_storage, query_string, extra_components)
-                    handlerutils.send_response(self, response, other_headers=response.get_header_pairs())
+                    handlerutils.send_response(self, response)
                 else:
                     # Open this tourney DB file.
                     with countdowntourney.tourney_open(tourney_name, tourneys_path) as tourney:
@@ -159,7 +169,7 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         # handler's handle() method which will send the
                         # response to the client.
                         handler_module.handle(self, response, tourney, request_method, field_storage, query_string, extra_components)
-                        handlerutils.send_response(self, response, other_headers=response.get_header_pairs())
+                        handlerutils.send_response(self, response)
             except countdowntourney.DBNameDoesNotExistException as e:
                 handlerutils.send_html_error_response(self, e.description, status_code=404)
             except countdowntourney.TourneyException as e:
