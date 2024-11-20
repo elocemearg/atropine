@@ -3,6 +3,7 @@
 import sys
 import os
 import time
+import urllib.parse
 
 import htmlcommon
 import countdowntourney
@@ -13,14 +14,9 @@ def int_or_none(s):
     except ValueError:
         return None;
 
-def get_tourney_modified_time(name):
-    path_name = os.path.join(htmlcommon.dbdir, name)
-    st = os.stat(path_name)
-    return st.st_mtime
-
 def print_tourney_table(response, tourney_list, destination_page,
         show_last_modified, show_export_html_link=False,
-        show_display_link=False, order_by="mtime_d", show_advanced_links=False):
+        show_display_link=False, order_by="mtime_d"):
     response.writeln("<table class=\"tourneylist\">");
     response.writeln("<tr>")
     response.writeln("<th><a href=\"?orderby=%s\">Name</a></th>" % ("name_d" if order_by == "name_a" else "name_a"))
@@ -31,12 +27,9 @@ def print_tourney_table(response, tourney_list, destination_page,
     if show_display_link or show_export_html_link:
         response.writeln("<th colspan=\"%d\">Useful links</th>" % ( 2 if show_display_link and show_export_html_link else 1 ))
 
-    if show_advanced_links:
-        response.writeln("<th>Data file</th>")
-
     response.writeln("</tr>")
-    for tourney_basename in tourney_list:
-        name = tourney_basename[:-3];
+    for name in tourney_list:
+        tourney_basename = name + ".db"
         filename = os.path.join(htmlcommon.dbdir, tourney_basename)
         st = os.stat(filename)
         modified_time = time.localtime(st.st_mtime)
@@ -60,14 +53,6 @@ def print_tourney_table(response, tourney_list, destination_page,
             response.writeln("<td class=\"tourneylistlink\">")
             response.writeln("<a href=\"/atropine/%s/display\">Full screen display</a>" % (htmlcommon.escape(name)))
             response.writeln("</td>")
-
-        if show_advanced_links:
-            response.writeln("<td class=\"tourneylistlink\">")
-            response.writeln("<a href=\"/atropine/%(name)s/exportdbfile\" title=\"Download a copy of this tourney's database file, %(name)s.db\">&#x1F4BE;</a>" % {
-                "name" : htmlcommon.escape(name)
-            })
-            response.writeln("</td>")
-
         response.writeln("</tr>")
     response.writeln("</table>");
 
@@ -216,22 +201,22 @@ function initPage() {
             response.writeln("</form>");
         response.writeln("<hr />")
 
-    tourney_list = os.listdir(htmlcommon.dbdir);
-    tourney_list = [x for x in tourney_list if (len(x) > 3 and x[-3:] == ".db")];
-    if order_by in ("mtime_a", "mtime_d"):
-        tourney_list = sorted(tourney_list, key=get_tourney_modified_time, reverse=(order_by == "mtime_d"));
-    else:
-        tourney_list = sorted(tourney_list, key=lambda x : x.lower(), reverse=(order_by == "name_d"));
+    tourney_list = countdowntourney.get_tourney_list(htmlcommon.dbdir, order_by)
 
     if httpreq.is_client_from_localhost():
         if tourney_list:
             response.writeln("<h2>Open existing tourney</h2>");
-            print_tourney_table(response, tourney_list, "tourneysetup", True, False, False, order_by, show_advanced_links=True)
+            print_tourney_table(response, tourney_list, "tourneysetup", True, False, False, order_by)
         else:
             response.writeln("<p>")
             response.writeln("No tourneys exist yet.");
             response.writeln("</p>")
 
+        manage_qs = ""
+        if order_by != "mtime_d":
+            manage_qs = "?orderby=" + urllib.parse.quote_plus(order_by)
+
+        response.writeln("<p><a href=\"/atropine/global/managetourneys%s\">Manage Tourneys</a></p>" % (manage_qs))
         response.writeln("<hr>")
 
         try:

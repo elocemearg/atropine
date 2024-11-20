@@ -687,23 +687,33 @@ table.tourneylist tr {
 table.tourneylist td {
 	padding-left: 10px;
 	padding-right: 10px;
-}
-
-table.tourneylist td.tourneylistname {
-	border: 1px dashed grey;
-	background-color: #ffffaa;
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 table.tourneylist td.tourneylistmtime {
-	border: 1px dashed grey;
-	background-color: #ffffaa;
+    font-size: 10pt;
 }
 
-table.tourneylist td.tourneylistlink {
-	border: 1px dashed grey;
-	background-color: #ffffaa;
+table.tourneylist td.tourneylistadvanced {
+    font-size: 10pt;
 }
 
+table.tourneylist td.tourneylistadvanced form {
+    display: inline-block;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+table.tourneylist td.tourneylistadvanced button {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+table.tourneylist td {
+	background-color: #ffffaa;
+	border: 1px dashed grey;
+}
 
 /* Generic definitions for tables that rank things in order (ranktable,
  * in which the rows are orange) and tables that do not rank things in order

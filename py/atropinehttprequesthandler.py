@@ -10,7 +10,7 @@ import handlerutils
 import fieldstorage
 
 # List of former CGI handlers which do not take a countdowntourney object
-WEBPAGE_HANDLERS_WITHOUT_TOURNEY = frozenset(["home", "sql", "preferences", "exportdbfile"])
+WEBPAGE_HANDLERS_WITHOUT_TOURNEY = frozenset(["home", "sql", "preferences", "exportdbfile", "managetourneys"])
 def webpage_handler_needs_tourney(handler_name):
     return handler_name not in WEBPAGE_HANDLERS_WITHOUT_TOURNEY
 
@@ -150,9 +150,6 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
                 handler_module = AtropineHTTPRequestHandler.ATROPINE_WEBPAGE_MODULES[handler_name]
                 if not webpage_handler_needs_tourney(handler_name):
-                    # This script doesn't need a countdowntourney passed to it,
-                    # but set the tourney=... parameter because sql.py needs it
-                    field_storage.set("tourney", tourney_name)
                     handler_module.handle(self, response, None, request_method, field_storage, query_string, extra_components)
                     handlerutils.send_response(self, response, other_headers=response.get_header_pairs())
                 else:

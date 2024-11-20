@@ -4277,9 +4277,14 @@ def set_global_pref(pref_name, value):
         cur.close()
         db.commit()
 
+def check_tourney_name_valid(name):
+    if not re.match("^[A-Za-z0-9_-]+$", name):
+        raise InvalidDBNameException("A tourney database name can only contain letters, numbers, underscores and hyphens.");
+    if len(name) > 60:
+        raise InvalidDBNameException("A tourney database name may not be more than 60 characters long.")
+
 def tourney_open(dbname, directory="."):
-    if not re.match("^[A-Za-z0-9_-]+$", dbname):
-        raise InvalidDBNameException("The tourney database name can only contain letters, numbers, underscores and hyphens.");
+    check_tourney_name_valid(dbname)
     if directory:
         if directory[-1] != os.sep:
             directory += os.sep;
@@ -4293,14 +4298,8 @@ def tourney_open(dbname, directory="."):
     return tourney;
 
 def tourney_create(dbname, directory=".", load_display_profile_name=None):
-    if not re.match("^[A-Za-z0-9_-]+$", dbname):
-        raise InvalidDBNameException("The tourney database name can only contain letters, numbers, underscores and hyphens.");
-    if len(dbname) > 60:
-        raise InvalidDBNameException("The tourney database name may not be more than 60 characters long.")
-    if directory:
-        if directory[-1] != '/':
-            directory += "/";
-    dbpath = directory + dbname + ".db";
+    check_tourney_name_valid(dbname)
+    dbpath = os.path.join(directory, dbname + ".db")
     if os.path.exists(dbpath):
         raise DBNameExistsException("The tourney \"%s\" already exists. Pick another name." % dbname);
     tourney = Tourney(dbpath, dbname, versioncheck=False);
@@ -4325,6 +4324,27 @@ def tourney_create(dbname, directory=".", load_display_profile_name=None):
         set_global_pref("defaultdisplayprofile", "")
 
     return tourney
+
+def tourney_delete(dbname, directory):
+    check_tourney_name_valid(dbname)
+    dbpath = os.path.join(directory, dbname + ".db")
+    if not os.path.exists(dbpath):
+        raise DBNameDoesNotExistException("The tourney \"%s\" does not exist." % (dbname))
+    os.unlink(dbpath)
+
+def get_tourney_list(directory, order_by):
+    tourney_list = os.listdir(directory)
+    tourney_list = [x[:-3] for x in tourney_list if (len(x) > 3 and x[-3:] == ".db")]
+    if order_by in ("mtime_a", "mtime_d"):
+        tourney_to_mod_time = {}
+        for name in tourney_list:
+            path = os.path.join(directory, name + ".db")
+            st = os.stat(path)
+            tourney_to_mod_time[name] = st.st_mtime
+        tourney_list = sorted(tourney_list, key=lambda x : tourney_to_mod_time[x], reverse=(order_by == "mtime_d"))
+    else:
+        tourney_list = sorted(tourney_list, key=lambda x : x.lower(), reverse=(order_by == "name_d"))
+    return tourney_list
 
 def get_software_version():
     return SW_VERSION
