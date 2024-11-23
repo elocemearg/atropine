@@ -603,8 +603,6 @@ def write_new_data_entry_controls(response, tourney, round_no,
         htmlcommon.show_tourney_exception(response, countdowntourney.InvalidEntryException(last_entry_error))
 
     tourney_name = tourney.get_name()
-    #response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % htmlcommon.escape(tourney_name, True));
-    #response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
 
     # Print new-fangled friendlier data-entry controls
     response.writeln("<div class=\"scoreentry boxshadow\">")
@@ -804,8 +802,6 @@ def write_videprinter(response, tourney, round_no):
     write_news_form_tick_box_div(response, tourney, publishing, False)
     response.writeln("</div>")
     response.writeln("<div class=\"newsformbody\">")
-    #response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name, True)))
-    #response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
     response.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformtext\" id=\"newsformtext\" value=\"\" />")
     response.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformsubmit\" id=\"newsformbutton\" value=\"Post\" />")
     response.writeln("</div>")
@@ -821,8 +817,6 @@ def write_videprinter(response, tourney, round_no):
     response.writeln("</div>")
 
     response.writeln("<div class=\"newsformbody\">")
-    #response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name, True)))
-    #response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no))
     response.writeln("<input type=\"hidden\" name=\"newseditseq\" value=\"\" id=\"newseditseq\" />")
     response.writeln("<input type=\"text\" class=\"newsformtext\" name=\"newsformedittext\" id=\"newsformedittext\" value=\"\" />")
     response.writeln("<input type=\"submit\" class=\"newsformbutton\" name=\"newsformeditsubmit\" id=\"newsformeditbutton\" value=\"Save\" />")

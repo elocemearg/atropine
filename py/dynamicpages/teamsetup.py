@@ -155,7 +155,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         response.writeln('<h2>Players</h2>')
         response.writeln('<form method="POST">')
-        #response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname, True))
         response.writeln('<table class="misctable">')
         response.writeln('<tr><th>Player</th>')
         response.writeln('<th>No team</th>')
@@ -186,7 +185,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         response.writeln('<h2>Automatic random team assignment</h2>')
         response.writeln('<form method="POST">')
-        #response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname, True))
         response.writeln('<p>')
         response.writeln('Divide players by rating into groups of <input type="number" name="randomgroupsize" value="%d" min="0" /> and randomly distribute each group as evenly as possible among the teams. Set to 0 to divide the whole player list randomly into teams, ignoring rating.' % random_group_size)
         response.writeln('</p>')
@@ -197,7 +195,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         response.writeln('<h2>Clear teams</h2>')
         response.writeln('<form method="POST">')
-        #response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname, True))
         response.writeln('<p>')
         response.writeln('Remove all players from their teams.')
         response.writeln('</p>')

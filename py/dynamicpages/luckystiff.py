@@ -25,7 +25,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         response.writeln("<input type=\"number\" name=\"numwins\" value=\"%d\" min=\"1\" max=\"999\" size=\"3\" />" % (num_wins))
         response.writeln("closest winning games had the lowest aggregate winning margin. It is the opposite of <a href=\"/atropine/%s/tuffluck\">Tuff Luck</a>." % (htmlcommon.escape(tourney_name, True)))
         response.writeln("<br>")
-        response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name, True)))
         response.writeln("<input type=\"submit\" name=\"submit\" value=\"Refresh\" />")
         response.writeln("</form>")
 

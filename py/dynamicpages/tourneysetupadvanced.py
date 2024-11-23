@@ -54,7 +54,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             htmlcommon.show_tourney_exception(response, e);
 
     response.writeln('<form method="POST">')
-    #response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname, True));
 
     response.writeln("<h2>Team Setup</h2>")
     response.writeln("""<p>Atropine can assign each player to one of

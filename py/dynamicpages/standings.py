@@ -33,7 +33,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         if tourney.has_per_round_standings() and len(rounds) > 1:
             response.writeln("<form method=\"GET\" class=\"spaced\">")
-            response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\">" % (htmlcommon.escape(tourney_name)))
             response.writeln("Count games from ")
             response.writeln("<select name=\"fromround\">")
             max_round_no = 1

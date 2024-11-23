@@ -46,7 +46,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             response.writeln('<p>The most recent round is shown below.</p>')
             htmlcommon.show_warning_box(response, "You are about to delete this round and all the fixtures in it. <strong>This cannot be undone.</strong> Are you sure you want to delete it?")
             response.writeln('<form method="post">')
-            response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname))
             response.writeln('<input type="hidden" name="round" value="%d" />' % latest_round_no)
             response.writeln('<input type="hidden" name="confirm" value="1" />')
             response.writeln('<p>')
@@ -54,7 +53,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             response.writeln('</p>')
             response.writeln('</form>')
             response.writeln('<form action="/atropine/%s/tourneysetup" method="post">' % (htmlcommon.escape(tourneyname)))
-            response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname))
             response.writeln('<input type="submit" class="bigbutton chickenoutbutton" name="arrghgetmeoutofhere" value="No. Cancel this and take me back to the tourney setup page." />')
             response.writeln('</form>')
 

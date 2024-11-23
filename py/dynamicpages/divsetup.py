@@ -151,7 +151,6 @@ function hide_div_renames() {
                 response.writeln("<td class=\"control\" style=\"text-align: left\">")
                 response.writeln("<div class=\"divrenamecontrols\" id=\"divrenamecontrols%d\">" % (div_index))
                 response.writeln("<form method=\"POST\">")
-                response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourneyname, True)))
                 response.writeln("<input type=\"text\" id=\"newdivnameinput%d\" name=\"newdivname%d\" value=\"%s\" />" % (div_index, div_index, htmlcommon.escape(div_name, True)))
                 response.writeln("<input type=\"submit\" name=\"setdivname%d\" value=\"Save\" />" % (div_index))
                 response.writeln("<input type=\"button\" name=\"canceldivrename%d\" value=\"Cancel\" onclick=\"hide_div_rename(%d);\" />" % (div_index, div_index))
@@ -170,7 +169,6 @@ function hide_div_renames() {
             if num_games > 0:
                 htmlcommon.show_warning_box(response, "The tourney has already started. Reassigning player divisions will only take effect for rounds whose fixtures have yet to be generated. Existing games will not be changed.")
             response.writeln("<form method=\"POST\">")
-            response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourneyname)))
 
             # Show a table for each division, containing its players
             response.writeln("<p>Players may be manually assigned to the top division by ticking the boxes below before distributing. Any players manually promoted in this way will <em>replace</em> that many non-ticked players in the top division. If you want the top-rated players to remain in the top division along with the manually-promoted players, and have a larger top division, tick the promote box on all the players in the top division before distributing.</p>")

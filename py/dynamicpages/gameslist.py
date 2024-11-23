@@ -136,8 +136,6 @@ function update_conflict_resolution_example(value) {
 
     response.writeln("<div class=\"conflictresolution\">")
     response.writeln("<form method=\"POST\">")
-    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name, True)));
-    response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % (round_no));
     response.writeln("<input type=\"hidden\" name=\"revision\" value=\"%d\" />" % (stored_revision_no))
 
     # Include the submitted scores in this conflict resolution form, so that
@@ -361,8 +359,6 @@ set_unsaved_data_warning();
 
         if not conflict_resolution:
             response.writeln("<form method=\"POST\">")
-            response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % htmlcommon.escape(tourney_name, True));
-            response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
             response.writeln("<input type=\"hidden\" id=\"lastmodified\" name=\"lastmodified\" value=\"\" />");
             response.writeln("<input type=\"hidden\" name=\"revision\" value=\"%d\" />" % (stored_revision_no))
         for div_index in range(num_divisions):

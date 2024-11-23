@@ -139,7 +139,6 @@ when the internet connection is restored.
     response.writeln("</div>")
     response.writeln("</div>")
 
-    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name)))
     if show_delete_confirm:
         warning_html = "<div class=\"formline\">\n"
         warning_html += "<p>Are you sure you want to delete the tourney <strong>%s</strong> from the web?</p>\n" % (htmlcommon.escape(tourney_name))

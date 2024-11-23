@@ -266,7 +266,6 @@ function rowHighlight(rowNum, highlightOn) {
         response.writeln("</div>")
         response.writeln("<div class=\"sqlentrysubmit\">")
         #response.writeln("<input type=\"text\" name=\"sql\" />")
-        response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name)))
         response.writeln("<input type=\"hidden\" name=\"execute\" value=\"1\" />")
         response.writeln("<input type=\"hidden\" name=\"nowarning\" value=\"1\" />")
 

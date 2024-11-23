@@ -170,7 +170,6 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
                 last_table_no = f.table_no;
 
             response.writeln("</table>");
-    response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % htmlcommon.escape(tourney_name, True));
     response.writeln("<input type=\"hidden\" name=\"generator\" value=\"%s\" />" % htmlcommon.escape(generator_name, True));
 
     # Remember all the _div* settings, or check_ready might
@@ -371,7 +370,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                                     exceptions_to_show.append(e)
 
                 else:
-                    settings_form.add_element(htmlform.HTMLFormHiddenInput("tourney", tourney_name));
                     settings_form.add_element(htmlform.HTMLFormHiddenInput("generator", generator_name));
                     for name in fixgen_settings:
                         if name[0:6] != "submit" and settings_form.get_value(name) is None:

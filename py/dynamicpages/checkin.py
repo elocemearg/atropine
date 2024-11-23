@@ -274,7 +274,6 @@ appear in the list of players on the public display screen.
                     "&#x2716;" if player.is_withdrawn() else "<span style=\"color: green;\">✓</span>",
                     htmlcommon.escape(player.get_name())
                 ))
-                response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourneyname)))
                 response.writeln("<input type=\"hidden\" name=\"playername\" value=\"%s\" />" % (htmlcommon.escape(player.get_name())))
                 response.writeln("<input type=\"hidden\" name=\"%s\" value=\"1\" />" % ("reinstatesubmit" if player.is_withdrawn() else "withdrawsubmit"))
                 response.writeln("</form>")

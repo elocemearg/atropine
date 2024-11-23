@@ -512,7 +512,6 @@ function setDateToday() {
         response.writeln("<hr />")
         response.writeln("<h2 id=\"tourneyprops\">Tourney properties</h2>");
         response.writeln('<form method="post">')
-        #response.writeln(('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname, True)));
 
         response.writeln("<h3>Event details</h3>")
         response.writeln("<p>These details will appear at the top of exported tournament reports, on the public-facing welcome screen, and on the event's webpage if you use the broadcast feature.</p>")
@@ -608,7 +607,6 @@ function setDateToday() {
             response.writeln('<h2>Delete rounds</h2>')
             response.writeln('<p>Press this button to delete the most recent round. You\'ll be asked to confirm on the next screen.</p>')
             response.writeln('<form action="/atropine/%s/delround" method="get">' % (htmlcommon.escape(tourneyname)))
-            #response.writeln(('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname)))
             response.writeln('<input type="submit" class="bigbutton" name="delroundsetupsubmit" value="Delete most recent round" />')
             response.writeln('</form>')
 
@@ -651,7 +649,6 @@ function setDateToday() {
 
         response.writeln("<div class=\"playerlist\">")
         response.writeln("<div class=\"playerlistpane\">")
-        response.writeln('<input type="hidden" name="tourney" value="%s" />' % htmlcommon.escape(tourneyname));
         response.writeln('<textarea rows="30" cols="40" name="playerlist" id="playerlist" oninput="textAreaChange();">');
         if request_method == "POST" and playerlist:
             # If the user has submitted something, display what the user

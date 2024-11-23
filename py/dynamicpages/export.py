@@ -743,8 +743,6 @@ function validateDate() {
 <div class="formbox exportformbox">
 <form method="GET" target="_blank">
 
-<input type="hidden" name="tourney" value="%(tourneyname)s" />
-
 <div class="formline">
 <div class="formlabel"><label for="format">Export format</label></div>
 <div class="formcontrol">

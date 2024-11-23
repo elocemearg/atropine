@@ -328,8 +328,6 @@ function add_game_checkbox_click(div_index) {
 
         response.writeln("<div class=\"scorestable\">");
         response.writeln("<form method=\"POST\" action=\"/atropine/%s/fixtureedit/%d\">" % (htmlcommon.escape(tourney_name), round_no));
-        response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % htmlcommon.escape(tourney_name, True));
-        response.writeln("<input type=\"hidden\" name=\"round\" value=\"%d\" />" % round_no);
         for div_index in range(num_divisions):
             largest_table_size = 0
             last_table_size = 0

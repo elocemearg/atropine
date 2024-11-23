@@ -26,7 +26,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         response.writeln("<input type=\"number\" name=\"numlosinggames\" value=\"%d\" min=\"0\" max=\"999\" size=\"3\" />" % (num_losing_games))
         response.writeln("or more games.")
         response.writeln("<br>")
-        response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (htmlcommon.escape(tourney_name, True)))
         response.writeln("<input type=\"submit\" name=\"submit\" value=\"Refresh\" />")
         response.writeln("</form>")
 
