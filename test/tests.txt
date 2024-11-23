@@ -9,3 +9,4 @@ standingstest.py
 swissNscenariotest.py
 swissNtest.py
 tourneytest.py
+webhandlertest.py

@@ -2793,7 +2793,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
     def set_rank_method_id(self, method):
         if method not in RANK_METHODS:
-            raise UnknownRankMethodException("Can't rank tourney by method %d because I don't know what that is." % method);
+            raise UnknownRankMethodException("Can't rank tourney by method %s because I don't know what that is." % str(method));
         self.set_attribute("rankmethod", method);
 
     def set_table_size(self, table_size):
