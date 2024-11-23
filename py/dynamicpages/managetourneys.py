@@ -254,6 +254,7 @@ function initPage() {
 
     response.writeln("<h2>Import tourney from file</h2>")
     response.writeln("<p>If you have a .db file from some other Atropine installation which you want to use, you can import it here.</p>")
+    response.writeln("<p>If you want to create a new tourney, you can do that on the <a href=\"/\">home page</a>.</p>")
     print_tourney_upload_form(response, form, import_tourney_failed)
 
     response.writeln("<h2>Manage existing tourneys</h2>")
