@@ -19,7 +19,8 @@ def write_html_exception_page(httpreq, response, exc):
 <h1>Uncaught exception!</h1>
 <p>An exception has been thrown which wasn't caught. This page will not be generated.</p>
 <p>
-Please report this as a bug if you haven't done so already. When you do so,
+If you reached this page by following a link or pressing a button in Atropine,
+please report it as a bug if you haven't done so already. When you do so,
 please also screenshot or copy-paste all the information below. It will help to
 diagnose and fix the problem.
 </p>

@@ -685,10 +685,16 @@ table.tourneylist tr {
 }
 
 table.tourneylist td {
+	background-color: #ffffaa;
+	border: 1px dashed grey;
 	padding-left: 10px;
 	padding-right: 10px;
     padding-top: 5px;
     padding-bottom: 5px;
+}
+
+table.tourneylist tr.tourneyselected td {
+    background-color: #bbffbb;
 }
 
 table.tourneylist td.tourneylistselect {
@@ -697,6 +703,18 @@ table.tourneylist td.tourneylistselect {
 
 table.tourneylist td.tourneylistmtime {
     font-size: 10pt;
+}
+
+/* Make a label for an input fill its container, so clicking anywhere in it works */
+label.fillcontainer {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+input.tourneyselect {
+    margin: 3px 3px 3px 3px;
 }
 
 div.managetourneycontrols {
@@ -720,11 +738,6 @@ div.managetourneycontrols input[type="submit"],input[type="text"] {
 
 div.managetourneycontrols button {
     margin-right: 10px;
-}
-
-table.tourneylist td {
-	background-color: #ffffaa;
-	border: 1px dashed grey;
 }
 
 /* Generic definitions for tables that rank things in order (ranktable,

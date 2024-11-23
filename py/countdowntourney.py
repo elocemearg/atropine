@@ -756,6 +756,9 @@ class DisplayProfileDoesNotExistException(TourneyException):
     def __init__(self, profile_name):
         self.description = "Display profile name \"%s\" does not exist." % (profile_name)
 
+class NoTourneysPathException(Exception):
+    description = "The TOURNEYSPATH environment variable is not set, so I can't find the tourney databases. If you see this error, it is a bug in Atropine."
+
 
 def get_teleost_mode_services_to_fetch(mode):
     if mode < 0 or mode >= len(teleost_modes):
@@ -4278,17 +4281,70 @@ def set_global_pref(pref_name, value):
         db.commit()
 
 def check_tourney_name_valid(name):
+    """
+    Check whether the given name is, or would be, a valid tourney name. This
+    function does not check whether the tourney itself exists, only that the
+    name is within the rules about what characters can be used.
+
+    Throw InvalidDBNameException if the name is not valid, otherwise do nothing.
+    """
     if not re.match("^[A-Za-z0-9_-]+$", name):
         raise InvalidDBNameException("A tourney database name can only contain letters, numbers, underscores and hyphens.");
     if len(name) > 60:
         raise InvalidDBNameException("A tourney database name may not be more than 60 characters long.")
+    return True
 
-def tourney_open(dbname, directory="."):
+def is_tourney_name_valid(name):
+    """
+    Check whether the given name is, or would be, a valid tourney name. This
+    function does not check whether the tourney itself exists, only that the
+    name is within the rules about what characters can be used.
+
+    Return True if the name is valid and False otherwise.
+    """
+    try:
+        check_tourney_name_valid(name)
+        return True
+    except InvalidDBNameException as e:
+        return False
+
+tourneys_path = None
+def get_tourneys_path():
+    """
+    Return the directory which is expected to contain tourney db files, which
+    comes from the TOURNEYSPATH environment variable. If this environment
+    variable is not set, NoTourneysPathException() is thrown. atropine.py
+    sets this environment variable.
+    """
+    global tourneys_path
+    if tourneys_path:
+        return tourneys_path
+    tourneys_path = os.getenv("TOURNEYSPATH")
+    if not tourneys_path:
+        raise NoTourneysPathException()
+    return tourneys_path
+
+def get_tourney_filename(dbname, directory=None):
+    """
+    Return the path to the db file for the tourney named dbname. If the tourney
+    does not exist, return what the path would be if it existed.
+    Throws InvalidDBNameException if the tourney name is not valid according
+    to check_tourney_name_valid().
+    """
     check_tourney_name_valid(dbname)
-    if directory:
-        if directory[-1] != os.sep:
-            directory += os.sep;
-    dbpath = directory + dbname + ".db";
+    if directory is None:
+        directory = get_tourneys_path()
+    return os.path.join(directory, dbname + ".db")
+
+def tourney_open(dbname, directory=None):
+    """
+    Create a countdowntourney object representing the existing tourney named
+    dbname. Throw DBNameDoesNotExistException if the tourney's db file does not
+    exist. If directory is given, use that instead of get_tourneys_path().
+    """
+    if directory is None:
+        directory = get_tourneys_path()
+    dbpath = get_tourney_filename(dbname, directory=directory)
 
     if not os.path.exists(dbpath):
         raise DBNameDoesNotExistException("The tourney \"%s\" does not exist." % dbname);
@@ -4297,9 +4353,14 @@ def tourney_open(dbname, directory="."):
 
     return tourney;
 
-def tourney_create(dbname, directory=".", load_display_profile_name=None):
-    check_tourney_name_valid(dbname)
-    dbpath = os.path.join(directory, dbname + ".db")
+def tourney_create(dbname, directory=None, load_display_profile_name=None):
+    """
+    Create a new tourney db file, initialise it and return the countdowntourney
+    object for it. It is a new, empty tourney ready for players to be added.
+    """
+    if directory is None:
+        directory = get_tourneys_path()
+    dbpath = get_tourney_filename(dbname, directory=directory)
     if os.path.exists(dbpath):
         raise DBNameExistsException("The tourney \"%s\" already exists. Pick another name." % dbname);
     tourney = Tourney(dbpath, dbname, versioncheck=False);
@@ -4325,16 +4386,45 @@ def tourney_create(dbname, directory=".", load_display_profile_name=None):
 
     return tourney
 
-def tourney_delete(dbname, directory):
-    check_tourney_name_valid(dbname)
-    dbpath = os.path.join(directory, dbname + ".db")
+def tourney_delete(dbname, directory=None):
+    """
+    Delete the tourney db file whose name is dbname. If the tourney db file
+    does not exist, DBNameDoesNotExistException is thrown. If the name is not
+    a valid tourney name, InvalidDBNameException is thrown.
+    """
+    if directory is None:
+        directory = get_tourneys_path()
+    dbpath = get_tourney_filename(dbname, directory=directory)
     if not os.path.exists(dbpath):
         raise DBNameDoesNotExistException("The tourney \"%s\" does not exist." % (dbname))
     os.unlink(dbpath)
 
-def get_tourney_list(directory, order_by):
+def get_tourney_list(directory=None, order_by="mtime_d"):
+    """
+    Return a list of tourney names in the given directory. If no directory
+    is given, use get_tourneys_path(), which you almost certainly want to do.
+
+    The list is sorted according to order_by:
+        "mtime_d", "mtime_a": sort descending or ascending by modification time.
+        "name_d", "name_a": sort descending or ascending by name.
+
+    The list contains tourney names, not filenames with the ".db" suffix.
+    The tourney names returned are suitable for passing to tourney_open() and
+    tourney_delete().
+    """
+
+    # List the relevant directory
+    if directory is None:
+        directory = get_tourneys_path()
     tourney_list = os.listdir(directory)
+
+    # We only want files whose names end with .db, and we only want the tourney
+    # name itself, without the filename's .db suffix.
     tourney_list = [x[:-3] for x in tourney_list if (len(x) > 3 and x[-3:] == ".db")]
+
+    # Weed out any files which have names that don't comply with our rules
+    tourney_list = [ x for x in tourney_list if is_tourney_name_valid(x) ]
+
     if order_by in ("mtime_a", "mtime_d"):
         tourney_to_mod_time = {}
         for name in tourney_list:

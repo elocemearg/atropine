@@ -28,20 +28,25 @@ def print_tourney_table(response, tourney_list, order_by):
     response.writeln("<th><a href=\"?orderby=%s\">Last modified</a></th>" % ("mtime_a" if order_by == "mtime_d" else "mtime_d"))
     response.writeln("</tr>")
     for name in tourney_list:
-        tourney_basename = name + ".db"
-        filename = os.path.join(htmlcommon.dbdir, tourney_basename)
+        filename = countdowntourney.get_tourney_filename(name)
         st = os.stat(filename)
         modified_time = time.localtime(st.st_mtime)
-        response.writeln("<tr>")
-        response.writeln("<td class=\"tourneylistselect\">")
-        response.writeln("<input type=\"radio\" name=\"tourneyselect\" class=\"tourneyselect\" value=\"%s\">" % (htmlcommon.escape(name)))
-        response.writeln("</td>")
-        response.writeln('<td class=\"tourneylistname\">')
-        response.writeln('<a href="/atropine/%(name)s/tourneysetup">%(name)s</a>' % { "name" : htmlcommon.escape(name) })
-        response.writeln('</td>')
-        response.writeln("<td class=\"tourneylistmtime\">%s</td>" % (time.strftime("%d %b %Y %H:%M", modified_time)))
-        response.writeln("</td>")
-        response.writeln("</tr>")
+        response.writeln("""
+<tr id="tourneyrow_%(name)s" class="tourneyrow">
+    <td class="tourneylistselect" style="padding: 0">
+        <label for="tourneyselect_%(name)s" class="fillcontainer" style="padding-top: 5px; padding-bottom: 5px;">
+            <input type="radio" id="tourneyselect_%(name)s" name="tourneyselect" class="tourneyselect" value="%(name)s">
+        </label>
+    </td>
+    <td class="tourneylistname">
+    <a href="/atropine/%(name)s/tourneysetup">%(name)s</a>
+    </td>
+    <td class="tourneylistmtime">%(mtime)s</td>
+</tr>
+""" % {
+            "name" : htmlcommon.escape(name),
+            "mtime" : time.strftime("%d %b %Y %H:%M", modified_time)
+        })
     response.writeln("</table>")
 
 def print_tourney_upload_form(response, form, import_tourney_failed):
@@ -156,6 +161,20 @@ function selectTourney(tourneyName) {
             e.action = idToAction[elementId];
         }
     }
+
+    /* Highlight the correct row and lowlight the others */
+    elements = document.getElementsByClassName("tourneyrow");
+    for (let i = 0; i < elements.length; i++) {
+        let tr = elements[i];
+        if (tr.tagName.toUpperCase() == "TR") {
+            if (tr.id == "tourneyrow_" + tourneyName) {
+                tr.classList.add("tourneyselected");
+            }
+            else {
+                tr.classList.remove("tourneyselected");
+            }
+        }
+    }
 }
 
 function initPage() {
@@ -193,7 +212,7 @@ function initPage() {
         if "delete" in form:
             try:
                 tourney_name = form.getfirst("tourney")
-                countdowntourney.tourney_delete(tourney_name, htmlcommon.dbdir)
+                countdowntourney.tourney_delete(tourney_name)
                 htmlcommon.show_success_box(response, "Successfully deleted tourney \"%s\"" % (htmlcommon.escape(tourney_name)))
             except countdowntourney.TourneyException as e:
                 htmlcommon.show_tourney_exception(response, e)
@@ -204,8 +223,8 @@ function initPage() {
                 if old_name and new_name and old_name != new_name:
                     countdowntourney.check_tourney_name_valid(old_name)
                     countdowntourney.check_tourney_name_valid(new_name)
-                    old_filename = os.path.join(htmlcommon.dbdir, old_name + ".db")
-                    new_filename = os.path.join(htmlcommon.dbdir, new_name + ".db")
+                    old_filename = countdowntourney.get_tourney_filename(old_name)
+                    new_filename = countdowntourney.get_tourney_filename(new_name)
                     if not os.path.exists(old_filename):
                         htmlcommon.show_error_text(response, "Can't rename tourney \"%s\" because it doesn't exist." % (old_name))
                     elif os.path.exists(new_filename):
@@ -233,7 +252,7 @@ function initPage() {
 
                 # Check the proposed tourney name is valid and doesn't already exist
                 countdowntourney.check_tourney_name_valid(upload_tourney_name)
-                dest_path = os.path.join(htmlcommon.dbdir, upload_tourney_name + ".db")
+                dest_path = countdowntourney.get_tourney_filename(upload_tourney_name)
                 if os.path.exists(dest_path):
                     raise TourneyExistsException(upload_tourney_name)
 
@@ -259,7 +278,7 @@ function initPage() {
 
     response.writeln("<h2>Manage existing tourneys</h2>")
     order_by = form.getfirst("orderby", "mtime_d")
-    tourney_list = countdowntourney.get_tourney_list(htmlcommon.dbdir, order_by)
+    tourney_list = countdowntourney.get_tourney_list(order_by=order_by)
 
     if not tourney_list:
         response.writeln("<p>There are no existing tourneys.</p>")
@@ -301,7 +320,7 @@ function initPage() {
     if tourney_list:
         print_tourney_table(response, tourney_list, order_by)
 
-    response.writeln("<p>Location for tourney database files: <span class=\"fixedwidth\">%s</span></p>" % (htmlcommon.escape(htmlcommon.dbdir)))
+    response.writeln("<p>Location for tourney database files: <span class=\"fixedwidth\">%s</span></p>" % (htmlcommon.escape(os.path.realpath(countdowntourney.get_tourneys_path()))))
 
     response.writeln(htmldialog.get_html("deletedialog"))
 

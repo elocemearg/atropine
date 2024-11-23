@@ -73,7 +73,6 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             handlerutils.send_error_response(self, "Bad URL: format is /service/<tourneyname>/<servicename>/...", status_code=400)
             return
         tourney_name = path_components[1]
-        tourneys_path = os.getenv("TOURNEYSPATH")
         handler_name = path_components[2]
         remaining_path_components = path_components[3:]
         if handler_name not in AtropineHTTPRequestHandler.ATROPINE_HANDLER_MODULES:
@@ -83,7 +82,7 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         try:
             # Open this tourney DB file.
-            with countdowntourney.tourney_open(tourney_name, tourneys_path) as tourney:
+            with countdowntourney.tourney_open(tourney_name) as tourney:
                 # If this tourney exists and we opened it, call the
                 # handler's handle() method which will send the response to
                 # the client.
@@ -102,7 +101,6 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         tourney_name = path_components[1]
         handler_name = path_components[2]
         extra_components = path_components[3:]
-        tourneys_path = os.getenv("TOURNEYSPATH")
         if handler_name not in AtropineHTTPRequestHandler.ATROPINE_WEBPAGE_MODULES:
             handlerutils.send_html_error_response(self, "%s: not found" % (self.path), status_code=404)
             return
@@ -152,7 +150,7 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 handlerutils.send_response(self, response)
             else:
                 # Open this tourney DB file.
-                with countdowntourney.tourney_open(tourney_name, tourneys_path) as tourney:
+                with countdowntourney.tourney_open(tourney_name) as tourney:
                     # If this tourney exists and we opened it, call the
                     # handler's handle() method which will send the
                     # response to the client.
@@ -179,8 +177,6 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             query_string = fields[1]
         else:
             query_string = ""
-
-        tourneys_path = os.getenv("TOURNEYSPATH")
 
         # If the user requests the root then rewrite this to /cgi-bin/home.py
         if len(path_components) == 0 or (len(path_components) == 1 and path_components[0] == ""):

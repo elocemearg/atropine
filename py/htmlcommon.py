@@ -2,16 +2,10 @@
 
 import sys
 import os
-import sqlite3
-import html
+from html import escape as htmlescape
 import re
 
 from countdowntourney import get_software_version
-
-# Environment variable set by atropine.py before this module is first loaded
-dbdir = os.getenv("TOURNEYSPATH")
-if not dbdir:
-    dbdir = os.path.join("..", "tourneys");
 
 def int_or_none(s):
     try:
@@ -24,7 +18,7 @@ def escape(string, quote=True):
     if string is None:
         return "(None)"
     else:
-        return html.escape(string, quote)
+        return htmlescape(string, quote)
 
 def js_string(contents):
     return "\"" + contents.replace("\\", "\\\\").replace("\"", "\\\"") + "\""

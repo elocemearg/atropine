@@ -32,10 +32,6 @@ http_delete_path = "/cgi-bin/colive/submit.py"
 
 upload_interval_sec = 10
 
-db_dir = os.getenv("TOURNEYSPATH")
-if not db_dir:
-    db_dir = os.path.join(os.getcwd(), "tourneys")
-
 import tourney2json
 import countdowntourney
 
@@ -175,7 +171,7 @@ class UploaderThread(object):
 
     def get_last_successful_upload_time(self, tourney_name):
         try:
-            with countdowntourney.tourney_open(tourney_name, db_dir) as tourney:
+            with countdowntourney.tourney_open(tourney_name) as tourney:
                 upload_time = tourney.get_last_successful_upload_time()
 
                 # Don't return this time if it's before the user even pressed
@@ -190,7 +186,7 @@ class UploaderThread(object):
 
     def get_last_failed_upload(self, tourney_name):
         try:
-            with countdowntourney.tourney_open(tourney_name, db_dir) as tourney:
+            with countdowntourney.tourney_open(tourney_name) as tourney:
                 failed_upload = tourney.get_last_failed_upload()
                 if failed_upload is not None and failed_upload.get("ts", None) is not None and failed_upload["ts"] >= self.tourney_upload_start_time.get(tourney_name, 0):
                     return failed_upload
@@ -230,7 +226,7 @@ class UploaderThread(object):
                     # attempt.
                     try:
                         self.tourney_last_upload_attempt_time[tourney_name] = now
-                        with countdowntourney.tourney_open(tourney_name, db_dir) as tourney:
+                        with countdowntourney.tourney_open(tourney_name) as tourney:
                             game_state = get_game_state(tourney)
                             tourney_unique_id = get_tourney_unique_id(tourney)
                             auth = self.tourney_auth.get(tourney_name, None)

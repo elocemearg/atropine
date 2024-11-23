@@ -7,6 +7,7 @@ import urllib.parse
 import re
 
 import htmlcommon
+from countdowntourney import get_tourney_filename
 
 class Column(object):
     def __init__(self, seq, name, typ):
@@ -68,19 +69,12 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             execute_sql = sql_text
 
     if tourney_name:
-        if not re.match("^[A-Za-z0-9_-]+$", tourney_name):
+        db_path = get_tourney_filename(tourney_name)
+        if not os.path.exists(db_path):
             error_text_context = "Can't open tourney database"
-            error_text = "The tourney name is invalid. It may consist only of letters, numbers, underscores and hyphens."
+            error_text = "The tourney \"%s\" does not exist." % (tourney_name)
         else:
-            db_path = htmlcommon.dbdir
-            if db_path and db_path[-1] != os.sep:
-                db_path += os.sep
-            db_path += tourney_name + ".db"
-            if not os.path.exists(db_path):
-                error_text_context = "Can't open tourney database"
-                error_text = "The tourney \"%s\" does not exist." % (tourney_name)
-            else:
-                db = sqlite3.connect(db_path)
+            db = sqlite3.connect(db_path)
 
     if db and execute_sql:
         # Execute SQL supplied by user, and fetch results if applicable

@@ -29,8 +29,7 @@ def print_tourney_table(response, tourney_list, destination_page,
 
     response.writeln("</tr>")
     for name in tourney_list:
-        tourney_basename = name + ".db"
-        filename = os.path.join(htmlcommon.dbdir, tourney_basename)
+        filename = countdowntourney.get_tourney_filename(name)
         st = os.stat(filename)
         modified_time = time.localtime(st.st_mtime)
         response.writeln("<tr>")
@@ -75,7 +74,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         if request_method == "POST" and tourneyname:
             # We've been asked to create a new tourney.
             try:
-                tourney = countdowntourney.tourney_create(tourneyname, htmlcommon.dbdir, load_display_profile_name=display_profile_name)
+                tourney = countdowntourney.tourney_create(tourneyname, load_display_profile_name=display_profile_name)
                 if longtourneyname:
                     tourney.set_full_name(longtourneyname)
                 if not display_profile_name:
@@ -205,7 +204,7 @@ function initPage() {
             response.writeln("</form>");
         response.writeln("<hr />")
 
-    tourney_list = countdowntourney.get_tourney_list(htmlcommon.dbdir, order_by)
+    tourney_list = countdowntourney.get_tourney_list(order_by=order_by)
 
     if httpreq.is_client_from_localhost():
         manage_qs = ""
@@ -227,7 +226,7 @@ tourney file from the <a href="/atropine/global/managetourneys">Manage Tourneys<
 
         try:
             response.writeln("<p>")
-            response.writeln("Location for tourney database files: <span class=\"fixedwidth\">%s</span>" % (htmlcommon.escape(os.path.realpath(htmlcommon.dbdir))))
+            response.writeln("Location for tourney database files: <span class=\"fixedwidth\">%s</span>" % (htmlcommon.escape(os.path.realpath(countdowntourney.get_tourneys_path()))))
             response.writeln("</p>")
         except:
             response.writeln("<p>Failed to expand tournament database directory name</p>")
