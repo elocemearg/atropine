@@ -134,7 +134,7 @@ try:
     sys.path.append(os.getcwd())
     sys.path.append(os.path.join(os.getcwd(), "generators"))
     sys.path.append(os.path.join(os.getcwd(), "py"))
-    sys.path.append(os.path.join(os.getcwd(), "py", "httphandler"))
+    sys.path.append(os.path.join(os.getcwd(), "py", "servicehandlers"))
     sys.path.append(os.path.join(os.getcwd(), "py", "dynamicpages"))
 except Exception as e:
     fatal_error("Failed to add a necessary directory to Python's list of module paths.", e)
@@ -202,9 +202,9 @@ except Exception as e:
     fatal_error("Failed to import the atropinehttprequesthandler module. Is there a file atropinehttprequesthandler.py in the py folder? There should be.", e)
 
 # Set up any of our own HTTP handlers we have, for URLs we don't want to be
-# handled by the SimpleHTTPRequestHandler. Any Python file in the py/httphandler
-# directory which starts with "http_handler_" is a module in which we expect
-# to find a handle() function.
+# handled by the SimpleHTTPRequestHandler. Any Python file in the
+# py/servicehandlers directory which starts with "http_handler_" is a module in
+# which we expect to find a handle() function.
 try:
     import atropinemodulelist
     import handlerutils

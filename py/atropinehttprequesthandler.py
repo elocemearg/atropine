@@ -191,7 +191,7 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         elif len(path_components) >= 1 and path_components[0] == "service":
             # /service/<tourneyname>/<handlername>/...
             # A URL for internal use that probably returns some JSON.
-            # Pass the request to the appropriate module in py/httphandler/.
+            # Pass the request to the appropriate module in py/servicehandlers/.
             self.handle_service_request(request_method, path_components, query_string)
         elif len(path_components) >= 3 and path_components[0] == "atropine":
             # /atropine/<tourneyname>/<modulename>/...

@@ -470,7 +470,7 @@ No tourneys exist yet.
 
         try:
             response.writeln("<p>")
-            response.writeln("Location for tourney database files: <span class=\"fixedwidth\">%s</span>" % (htmlcommon.escape(os.path.realpath(countdowntourney.get_tourneys_path()))))
+            response.writeln("Location of tourney database files: <span class=\"fixedwidth\">%s</span>" % (htmlcommon.escape(os.path.realpath(countdowntourney.get_tourneys_path()))))
             response.writeln("</p>")
         except:
             response.writeln("<p>Failed to expand tournament database directory name</p>")
