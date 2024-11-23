@@ -1,9 +1,12 @@
 #!/usr/bin/python3
 
+import sys
 import os
 import sqlite3
 import html
 import re
+
+from countdowntourney import get_software_version
 
 # Environment variable set by atropine.py before this module is first loaded
 dbdir = os.getenv("TOURNEYSPATH")
@@ -399,10 +402,18 @@ setupUploadWidget();
     response.writeln(upload_widget_script_text)
 
 
-def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links=False, non_local_client=False):
+def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links=False, non_local_client=False, show_manage_tourneys_link=False):
     new_window_html = "<img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Opens in new window\" />"
-    response.writeln("<div class=\"sidebar\">");
-    response.writeln("<a href=\"/\"><img src=\"/images/eyebergine128.png\" alt=\"Eyebergine\" /></a><br />");
+    response.writeln("""
+<div class="sidebar">
+<a href="/"><img src="/images/eyebergine128.png" alt="Eyebergine" />%s</a><br>
+""" % ("<br>Home" if tourney is None else ""))
+
+    if not tourney:
+        response.writeln("""
+<br>
+<div><a href="/atropine/global/managetourneys">Manage Tourneys</a></div>
+""")
 
     players = []
     if tourney:
@@ -556,15 +567,25 @@ function toggleMiscStats() {
 
     response.writeln("<br />")
 
+    atropine_version = get_software_version(as_tuple=True)
+    atropine_version_string = get_software_version()
     if tourney:
-        atropine_version = tourney.get_software_version(as_tuple=True)
-        atropine_version_string = tourney.get_software_version()
         tourney_version = tourney.get_db_version(as_tuple=True)
         tourney_version_string = tourney.get_db_version()
-        response.writeln("<div class=\"sidebarversioninfo\" title=\"This is the version number of the Atropine installation you're using, and the version which created the database for this tourney.\">");
-        response.writeln("<div class=\"sidebarversionline\">")
-        response.writeln("Atropine version: " + atropine_version_string)
-        response.writeln("</div>")
+    else:
+        tourney_version = (0, 0, 0)
+        tourney_version_string = ""
+
+    if tourney:
+        response.writeln("<div class=\"sidebarversioninfo\" title=\"This is the version number of this Atropine installation, the Atropine version which created the database for this tourney, and the version of Python you're using.\">");
+    else:
+        response.writeln("<div class=\"sidebarversioninfo\" title=\"This is the version number of this Atropine installation, and the version of Python you're using.\">")
+
+    response.writeln("<div class=\"sidebarversionline\">")
+    response.writeln("Atropine version: " + atropine_version_string)
+    response.writeln("</div>")
+
+    if tourney:
         response.writeln("<div class=\"sidebarversionline\">")
         response.writeln("This tourney: ")
         if tourney_version < atropine_version:
@@ -573,9 +594,13 @@ function toggleMiscStats() {
         if tourney_version < atropine_version:
             response.writeln("</span>")
         response.writeln("</div>")
-        response.writeln("</div>")
 
-    response.writeln("</div>");
+    response.writeln("<div class=\"sidebarversionline\">")
+    response.writeln("Python %d.%d.%d" % (tuple(sys.version_info[0:3])))
+    response.writeln("</div>")
+
+    response.writeln("</div>") # end of sidebarversioninfo
+    response.writeln("</div>") # end of sidebar
 
 def make_team_dot_html(team):
     if team:

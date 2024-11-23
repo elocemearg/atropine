@@ -15,9 +15,14 @@ WEBPAGE_HANDLERS_WITHOUT_TOURNEY = frozenset(["home", "sql", "preferences", "exp
 def webpage_handler_needs_tourney(handler_name):
     return handler_name not in WEBPAGE_HANDLERS_WITHOUT_TOURNEY
 
-# List of former CGI handlers which are allowed to be access from clients
+# List of former CGI handlers which are allowed to be accessed from clients
 # other than localhost
 WEBPAGE_HANDLERS_PUBLIC = frozenset(["home", "export", "display", "hello"])
+
+# Put a limit on the size of a request. The biggest requests will be imports
+# of tourney .db files, but these are usually around 100K.
+# Anyone sending a request bigger than 20MB is probably doing something weird.
+MAX_REQUEST_CONTENT_LENGTH = 20 * 1024 * 1024
 
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     pass
@@ -44,7 +49,7 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     module in py/dynamicpages/.
 
     All other requests are handled by the SimpleHTTPRequestHandler, which
-    returns the contents of a file.
+    returns the contents of a file under the webroot directory.
     """
 
     def add_handler_module(handler_name, module):
@@ -111,8 +116,11 @@ class AtropineHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             # Read this request's POST data
             try:
                 content_length = int(self.headers.get("content-length"))
+                if content_length > MAX_REQUEST_CONTENT_LENGTH:
+                    handlerutils.send_html_error_response(self, "Request content too large: more than %d bytes." % (MAX_REQUEST_CONTENT_LENGTH), status_code=413)
+                    return
             except ValueError:
-                handlerutils.send_html_error_response(self, "Bad request: request method is POST but no Content-Length header")
+                handlerutils.send_html_error_response(self, "Bad request: request method is POST but no Content-Length header", status_code=411)
                 return
             post_data = self.rfile.read(content_length)
         else:

@@ -691,23 +691,35 @@ table.tourneylist td {
     padding-bottom: 5px;
 }
 
+table.tourneylist td.tourneylistselect {
+    text-align: center;
+}
+
 table.tourneylist td.tourneylistmtime {
     font-size: 10pt;
 }
 
-table.tourneylist td.tourneylistadvanced {
-    font-size: 10pt;
-}
-
-table.tourneylist td.tourneylistadvanced form {
+div.managetourneycontrols {
     display: inline-block;
-    margin-left: 5px;
-    margin-right: 5px;
+    background-color: #ffffaa;
+    margin-bottom: 20px;
+    padding: 10px;
 }
 
-table.tourneylist td.tourneylistadvanced button {
-    margin-left: 5px;
-    margin-right: 5px;
+div.managetourneysubform {
+    padding: 8px;
+}
+
+div.managetourneycontrols form {
+    display: inline-block;
+}
+
+div.managetourneycontrols input[type="submit"],input[type="text"] {
+    margin-right: 10px;
+}
+
+div.managetourneycontrols button {
+    margin-right: 10px;
 }
 
 table.tourneylist td {
@@ -1183,7 +1195,7 @@ input.newsformtext {
 }
 
 input.newsformbutton {
-    width: 18%;
+    width: 15%;
     float: right;
 }
 

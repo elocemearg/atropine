@@ -4346,5 +4346,8 @@ def get_tourney_list(directory, order_by):
         tourney_list = sorted(tourney_list, key=lambda x : x.lower(), reverse=(order_by == "name_d"))
     return tourney_list
 
-def get_software_version():
-    return SW_VERSION
+def get_software_version(as_tuple=False):
+    if as_tuple:
+        return SW_VERSION_SPLIT
+    else:
+        return SW_VERSION

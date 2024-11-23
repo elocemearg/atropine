@@ -111,6 +111,10 @@ function initPage() {
         response.writeln("</body></html>")
         return
 
+    # Write the special barely-there sidebar for when we don't have a tourney
+    htmlcommon.show_sidebar(response, None)
+
+    response.writeln("<div class=\"mainpane\">")
     response.writeln("<h1>Welcome to Atropine</h1>");
 
     if tourney_create_exception:
@@ -188,13 +192,13 @@ function initPage() {
 </tr>
 %(displayprofilecontrols)s
 </table>
-    """ % {
-        "tourneyname" : htmlcommon.escape(tourneyname, True),
-        "longtourneyname" : htmlcommon.escape(longtourneyname, True),
-        "displayshapeoptionhtml" : display_shape_option_html,
-        "currentyear" : time.localtime().tm_year,
-        "displayprofilecontrols" : display_profile_controls_html
-    })
+""" % {
+    "tourneyname" : htmlcommon.escape(tourneyname, True),
+    "longtourneyname" : htmlcommon.escape(longtourneyname, True),
+    "displayshapeoptionhtml" : display_shape_option_html,
+    "currentyear" : time.localtime().tm_year,
+    "displayprofilecontrols" : display_profile_controls_html
+})
             response.writeln("<div class=\"createtourneybuttonbox\">");
             response.writeln('<input type="submit" name="submit" value="Create Tourney" class=\"bigbutton\" />');
             response.writeln("</div>");
@@ -204,24 +208,26 @@ function initPage() {
     tourney_list = countdowntourney.get_tourney_list(htmlcommon.dbdir, order_by)
 
     if httpreq.is_client_from_localhost():
-        if tourney_list:
-            response.writeln("<h2>Open existing tourney</h2>");
-            print_tourney_table(response, tourney_list, "tourneysetup", True, False, False, order_by)
-        else:
-            response.writeln("<p>")
-            response.writeln("No tourneys exist yet.");
-            response.writeln("</p>")
-
         manage_qs = ""
         if order_by != "mtime_d":
             manage_qs = "?orderby=" + urllib.parse.quote_plus(order_by)
 
-        response.writeln("<p><a href=\"/atropine/global/managetourneys%s\">Manage Tourneys</a></p>" % (manage_qs))
+        if tourney_list:
+            response.writeln("<h2>Open existing tourney</h2>");
+            print_tourney_table(response, tourney_list, "tourneysetup", True, False, False, order_by)
+        else:
+            response.writeln("""
+<p>
+No tourneys exist yet.
+You can create a new one with the form above, or you can import an existing
+tourney file from the <a href="/atropine/global/managetourneys">Manage Tourneys</a> page.
+</p>""")
+
         response.writeln("<hr>")
 
         try:
             response.writeln("<p>")
-            response.writeln("Tournament database directory: <span class=\"fixedwidth\">%s</span>" % (htmlcommon.escape(os.path.realpath(htmlcommon.dbdir))))
+            response.writeln("Location for tourney database files: <span class=\"fixedwidth\">%s</span>" % (htmlcommon.escape(os.path.realpath(htmlcommon.dbdir))))
             response.writeln("</p>")
         except:
             response.writeln("<p>Failed to expand tournament database directory name</p>")
@@ -232,8 +238,6 @@ function initPage() {
         response.writeln("<h2>Select tourney</h2>")
         print_tourney_table(response, tourney_list, None, False, True, True, order_by)
 
-    response.writeln("<p>Atropine version %s</p>" % (countdowntourney.SW_VERSION))
-    response.writeln("<p>Python version %d.%d.%d</p>" % tuple(sys.version_info[0:3]))
-
+    response.writeln("</div>") #mainpane
     response.writeln("</body>");
     response.writeln("</html>");
