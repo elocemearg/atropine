@@ -403,12 +403,6 @@ def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links
 <a href="/"><img src="/images/eyebergine128.png" alt="Eyebergine" />%s</a><br>
 """ % ("<br>Home" if tourney is None else ""))
 
-    if not tourney:
-        response.writeln("""
-<br>
-<div><a href="/atropine/global/managetourneys">Manage Tourneys</a></div>
-""")
-
     players = []
     if tourney:
         response.writeln("<p><strong>%s</strong></p>" % escape(tourney.name));

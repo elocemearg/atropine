@@ -11,7 +11,7 @@ import handlerutils
 import fieldstorage
 
 # List of former CGI handlers which do not take a countdowntourney object
-WEBPAGE_HANDLERS_WITHOUT_TOURNEY = frozenset(["home", "sql", "preferences", "exportdbfile", "managetourneys"])
+WEBPAGE_HANDLERS_WITHOUT_TOURNEY = frozenset(["home", "sql", "preferences", "exportdbfile"])
 def webpage_handler_needs_tourney(handler_name):
     return handler_name not in WEBPAGE_HANDLERS_WITHOUT_TOURNEY
 

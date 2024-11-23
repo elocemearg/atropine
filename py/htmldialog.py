@@ -49,7 +49,8 @@ function dialogBoxCancelHandler(event) {
 }
 
 function dialogBoxShow(dialogId, title, submitButtonLabel, cancelButtonLabel,
-        requestMethod, formAction, submitButtonName, formInputElements, formHiddenInputs={}) {
+        requestMethod, formAction, submitButtonName, formInputElements,
+        formHiddenInputs={}, encType=null) {
     let dialogBox = document.getElementById(dialogId);
     if (dialogBox == null) {
         return;
@@ -67,6 +68,10 @@ function dialogBoxShow(dialogId, title, submitButtonLabel, cancelButtonLabel,
         form.method = requestMethod;
         if (formAction) {
             form.action = formAction;
+        }
+        console.log("encType = " + encType);
+        if (encType) {
+            form.enctype = encType;
         }
         let controlsDiv = form.getElementsByClassName("dialogboxformcontrols");
         if (controlsDiv.length > 0) {

@@ -120,5 +120,5 @@ class FieldStorage(object):
         self.parameters[name] = value
 
     def get_file_data(self, name):
-        return self.file_data[name]
+        return self.file_data.get(name)
 

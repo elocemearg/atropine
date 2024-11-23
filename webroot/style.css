@@ -213,7 +213,7 @@ table.optionstable td span.optionrequired {
     font-size: 10pt;
 }
 
-td.optionnote {
+.optionnote {
     font-size: 10pt;
     color: gray;
     padding-bottom: 10px;
@@ -670,6 +670,7 @@ div.fixgencontrol {
 table.tourneylist {
 	border: 1px solid black;
 	border-collapse: collapse;
+    margin-bottom: 25px;
 }
 
 table.tourneylist th {
@@ -697,10 +698,6 @@ table.tourneylist tr.tourneyselected td {
     background-color: #bbffbb;
 }
 
-table.tourneylist td.tourneylistselect {
-    text-align: center;
-}
-
 table.tourneylist td.tourneylistmtime {
     font-size: 10pt;
 }
@@ -711,33 +708,6 @@ label.fillcontainer {
     width: 100%;
     height: 100%;
     cursor: pointer;
-}
-
-input.tourneyselect {
-    margin: 3px 3px 3px 3px;
-}
-
-div.managetourneycontrols {
-    display: inline-block;
-    background-color: #ffffaa;
-    margin-bottom: 20px;
-    padding: 10px;
-}
-
-div.managetourneysubform {
-    padding: 8px;
-}
-
-div.managetourneycontrols form {
-    display: inline-block;
-}
-
-div.managetourneycontrols input[type="submit"],input[type="text"] {
-    margin-right: 10px;
-}
-
-div.managetourneycontrols button {
-    margin-right: 10px;
 }
 
 /* Generic definitions for tables that rank things in order (ranktable,
@@ -2093,4 +2063,46 @@ div.dialogbox div.formcontrolrow {
 div.dialogbox div.formcontrolrowactions {
     margin-top: 25px;
     text-align: right;
+}
+
+div.contextmenubuttoncontainer {
+    position: relative;
+}
+
+div.contextmenu {
+    position: absolute;
+    margin-left: 5px;
+    z-index: 1;
+    min-width: 200px;
+    left: 100%;
+    top: 0;
+    background-color: white;
+    border: 1px solid gray;
+    box-shadow: 2px 2px 4px silver;
+}
+
+.contextmenuitem {
+    position: relative;
+    text-align: left;
+    display: block;
+    line-height: 10pt;
+    background-color: white;
+    cursor: pointer;
+    border: none;
+    font-size: 10pt;
+    color: black;
+    padding: 10px;
+    padding-left: 20px;
+}
+
+a.contextmenuitem {
+}
+
+button.contextmenuitem {
+    width: 100%;
+}
+
+.contextmenuitem:hover {
+    background-color: blue;
+    color: white;
 }

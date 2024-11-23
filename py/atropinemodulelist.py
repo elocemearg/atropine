@@ -15,7 +15,6 @@ ATROPINE_DYNAMIC_PAGES = [
     "hello",
     "home",
     "luckystiff",
-    "managetourneys",
     "overachievers",
     "player",
     "preferences",
