@@ -441,10 +441,9 @@ function autoAssignByStandingsPosition() {
         response.writeln("</table>")
         players_in_earlier_divisions += len(div_players[div_index])
 
-    if num_divisions > 1:
-        response.writeln("<div style=\"margin-top: 30px; margin-bottom: 30px;\">")
-        response.writeln("<input type=\"submit\" name=\"setdivplayers\" class=\"bigbutton\" value=\"Save new division details\">")
-        response.writeln("</div>")
+    response.writeln("<div style=\"margin-top: 30px; margin-bottom: 30px;\">")
+    response.writeln("<input type=\"submit\" name=\"setdivplayers\" class=\"bigbutton\" value=\"Save new division details\">")
+    response.writeln("</div>")
 
     response.writeln("</form>")
 
