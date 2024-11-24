@@ -60,7 +60,10 @@ cd "$TEMP_DIR" || exit 1
 
 ZIP_FILE_NAME="atropine-$ATROPINE_VERSION.zip"
 
-# Create an empty tourneys directory, the user will need that.
+# Create an empty tourneys directory. Atropine now stores tourneys in
+# $HOME/.atropine/tourneys on Linux and %APPDATA%\Atropine\tourneys on
+# Windows, but a tourneys directory in the installation itself is still
+# required to give Atropine a fighting chance of running on a Mac.
 mkdir "$VER_DIR/tourneys"
 
 # Zip up the contents of $VER_DIR into our new zip file, excluding cruft
