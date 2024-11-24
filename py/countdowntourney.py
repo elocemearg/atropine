@@ -2667,14 +2667,6 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             raise UnknownRankMethodException("Can't rank tourney by method %s because I don't know what that is." % str(method));
         self.set_attribute("rankmethod", method);
 
-    def set_table_size(self, table_size):
-        if table_size not in [2,3]:
-            raise InvalidTableSizeException("Number of players to a table must be 2 or 3.");
-        self.set_attribute("tablesize", int(table_size));
-
-    def get_table_size(self):
-        return self.get_int_attribute("tablesize", 3);
-
     def set_show_draws_column(self, value):
         self.set_attribute("showdrawscolumn", 1 if value else 0)
 
