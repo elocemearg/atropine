@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys
+from countdowntourney import FixtureGeneratorException
 
 class GeneratedGroupsDivision(object):
     def __init__(self, division):
@@ -98,3 +98,19 @@ class GeneratedGroups(object):
 
     def get_rounds(self):
         return [ self.rounds[r] for r in sorted(self.rounds) ]
+
+def get_table_sizes(num_players, table_size):
+    if table_size == -5:
+        # Tables of 5 and 3, where the tables of 3 play each other twice
+        sizes = []
+        if num_players < 8:
+            raise FixtureGeneratorException("Number of players (%d) not compatible with selected table configuration (5&3)." % (num_players))
+        while num_players > 0 and num_players % 5 != 0:
+            sizes.append(3)
+            num_players -= 3
+        sizes += [ 5 for x in range(num_players // 5) ]
+        prunes_required = 0
+    else:
+        prunes_required = (table_size - (num_players % table_size)) % table_size
+        sizes = [ table_size for x in range((num_players + prunes_required) // table_size) ]
+    return (sizes, prunes_required)

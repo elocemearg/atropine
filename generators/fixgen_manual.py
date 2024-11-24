@@ -80,7 +80,7 @@ class PlayerArrangement(object):
                 # simply the number of active players in this division, rounded
                 # up to the nearest multiple of the group size with prunes.
                 num_slots = len(div_players)
-                (table_size_list, prunes_required) = gencommon.get_table_sizes(num_slots, table_size)
+                (table_size_list, prunes_required) = fixgen.get_table_sizes(num_slots, table_size)
                 if tourney.has_auto_prune():
                     num_slots += prunes_required
 

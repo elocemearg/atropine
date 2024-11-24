@@ -89,22 +89,6 @@ def get_user_form_div_table_size(tourney, settings, div_rounds, include_5and3=Tr
     form = htmlform.HTMLForm("POST", None, elements)
     return form;
 
-
-def get_table_sizes(num_players, table_size):
-    if table_size == -5:
-        sizes = []
-        if num_players < 8:
-            raise countdowntourney.FixtureGeneratorException("Number of players (%d) not compatible with selected table configuration (5&3)." % (num_players))
-        while num_players > 0 and num_players % 5 != 0:
-            sizes.append(3)
-            num_players -= 3
-        sizes += [ 5 for x in range(num_players // 5) ]
-        prunes_required = 0
-    else:
-        prunes_required = (table_size - (num_players % table_size)) % table_size
-        sizes = [ table_size for x in range((num_players + prunes_required) // table_size) ]
-    return (sizes, prunes_required)
-
 def add_auto_prunes(tourney, players, group_size):
     if len(players) % group_size != 0:
         num_prunes_required = group_size - (len(players) % group_size)

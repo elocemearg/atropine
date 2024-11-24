@@ -177,7 +177,7 @@ def generate(tourney, settings, div_rounds):
         players = [x for x in tourney.get_active_players() if x.get_division() == div_index];
         tables = [];
         table_size = int(settings.get("d%d_groupsize" % (div_index)))
-        (table_sizes, prunes_required) = gencommon.get_table_sizes(len(players), table_size)
+        (table_sizes, prunes_required) = fixgen.get_table_sizes(len(players), table_size)
 
         if avoid_all_newbie_tables:
             # Guarantee that every table has at least one newbie on it.

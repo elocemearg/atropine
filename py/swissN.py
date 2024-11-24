@@ -5,6 +5,7 @@ import time
 import countdowntourney
 import random
 import itertools
+from fixgen import get_table_sizes
 
 # Penalty applied to a game between two players who have already played each
 # other, or between two prunes, or between a player and a prune where the
@@ -718,14 +719,9 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     # this point we should have added any required auto-prunes, so the number
     # of StandingsPlayer objects in "players" must be a multiple of the
     # group size.
-    if group_size == -5:
-        if len(players) < 8:
-            raise IllegalNumberOfPlayersException()
-        group_size_list = countdowntourney.get_5_3_table_sizes(len(players))
-    else:
-        if len(players) % group_size != 0:
-            raise IllegalNumberOfPlayersException()
-        group_size_list = [ group_size for i in range(len(players) // group_size) ]
+    (group_size_list, prunes_required) = get_table_sizes(len(players), group_size)
+    if prunes_required > 0:
+        raise IllegalNumberOfPlayersException()
 
     player_name_to_index = {}
     for (i, p) in enumerate(players):

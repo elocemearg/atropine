@@ -8,6 +8,8 @@ import generators
 import countdowntourney
 import htmlform
 
+import cttable
+
 # When we load this module for the first time, also load all the fixture
 # generation modules we have.
 
@@ -222,6 +224,105 @@ def show_fixgen_table(response, tourney_name, module_list, title, description):
         response.writeln("</tr>");
     response.writeln("</table>");
 
+def make_fixtures_from_group(group, round_no, division, table_no, next_round_seq, game_type, repeat_threes):
+    group_fixtures = []
+    round_seq = next_round_seq
+    if len(group) % 2 == 1:
+        # If there are an odd number of players on this table, then
+        # each player takes a turn at hosting, and the player X places
+        # clockwise from the host plays the player X places
+        # anticlockwise from the host,
+        # for X in 1 .. (len(group) - 1) / 2.
+        for host in range(len(group)):
+            for x in range(1, (len(group) - 1) // 2 + 1):
+                left = (host + len(group) + x) % len(group)
+                right = (host + len(group) - x) % len(group)
+                p1 = group[left]
+                p2 = group[right]
+                fixture = countdowntourney.Game(round_no, round_seq, table_no, division, game_type, p1, p2)
+                group_fixtures.append(fixture)
+                round_seq += 1
+                if repeat_threes and len(group) == 3:
+                    fixture = countdowntourney.Game(round_no, round_seq, table_no, division, game_type, p2, p1)
+                    group_fixtures.append(fixture)
+                    round_seq += 1
+    elif len(group) == 4:
+        # Four players on each table. Don't do the general catch-all
+        # thing in the next branch, instead show the matches in a
+        # specific order so that the first two can be played
+        # simultaneously, then the next two, then the last two.
+        indices = [ (0,1), (2,3), (0,2), (1,3), (1,2), (3,0) ]
+        for (x, y) in indices:
+            fixture = countdowntourney.Game(round_no, round_seq, table_no, division, game_type, group[x], group[y])
+            group_fixtures.append(fixture)
+            round_seq += 1
+    else:
+        # There are an even number of players. Each player X from
+        # X = 0 .. len(group) - 1 plays each player Y for
+        # Y in X + 1 .. len(group) - 1
+        for x in range(len(group)):
+            for y in range(x + 1, len(group)):
+                p1 = group[x]
+                p2 = group[y]
+                if round_seq % 2 == 0 and len(group) > 2:
+                    (p1, p2) = (p2, p1)
+                fixture = countdowntourney.Game(round_no, round_seq, table_no, division, game_type, p1, p2)
+                group_fixtures.append(fixture)
+                round_seq += 1
+    return group_fixtures
+
+# generated_groups is fixgen.GeneratedGroups object
+def make_fixtures_from_groups(tourney, generated_groups):
+    fixtures = []
+    num_divisions = tourney.get_num_divisions()
+    players = tourney.get_active_players()
+
+    (all_accessible_tables, acc_default) = tourney.get_accessible_tables()
+
+    for rd in generated_groups.get_rounds():
+        round_no = rd.get_round_no()
+
+        # Find out which tables (if any) already have players on, so we
+        # can avoid giving out those table numbers
+        occupied_tables = set(tourney.list_occupied_tables_in_round(round_no))
+
+        # Build a list of the remaining players - that is, those players
+        # who are not in generated_groups and who have not had any games
+        # generated for them so far this round.
+        # Also, while we're at it, populate natural_div_to_table numbers
+        # based on the set of occupied table numbers and the number of
+        # groups in each division.
+        remaining_players = players[:]
+
+        # remaining_players is all the active players who aren't being
+        # assigned a game in this round right now.
+        # Also remove from remaining_players all players who have
+        # previously been assigned a table in this round. We'll be left
+        # with the players whose games are yet to be decided, but who
+        # might want to reserve their favourite table.
+        games_this_round = tourney.get_games(round_no=round_no)
+        for g in games_this_round:
+            for p in g.get_players():
+                if p in remaining_players:
+                    remaining_players.remove(p)
+
+        start_round_seq = tourney.get_max_game_seq_in_round(round_no)
+        if start_round_seq is None:
+            next_round_seq = 1
+        else:
+            next_round_seq = start_round_seq + 1
+
+        candidate_tables = cttable.get_candidate_tables(rd, remaining_players, occupied_tables, all_accessible_tables, acc_default)
+
+        for ct in candidate_tables:
+            group_fixtures = make_fixtures_from_group(ct.get_group(),
+                    ct.get_round_no(), ct.get_division(),
+                    ct.get_table_no(), next_round_seq, ct.get_game_type(),
+                    ct.get_repeat_threes())
+            next_round_seq += len(group_fixtures)
+            fixtures += group_fixtures
+    return fixtures
+
 
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
@@ -318,7 +419,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                     # when we call it later on
                     tourney.store_fixgen_settings(generator_name, fixgen_settings)
 
-                    new_fixtures_to_accept = tourney.make_fixtures_from_groups(generated_groups)
+                    new_fixtures_to_accept = make_fixtures_from_groups(tourney, generated_groups)
                     new_fixture_rounds = generated_groups.get_rounds()
                 elif "accept" in form:
                     # Fixtures have been accepted - write them to the db
@@ -447,7 +548,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         response.writeln("When you want to generate the next round's fixtures, choose a fixture generator from the list below.")
         if num_divisions > 1:
             response.writeln("If you want to generate fixtures for only one division or a subset of divisions, you'll be asked which divisions to generate fixtures for on the next screen.")
-
         response.writeln("</p>");
 
         rounds = tourney.get_rounds()

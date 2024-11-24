@@ -88,13 +88,10 @@ def generate(tourney, settings, div_rounds):
             ordered_players = [x for x in ordered_players if not x.is_prune()]
             ordered_players = randomly_reorder_equals(ordered_players, lambda x : x.rating)
 
-        if group_size == -5:
-            group_sizes = countdowntourney.get_5_3_table_sizes(len(players))
-        else:
-            (group_sizes, prunes_required) = gencommon.get_table_sizes(len(players), group_size)
-            for i in range(prunes_required):
-                prune = tourney.get_auto_prune()
-                prunes.append(prune)
+        (group_sizes, prunes_required) = fixgen.get_table_sizes(len(players), group_size)
+        for i in range(prunes_required):
+            prune = tourney.get_auto_prune()
+            prunes.append(prune)
 
         groups = [ [] for i in group_sizes ]
 
