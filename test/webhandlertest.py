@@ -130,6 +130,59 @@ def post_result(tourney, round_number, name1, score1, name2, score2, tb=False):
     params["entrysubmit"] = "Submit"
     make_request("games", tourney.get_name(), [str(round_number)], params)
 
+# Mess about creating divisions then put things back the way they were
+def division_diversion(tourney):
+    tourney_name = tourney.get_name()
+
+    # Create three divisions
+    make_request("divsetup", tourney_name, [], {
+        "setdivcount" : "Set number of divisions",
+        "divcount" : "3"
+    })
+
+    assert_equal(tourney.get_num_divisions(), 3)
+
+    # Divide the players into divisions.
+    # Division A (0): Sleve McDichael and Kevin Nogilny.
+    # Division B (1): Darryl Archideld and Todd Bonzalez.
+    # Division C (2): Bobson Dugnutt and Willie Dustice.
+    # Also name the divisions Apple, Banana and Cherry.
+    params = {
+        "newdivname0" : "Apple",
+        "newdivname1" : "Banana",
+        "newdivname2" : "Cherry",
+        "setdivplayers" : "Save new division details"
+    }
+    divs = [ ["Sleve McDichael", "Kevin Nogilny"],
+             ["Darryl Archideld", "Todd Bonzalez"],
+             ["Bobson Dugnutt", "Willie Dustice"] ]
+    for (div_index, div) in enumerate(divs):
+        for player_name in div:
+            input_name = "player%d_div" % (tourney.get_player_from_name(player_name).get_id())
+            params[input_name] = str(div_index)
+    make_request("divsetup", tourney_name, [], params)
+
+    # Check the players are in the right divisions
+    for (div_index, div) in enumerate(divs):
+        for player_name in div:
+            assert_equal(tourney.get_player_from_name(player_name).get_division(), div_index, player_name)
+
+    # Check the division names are correct
+    for (div_index, div_name) in enumerate([ "Apple", "Banana", "Cherry" ]):
+        assert_equal(tourney.get_division_name(div_index), div_name)
+
+    # Now undo all this and put everyone in the same division again.
+    make_request("divsetup", tourney_name, [], {
+        "setdivcount" : "Set number of divisions",
+        "divcount" : "1"
+    })
+
+    # Check everyone's in division 0
+    assert_equal(tourney.get_num_divisions(), 1)
+    for div in divs:
+        for name in div:
+            assert_equal(tourney.get_player_from_name(name).get_division(), 0, name)
+
 def main():
     tourney_name = "_webhandlertest"
 
@@ -206,6 +259,8 @@ Todd Bonzalez
 
     assert_equal(len(tourney.get_players()), 7)
     assert_equal(tourney.get_auto_prune_name(), "Pruney McPruneface")
+
+    division_diversion(tourney)
 
     # Add fixtures - do this via fixturegen.py
     add_fixtures(tourney, 1, [

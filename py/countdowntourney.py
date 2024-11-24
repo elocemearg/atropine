@@ -58,6 +58,8 @@ LOG_TYPE_COMMENT_WEB_FLAG = 4
 
 PRUNE_PLAYER_ID = -1
 
+MAX_DIVISIONS = 50
+
 # At the start of a round, we can either show the name-to-table index or the
 # fixtures table on the public display. If the name-to-table index is enabled,
 # we show it only if we have at least a certain number of players, and this is
@@ -323,7 +325,7 @@ create table if not exists player (
     short_name text,
     withdrawn int not null default 0,
     division int not null default 0,
-    division_fixed int not null default 0,
+    division_fixed int not null default 0, -- no longer used
     avoid_prune int not null default 0,
     require_accessible_table int not null default 0,
     preferred_table int not null default -1,
@@ -713,10 +715,6 @@ class NoGamesException(TourneyException):
     description = "No games have been played."
     pass
 
-class IllegalDivisionException(TourneyException):
-    description = "Cannot distribute players into the specified number of divisions in the way you have asked, either because there aren't enough players, or the number of players in a division cannot be set to the requested multiple."
-    pass
-
 class DBVersionMismatchException(TourneyException):
     description = "This tourney database file was created with a version of atropine which is not compatible with the one you're using."
     pass
@@ -759,6 +757,9 @@ class DisplayProfileDoesNotExistException(TourneyException):
 class NoTourneysPathException(Exception):
     description = "The TOURNEYSPATH environment variable is not set, so I can't find the tourney databases. If you see this error, it is a bug in Atropine."
 
+class InvalidNumberOfDivisionsException(Exception):
+    description = "The number of divisions must be between 1 and %d." % (MAX_DIVISIONS)
+
 
 def get_teleost_mode_services_to_fetch(mode):
     if mode < 0 or mode >= len(teleost_modes):
@@ -781,8 +782,7 @@ class Player(object):
             self.short_name = name
         self.division = division
 
-        # If true, player has been manually put in this division rather than
-        # happened to fall into it because of their rating
+        # No longer used
         self.division_fixed = division_fixed
 
         self.player_id = player_id
@@ -853,9 +853,6 @@ class Player(object):
 
     def get_division(self):
         return self.division
-
-    def is_division_fixed(self):
-        return self.division_fixed
 
     def is_avoiding_prune(self):
         return self.avoid_prune
@@ -1915,128 +1912,6 @@ class Tourney(object):
         cur.close()
         self.db.commit()
 
-    # Put each player in a division. The active players are split into
-    # num_divisions divisions, each of which must have a multiple of
-    # division_size_multiple players. Names listed as strings in
-    # automatic_top_div_players are put in the top division. Beyond that,
-    # players are distributed among the divisions so as to make their sizes
-    # as equal as possible, while still preserving that the size of every
-    # division must be a multiple of division_size_multiple.
-    def set_player_divisions(self, num_divisions, division_size_multiple, by_rating=True, automatic_top_div_players=[]):
-        players = self.get_players(exclude_withdrawn=True)
-
-        # Make a player_ranks map. Players with lower numbers go in higher
-        # divisions. This may be derived from the player's rating (in which
-        # case we need to negate it so highly-rated players go in higher
-        # divisions) or from the player's position in the standings.
-        player_ranks = dict()
-        if by_rating:
-            for p in self.get_players(exclude_withdrawn=False):
-                player_ranks[p.get_name()] = -p.get_rating()
-        else:
-            for s in self.get_standings():
-                player_ranks[s.name] = s.position
-
-        if len(players) % division_size_multiple != 0:
-            raise IllegalDivisionException()
-
-        div_players = [ [] for i in range(num_divisions) ]
-
-        remaining_players = []
-        for p in players:
-            if p.get_name() in automatic_top_div_players:
-                div_players[0].append(p)
-            else:
-                remaining_players.append(p)
-
-        remaining_players = sorted(remaining_players, key=lambda x : player_ranks[x.get_name()]);
-
-        # Number of players in the top division is at least
-        # num_players / num_divisions rounded up to the nearest multiple of
-        # division_size_multiple.
-        players_in_div = len(players) // num_divisions
-        if players_in_div % division_size_multiple > 0:
-            players_in_div += division_size_multiple - (players_in_div % division_size_multiple)
-
-        max_tables_in_div = (len(players) // division_size_multiple) // num_divisions
-        if (len(players) // division_size_multiple) % num_divisions > 0:
-            max_tables_in_div += 1
-
-        while len(div_players[0]) < players_in_div:
-            div_players[0].append(remaining_players[0])
-            remaining_players = remaining_players[1:]
-
-        # If division 1 now has an illegal number of players, which is possible
-        # if, for example, there are 64 players in total but 21 players have
-        # opted in to division 1, add enough players to satisfy the multiple.
-        if len(div_players[0]) % division_size_multiple > 0:
-            num_to_add = division_size_multiple - (len(div_players[0]) % division_size_multiple)
-            div_players[0] += remaining_players[0:num_to_add]
-            remaining_players = remaining_players[num_to_add:]
-
-        # Sanity check that we've got the right number of players left
-        if len(remaining_players) % division_size_multiple != 0:
-            raise IllegalDivisionException()
-
-        # Number of tables in total
-        num_tables = len(players) // division_size_multiple
-
-        # If we need an unequal number of players in each division, make
-        # sure the top divisions get more players
-        if num_tables % num_divisions > 0 and len(div_players[0]) < max_tables_in_div * division_size_multiple:
-            # Add another table to division 1
-            div_players[0] += remaining_players[0:division_size_multiple]
-            remaining_players = remaining_players[division_size_multiple:]
-
-        if num_divisions > 1:
-            # Distribute the remaining players among the remaining divisions as
-            # evenly as possible while keeping the size of each division a
-            # multiple of division_size_multiple.
-            if len(remaining_players) < division_size_multiple * (num_divisions - 1):
-                raise IllegalDivisionException()
-
-            # Number of tables in the divisions after division 1
-            num_tables = len(remaining_players) // division_size_multiple
-
-            # Distribute players amongst divisions, and if we have to have some
-            # divisions larger than others, make it the higher divisions.
-            for division in range(1, num_divisions):
-                div_players[division] += remaining_players[0:((num_tables // (num_divisions - 1)) * division_size_multiple)]
-                remaining_players = remaining_players[((num_tables // (num_divisions - 1)) * division_size_multiple):]
-                if num_tables % (num_divisions - 1) >= division:
-                    # This division needs an extra tablesworth
-                    div_players[division] += remaining_players[0:division_size_multiple]
-                    remaining_players = remaining_players[division_size_multiple:]
-
-        # Finally, take the withdrawn players, which we haven't put into any
-        # division, and put them into the division appropriate for their rank.
-
-        div_rank_ranges = []
-        for div_index in range(num_divisions):
-            div_rank_ranges.append(
-                    (min(player_ranks[x.get_name()] for x in div_players[div_index]),
-                     max(player_ranks[x.get_name()] for x in div_players[div_index])
-            ))
-
-        withdrawn_players = [x for x in self.get_players(exclude_withdrawn=False) if x.is_withdrawn()]
-        for p in withdrawn_players:
-            for div in range(num_divisions):
-                if div == num_divisions - 1 or player_ranks[p.get_name()] <= div_rank_ranges[div][1]:
-                    div_players[div].append(p)
-                    break
-
-        sql_params = []
-        division = 0
-        for l in div_players:
-            for p in l:
-                sql_params.append((division, int(p.get_name() in automatic_top_div_players), p.get_name().lower(), p.get_name()))
-            division += 1
-
-        cur = self.db.cursor()
-        cur.executemany("update player set division = ?, division_fixed = ? where (lower(name) = ? or name = ?)", sql_params)
-        cur.close()
-        self.db.commit()
-
     def set_player_withdrawn(self, name, withdrawn):
         withdrawn = bool(withdrawn)
         cur = self.db.cursor()
@@ -2811,6 +2686,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         return True if self.get_int_attribute("showdrawscolumn", 0) != 0 else False
 
     def get_num_divisions(self):
+        # Number of divisions is the value of the numdivisions attribute, or
+        # max(division) + 1 from the player table, whichever is higher.
         cur = self.db.cursor()
         cur.execute("select max(division) + 1 from player")
         row = cur.fetchone()
@@ -2818,7 +2695,30 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         if value is None:
             value = 1
         cur.close()
+        num_divisions = self.get_int_attribute("numdivisions", 1)
+        if value < num_divisions:
+            value = num_divisions
         return value
+
+    def set_num_divisions(self, count):
+        if count < 1 or count > MAX_DIVISIONS:
+            raise InvalidNumberOfDivisionsException()
+
+        # Set the numdivisions attribute, which means there are at least this
+        # many divisions even if there are no players in them yet.
+        self.set_attribute("numdivisions", count)
+
+        # We might have reduced the number of divisions, so any player whose
+        # division number is "count" or greater must be promoted out of their
+        # now-nonexistent division and into the now-lowest division.
+        cur = self.db.cursor()
+        cur.execute("update player set division = %(maxdiv)d where division > %(maxdiv)d" % { "maxdiv" : (count - 1)})
+        players_moved = cur.rowcount
+        cur.close()
+
+        # Commit and return the number of players whose division just evaporated
+        self.db.commit()
+        return players_moved
 
     def get_num_active_players(self, div_index=None):
         cur = self.db.cursor()
