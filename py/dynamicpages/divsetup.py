@@ -66,9 +66,12 @@ min="0" max="%(numplayers)d" value="%(playersperdiv)d">
     response.writeln("</table>")
     response.writeln("<div>")
     response.writeln("""<p>Automatically assign players to divisions based on:</p>
-<button type="button" onclick="autoAssignByRating();">Rating</button>
-<button type="button" onclick="autoAssignByStandingsPosition();">Standings position</button>
-<button type="button" onclick="autoAssignByPlayerID();">Player ID</button>
+<button type="button" onclick="autoAssignByRating();"
+    title="Sort players by rating and put higher-rated players in higher divisions.">Rating</button>
+<button type="button" onclick="autoAssignByStandingsPosition();"
+    title="Sort players by standings position and put higher-ranked players in higher divisions.">Standings position</button>
+<button type="button" onclick="autoAssignByPlayerID();"
+    title="Sort players by Player ID, which is the order the players were initially entered in the player list, followed by any players added afterwards. Put lower player IDs in higher divisions.">Player ID</button>
 """)
     response.writeln("</div>")
 
