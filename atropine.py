@@ -10,7 +10,6 @@ import importlib
 import traceback
 
 http_listen_port = 3960
-uploader_listen_port = 3961
 tourneys_path = None
 
 def fatal_error(context, exc=None):
@@ -46,14 +45,12 @@ def running_from_pyinstaller_bundle():
 
 try:
     parser = argparse.ArgumentParser(description="Run Atropine's web server.")
-    parser.add_argument("-d", "--data-dir", default=None, type=str)
-    parser.add_argument("-p", "--port", default=http_listen_port, type=int)
-    parser.add_argument("-u", "--uploader-port", default=uploader_listen_port, type=int)
-    parser.add_argument("-t", "--tourneys", default=None, type=str)
+    parser.add_argument("-d", "--data-dir", default=None, type=str, help="Set appdata directory, in which we'll create/expect our tourneys directory.")
+    parser.add_argument("-p", "--port", default=http_listen_port, type=int, help="TCP port on which to to listen for HTTP requests (default %d)" % (http_listen_port))
+    parser.add_argument("-t", "--tourneys", default=None, type=str, help="Override location of tourneys directory.")
 
     args = parser.parse_args()
     http_listen_port = args.port
-    uploader_listen_port = args.uploader_port
     tourneys_path = args.tourneys
     atropine_app_data_dir = args.data_dir
 except Exception as e:
@@ -236,13 +233,10 @@ print("* Python version is %d.%d.%d." % tuple(sys.version_info[0:3]))
 print("*******************************************************************************")
 print()
 
-uploader_service = None
-
 try:
-    uploader_service = uploader.TourneyUploaderService(uploader_listen_port)
-
-    os.chdir("webroot");
-    server_address = ('', http_listen_port);
+    uploader.start_uploader_thread()
+    os.chdir("webroot")
+    server_address = ('', http_listen_port)
     httpd = ThreadedHTTPServer(server_address, AtropineHTTPRequestHandler)
     print("Local web server created. Paste this link into your browser:")
     print()
@@ -253,10 +247,7 @@ except socket.error as e:
     err = e.args[0];
     print("Failed to start...")
     if err == errno.EADDRINUSE:
-        if uploader_service is None:
-            failed_port = uploader_listen_port
-        else:
-            failed_port = http_listen_port
+        failed_port = http_listen_port
         print("Address localhost:%d is already in use." % failed_port);
         print();
         print("Perhaps there is another instance of Atropine running?")

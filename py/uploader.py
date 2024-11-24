@@ -1,14 +1,19 @@
 #!/usr/bin/python3
 
-# The uploader service listens for connections from localhost on port 3961.
-# It expects a JSON object on a line by itself as the request. It responds
-# with another JSON object on a line by itself, then closes the connection.
-# Atropine CGI scripts can send requests to this service to tell it to:
+# The uploader service runs in a separate thread, and there is only one of it
+# in the Python process. Entrypoint is uploader_request(), which is passed
+# { "type" : ..., "request" : ... } objects.
+# These used to be encoded as JSON and sent to port 3961 on which this
+# module would be listening, but that was only required when we had CGI
+# scripts which ran in separate Python processes.
+
+# Callers to uploader_request() can tell us to:
 #   * Add a tourney to the list of tourneys we're periodically uploading to
 #     greem.co.uk
 #   * Remove a tourney from that list (i.e. stop uploading it)
+#   * Delete a tourney from greem.co.uk
 #   * Get the upload state of a tourney (are we uploading it, when was the
-#     last successful upload, was the last upload successful, and if not what
+#     last successful upload, was the last upload successful, and if not, what
 #     went wrong)
 #
 # The service is started with atropine.py, and runs alongside the web server
@@ -16,9 +21,6 @@
 # startup, no tourneys are being uploaded.
 
 import sys
-import os
-import socketserver
-from socketserver import BaseRequestHandler
 import json
 import threading
 import time
@@ -60,16 +62,6 @@ def delete_tourney_from_web(tourney_name, username, password):
             "delete" : True
     }
     return make_https_json_request(http_server_host, http_server_port, http_delete_path, req)
-
-def read_line_from_socket(sock):
-    byte_array = b'';
-    b = 0
-    while b != b'\n':
-        b = sock.recv(1)
-        if b is None or len(b) == 0:
-            return None
-        byte_array += b
-    return byte_array.decode("utf-8")
 
 def make_https_json_request(server_host, server_port, path, request):
     post_data = json.dumps(request)
@@ -285,93 +277,63 @@ class UploaderThread(object):
                         continue
             time.sleep(1)
 
-class UploaderServiceHandler(BaseRequestHandler):
-    def get_fields_from_req(self, req, field_names):
-        field_values = []
-        for name in field_names:
-            value = req.get(name, None)
-            if value is None:
-                raise FieldNotFoundException()
-            field_values.append(value)
-        return tuple(field_values)
+def get_fields_from_req(req, field_names):
+    field_values = []
+    for name in field_names:
+        value = req.get(name, None)
+        if value is None:
+            raise FieldNotFoundException()
+        field_values.append(value)
+    return tuple(field_values)
 
-    def process_request(self, req):
-        global uploader_thread
+def uploader_request(req):
+    global uploader_thread
 
-        req_type = req.get("type", None)
-        if not req_type:
-            return make_error_response("Request has no request type")
-        req_body = req.get("request", None)
-        if req_body is None:
-            return make_error_response("Request has no body")
+    if not uploader_thread:
+        return make_error_response("Uploader thread not running")
 
-        try:
-            if req_type == "start_uploading":
-                (tourney, username, password, private) = self.get_fields_from_req(req_body, ["tourney", "username", "password", "private"])
-                uploader_thread.add_tourney_to_upload_list(tourney, username, password, private)
-                rep = make_ok_response()
-            elif req_type == "stop_uploading":
-                (tourney,) = self.get_fields_from_req(req_body, ["tourney"])
-                uploader_thread.remove_tourney_from_upload_list(tourney)
-                rep = make_ok_response()
-            elif req_type == "delete":
-                (tourney, username, password) = self.get_fields_from_req(req_body, ["tourney", "username", "password"])
-                uploader_thread.remove_tourney_from_upload_list(tourney)
-                rep = delete_tourney_from_web(tourney, username, password)
-                uploader_thread.set_tourney_auth(tourney, username, password)
-            elif req_type == "status":
-                (tourney,) = self.get_fields_from_req(req_body, ["tourney"])
-                rep = { "success" : True }
-                auth = uploader_thread.get_tourney_auth(tourney)
-                rep["publishing"] = uploader_thread.is_uploading_tourney(tourney)
-                rep["viewers"] = uploader_thread.get_num_viewers(tourney)
-                if auth:
-                    rep["username"] = auth.get("username", None)
-                    rep["password"] = auth.get("password", None)
-                    rep["private"] = auth.get("private", False)
-                rep["last_successful_upload_time"] = uploader_thread.get_last_successful_upload_time(tourney)
-                rep["last_failed_upload"] = uploader_thread.get_last_failed_upload(tourney)
-                rep["upload_button_pressed_time"] = uploader_thread.get_upload_button_pressed_time(tourney)
-                rep["now"] = int(time.time())
-            else:
-                rep = make_error_response("Unrecognised request type")
-        except FieldNotFoundException:
-            return make_error_response("Request is not valid for type")
+    req_type = req.get("type", None)
+    if not req_type:
+        return make_error_response("Request has no request type")
+    req_body = req.get("request", None)
+    if req_body is None:
+        return make_error_response("Request has no body")
 
-        return rep
+    try:
+        if req_type == "start_uploading":
+            (tourney, username, password, private) = get_fields_from_req(req_body, ["tourney", "username", "password", "private"])
+            uploader_thread.add_tourney_to_upload_list(tourney, username, password, private)
+            rep = make_ok_response()
+        elif req_type == "stop_uploading":
+            (tourney,) = get_fields_from_req(req_body, ["tourney"])
+            uploader_thread.remove_tourney_from_upload_list(tourney)
+            rep = make_ok_response()
+        elif req_type == "delete":
+            (tourney, username, password) = get_fields_from_req(req_body, ["tourney", "username", "password"])
+            uploader_thread.remove_tourney_from_upload_list(tourney)
+            rep = delete_tourney_from_web(tourney, username, password)
+            uploader_thread.set_tourney_auth(tourney, username, password)
+        elif req_type == "status":
+            (tourney,) = get_fields_from_req(req_body, ["tourney"])
+            rep = { "success" : True }
+            auth = uploader_thread.get_tourney_auth(tourney)
+            rep["publishing"] = uploader_thread.is_uploading_tourney(tourney)
+            rep["viewers"] = uploader_thread.get_num_viewers(tourney)
+            if auth:
+                rep["username"] = auth.get("username", None)
+                rep["password"] = auth.get("password", None)
+                rep["private"] = auth.get("private", False)
+            rep["last_successful_upload_time"] = uploader_thread.get_last_successful_upload_time(tourney)
+            rep["last_failed_upload"] = uploader_thread.get_last_failed_upload(tourney)
+            rep["upload_button_pressed_time"] = uploader_thread.get_upload_button_pressed_time(tourney)
+            rep["now"] = int(time.time())
+        else:
+            rep = make_error_response("Unrecognised request type")
+    except FieldNotFoundException:
+        return make_error_response("Request is not valid for type")
+    return rep
 
-    def handle(self):
-        # Request is expected to be a JSON object, on a line by itself
-        line = read_line_from_socket(self.request)
-        if line is not None:
-            rep = None
-            try:
-                req = json.loads(line)
-            except Exception as e:
-                rep = make_error_response("Request is not valid JSON")
-
-            if not rep:
-                rep = self.process_request(req)
-            self.request.sendall((json.dumps(rep) + "\n").encode("utf-8"))
-
-        self.request.close()
-
-class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-    def __init__(self, addr_port, service_handler):
-        self.allow_reuse_address = True
-        super().__init__(addr_port, service_handler)
-
-class TourneyUploaderService(object):
-    def __init__(self, listen_port):
-        global uploader_thread
-        self.listen_port = listen_port
-        self.socket_server = ThreadedTCPServer(("127.0.0.1", listen_port), UploaderServiceHandler)
-        self.server_thread = threading.Thread(target=self.socket_server.serve_forever)
-
-        if not uploader_thread:
-            uploader_thread = UploaderThread()
-        self.server_thread.daemon = True
-        self.server_thread.start()
-
-    def shutdown(self):
-        self.socket_server.shutdown()
+def start_uploader_thread():
+    global uploader_thread
+    if not uploader_thread:
+        uploader_thread = UploaderThread()

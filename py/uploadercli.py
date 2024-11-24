@@ -1,10 +1,6 @@
 #!/usr/bin/python3
 
-import sys
-import socket
-import json
-
-uploader_service_port = 3961
+import uploader
 
 class UploaderClientException(Exception):
     def __init__(self, message):
@@ -13,33 +9,8 @@ class UploaderClientException(Exception):
     def __str__(self):
         return self.message
 
-def read_line_from_socket(sock):
-    byte_array = b''
-    b = b'a'
-    while b != b'\n' and b != b'':
-        b = sock.recv(1)
-        if b is not None and len(b) > 0:
-            byte_array += b
-    return byte_array.decode("utf-8")
-
 def send_request(request_type, request_body):
-    try:
-        sock = socket.create_connection(("127.0.0.1", uploader_service_port), 10)
-
-        req = {
-                "type" : request_type,
-                "request" : request_body
-        }
-
-        json_str = json.dumps(req) + "\n"
-        sock.sendall(json_str.encode("utf-8"))
-        json_str = read_line_from_socket(sock)
-        sock.close()
-
-        rep = json.loads(json_str)
-    except OSError as e:
-        raise UploaderClientException("Failed to send request to local uploader service: " + str(e))
-
+    rep = uploader.uploader_request({ "type" : request_type, "request" : request_body })
     if not rep.get("success", False):
         raise UploaderClientException(rep.get("message", "No message"))
     return rep
