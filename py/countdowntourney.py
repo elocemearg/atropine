@@ -3302,32 +3302,13 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         return Team(team_id, team_name, colour)
 
     def set_player_teams(self, player_teams):
-        # argument is list of 2-tuples, containing player name and team ID
-        sql = "update player set team_id = ? where name = ? and id >= 0"
+        # argument is list of 2-tuples, containing player ID and team ID
+        sql = "update player set team_id = ? where id = ? and id >= 0"
         params = []
         for pt in player_teams:
             params.append((None if pt[1] is None or pt[1] < 0 else pt[1], pt[0]))
         self.db.executemany(sql, params)
         self.db.commit()
-
-    def get_player_teams(self):
-        sql = "select p.id, t.id from player p left outer join team t on p.team_id = t.id where p.id >= 0 order by p.name"
-        cur = self.db.cursor()
-        cur.execute(sql)
-        player_team_ids = []
-        for (player_id, team_id) in cur:
-            player_team_ids.append((player_id, team_id))
-        cur.close()
-
-        player_teams = []
-        for (p_id, t_id) in player_team_ids:
-            if t_id is None or t_id < 0:
-                team = None
-            else:
-                team = self.get_team_from_id(t_id)
-            player = self.get_player_from_id(p_id)
-            player_teams.append((player, team))
-        return player_teams
 
     def are_players_assigned_teams(self):
         sql = "select count(*) from player where team_id is not null"

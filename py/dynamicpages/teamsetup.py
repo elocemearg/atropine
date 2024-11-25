@@ -3,7 +3,9 @@
 import random
 
 import htmlcommon
+import htmldialog
 import countdowntourney
+import time
 
 def int_or_none(s):
     if s is None:
@@ -13,11 +15,15 @@ def int_or_none(s):
     except ValueError:
         return None;
 
+def is_last_sunday_in_january():
+    # Unlike the C structure, 0 is Monday and 6 is Sunday, and tm_mon counts from 1 and not 0.
+    tm = time.localtime(time.time())
+    return tm.tm_mon == 1 and tm.tm_mday >= 25 and tm.tm_wday == 6
+
 def random_team_assignment(tourney, group_size):
     # Get a list of all players, excluding prunes (players with a rating of 0)
     players = tourney.get_players()
     prunes = [ p for p in players if p.get_rating() <= 0 ]
-
     players = [ p for p in players if p.get_rating() > 0]
 
     # Sort them by rating descending
@@ -61,18 +67,31 @@ def random_team_assignment(tourney, group_size):
         for i in range(len(group)):
             player = group[i]
             team_id = team_ids[i]
-            player_teams.append((player.get_name(), team_id))
+            player_teams.append((player.get_id(), team_id))
             team_counts[team_id] += 1
 
         pos += group_size
 
     # Assign each prune to no team
     for p in prunes:
-        player_teams.append((p.get_name(), -1))
+        player_teams.append((p.get_id(), -1))
 
-    # Return the map of players to team IDs
+    # Return the map of player IDs to team IDs
     return player_teams
 
+
+def write_radio_button(response, player_id, team_id, checked, hex_colour):
+    response.writeln("""
+<td class="control" style="padding: 0; %(style)s">
+<label for="player%(playerid)d_team%(teamid)d" style="min-width: 70px;" class="fillcontainer">
+<input type="radio" id="player%(playerid)d_team%(teamid)d" style="margin: 5px;" name="player%(playerid)d" value="%(teamid)d" %(checked)s>
+</label>
+</td>""" % {
+        "style" : ("background-color: #" + hex_colour + ";") if hex_colour is not None else "",
+        "playerid" : player_id,
+        "teamid" : team_id,
+        "checked" : "checked" if checked else ""
+    })
 
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourneyname = tourney.get_name()
@@ -90,34 +109,67 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
     response.writeln("<body>")
 
+    response.writeln("<script>")
+    response.writeln(htmldialog.DIALOG_JAVASCRIPT)
+    response.writeln("""
+function showRandomAssignmentDialogBox() {
+    let randomGroupSizeBox = document.getElementById("randomgroupsize");
+    let randomGroupSize = 6;
+    if (randomGroupSizeBox) {
+        randomGroupSize = parseInt(randomGroupSizeBox.value);
+        if (isNaN(randomGroupSize)) {
+            randomGroupSize = 6;
+        }
+    }
+    let p1 = document.createElement("P");
+    let p2 = document.createElement("P");
+    p1.innerHTML = "Players have already been assigned teams for this tourney. If you proceed, the players will be re-randomised into teams, losing the existing team assignments.";
+    p2.innerHTML = "Are you sure you want to reassign players to random teams?";
+    dialogBoxShow("randomassignmentdialog",
+        "Discard existing team assignments?", "Randomise teams", "Cancel",
+        "POST", null, "randomassignmentsubmit", [p1, p2],
+        { "randomgroupsize" : randomGroupSize.toString() });
+}
+
+function showClearTeamsDialogBox() {
+    let p1 = document.createElement("P");
+    let p2 = document.createElement("P");
+    p1.innerHTML = "This will lose all existing team assignments. No players will be in any team.";
+    p2.innerHTML = "Are you sure you want to clear all existing team assignments?";
+    dialogBoxShow("clearteamsdialog", "Discard existing team assignments?",
+        "Clear team assignments", "Cancel", "POST", null, "clearteams",
+        [p1, p2]);
+}
+""")
+    response.writeln("</script>")
+
     htmlcommon.show_sidebar(response, tourney);
 
     if request_method == "POST":
+        player_teams = None
         if player_team_submit:
-            index = 0
+            # User set their own player-to-team assignments
             player_teams = []
-            while form.getfirst("player%d" % (index)):
-                player_name = form.getfirst("player%d" % (index))
-                team_no = int_or_none(form.getfirst("team%d" % (index)))
-                player_teams.append((player_name, team_no))
-                index += 1
-            try:
-                tourney.set_player_teams(player_teams)
-                player_teams_set = True
-            except countdowntourney.TourneyException as e:
-                tourney_exception = e
+            for name in form:
+                # Find all the form parameters that look like player<number>
+                if name.startswith("player"):
+                    try:
+                        player_id = int(name[6:])
+                        team_id = int_or_none(form.getfirst(name))
+                        player_teams.append((player_id, team_id))
+                    except ValueError:
+                        pass
         elif random_assignment_submit:
+            # User asked for random team assignment
             if random_group_size is None:
                 random_group_size = 0
             player_teams = random_team_assignment(tourney, random_group_size)
-            try:
-                tourney.set_player_teams(player_teams)
-                player_teams_set = True
-            except countdowntourney.TourneyException as e:
-                tourney_exception = e
         elif clear_teams_submit:
+            # User asked to clear team assignments
             players = tourney.get_players()
-            player_teams = [ (p.get_name(), None) for p in players ]
+            player_teams = [ (p.get_id(), None) for p in players ]
+
+        if player_teams:
             try:
                 tourney.set_player_teams(player_teams)
                 player_teams_set = True
@@ -133,19 +185,32 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         htmlcommon.show_success_box(response, "Teams set successfully.")
     elif tourney_exception:
         htmlcommon.show_tourney_exception(response, tourney_exception)
+    elif num_players > 0:
+        if is_last_sunday_in_january():
+            response.writeln("<p>Hi Ben!</p>")
+        else:
+            response.writeln("<p>It's not the usual time of year for this, but what do I care?</p>")
 
+    # Fetch the current list of teams and players from tourney
     teams = tourney.get_teams()
-    player_teams = sorted(tourney.get_player_teams(), key=lambda x : x[0].get_rating(), reverse=True)
+    players = sorted(tourney.get_players(), key=lambda x : x.get_rating(), reverse=True)
+
+    team_assignments_exist = False
+    for player in players:
+        if player.get_team() is not None:
+            team_assignments_exist = True
+            break
 
     if num_players == 0:
         response.writeln("<p>This tourney doesn't have any players, so you can't specify teams yet.</p>")
         response.writeln('<p><a href="/atropine/%s/tourneysetup">Back to Tourney Setup</a></p>' % (htmlcommon.escape(tourneyname)));
     else:
+        # For each team, list its players
         response.writeln('<h2>Teams</h2>')
         for team in teams:
             response.writeln('<p>')
             response.writeln(htmlcommon.make_team_dot_html(team) + " " + htmlcommon.escape(team.get_name()))
-            player_name_list = [ htmlcommon.escape(p.get_name()) for (p, pt) in player_teams if pt is not None and pt.get_id() == team.get_id() ]
+            player_name_list = [ htmlcommon.escape(p.get_name()) for p in players if p.get_team_id() is not None and p.get_team_id() == team.get_id() ]
 
             if player_name_list:
                 response.writeln(" (%d): %s" % (len(player_name_list), ", ".join(player_name_list)));
@@ -153,6 +218,8 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                 response.writeln(" (no players)")
             response.writeln('</p>')
 
+        # Show a table of players, with radio buttons to indicate/change which
+        # team those players are on.
         response.writeln('<h2>Players</h2>')
         response.writeln('<form method="POST">')
         response.writeln('<table class="misctable">')
@@ -162,20 +229,18 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             response.writeln('<th>%s</th>' % (htmlcommon.escape(team.get_name())))
         response.writeln('</tr>')
 
-        index = 0
-        for player_team in player_teams:
-            player = player_team[0]
-            team = player_team[1]
-
+        for player in players:
             response.writeln('<tr>')
-            response.writeln('<td class="text">%s<input type="hidden" name="player%d" value="%s" /></td>' % (htmlcommon.escape(player.get_name()), index, htmlcommon.escape(player.get_name())))
+            response.writeln('<td class="text">%s</td>' % (htmlcommon.escape(player.get_name())))
 
             # Radio button for "no team"
-            response.writeln('<td class="control"><input type="radio" name="team%d" value="%d" %s /></td>' % (index, -1, "checked" if team is None else ""))
+            write_radio_button(response, player.get_id(), -1, player.get_team() is None, "dddddd")
             for t in teams:
-                response.writeln('<td class="control" style="background-color: #%s;"><input type="radio" name="team%d" value="%d" %s /></td>' % (t.get_hex_colour(), index, t.get_id(), "checked" if team is not None and team.get_id() == t.get_id() else ""))
+                # Radio button for team t
+                write_radio_button(response, player.get_id(), t.get_id(),
+                        player.get_team() is not None and t.get_id() == player.get_team_id(), t.get_hex_colour())
             response.writeln('</tr>')
-            index += 1
+
         response.writeln('</table>')
 
         response.writeln('<p>')
@@ -184,25 +249,39 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         response.writeln('</form>')
 
         response.writeln('<h2>Automatic random team assignment</h2>')
-        response.writeln('<form method="POST">')
-        response.writeln('<p>')
-        response.writeln('Divide players by rating into groups of <input type="number" name="randomgroupsize" value="%d" min="0" /> and randomly distribute each group as evenly as possible among the teams. Set to 0 to divide the whole player list randomly into teams, ignoring rating.' % random_group_size)
-        response.writeln('</p>')
-        response.writeln('<p>')
-        response.writeln('<input type="submit" name="randomassignmentsubmit" value="Randomly assign players to teams" />')
-        response.writeln('</p>')
-        response.writeln('</form>')
 
-        response.writeln('<h2>Clear teams</h2>')
-        response.writeln('<form method="POST">')
+        # If there are teams already assigned, the random team assignment
+        # button brings up an "are you sure" dialog box. Otherwise, it simply
+        # submits the form and randomises the teams.
+        if not team_assignments_exist:
+            response.writeln('<form method="POST">')
         response.writeln('<p>')
-        response.writeln('Remove all players from their teams.')
+        response.writeln('Divide players by rating into groups of <input type="number" name="randomgroupsize" id="randomgroupsize" value="%d" min="0" /> and randomly distribute each group as evenly as possible among the teams. Set to 0 to divide the whole player list randomly into teams, ignoring rating.' % random_group_size)
         response.writeln('</p>')
         response.writeln('<p>')
-        response.writeln('<input type="submit" name="clearteams" value="Clear team assignments"/>')
+        if team_assignments_exist:
+            response.writeln('<button name="randomassignmentsubmit" onclick="showRandomAssignmentDialogBox();">Randomly assign players to teams</button>')
+        else:
+            response.writeln('<input type="submit" name="randomassignmentsubmit" value="Randomly assign players to teams" />')
         response.writeln('</p>')
-        response.writeln('</form>')
+
+        if not team_assignments_exist:
+            response.writeln('</form>')
+
+        if team_assignments_exist:
+            response.writeln('<h2>Clear teams</h2>')
+            response.writeln('<p>')
+            response.writeln('Remove all players from their teams.')
+            response.writeln('</p>')
+            response.writeln('<p>')
+            response.writeln('<button name="clearteams" onclick="showClearTeamsDialogBox();">Clear team assignments</button>')
+            response.writeln('</p>')
 
     response.writeln('</div>')
+
+    # Hidden dialog boxes for random team assignment and clear team confirmation
+    response.writeln(htmldialog.get_html("randomassignmentdialog"))
+    response.writeln(htmldialog.get_html("clearteamsdialog"))
+
     response.writeln('</body>')
     response.writeln('</html>')
