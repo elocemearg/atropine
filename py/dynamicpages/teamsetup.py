@@ -15,10 +15,14 @@ def int_or_none(s):
     except ValueError:
         return None;
 
-def is_last_sunday_in_january():
-    # Unlike the C structure, 0 is Monday and 6 is Sunday, and tm_mon counts from 1 and not 0.
-    tm = time.localtime(time.time())
+# Very important functions.
+# Unlike the C structure, tm_wday == 0 means Monday and 6 means Sunday, and
+# tm_mon counts from 1 and not 0.
+def is_today_last_sunday_in_january(tm):
     return tm.tm_mon == 1 and tm.tm_mday >= 25 and tm.tm_wday == 6
+
+def is_tomorrow_last_sunday_in_january(tm):
+    return tm.tm_mon == 1 and tm.tm_mday >= 24 and tm.tm_mday <= 30 and tm.tm_wday == 5
 
 def random_team_assignment(tourney, group_size):
     # Get a list of all players, excluding prunes (players with a rating of 0)
@@ -186,8 +190,12 @@ function showClearTeamsDialogBox() {
     elif tourney_exception:
         htmlcommon.show_tourney_exception(response, tourney_exception)
     elif num_players > 0:
-        if is_last_sunday_in_january():
+        # Give the user an appropriate context-sensitive greeting
+        tm = time.localtime(time.time())
+        if is_today_last_sunday_in_january(tm):
             response.writeln("<p>Hi Ben!</p>")
+        elif is_tomorrow_last_sunday_in_january(tm):
+            response.writeln("<p>Isn't this supposed to be tomorrow?</p>")
         else:
             response.writeln("<p>It's not the usual time of year for this, but what do I care?</p>")
 
