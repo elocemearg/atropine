@@ -326,7 +326,7 @@ def make_fixtures_from_groups(tourney, generated_groups):
 
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
-    htmlcommon.print_html_head(response, "Generate Fixtures: " + str(tourney_name));
+    htmlcommon.print_html_head(response, "Generate Fixtures: " + str(tourney_name), othercssfiles=["fixtures.css"])
 
     response.writeln("<body>");
 

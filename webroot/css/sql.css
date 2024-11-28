@@ -1,0 +1,66 @@
+
+/* SQL interface */
+
+body.scary {
+}
+
+.sqlsidebar {
+	width: 280px;
+    background-color: #ffcccc;
+}
+
+div.sqlmainpane {
+	margin-left: 300px;
+}
+
+div.sqlsidebarname {
+    font-weight: bold;
+}
+
+table.sqlresults {
+    border-collapse: collapse;
+    background-color: white;
+}
+
+table.sqlresults th {
+    border: 1px solid black;
+    padding-left: 0.4em;
+    padding-right: 0.4em;
+}
+
+table.sqlresults tr {
+    border-bottom: 1px dashed gray;
+    font-family: monospace;
+}
+
+td.sqlnull {
+    color: gray;
+    font-style: italic;
+}
+
+table.sqlresults td {
+    border-left: 1px solid gray;
+    border-right: 1px solid gray;
+    padding-left: 0.4em;
+    padding-right: 0.4em;
+}
+
+div.sqldictsection {
+    margin-top: 1em;
+}
+
+div.sqldictsectionheading {
+}
+
+ul.sqldict {
+    list-style-type: none;
+    font-size: 10pt;
+}
+
+ul.sqldictcolumnlist {
+    display: none;
+}
+
+ul.sqldict li.tablename {
+    margin-top: 0.2em;
+}

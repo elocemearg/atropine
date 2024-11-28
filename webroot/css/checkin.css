@@ -1,0 +1,50 @@
+
+table.playercheckin {
+    border-collapse: separate;
+    border-spacing: 6px;
+    table-layout: fixed;
+}
+
+table.playercheckin td.playercheckincol {
+    min-width: 180px;
+}
+
+table.playercheckin td.playercheckincolspace {
+    min-width: none;
+    text-align: left;
+    width: 60px;
+}
+
+button.playercheckinbutton {
+    width: 100%;
+    font-size: 10pt;
+    text-align: left;
+    padding: 5px;
+    cursor: pointer;
+}
+
+button.playercheckinbuttonactive {
+    background-color: hsl(120, 60%, 90%);
+    color: black;
+}
+
+button.playercheckinbuttonactive:hover {
+    background-color: hsl(120, 100%, 80%);
+}
+
+button.playercheckinbuttonwithdrawn {
+    background-color: hsl(0, 80%, 20%);
+    color: white;
+}
+
+button.playercheckinbuttonwithdrawn:hover {
+    background-color: hsl(0, 80%, 40%);
+}
+
+button.playercheckindeletebutton {
+    font-size: 10pt;
+    width: 25px;
+    padding: 0;
+    cursor: pointer;
+}
+

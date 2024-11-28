@@ -23,20 +23,20 @@ def escape(string, quote=True):
 def js_string(contents):
     return "\"" + contents.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
-def print_html_head(response, title, cssfile="style.css", othercssfiles=[]):
+def print_html_head(response, title, cssfile="common.css", othercssfiles=[]):
     response.writeln("<!DOCTYPE html>")
     response.writeln("<html lang=\"en\">")
     response.writeln("<head>");
     response.writeln("<title>%s</title>" % (escape(title)));
     response.writeln("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />");
-    response.writeln("<link rel=\"stylesheet\" type=\"text/css\" href=\"/%s\" />" % (escape(cssfile, True)));
+    response.writeln("<link rel=\"stylesheet\" type=\"text/css\" href=\"/css/%s\" />" % (escape(cssfile, True)));
     for f in othercssfiles:
-        response.writeln("<link rel=\"stylesheet\" type=\"text/css\" href=\"/%s\" />" % (escape(f, True)));
+        response.writeln("<link rel=\"stylesheet\" type=\"text/css\" href=\"/css/%s\" />" % (escape(f, True)));
     response.writeln("<link rel=\"shortcut icon\" href=\"/favicon.ico\" type=\"image/x-icon\" />")
     response.writeln("<link rel=\"shortcut icon\" href=\"/favicon.png\" type=\"image/png\" />")
     response.writeln("</head>");
 
-def print_html_head_local(response, title):
+def print_html_head_local(response, title, stylesheet=None):
     response.writeln("<!DOCTYPE html>")
     response.writeln("<html lang=\"en\">")
     response.writeln("<head>")
@@ -46,12 +46,12 @@ def print_html_head_local(response, title):
 
     # Current directory should already be webroot
     try:
-        f = open("style.css")
+        f = open(os.path.join("css", "common.css"))
         for line in f:
             response.write(line)
         f.close()
     except IOError:
-        response.writeln("<!-- Failed to load style.css -->")
+        response.writeln("<!-- Failed to load common.css -->")
         pass
 
     response.writeln("</style>")

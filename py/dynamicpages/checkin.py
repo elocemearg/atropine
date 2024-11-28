@@ -165,7 +165,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
 
     # Now present the current state of the player list to the user...
-    htmlcommon.print_html_head(response, "Player Check-In")
+    htmlcommon.print_html_head(response, "Player Check-In", othercssfiles=["checkin.css"])
 
     response.writeln("<body>")
 

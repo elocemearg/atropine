@@ -38,7 +38,7 @@ class Table(object):
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     # tourney is None for this handler
 
-    htmlcommon.print_html_head(response, "Raw SQL interface")
+    htmlcommon.print_html_head(response, "Raw SQL interface", othercssfiles=["sql.css"])
 
     sql_text = None
     execute_sql = None

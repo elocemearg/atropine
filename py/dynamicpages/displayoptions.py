@@ -272,7 +272,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     content_type = "text/html; charset=utf-8"
     tourney_name = tourney.get_name()
 
-    htmlcommon.print_html_head(response, "Display setup: " + str(tourney_name), "style.css");
+    htmlcommon.print_html_head(response, "Display setup: " + str(tourney_name), othercssfiles=["displayoptions.css"]);
     response.writeln("<body>");
 
     try:

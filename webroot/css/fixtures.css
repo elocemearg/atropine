@@ -1,0 +1,137 @@
+/* Fixture generation and editing */
+
+.fixturetable {
+	border-collapse: collapse;
+}
+
+div.addgamebox {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+div.addgamedetails {
+    margin-top: 10px;
+    margin-left: 20px;
+}
+
+table.fixturetable td {
+	padding-top: 3px;
+	padding-bottom: 3px;
+}
+
+table.fixturetable th {
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+table.fixturetable td.tableno {
+    text-align: center;
+}
+
+table.fixturetable td.gameplayer1 {
+	background-color: #ffffcc;
+    text-align: right;
+}
+
+table.fixturetable td.gamescore {
+	background-color: #ffffcc;
+    text-align: center;
+}
+
+table.fixturetable td.gameplayer2 {
+	background-color: #ffffcc;
+}
+
+table.fixturetable td.gamestandingsinfo {
+    font-size: 10pt;
+    background-color: #ffffcc;
+    color: #444444;
+}
+
+table.fixturetable td.gamestandingsinfo1 {
+    padding-left: 0.5em;
+}
+
+table.fixturetable td.gamestandingsinfo2 {
+    padding-right: 0.5em;
+}
+
+table.fixturetable td.gameremarks {
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+	border-top: none;
+}
+
+table.fixturetable td.gamerepeats {
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+	border: 2px solid orange;
+	background-color: #ffff88;
+}
+
+table.fixturetable td.roundno {
+	font-size: 1.5em;
+	font-weight: bold;
+	vertical-align: middle;
+	text-align: center;
+}
+
+/* Fixture generators */
+
+div.fixgenoption {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.fixgentable {
+	border-collapse: collapse;
+}
+
+table.fixgentable {
+	border: 1px solid black;
+	max-width: 800px;
+}
+
+th.fixgenth {
+	border-bottom: 1px solid gray;
+	background-color: #cccccc;
+}
+
+td.fixgen {
+	background-color: #ffee66;
+	padding: 5px;
+	border-bottom: 1px solid gray;
+}
+
+td.fixgenmodule {
+	padding: 5px;
+	border-bottom: 1px solid gray;
+	background-color: #ffffaa;
+	font-size: 10pt;
+}
+
+td.fixgendescription {
+	font-size: 11pt;
+	padding: 5px;
+	border-bottom: 1px solid gray;
+	background-color: #ffffaa;
+}
+
+div.fixtureacceptbox {
+    margin-top: 20px;
+    margin-bottom: 40px;
+}
+
+a.fixturecancellink {
+    padding: 20px;
+    font-size: 12pt;
+}
+
+td.gameheat {
+	text-align: center;
+}
+
+div.fixgencontrol {
+    margin-bottom: 15px;
+}
+

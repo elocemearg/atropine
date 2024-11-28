@@ -1,0 +1,171 @@
+/* Display setup */
+
+div.displayoptsform {
+    margin-top: 10px;
+}
+
+div.bannercontrol {
+    margin-top: 20px;
+}
+
+div.viewselection {
+    position: relative;
+    margin-top: 20px;
+}
+
+div.viewdetails {
+}
+
+div.viewdetailstext {
+    padding: 10px;
+}
+
+div.viewdetailstitle {
+    font-size: 18pt;
+    font-weight: bold;
+}
+
+div.viewdetailsdescription {
+}
+
+
+input.switchviewbutton {
+    min-width: 200px;
+    height: 30px;
+    background-color: green;
+    color: white;
+}
+
+div.viewpreviewandoptions {
+    position: relative;
+}
+
+div.teleostoptionheading {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-top: 10px;
+    padding-left: 10px;
+}
+
+div.teleostoptionblock {
+    padding: 10px;
+}
+
+div.teleostoption {
+    padding-left: 15px;
+    padding-top: 5px;
+}
+
+div.displaysetupview {
+    position: relative;
+    display: inline-block;
+    top: 0px;
+    left: 0px;
+    min-height: 315px;
+    padding: 5px;
+}
+
+div.viewnowshowing {
+    background-color: green;
+    border: 2px solid green;
+}
+
+iframe.displaypreviewframe {
+    border: none;
+}
+
+div.viewpreview {
+    background-color: orange;
+    border: 2px solid orange;
+}
+
+div.viewpreviewswitch {
+    text-align: center;
+    width: 100%;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 16pt;
+}
+
+div.viewpreviewcurrent {
+    width: 100%;
+    text-align: center;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 16pt;
+    color: white;
+}
+
+div.viewcontrols {
+    margin-top: 20px;
+    top: 0px;
+}
+
+div.viewoptions {
+    /*overflow-y: auto;*/
+}
+
+div.viewsubmitbuttons {
+    margin: 10px;
+}
+
+input.displayoptionsbutton {
+    height: 30px;
+    min-width: 200px;
+    font-size: 12pt;
+}
+
+button.displayoptionsbutton {
+    height: 30px;
+    min-width: 200px;
+    font-size: 12pt;
+}
+
+div.viewmenu {
+    margin-top: 20px;
+    margin-left: 10px;
+}
+
+div.viewmenuheading {
+    font-size: 16pt;
+    font-weight: bold;
+    padding: 10px;
+}
+
+div.viewmenucell {
+    display: inline-block;
+    min-width: 133px;
+    height: 100px + 2ex;
+    text-align: center;
+    vertical-align: top;
+    padding: 3px 3px 0px 3px;
+    font-size: 8pt;
+    margin: 2px;
+}
+
+div.viewmenucelllarge {
+    font-size: 12pt;
+}
+
+div.viewmenucellbystander {
+    border: 4px solid transparent;
+}
+
+div.viewmenucellbystander img {
+    opacity: 50%;
+}
+
+div.viewmenucellselected {
+    background: orange;
+    border: 4px solid orange;
+}
+
+div.viewmenucellshowing {
+    background: green;
+    border: 4px solid green;
+    color: white;
+}
+
+div.viewmenucellautoshowing {
+    border: 4px dashed lightgreen;
+}

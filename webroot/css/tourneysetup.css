@@ -1,0 +1,96 @@
+
+input.tourneysetupnumber {
+    width: 60px;
+}
+
+div.tourneyqualifyingcontrols {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 30px;
+}
+
+div.generalsetupcontrolgroup {
+    clear: both;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-left: 30px;
+}
+
+div.rankmethod {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+div.rankmethoddetails {
+    margin-left: 3em;
+    font-size: 10pt;
+    color: gray;
+}
+
+div.generalsetuptourneydetailslabel {
+    display: inline-block;
+    width: 8em;
+}
+
+div.generalsetuptourneydetailsbox {
+    display: inline-block;
+}
+
+div.generalsetuptourneydetailsbox input {
+    width: 20em;
+}
+
+span.generalsetupinputexample {
+    color: gray;
+    font-size: 10pt;
+}
+
+div.rulessubmit {
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+
+div.playerlist {
+       margin: auto;
+}
+
+div.playerlistpane {
+       float: left;
+}
+
+div.playerlisthelp {
+       float: left;
+       width: 350px;
+       margin-left: 10px;
+       padding: 10px;
+       background-color: #cccccc;
+       font-size: 10pt;
+}
+
+#playerlistextrahelpshow {
+    color: blue;
+    cursor: pointer;
+}
+
+div.playerlistsubmitpanel {
+    display: block;
+    width: 100%;
+}
+
+div.playerlistsubmitdiv {
+    display: inline-block;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    float: left;
+}
+
+div.playerlistsummarydiv {
+    display: inline-block;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    float: right;
+    max-width: 200px;
+    color: gray;
+    text-align: right;
+}
+

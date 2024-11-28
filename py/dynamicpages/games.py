@@ -1067,7 +1067,7 @@ def parse_score(score):
 
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
-    htmlcommon.print_html_head(response, "Games: " + str(tourney_name));
+    htmlcommon.print_html_head(response, "Games: " + str(tourney_name), othercssfiles=["games.css"])
 
     response.writeln("<body onload=\"games_on_load();\">");
 

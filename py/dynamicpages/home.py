@@ -117,7 +117,7 @@ def import_tourney(form):
 
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     # For this handler, tourney is None.
-    htmlcommon.print_html_head(response, "Create Tourney" if httpreq.is_client_from_localhost() else "Atropine");
+    htmlcommon.print_html_head(response, "Create Tourney" if httpreq.is_client_from_localhost() else "Atropine", othercssfiles=["home.css"])
 
     tourneyname = form.getfirst("name", "");
     longtourneyname = form.getfirst("longtourneyname", "")

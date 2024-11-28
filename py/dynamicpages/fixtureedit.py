@@ -71,7 +71,7 @@ def write_game_type_selection(response, game_types, selected_code, control_name,
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.name
 
-    htmlcommon.print_html_head(response, "Edit fixtures: " + str(tourney_name));
+    htmlcommon.print_html_head(response, "Edit fixtures: " + str(tourney_name), othercssfiles=["fixtures.css"])
 
     response.writeln("<body onload=\"relabel_save_button();\">");
 

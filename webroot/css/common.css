@@ -1,0 +1,909 @@
+/* Main CSS file for definitions that could apply to multiple pages */
+
+/* Self-hosted font code from
+ * https://google-webfonts-helper.herokuapp.com/
+ */
+
+/* roboto-regular - latin */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/roboto-v19-latin-regular.eot'); /* IE9 Compat Modes */
+  src: local('Roboto'), local('Roboto-Regular'),
+       url('/fonts/roboto-v19-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('/fonts/roboto-v19-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+       url('/fonts/roboto-v19-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('/fonts/roboto-v19-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('/fonts/roboto-v19-latin-regular.svg#Roboto') format('svg'); /* Legacy iOS */
+}
+/* roboto-700 - latin */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/fonts/roboto-v19-latin-700.eot'); /* IE9 Compat Modes */
+  src: local('Roboto Bold'), local('Roboto-Bold'),
+       url('/fonts/roboto-v19-latin-700.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('/fonts/roboto-v19-latin-700.woff2') format('woff2'), /* Super Modern Browsers */
+       url('/fonts/roboto-v19-latin-700.woff') format('woff'), /* Modern Browsers */
+       url('/fonts/roboto-v19-latin-700.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('/fonts/roboto-v19-latin-700.svg#Roboto') format('svg'); /* Legacy iOS */
+}
+
+/* cabin-regular - latin */
+@font-face {
+  font-family: 'Cabin';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/cabin-v12-latin-regular.eot'); /* IE9 Compat Modes */
+  src: local('Cabin'), local('Cabin-Regular'),
+       url('/fonts/cabin-v12-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('/fonts/cabin-v12-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+       url('/fonts/cabin-v12-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('/fonts/cabin-v12-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('/fonts/cabin-v12-latin-regular.svg#Cabin') format('svg'); /* Legacy iOS */
+}
+
+
+/* Things that could apply to any page */
+
+body {
+	font-family: "Roboto", sans-serif;
+}
+
+body input {
+	font-family: "Roboto", sans-serif;
+}
+
+body button {
+	font-family: "Roboto", sans-serif;
+}
+
+body h1,h2,h3,h4 {
+    font-family: "Cabin", sans-serif;
+    font-weight: normal;
+    padding-top: 0.2em;
+    padding-bottom: 0.2em;
+    padding-left: 0.5em;
+    box-shadow: 2px 2px 4px silver;
+}
+
+body h1 {
+    background-color: #ffcc66;
+}
+
+body h2 {
+    background-color: #ffdd88;
+}
+
+body h3 {
+    background-color: #ffeeaa;
+}
+
+body h4 {
+    background-color: #ffffcc;
+}
+
+a {
+	text-decoration: none;
+}
+
+.sidebar {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0px;
+	padding-left: 10px;
+	padding-top: 10px;
+	padding-bottom: 10px;
+	width: 180px;
+	background-color: #dddddd;
+	overflow-y: auto;
+}
+
+.sidebarlinklist {
+	padding-left: 18px;
+}
+
+div.roundlinks {
+       margin-right: 10px;
+}
+
+div.roundlink {
+       padding-left: 20px;
+}
+
+div.sidebarversioninfo {
+    font-size: 9pt;
+    color: #444444;
+}
+
+.sidebarversionold {
+    color: hsl(0deg, 100%, 40%);
+    border-bottom: 1px dotted hsl(0deg, 100%, 40%);
+}
+
+#miscstats {
+    padding-left: 20px;
+}
+
+#miscstatslink {
+    font-size: 10pt;
+}
+
+.mainpane {
+	margin-left: 200px;
+}
+
+div.sidebarbannerheading {
+       background-color: black;
+       color: white;
+       font-size: 10pt;
+       text-align: center;
+       font-weight: bold;
+       margin-right: 10px;
+       padding: 5px;
+       border: 1px solid green;
+}
+
+div.sidebarbanner {
+       background-color: #880000;
+       color: white;
+       font-size: 10pt;
+       text-align: center;
+       margin-right: 10px;
+       padding: 5px;
+       border: 2px solid blue;
+       width: 146px;
+}
+
+.groupseparator {
+	height: 4px;
+	background-color: purple;
+}
+
+select {
+    padding: 3px;
+}
+
+form.spaced {
+    margin-bottom: 20px;
+}
+
+form.spaced input[type="submit"] {
+    margin-top: 10px;
+}
+
+.bigbutton {
+    padding: 10px;
+    font-size: 12pt;
+}
+
+input.destroybutton {
+    background-color: #aa0000;
+    color: white;
+}
+
+input.chickenoutbutton {
+}
+
+/* Front page */
+div.createtourneynamebox {
+    margin-top: 10px;
+}
+
+div.createtourneybuttonbox {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+table.optionstable td input {
+    font-size: 12pt;
+    min-width: 15em;
+}
+
+table.optionstable td select {
+    font-size: 12pt;
+    min-width: 15em;
+}
+
+table.optionstable td span.optionrequired {
+    font-style: italic;
+    color: red;
+    font-size: 10pt;
+}
+
+.optionnote {
+    font-size: 10pt;
+    color: gray;
+    padding-bottom: 10px;
+}
+
+
+table.scorestable td.roundno {
+	font-size: 1.5em;
+	vertical-align: middle;
+	text-align: center;
+    min-width: 2em;
+    font-family: "Cabin", sans-serif;
+}
+
+table.scorestable td.tableno {
+    text-align: center;
+}
+
+table.scorestable td.gamescore {
+    min-width: 6ex;
+    text-align: center;
+}
+
+table.scorestable td.gameremarks {
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+
+table.scorestable tr.divisionrow th {
+    padding-top: 15px;
+}
+
+table.scorestable tr.tablenumberrow th {
+    padding-top: 5px;
+}
+
+table.scorestable td.gamedivision {
+    padding: 5px;
+}
+
+.scorestable {
+	border-collapse: collapse;
+}
+
+table.scorestable th {
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+tr.gamerow td {
+    border-bottom: 1px dashed gray;
+}
+
+tr.firstgameintable td {
+	border-top: 2px solid black;
+}
+
+div.tablebadge {
+    display: inline-block;
+    background-color: hsl(240, 100%, 90%);
+    color: black;
+    font-size: 14pt;
+    height: 22pt;
+    line-height: 22pt;
+    text-align: center;
+    margin-left: 10px;
+    margin-right: 10px;
+    min-width: 2em;
+    border-radius: 5px;
+    font-family: "Cabin", sans-serif;
+}
+
+div.tablebadgenaturalsize {
+    display: inline-block;
+    text-align: center;
+    background-color: hsl(240, 100%, 90%);
+    color: black;
+    min-width: 2em;
+    border-radius: 5px;
+    font-family: "Cabin", sans-serif;
+}
+
+tr.unplayedgame td.gameplayer1 {
+	background-color: #dddddd;
+    text-align: right;
+}
+
+tr.unplayedgame td.gameplayer2 {
+	background-color: #dddddd;
+    text-align: left;
+}
+
+td.winningplayer {
+	background-color: #aaffaa;
+}
+
+td.losingplayer {
+	background-color: #ffaaaa;
+}
+
+td.drawingplayer {
+	background-color: #ffff88;
+}
+
+.roundno {
+	text-align: center;
+}
+
+.gameseq {
+	text-align: center;
+}
+
+.tableno {
+	text-align: center;
+}
+
+.gametype {
+	text-align: center;
+    color: gray;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+
+.gameplayer1 {
+	text-align: right;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+.gamescore {
+	text-align: center;
+}
+
+input.gamescore {
+	text-align: center;
+}
+
+.gameplayer2 {
+	text-align: left;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+
+/* Exported standings and results */
+table.resultstable {
+	border: 1px solid #66ccff;
+	border-collapse: collapse;
+}
+
+div.exportedstandings {
+	margin-left: 20px;
+}
+
+div.exportedresults {
+	margin-left: 20px;
+}
+
+/* Put a faint grey border round the coloured team dot so it shows up better */
+span.faintoutline {
+    text-shadow:
+        -1px -1px 1px #aaa,
+        1px -1px 1px #aaa,
+        -1px 1px 1px #aaa,
+        1px 1px 1px #aaa;
+}
+
+/* W, D and L symbols to show a player's sequence of wins and losses */
+span.wdl {
+    display: inline-block;
+    width: 1.5em;
+    height: 1.5em;
+    line-height: 1.5em;
+    text-align: center;
+    color: white;
+    margin-right: 2px;
+    background-color: black;
+}
+
+span.wdl_w {
+    background-color: hsl(120deg, 100%, 35%);
+}
+span.wdl_d {
+    background-color: hsl(60deg, 100%, 50%);
+    color: black;
+    border: 1px solid black;
+}
+span.wdl_l {
+    background-color: hsl(0deg, 100%, 35%);
+}
+span.wdl_unplayed {
+    background-color: #cccccc;
+    color: black;
+}
+
+
+/* Warnings and exceptions */
+
+div.warningbox {
+	background-color: #ffff88;
+	border: 5px solid orange;
+	height: 130px;
+	display: table;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+div.warningboxwidthlimited {
+    max-width: 600px;
+}
+
+div.warningboximage {
+	float: left;
+	height: 130px;
+	width: 150px;
+}
+
+div.warningboxmessagecontainer {
+	vertical-align: middle;
+	display: table-cell;
+	padding: 5px;
+}
+
+div.warningboxmessagecontainerwidthlimited {
+	max-width: 450px;
+}
+
+div.warningboxmessage {
+	font-size: 14pt;
+}
+
+div.tourneyexception {
+	background-color: #ffcccc;
+	border: 5px solid red;
+	height: 130px;
+	max-width: 600px;
+	display: table;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    /*box-shadow: 5px 5px 5px gray;*/
+}
+
+div.tourneyexceptionimage {
+	float: left;
+	height: 130px;
+	width: 150px;
+}
+
+div.tourneyexceptionmessagecontainer {
+	max-width: 450px;
+	vertical-align: middle;
+	display: table-cell;
+    padding: 10px;
+}
+
+div.tourneyexceptionmessage {
+	font-size: 14pt;
+}
+
+div.infoboxcontainer {
+    background-color: #ccccff;
+    max-width: 750px;
+    border-radius: 10px;
+    display: table;
+	vertical-align: middle;
+}
+
+div.infoboximage {
+	float: left;
+	padding: 5px;
+	width: 90px;
+	vertical-align: middle;
+}
+
+div.infoboxmessage {
+	font-size: 14pt;
+}
+
+div.infoboxmessagecontainer {
+	max-width: 600px;
+    display: table-cell;
+    vertical-align: middle;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+div.successinfoboxcontainer {
+    background-color: #ccffcc;
+    border: none;
+    border-radius: 10px;
+}
+
+div.successinfoboxcontainer div.infoboximage {
+    width: 45px;
+}
+
+
+a.playerlink {
+	text-decoration: none;
+	color: #000044;
+}
+
+a.playerlinkwithdrawn {
+    /*text-decoration: line-through;*/
+    color: #777777;
+}
+
+a.thisplayerlink {
+	font-weight: bold;
+}
+
+
+/* Make a label for an input fill its container, so clicking anywhere in it works */
+label.fillcontainer {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+/* Generic definitions for tables that rank things in order (ranktable,
+ * in which the rows are orange) and tables that do not rank things in order
+ * (misctable, which is more monochrome). */
+
+table.ranktable, table.misctable {
+	border-collapse: collapse;
+}
+
+table.ranktable th, table.misctable th {
+	border-bottom: 1px solid black;
+	background-color: #dddddd;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+table.ranktable td, table.misctable td {
+    border: 1px solid gray;
+    border-style: solid dotted solid dotted;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+table.ranktable tr {
+	background-color: #ffdd66;
+}
+
+table.ranktable tr.ranktabledivspacer {
+    height: 2ex;
+    background-color: transparent;
+}
+
+table.ranktable tr.ranktabledivspacer td {
+    border: none;
+}
+
+table.ranktable td.rankpos {
+    text-align: right;
+    vertical-align: middle;
+}
+
+table.ranktable td.rankname {
+	text-align: left;
+}
+
+table.ranktable td.ranktext, table.misctable td.text {
+	text-align: left;
+}
+
+table.ranktable td.ranknumber, table.misctable td.number {
+    text-align: right;
+}
+
+table.ranktable td.rankright, table.misctable td.right {
+    text-align: right;
+}
+
+table.misctable td.control, table.misctable td.tablenumber{
+    text-align: center;
+}
+
+table.ranktable td.rankhighlight, table.misctable td.highlight {
+    font-weight: bold;
+}
+
+table.ranktable td.winlossform {
+    font-family: monospace;
+}
+
+/* Special case border removal for name-to-table index page */
+table.misctable td.tableindexname {
+    border-right: none;
+}
+
+table.misctable td.tableindexnumber {
+    border-left: none;
+    text-align: center;
+}
+
+table.misctable td.columnspacer {
+    border: none;
+    width: 2em;
+}
+
+
+a.fakelink {
+    color: blue;
+    cursor: pointer;
+}
+
+div.playerlistclear {
+       clear: both;
+}
+
+#playerlistsummary {
+    font-size: 10pt;
+}
+
+@keyframes highlightnoprune {
+    from { background-color: transparent; color: black; }
+    to { background-color: yellow; color: black; }
+}
+
+p.prunewarninghighlight {
+    animation-name: highlightnoprune;
+    animation-duration: 0.25s;
+    animation-iteration-count: 7;
+    animation-direction: alternate;
+    background-color: yellow;
+}
+
+div.boxshadow {
+    box-shadow: 5px 5px 8px gray;
+}
+
+div.opendisplaylink {
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+div.opendisplaylink a {
+    background-color: cyan;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+span.sidebaropendisplaylink {
+    background-color: cyan;
+    font-size: 8pt;
+    border-radius: 5px;
+    line-height: 12pt;
+    padding-top: 4px;
+    padding-left: 2px;
+    padding-right: 2px;
+    margin-left: 4px;
+}
+
+div.sidebaropendisplaylink a {
+}
+
+.handcursor {
+    cursor: pointer;
+}
+
+.fixedwidth {
+    font-family: monospace;
+}
+
+
+span.playercontrolhelp {
+    font-style: italic;
+    color: gray;
+    font-size: 10pt;
+    line-height: 12pt;
+    vertical-align: middle;
+}
+
+span.playerlisttablepreficon {
+    background-color: blue;
+    color: white;
+    padding: 2px 5px 2px 5px;
+    font-size: 10pt;
+}
+
+input[type="checkbox"] {
+    transform: scale(1.5);
+}
+
+input[type="radio"] {
+    transform: scale(1.25);
+}
+
+input[type="number"] {
+    /* Don't want the default extra-long edit box */
+    width: 5em;
+}
+
+div.formbox {
+}
+
+div.formline {
+}
+
+div.exportformbox div.formlabel {
+    width: 9em;
+    text-align: right;
+}
+
+div.formline label {
+    margin-right: 20px;
+}
+
+div.formlabel {
+    display: table-cell;
+    padding: 5px;
+}
+
+div.formcontrol {
+    display: table-cell;
+    padding: 5px;
+}
+
+span.formcontrolhelp {
+    font-size: 10pt;
+    color: gray;
+}
+
+div.submitline {
+    margin-top: 10px;
+}
+
+input.noteditable {
+    background-color: #ddd;
+    color: gray;
+}
+
+div.uploaderwidget {
+    position: relative;
+    min-height: 15px;
+    max-height: 36px;
+    max-width: 150px;
+}
+
+div.uploaderwidgeticon {
+    position: absolute;
+    max-height: 18px;
+    width: 52px;
+    top: 2px;
+    left: 0px;
+    text-align: center;
+    font-size: 10pt;
+}
+
+div.uploaderwidgetstatus {
+    position: absolute;
+    max-height: 18px;
+    left: 56px;
+    top: 2px;
+    line-height: 18px;
+    text-align: center;
+    font-size: 10pt;
+    padding-left: 5px;
+    padding-right: 5px;
+    background-color: silver;
+    border-radius: 5px;
+}
+
+a.widgetlink:link {
+    color: black;
+}
+
+a.widgetlink:visited {
+    color: black;
+}
+
+div.uploadconsole {
+    width: 450px;
+    border: 1px solid gray;
+    margin-top: 15px;
+    margin-left: 5px;
+}
+
+div.uploadconsoleenabled {
+    text-align: center;
+    padding: 5px;
+}
+
+div.uploadconsolestatus {
+    text-align: center;
+    border-top: 1px solid gray;
+    padding: 5px;
+}
+
+div.uploadconsolediag {
+    font-size: 10pt;
+    border-top: 1px solid gray;
+    padding: 5px;
+}
+
+div.shareablelinkbox {
+    margin: 5px;
+}
+
+div.dialogbackground {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 75%);
+    text-align: center;
+    z-index: 1;
+}
+
+div.dialogboxcontainer {
+    position: relative;
+    display: inline-block;
+    top: 20vh;
+    max-width: 600px;
+    background-color: white;
+    padding: 30px;
+    box-shadow: 5px 5px 10px black;
+    border: 3px groove gray;
+    border-radius: 6px;
+    z-index: 2;
+}
+
+div.dialogbox {
+    display: block;
+    text-align: left;
+}
+
+div.dialogbox input[type="submit"] {
+    font-size: 12pt;
+    min-width: 100px;
+}
+
+div.dialogbox button {
+    font-size: 12pt;
+    min-width: 100px;
+    margin-left: 10px;
+}
+
+div.dialogbox div.formcontrolrow {
+    margin-top: 15px;
+}
+
+div.dialogbox div.formcontrolrowactions {
+    margin-top: 25px;
+    text-align: right;
+}
+
+div.contextmenubuttoncontainer {
+    position: relative;
+}
+
+div.contextmenu {
+    position: absolute;
+    margin-left: 5px;
+    z-index: 1;
+    min-width: 200px;
+    left: 100%;
+    top: 0;
+    background-color: white;
+    border: 1px solid gray;
+    box-shadow: 2px 2px 4px silver;
+}
+
+.contextmenuitem {
+    position: relative;
+    text-align: left;
+    display: block;
+    line-height: 10pt;
+    background-color: white;
+    cursor: pointer;
+    border: none;
+    font-size: 10pt;
+    color: black;
+    padding: 10px;
+    padding-left: 20px;
+}
+
+a.contextmenuitem {
+}
+
+button.contextmenuitem {
+    width: 100%;
+}
+
+.contextmenuitem:hover {
+    background-color: blue;
+    color: white;
+}

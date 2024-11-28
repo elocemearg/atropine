@@ -257,9 +257,9 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             exceptions_to_show.append(("", e))
 
     if player:
-        htmlcommon.print_html_head(response, player_name)
+        htmlcommon.print_html_head(response, player_name, othercssfiles=["player.css"])
     else:
-        htmlcommon.print_html_head(response, "Player View")
+        htmlcommon.print_html_head(response, "Player View", othercssfiles=["player.css"])
 
     response.writeln("<body>")
 

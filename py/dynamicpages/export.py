@@ -23,7 +23,7 @@ def valid_date(d, m, y):
         return False
 
 def show_error(response, err_str, non_local_client):
-    htmlcommon.print_html_head(response, "Tourney: %s" % tourney_name);
+    htmlcommon.print_html_head(response, "Export results: %s" % tourney_name);
 
     response.writeln("<body>");
 
@@ -49,7 +49,6 @@ def get_date_string(tourney):
         date_string = None
     return date_string
 
-
 def export_html(tourney, response, filename, show_standings_before_finals, show_standings_after_finals, finals_noun):
     full_name = tourney.get_full_name() or tourney.get_name()
     venue = tourney.get_venue()
@@ -62,7 +61,7 @@ def export_html(tourney, response, filename, show_standings_before_finals, show_
 
     started_html = True;
 
-    htmlcommon.print_html_head_local(response, "Tourney: %s" % full_name);
+    htmlcommon.print_html_head_local(response, full_name);
 
     response.writeln("<body>");
     response.writeln("<div class=\"exportedstandings\">")
@@ -593,7 +592,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         # No format specified: display a list of possible formats to choose from
         started_html = True
-        htmlcommon.print_html_head(response, "Tournament report: " + str(tourney_name))
+        htmlcommon.print_html_head(response, "Export results: " + str(tourney_name))
 
         response.writeln("<body>")
 
@@ -643,7 +642,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                 "finals" : finals_noun
             }
 
-        html = """<h1>Export tournament report</h1>
+        html = """<h1>Export results</h1>
 <script>
 function formatDropDownChange() {
     let formatSelect = document.getElementById("format");
@@ -739,6 +738,12 @@ function validateDate() {
     }
 }
 </script>
+
+<h2>Tournament report</h2>
+
+<p>
+Show or download a report of the tourney results and/or standings.
+</p>
 
 <div class="formbox exportformbox">
 <form method="GET" target="_blank">
@@ -837,6 +842,20 @@ function validateDate() {
             "finalsoptions" : finals_options
         }
         response.writeln(html)
+
+        # Write a link to grab the .db file
+        response.writeln("""
+<h2>Database file</h2>
+<p>
+Download link for the SQLite3 database file for this tourney. Useful if you
+want to save a backup or import this tourney to another Atropine installation.
+</p>
+<blockquote>
+<a href="/atropine/%(tourneyname)s/exportdbfile">%(tourneyname)s.db</a>
+</blockquote>
+""" % {
+            "tourneyname" : htmlcommon.escape(tourney_name)
+        })
 
         response.writeln("</div>") #mainpane
 

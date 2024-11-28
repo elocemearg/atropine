@@ -90,7 +90,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         accessible_tables_string = ""
     rules_submit = form.getfirst("rulessubmit");
 
-    htmlcommon.print_html_head(response, "Tourney Setup: " + str(tourneyname));
+    htmlcommon.print_html_head(response, "Tourney Setup: " + str(tourneyname), othercssfiles=["tourneysetup.css"])
 
     response.writeln("<body onload=\"textAreaChange(); playerListExtraHelpShow();\">");
 

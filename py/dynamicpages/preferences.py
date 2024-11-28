@@ -6,7 +6,7 @@ import countdowntourney
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     # tourney is None for this handler
 
-    htmlcommon.print_html_head(response, "Preferences");
+    htmlcommon.print_html_head(response, "Preferences", othercssfiles=["preferences.css"])
 
     saved_prefs = False
 

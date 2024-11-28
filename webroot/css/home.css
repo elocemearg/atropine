@@ -1,0 +1,36 @@
+/* Front page list of available tourneys */
+
+table.tourneylist {
+	border: 1px solid black;
+	border-collapse: collapse;
+    margin-bottom: 25px;
+}
+
+table.tourneylist th {
+	border: 1px solid black;
+	padding-left: 10px;
+	padding-right: 10px;
+	background-color: #ffee66;
+}
+
+table.tourneylist tr {
+	border-left: 1px solid black;
+	border-right: 1px solid black;
+}
+
+table.tourneylist td {
+	background-color: #ffffaa;
+	border: 1px dashed grey;
+	padding-left: 10px;
+	padding-right: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+table.tourneylist tr.tourneyselected td {
+    background-color: #bbffbb;
+}
+
+table.tourneylist td.tourneylistmtime {
+    font-size: 10pt;
+}
