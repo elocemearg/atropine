@@ -81,14 +81,12 @@ DISPLAY_GROUP_NONE = 0
 DISPLAY_GROUP_SETUP = 1
 DISPLAY_GROUP_COMPOSITE = 2
 DISPLAY_GROUP_SINGLE = 3
-DISPLAY_GROUP_MISC = 4
 
 display_group_names = {
         DISPLAY_GROUP_NONE : "",
         DISPLAY_GROUP_SETUP : "Setup screens",
         DISPLAY_GROUP_COMPOSITE : "Split screens",
-        DISPLAY_GROUP_SINGLE : "Single screens",
-        DISPLAY_GROUP_MISC : "Everything else"
+        DISPLAY_GROUP_SINGLE : "Single screens"
 }
 
 # Standard information about each public display ("teleost") mode, such as the
@@ -155,7 +153,7 @@ teleost_modes = [
             "desc" : "Ceci n'est pas un probleme technique.",
             "image" : "/images/screenthumbs/technical_difficulties.png",
             "menuorder" : 14,
-            "menugroup" : DISPLAY_GROUP_MISC,
+            "menugroup" : DISPLAY_GROUP_SINGLE,
             "fetch" : []
         },
         {
@@ -182,7 +180,7 @@ teleost_modes = [
             "desc" : "Table of players ranked by how highly they finish above their seeding position. This is only relevant if the players have different ratings.",
             "image" : "/images/screenthumbs/overachievers.png",
             "menuorder" : 11,
-            "menugroup" : DISPLAY_GROUP_MISC,
+            "menugroup" : DISPLAY_GROUP_SINGLE,
             "fetch" : [ "overachievers" ]
         },
         {
@@ -191,7 +189,7 @@ teleost_modes = [
             "desc" : "Players who have lost three or more games, ordered by the sum of their three lowest losing margins.",
             "image" : "/images/screenthumbs/tuff_luck.png",
             "menuorder" : 12,
-            "menugroup" : DISPLAY_GROUP_MISC,
+            "menugroup" : DISPLAY_GROUP_SINGLE,
             "fetch" : [ "tuffluck" ]
         },
         {
@@ -200,7 +198,7 @@ teleost_modes = [
             "desc" : "Highest winning scores, losing scores and combined scores in all heat games.",
             "image" : "/images/screenthumbs/high_scores.jpg",
             "menuorder" : 13,
-            "menugroup" : DISPLAY_GROUP_MISC,
+            "menugroup" : DISPLAY_GROUP_SINGLE,
             "fetch" : [ "highscores" ]
         },
         {
