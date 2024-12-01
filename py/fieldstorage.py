@@ -12,9 +12,7 @@ class CGIException(Exception):
 # FieldStorage class to replace the one from the Python cgi module which is
 # being removed in 3.11.
 # We don't implement everything that cgi.FieldStorage implemented, only the
-# functionality Atropine actually uses. In particular, this doesn't support
-# file upload by a POST or PUT with content-type "multipart/form-data",
-# because Atropine doesn't use that anywhere.
+# functionality Atropine actually uses.
 # This class no longer uses the environment, because we don't have any real
 # CGI scripts in Atropine any more. Instead, an HTTP request handler already
 # knows the request content-type, request method, query string and POST data,
@@ -54,17 +52,7 @@ class FieldStorage(object):
                 character_encoding = encoding
 
             if self.content_type == "application/x-www-form-urlencoded":
-                if post_data is None:
-                    # The urlencoded postdata should be valid UTF-8, because it
-                    # should be valid ASCII. We'll use the character encoding
-                    # above to determine how to interpret the byte sequences
-                    # once they're decoded.
-                    if self.content_length > 0:
-                        post_data = input_buffer.read(self.content_length).decode("utf-8")
-                    else:
-                        post_data = ""
-                else:
-                    post_data = post_data.decode("utf-8")
+                post_data = post_data.decode("utf-8")
                 #sys.stderr.write("POST DATA: " + post_data + "\n")
                 for (name, value) in parse_qsl(post_data, encoding=character_encoding, errors=errors):
                     if name not in self.parameters:
