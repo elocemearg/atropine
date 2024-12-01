@@ -68,7 +68,7 @@ function createStandingsAndRoundResultsScreen(tourneyName, options) {
     ]);
 }
 
-function createVerticalStandingsAndFixturesScreen(tourneyName, options) {
+function createVerticalStandingsAndFixturesScreenAux(tourneyName, options, whichRound) {
     let roundResultsLines = 12;
     return new MultipleView(tourneyName, 0, 0, 100, 100, [
             new StandingsView(tourneyName, 0, 0, 50, 100,
@@ -79,8 +79,16 @@ function createVerticalStandingsAndFixturesScreen(tourneyName, options) {
             new FixturesView(tourneyName, 50, 0, 50, 100,
                     dictGet(options, "vertical_fixtures_lines", 18),
                     dictGet(options, "vertical_standings_results_scroll", 10) * 1000,
-                    -1, SELECT_LAST_ROUND_IN_TOURNEY_WITH_PLAYED_GAMES, true)
+                    -1, whichRound, true)
     ]);
+}
+
+function createVerticalStandingsAndFixturesScreen(tourneyName, options) {
+    return createVerticalStandingsAndFixturesScreenAux(tourneyName, options, SELECT_ROUND_AFTER_LAST_COMPLETED_ROUND);
+}
+
+function createVerticalStandingsAndResultsScreen(tourneyName, options) {
+    return createVerticalStandingsAndFixturesScreenAux(tourneyName, options, SELECT_LAST_ROUND_IN_TOURNEY_WITH_PLAYED_GAMES);
 }
 
 function createRoundResultsScreen(tourneyName, options) {
@@ -360,7 +368,8 @@ function displaySetup() {
     teleostModesToCreateFunctions[TELEOST_MODE_STANDINGS_VIDEPRINTER] = createStandingsAndVideprinterScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_VERTICAL_STANDINGS_VIDEPRINTER] = createVerticalStandingsAndVideprinterScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_STANDINGS_RESULTS] = createStandingsAndRoundResultsScreen;
-    teleostModesToCreateFunctions[TELEOST_MODE_VERTICAL_STANDINGS_RESULTS] = createVerticalStandingsAndFixturesScreen;
+    teleostModesToCreateFunctions[TELEOST_MODE_VERTICAL_STANDINGS_RESULTS] = createVerticalStandingsAndResultsScreen;
+    teleostModesToCreateFunctions[TELEOST_MODE_VERTICAL_STANDINGS_FIXTURES] = createVerticalStandingsAndFixturesScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_TECHNICAL_DIFFICULTIES] = createTechnicalDifficultiesScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_FIXTURES] = createFixturesScreen;
     teleostModesToCreateFunctions[TELEOST_MODE_TABLE_NUMBER_INDEX] = createTableNumberIndexScreen;

@@ -141,6 +141,7 @@ div.viewmenucell {
     padding: 3px 3px 0px 3px;
     font-size: 8pt;
     margin: 2px;
+    margin-top: 18px;
 }
 
 div.viewmenucelllarge {
@@ -168,4 +169,16 @@ div.viewmenucellshowing {
 
 div.viewmenucellautoshowing {
     border: 4px dashed lightgreen;
+}
+
+div.displaymodegroup {
+    position: relative;
+    border-bottom: 1px solid silver;
+}
+
+div.displaymodegrouptitle {
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    font-size: 10pt;
 }

@@ -44,6 +44,10 @@ AUTO_SPLIT_DEFAULT = 0   # split view horizontally if 4:3, vertically if 16:9
 AUTO_SPLIT_VERTICAL = 1
 AUTO_SPLIT_HORIZONTAL = 2
 
+# When the latest round has fixtures but no results, default to displaying
+# Fixtures screen rather than Standings/Fixtures
+AUTO_PREFER_STANDINGS_FIXTURES_DEFAULT = 0
+
 UPLOAD_FAIL_TYPE_HTTP = 1
 UPLOAD_FAIL_TYPE_REJECTED = 2
 
@@ -72,6 +76,21 @@ AUTO_WIDESCREEN_RESULTS_DURING_ROUND_DEFAULT = 1
 # display, so you can see who is player 1 and who is player 2.
 AUTO_NO_TABLE_INDEX_IF_ONE_GAME_PER_TABLE_DEFAULT = 1
 
+# Groups in which we display the thumbnails for the various display modes
+DISPLAY_GROUP_NONE = 0
+DISPLAY_GROUP_SETUP = 1
+DISPLAY_GROUP_COMPOSITE = 2
+DISPLAY_GROUP_SINGLE = 3
+DISPLAY_GROUP_MISC = 4
+
+display_group_names = {
+        DISPLAY_GROUP_NONE : "",
+        DISPLAY_GROUP_SETUP : "Setup screens",
+        DISPLAY_GROUP_COMPOSITE : "Split screens",
+        DISPLAY_GROUP_SINGLE : "Single screens",
+        DISPLAY_GROUP_MISC : "Everything else"
+}
+
 # Standard information about each public display ("teleost") mode, such as the
 # name description, preview image, and what game state objects the display
 # page should fetch when in that mode.
@@ -81,6 +100,7 @@ teleost_modes = [
             "name" : "Auto",
             "desc" : "Automatic control. Show the Welcome or Check-in screen before any games are generated, Fixtures at the start of a round, and Standings and/or Results during a round as specified in the options. This is the default. You probably just want to use this and forget about it.",
             "menuorder" : 0,
+            "menugroup" : DISPLAY_GROUP_NONE,
             "image" : "/images/screenthumbs/auto.jpg",
             "fetch" : [ "all" ]
         },
@@ -89,7 +109,8 @@ teleost_modes = [
             "name" : "Standings only",
             "desc" : "The current standings table and nothing else.",
             "image" : "/images/screenthumbs/standings_only.png",
-            "menuorder" : 9,
+            "menuorder" : 8,
+            "menugroup" : DISPLAY_GROUP_SINGLE,
             "fetch" : [ "standings" ]
         },
         {
@@ -98,6 +119,7 @@ teleost_modes = [
             "desc" : "Standings table with latest results appearing in the lower third of the screen.",
             "image" : "/images/screenthumbs/standings_videprinter.png",
             "menuorder" : 3,
+            "menugroup" : DISPLAY_GROUP_COMPOSITE,
             "fetch" : [ "standings", "logs" ]
         },
         {
@@ -106,6 +128,7 @@ teleost_modes = [
             "desc" : "Standings table on the left half of the screen, latest results scrolling up the right half.",
             "image" : "/images/screenthumbs/standings_videprinter_vertical.png",
             "menuorder" : 4,
+            "menugroup" : DISPLAY_GROUP_COMPOSITE,
             "fetch" : [ "standings", "logs" ]
         },
         {
@@ -114,14 +137,16 @@ teleost_modes = [
             "desc" : "Standings table with the current round's fixtures and results cycling on the lower third of the screen.",
             "image" : "/images/screenthumbs/standings_results.png",
             "menuorder" : 5,
+            "menugroup" : DISPLAY_GROUP_COMPOSITE,
             "fetch" : [ "standings", "games" ]
         },
         {
             "id" : "TELEOST_MODE_VERTICAL_STANDINGS_RESULTS",
             "name" : "Standings/Results (Vertical)",
-            "desc" : "The standings table on the left of the screen, and all the round's games and results in a table on the right.",
+            "desc" : "On the left, the standings table. On the right, all the games and results of the most recent round with completed games.",
             "image" : "/images/screenthumbs/standings_results_vertical.png",
             "menuorder" : 6,
+            "menugroup" : DISPLAY_GROUP_COMPOSITE,
             "fetch" : [ "standings", "games" ]
         },
         {
@@ -130,14 +155,16 @@ teleost_modes = [
             "desc" : "Ceci n'est pas un probleme technique.",
             "image" : "/images/screenthumbs/technical_difficulties.png",
             "menuorder" : 14,
+            "menugroup" : DISPLAY_GROUP_MISC,
             "fetch" : []
         },
         {
             "id" : "TELEOST_MODE_FIXTURES",
-            "name" : "Fixtures",
+            "name" : "Fixtures only",
             "desc" : "Table of all fixtures in the next or current round.",
             "image" : "/images/screenthumbs/fixtures.png",
-            "menuorder" : 7,
+            "menuorder" : 9,
+            "menugroup" : DISPLAY_GROUP_SINGLE,
             "fetch" : [ "games" ]
         },
         {
@@ -145,7 +172,8 @@ teleost_modes = [
             "name" : "Table Number Index",
             "desc" : "A list of all the player names and their table numbers, in alphabetical order of player name.",
             "image" : "/images/screenthumbs/table_index.png",
-            "menuorder" : 8,
+            "menuorder" : 10,
+            "menugroup" : DISPLAY_GROUP_SINGLE,
             "fetch" : [ "games" ]
         },
         {
@@ -153,7 +181,8 @@ teleost_modes = [
             "name" : "Overachievers",
             "desc" : "Table of players ranked by how highly they finish above their seeding position. This is only relevant if the players have different ratings.",
             "image" : "/images/screenthumbs/overachievers.png",
-            "menuorder" : 10,
+            "menuorder" : 11,
+            "menugroup" : DISPLAY_GROUP_MISC,
             "fetch" : [ "overachievers" ]
         },
         {
@@ -161,7 +190,8 @@ teleost_modes = [
             "name" : "Tuff Luck",
             "desc" : "Players who have lost three or more games, ordered by the sum of their three lowest losing margins.",
             "image" : "/images/screenthumbs/tuff_luck.png",
-            "menuorder" : 11,
+            "menuorder" : 12,
+            "menugroup" : DISPLAY_GROUP_MISC,
             "fetch" : [ "tuffluck" ]
         },
         {
@@ -169,7 +199,8 @@ teleost_modes = [
             "name" : "High scores",
             "desc" : "Highest winning scores, losing scores and combined scores in all heat games.",
             "image" : "/images/screenthumbs/high_scores.jpg",
-            "menuorder" : 12,
+            "menuorder" : 13,
+            "menugroup" : DISPLAY_GROUP_MISC,
             "fetch" : [ "highscores" ]
         },
         {
@@ -178,6 +209,7 @@ teleost_modes = [
             "desc" : "A welcome screen for the start of the event.",
             "image" : "/images/screenthumbs/welcome.png",
             "menuorder" : 1,
+            "menugroup" : DISPLAY_GROUP_SETUP,
             "fetch" : [ "tourney" ]
         },
         {
@@ -186,7 +218,17 @@ teleost_modes = [
             "desc" : "A list of all currently-registered and non-withdrawn players.",
             "image" : "/images/screenthumbs/checkin.png",
             "menuorder" : 2,
+            "menugroup" : DISPLAY_GROUP_SETUP,
             "fetch" : [ "tourney", "players" ]
+        },
+        {
+            "id" : "TELEOST_MODE_VERTICAL_STANDINGS_FIXTURES",
+            "name" : "Standings/Fixtures (Vertical)",
+            "desc" : "On the left, the standings table. On the right, all the games and results of the most recent round which contains fixtures.",
+            "image" : "/images/screenthumbs/standings_fixtures_vertical.png",
+            "menuorder" : 7,
+            "menugroup" : DISPLAY_GROUP_COMPOSITE,
+            "fetch" : [ "standings", "games" ]
         },
         #{
         #    "id" : "TELEOST_MODE_FASTEST_FINISHERS",
@@ -222,6 +264,11 @@ teleost_per_view_option_list = [
         "autowidescreenresultsduringround", CONTROL_CHECKBOX,
         "$CONTROL While a round is in progress and screen shape profile is widescreen, show results table not videprinter",
         AUTO_WIDESCREEN_RESULTS_DURING_ROUND_DEFAULT
+    ),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"],
+        "autopreferstandingsfixtures", CONTROL_CHECKBOX,
+        "$CONTROL When new fixtures generated, show Standings/Fixtures (Vertical) screen rather than just Fixtures screen",
+        AUTO_PREFER_STANDINGS_FIXTURES_DEFAULT
     ),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"],
         "autostandingsvideprintersplitdirection", CONTROL_DROPDOWN,
@@ -2632,6 +2679,9 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             direction = AUTO_SPLIT_VERTICAL if self.is_screen_shape_profile_widescreen() else AUTO_SPLIT_HORIZONTAL
         return direction == AUTO_SPLIT_VERTICAL
 
+    def is_auto_prefer_standings_fixtures(self):
+        return self.get_int_attribute("autopreferstandingsfixtures", AUTO_PREFER_STANDINGS_FIXTURES_DEFAULT)
+
     def is_auto_widescreen_results_table_during_round(self):
         return self.get_int_attribute("autowidescreenresultsduringround", AUTO_WIDESCREEN_RESULTS_DURING_ROUND_DEFAULT) != 0
 
@@ -3075,6 +3125,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                         mode_name = "TELEOST_MODE_STANDINGS_RESULTS"
                 elif self.get_auto_use_table_index(round_no):
                     mode_name = "TELEOST_MODE_TABLE_NUMBER_INDEX"
+                elif self.is_auto_prefer_standings_fixtures():
+                    mode_name = "TELEOST_MODE_VERTICAL_STANDINGS_FIXTURES"
                 else:
                     mode_name = "TELEOST_MODE_FIXTURES"
             elif played > 0 and unplayed == 0:
@@ -3959,6 +4011,9 @@ def delete_display_profile(profile_name):
         cur.execute("delete from display_profile where name = ?", (profile_name,))
         cur.close()
         globaldb.commit()
+
+def get_display_mode_group_title(group_id):
+    return display_group_names.get(group_id, None)
 
 def sqlite3_table_exists(db, table_name):
     cur = db.cursor()

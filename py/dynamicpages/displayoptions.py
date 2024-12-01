@@ -123,19 +123,36 @@ def show_view_thumbnail(response, tourney_name, mode, selected_view, auto_curren
 # actual view being displayed by Auto mode.
 def show_view_menu(response, tourney, form, teleost_modes, selected_view, auto_current_view):
     menu_row_size = 6
-    teleost_modes_sorted = sorted(teleost_modes, key=lambda x : (x.get("menuorder", 100000), x["num"], x["name"]))
+    teleost_modes_sorted = sorted(teleost_modes, key=lambda x : (x.get("menugroup", 100000), x.get("menuorder", 100000), x["num"], x["name"]))
 
-    response.writeln("<div>")
-    response.writeln("<div style=\"display: table-cell;\">")
+    response.writeln("<div>") # open outer div
+    response.writeln("<div style=\"display: table-cell; padding-right: 20px;\">")
+    response.writeln("<div class=\"displaymodegroup\">")
+    response.writeln("<div class=\"displaymodegrouptitle\">Auto display mode</div>")
     show_view_thumbnail(response, tourney.get_name(), teleost_modes_sorted[0], selected_view, auto_current_view, large=True)
-    response.writeln("</div>")
+    response.writeln("</div>") # close displaymodegruop
+    response.writeln("</div>") # close table-cell
+
+    prev_group_id = None
     response.writeln("<div style=\"display: table-cell;\">")
-    response.writeln("<div>")
     for mode in teleost_modes_sorted[1:]:
+        menu_group_id = mode.get("menugroup", 100000)
+        if prev_group_id is None or menu_group_id != prev_group_id:
+            if prev_group_id is not None:
+                # Close last row
+                response.writeln("</div>")
+            # Open new row
+            response.writeln("<div class=\"displaymodegroup\">")
+            response.writeln("<div class=\"displaymodegrouptitle\">")
+            response.writeln(htmlcommon.escape(countdowntourney.get_display_mode_group_title(menu_group_id)))
+            response.writeln("</div>")
         show_view_thumbnail(response, tourney.get_name(), mode, selected_view, auto_current_view)
-    response.writeln("</div>")
-    response.writeln("</div>")
-    response.writeln("</div>")
+        prev_group_id = menu_group_id
+    if prev_group_id is not None:
+        response.writeln("</div>") # close displaymodegroup
+
+    response.writeln("</div>") # close table-cell
+    response.writeln("</div>") # close outer div
 
 def emit_scripts(response, query_string, profile_names, selected_profile_name):
     response.writeln("<script>")
@@ -487,6 +504,13 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
             response.writeln("</form>")
             response.writeln("</div>") # viewcontrols
+        if mode_info.get("id") == "TELEOST_MODE_VERTICAL_STANDINGS_FIXTURES":
+            # Special case: explain that options for this can be changed in
+            # the Standings/Results (Vertical) screen.
+            response.writeln("<div class=\"viewcontrols\">")
+            response.writeln("<p>Options for this screen mode can be changed by selecting the <span style=\"font-weight: bold;\">Standings/Results (Vertical)</span> screen mode.</p>")
+            response.writeln("</div>")
+
         response.writeln("</div>")
 
         # Display profile save/load controls
