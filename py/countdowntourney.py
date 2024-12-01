@@ -1086,6 +1086,34 @@ class Game(object):
     def get_team_colours(self):
         return [self.p1.get_team_colour_tuple(), self.p2.get_team_colour_tuple()]
 
+    def get_winner(self):
+        if not self.is_complete() or self.s1 == self.s2:
+            return None
+        elif self.s1 > self.s2:
+            return self.p1
+        else:
+            return self.p2
+
+    def get_loser(self):
+        if not self.is_complete() or self.s1 == self.s2:
+            return None
+        elif self.s1 < self.s2:
+            return self.p1
+        else:
+            return self.p2
+
+    def get_winning_score(self):
+        if not self.is_complete() or self.s1 == self.s2:
+            return None
+        else:
+            return max(self.s1, self.s2)
+
+    def get_losing_score(self):
+        if not self.is_complete() or self.s1 == self.s2:
+            return None
+        else:
+            return min(self.s1, self.s2)
+
     def contains_player(self, player):
         if self.p1 == player or self.p2 == player:
             return True;
@@ -1217,23 +1245,28 @@ class Game(object):
     def get_game_type(self):
         return self.game_type
 
-    def format_score(self):
+    def format_score(self, force_winner_first=False):
         if self.s1 is None and self.s2 is None:
-            return "";
+            return ""
 
-        if self.s1 is None:
-            left = "";
+        if self.s1 is not None and self.s2 is not None and force_winner_first and self.s1 < self.s2:
+            (s1, s2) = (self.s2, self.s1)
         else:
-            left = str(self.s1);
-        if self.s2 is None:
-            right = "";
+            (s1, s2) = (self.s1, self.s2)
+
+        if s1 is None:
+            left = ""
         else:
-            right = str(self.s2);
+            left = str(s1)
+        if s2 is None:
+            right = ""
+        else:
+            right = str(s2);
         if self.tb:
-            if self.s1 == 0 and self.s2 == 0:
+            if s1 == 0 and s2 == 0:
                 left = "X"
                 right = "X"
-            elif self.s1 > self.s2:
+            elif s1 > s2:
                 left += "*";
             else:
                 right += "*";
@@ -3608,17 +3641,10 @@ order by 1""")
                 key=lambda x : x[2]
         )
 
-    def get_players_overachievements(self, div_index):
-        # Get every player's standing position in this division
-        standings = self.get_standings(div_index)
-        p_id_to_standings_pos = dict()
-        p_id_to_rating = dict()
-        for s in standings:
-            player = self.get_player_from_name(s.name)
-            if player:
-                p_id_to_standings_pos[player.get_id()] = s.position
-                p_id_to_rating[player.get_id()] = s.rating
-
+    def get_players_seeds(self, div_index):
+        p_id_to_rating = {}
+        for p in self.get_players_from_division(div_index):
+            p_id_to_rating[p.get_id()] = p.get_rating()
         p_ids_by_rating = sorted(p_id_to_rating, key=lambda x : p_id_to_rating[x], reverse=True)
 
         # Work out each player's seed, remembering that two players might have
@@ -3636,6 +3662,22 @@ order by 1""")
                 joint += 1
             p_id_to_seed[p_id] = seed
             prev_rating = rating
+        return p_id_to_seed
+
+    def get_players_overachievements(self, div_index, limit=None):
+        # Get every player's standing position in this division
+        standings = self.get_standings(div_index)
+        p_id_to_standings_pos = dict()
+        p_id_to_rating = dict()
+        for s in standings:
+            player = self.get_player_from_name(s.name)
+            if player:
+                p_id_to_standings_pos[player.get_id()] = s.position
+                p_id_to_rating[player.get_id()] = s.rating
+
+        p_ids_by_rating = sorted(p_id_to_rating, key=lambda x : p_id_to_rating[x], reverse=True)
+
+        p_id_to_seed = self.get_players_seeds(div_index)
 
         overachievements = []
 
@@ -3648,7 +3690,42 @@ order by 1""")
             player = self.get_player_from_id(p_id)
             if player:
                 overachievements.append((player, seed, position, overachievement))
-        return sorted(overachievements, key=lambda x : (x[3], x[1]), reverse=True)
+        ret = sorted(overachievements, key=lambda x : (x[3], x[1]), reverse=True)
+        if limit is not None and limit > 0:
+            # Take the top "limit" rows plus ties
+            while limit < len(ret) and ret[limit - 1][3] == ret[limit][3]:
+                limit += 1
+            ret = ret[:limit]
+        return ret
+
+    def get_big_seed_gap_wins(self, div_index, limit=None, use_rating=False):
+        p_id_to_seed = self.get_players_seeds(div_index)
+        games = self.get_games(division=div_index)
+        ret = []
+        for g in games:
+            if not g.is_complete():
+                continue
+            winner = g.get_winner()
+            loser = g.get_loser()
+            if winner and loser and winner.get_rating() < loser.get_rating():
+                ret.append((g, winner.get_rating(), loser.get_rating(),
+                    p_id_to_seed.get(winner.get_id()),
+                    p_id_to_seed.get(loser.get_id()))
+                )
+        if use_rating:
+            (k1, k2) = (1, 2)
+        else:
+            (k1, k2) = (4, 3)
+
+        # Sort by rating difference or seed
+        ret.sort(key=lambda x : x[k1] - x[k2])
+
+        if limit is not None and limit > 0:
+            # Take the top "limit" rows plus ties
+            while limit < len(ret) and round(ret[limit - 1][k2] - ret[limit - 1][k1], 2) == round(ret[limit][k2] - ret[limit][k1], 2):
+                limit += 1
+            ret = ret[:limit]
+        return ret
 
     # Return true if all player ratings in a division are the same, with the
     # exception of players with a zero rating.

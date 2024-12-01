@@ -711,6 +711,10 @@ input[type="number"] {
     width: 5em;
 }
 
+div.simpleformline {
+    padding: 5px;
+}
+
 div.formbox {
 }
 
