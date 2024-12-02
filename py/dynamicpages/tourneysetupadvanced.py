@@ -30,7 +30,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     rank_finals = int_or_none(form.getfirst("rankfinals"))
     set_prune_name = form.getfirst("prunename")
 
-    htmlcommon.print_html_head(response, "Advanced setup: " + str(tourneyname));
+    htmlcommon.print_html_head(response, "Advanced setup: " + str(tourneyname), othercssfiles=["tourneysetup.css"])
 
     response.writeln("<body>");
 
