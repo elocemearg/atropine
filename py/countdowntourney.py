@@ -1083,6 +1083,9 @@ class Game(object):
         else:
             return False;
 
+    def is_draw(self):
+        return self.s1 is not None and self.s2 is not None and self.s1 == self.s2
+
     def get_team_colours(self):
         return [self.p1.get_team_colour_tuple(), self.p2.get_team_colour_tuple()]
 
@@ -2842,7 +2845,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         return result
 
     # Exclude any game played before from_round_no.
-    def get_standings_from_round_onwards(self, division, from_round_no):
+    def get_standings_from_round_onwards(self, division, from_round_no, adjustments={}):
         if not self.has_per_round_standings():
             raise PerRoundStandingsNotSupportedException()
 
@@ -2874,13 +2877,17 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             %s""" % (from_round_no, where_clause))
         standings = []
         for x in cur:
-            standings.append(StandingsRow(0, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], bool(x[9]), x[10], x[11]))
+            adj = adjustments.get(x[0], (0, 0, 0))
+            wins = x[2] + adj[0]
+            draws = x[4] + adj[1]
+            points = x[3] + adj[2]
+            standings.append(StandingsRow(0, x[0], x[1], wins, points, draws, x[5], x[6], x[7], x[8], bool(x[9]), x[10], x[11]))
         cur.close()
 
         rank_method.sort_standings_rows(standings, games, self.get_players(), False)
         return standings
 
-    def get_standings(self, division=None, exclude_withdrawn_with_no_games=False, calculate_qualification=True, rank_finals=None):
+    def get_standings(self, division=None, exclude_withdrawn_with_no_games=False, calculate_qualification=True, rank_finals=None, adjustments={}):
         rank_method_id = self.get_rank_method_id();
         rank_method = RANK_METHODS[rank_method_id]
 
@@ -2904,7 +2911,11 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             where_clause))
         standings = []
         for x in cur:
-            standings.append(StandingsRow(0, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], bool(x[10]), x[11], x[12]))
+            adj = adjustments.get(x[0], (0, 0, 0))
+            wins = x[2] + adj[0]
+            draws = x[4] + adj[1]
+            points = x[3] + adj[2]
+            standings.append(StandingsRow(0, x[0], x[1], wins, points, draws, x[5], x[6], x[7], x[8], bool(x[10]), x[11], x[12]))
         cur.close()
 
         if rank_finals is None:
