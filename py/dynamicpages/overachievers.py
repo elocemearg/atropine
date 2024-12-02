@@ -79,7 +79,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             response.writeln("<input type=\"checkbox\" name=\"rating\" id=\"rating\" %s><label for=\"rating\"> Calculate Slingshot gaps by rating difference, not seeding difference</label>" % ("checked" if slingshot_by_rating else ""))
             response.writeln("</div>")
             response.writeln("<div class=\"simpleformline\">")
-            response.writeln("<input type=\"submit\" name=\"refresh\" value=\"Refresh\">")
+            response.writeln("<input type=\"submit\" value=\"Refresh\">")
             response.writeln("</div>")
             response.writeln("</form>")
             response.writeln("<p>Each player is assigned a seed according to their rating, with the top-rated player in a division being the #1 seed, and so on down. Players are listed here in order of the difference between their position in the standings table and their seed position.</p>")
