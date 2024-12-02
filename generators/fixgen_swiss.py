@@ -250,16 +250,19 @@ function generate_fixtures_clicked() {
         elements.append(htmlform.HTMLFormDropDownBox("numroundstouse", num_rounds_to_use_options))
         elements.append(htmlform.HTMLFormControlEnd())
 
-    # Policy for players who have played fewer games than others
-    elements.append(htmlform.HTMLFormControlStart())
-    unplayed_adjustment_policy_options = [
-            htmlform.HTMLFormDropDownOption("0", "make no adjustment", unplayed_adjustment_policy is None or unplayed_adjustment_policy == 0),
-            htmlform.HTMLFormDropDownOption("1", "behave as if missed games were drawn with the round's average score", unplayed_adjustment_policy == 1),
-            htmlform.HTMLFormDropDownOption("2", "behave as if missed games were won with the round's highest score", unplayed_adjustment_policy == 2)
-    ]
-    elements.append(htmlform.HTMLFragment("<label for=\"unplayedadjustmentpolicy\">If a player has played fewer games than the rest: </label>"))
-    elements.append(htmlform.HTMLFormDropDownBox("unplayedadjustmentpolicy", unplayed_adjustment_policy_options))
-    elements.append(htmlform.HTMLFormControlEnd())
+    if tourney.get_rank_method_id() == countdowntourney.RANK_WINS_POINTS:
+        # Policy for players who have played fewer games than others
+        elements.append(htmlform.HTMLFormControlStart())
+        unplayed_adjustment_policy_options = [
+                htmlform.HTMLFormDropDownOption("0", "make no adjustment", unplayed_adjustment_policy is None or unplayed_adjustment_policy == 0),
+                htmlform.HTMLFormDropDownOption("1", "behave as if missed games were drawn with the round's average score", unplayed_adjustment_policy == 1),
+                htmlform.HTMLFormDropDownOption("2", "behave as if missed games were won with the round's highest score", unplayed_adjustment_policy == 2)
+        ]
+        elements.append(htmlform.HTMLFragment("<label for=\"unplayedadjustmentpolicy\">If a player has played fewer games than the rest: </label>"))
+        elements.append(htmlform.HTMLFormDropDownBox("unplayedadjustmentpolicy", unplayed_adjustment_policy_options))
+        elements.append(htmlform.HTMLFormControlEnd())
+    else:
+        elements.append(htmlform.HTMLFormHiddenInput("unplayedadjustmentpolicy", "0", other_attrs={"id" : "unplayedadjustmentpolicy"}))
 
     elements.append(htmlform.HTMLFormControlStart())
     elements.append(htmlform.HTMLFormNumberInput("Fixture generator time limit %s(seconds)" % ("per division " if num_divisions > 1 else ""),
@@ -567,9 +570,10 @@ def generate(tourney, settings, div_rounds):
         adjustments = get_adjustments_for_unplayed_games(tourney, div_index,
                 round_no, num_rounds_to_use, games, standings,
                 unplayed_adjustment_policy)
-        sys.stderr.write(str(adjustments))
-        sys.stderr.write("\n")
         if adjustments:
+            print("[fixgen_swiss] Adjustments for missed games:", file=sys.stderr)
+            for name in adjustments:
+                print("[fixgen_swiss]    %s: +%d wins, +%d draws, +%d points" % (name, adjustments[name][0], adjustments[name][1], adjustments[name][2]), file=sys.stderr)
             # Regenerate standings with the adjustments for unplayed games
             if num_rounds_to_use:
                 standings = tourney.get_standings_from_round_onwards(div_index, from_round, adjustments=adjustments)
