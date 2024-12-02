@@ -26,7 +26,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         response.writeln("closest losing games, for players who have lost at least that many games.")
         response.writeln("It is the opposite of <a href=\"/atropine/%s/luckystiff\">Lucky Stiff</a>." % (htmlcommon.escape(tourney_name)))
         response.writeln("<br>")
-        response.writeln("<input type=\"submit\" name=\"submit\" value=\"Refresh\" />")
+        response.writeln("<input type=\"submit\" value=\"Refresh\" />")
         response.writeln("</form>")
 
         players_tuff_luck = tourney.get_players_tuff_luck(num_losing_games)
