@@ -29,8 +29,8 @@ import traceback
 
 http_server_host = "greem.co.uk"
 http_server_port = None
-http_submit_path = "/cgi-bin/colive/submit.py"
-http_delete_path = "/cgi-bin/colive/submit.py"
+http_submit_path = "/colive/submit"
+http_delete_path = "/colive/submit"
 
 upload_interval_sec = 10
 
@@ -100,7 +100,7 @@ def make_https_json_request(server_host, server_port, path, request):
         httpcon.close()
         return { "success" : False, "http_failure" : True, "message" : str(e) }
 
-    if response.status != 200:
+    if response.status != 200 and response.status // 100 != 4:
         sys.stderr.write("Failed to post data to %s: HTTP response %d: %s\r\n" % (url, response.status, response.reason))
         rep = {
                 "success" : False,
@@ -129,7 +129,7 @@ def make_https_json_request(server_host, server_port, path, request):
                 sys.stderr.write("Failed to parse server response: " + str(e) + "\r\n")
                 rep = {
                         "success" : False,
-                        "message" : "Server response was invalid JSON: " + str(e)
+                        "message" : "Server response (HTTP %d) contained invalid JSON: %s" % (response.status, str(e))
                 }
     httpcon.close()
     return rep
