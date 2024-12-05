@@ -1,3 +1,5 @@
+import sys
+
 import countdowntourney
 import htmlform
 import swissN
@@ -46,6 +48,7 @@ def get_user_form(tourney, settings, div_rounds):
     max_time = int_or_none(settings.get("maxtime", None))
     ignore_rematches_before_round = int_or_none(settings.get("ignorerematchesbefore", None))
     num_rounds_to_use = int_or_none(settings.get("numroundstouse"))
+    unplayed_adjustment_policy = int_or_none(settings.get("unplayedadjustmentpolicy"))
 
     div_ready = []
     for div in range(num_divisions):
@@ -247,6 +250,20 @@ function generate_fixtures_clicked() {
         elements.append(htmlform.HTMLFormDropDownBox("numroundstouse", num_rounds_to_use_options))
         elements.append(htmlform.HTMLFormControlEnd())
 
+    if tourney.get_rank_method_id() == countdowntourney.RANK_WINS_POINTS:
+        # Policy for players who have played fewer games than others
+        elements.append(htmlform.HTMLFormControlStart())
+        unplayed_adjustment_policy_options = [
+                htmlform.HTMLFormDropDownOption("0", "make no adjustment", unplayed_adjustment_policy is None or unplayed_adjustment_policy == 0),
+                htmlform.HTMLFormDropDownOption("1", "behave as if missed games were drawn with the round's average score", unplayed_adjustment_policy == 1),
+                htmlform.HTMLFormDropDownOption("2", "behave as if missed games were won with the round's highest score", unplayed_adjustment_policy == 2)
+        ]
+        elements.append(htmlform.HTMLFragment("<label for=\"unplayedadjustmentpolicy\">If a player has played fewer games than the rest: </label>"))
+        elements.append(htmlform.HTMLFormDropDownBox("unplayedadjustmentpolicy", unplayed_adjustment_policy_options))
+        elements.append(htmlform.HTMLFormControlEnd())
+    else:
+        elements.append(htmlform.HTMLFormHiddenInput("unplayedadjustmentpolicy", "0", other_attrs={"id" : "unplayedadjustmentpolicy"}))
+
     elements.append(htmlform.HTMLFormControlStart())
     elements.append(htmlform.HTMLFormNumberInput("Fixture generator time limit %s(seconds)" % ("per division " if num_divisions > 1 else ""),
         "maxtime", settings.get("maxtime", "30"),
@@ -355,6 +372,116 @@ def check_ready(tourney, div_rounds):
 
     return (True, None);
 
+def get_adjustments_for_unplayed_games(tourney, div_index, round_no_to_generate, num_rounds_to_use, games, standings, policy):
+    # If we're not adjusting for unplayed games, there are no adjustments
+    if policy == 0:
+        return {}
+
+    # Work out the first round we're looking at
+    if num_rounds_to_use:
+        from_round = round_no_to_generate - num_rounds_to_use
+    else:
+        from_round = 1
+
+    # Which players have played fewer games than the rest?
+    max_played = 0
+    players_with_unplayed_games = {}
+    for s in standings:
+        if s.played > max_played:
+            max_played = s.played
+    for s in standings:
+        if s.played < max_played:
+            players_with_unplayed_games[s.name] = max_played - s.played
+    games_by_round = {}
+
+    # Sort the games by round
+    for g in games:
+        if g.get_round_no() not in games_by_round:
+            games_by_round[g.get_round_no()] = []
+        games_by_round[g.get_round_no()].append(g)
+
+    # Work out how many points we should add on for missing a game in each
+    # round. This is either the average or the maximum score in that round.
+    points_adjustment_per_missed_game = {}
+    if policy == 1:
+        wins_adjustment_per_missed_game = 0
+        draws_adjustment_per_missed_game = 1
+        # Work out average points scored by a player in each round
+        for round_no in range(from_round, round_no_to_generate):
+            points_sum = 0
+            num_games = 0
+            for g in games_by_round.get(round_no, []):
+                if not g.is_complete():
+                    continue
+                if g.is_tiebreak():
+                    points_sum += g.get_losing_score() * 2
+                else:
+                    points_sum += g.s1 + g.s2
+                num_games += 1
+            if num_games > 0:
+                points_adjustment_per_missed_game[round_no] = int(points_sum / (2 * num_games) + 0.5)
+            else:
+                points_adjustment_per_missed_game[round_no] = 0
+    elif policy == 2:
+        wins_adjustment_per_missed_game = 1
+        draws_adjustment_per_missed_game = 0
+        for round_no in range(from_round, round_no_to_generate):
+            max_score = 0
+            for g in games_by_round.get(round_no, []):
+                if not g.is_complete():
+                    continue
+                if g.is_draw():
+                    s = g.s1
+                elif g.is_tiebreak():
+                    s = g.get_losing_score()
+                else:
+                    s = g.get_winning_score()
+                if s > max_score:
+                    max_score = s
+            points_adjustment_per_missed_game[round_no] = max_score
+    else:
+        wins_adjustment_per_missed_game = 0
+        draws_adjustment_per_missed_game = 0
+
+    # max_played: { round_no -> maximum number of games played by a player }
+    max_played = {}
+
+    # { round_no -> { player_name -> number of games played by this player in this round } }
+    num_played = {}
+
+    for g in games:
+        round_no = g.get_round_no()
+        if round_no not in num_played:
+            num_played[round_no] = {}
+        for p in g.get_players():
+            num_played[round_no][p.get_name()] = num_played[round_no].get(p.get_name(), 0) + 1
+
+    for round_no in num_played:
+        max_played[round_no] = max([ num_played[round_no][pname] for pname in num_played[round_no] ])
+
+    # { player_name -> [ +wins, +draws, +points ] }
+    adjustments = {}
+
+    for player_name in players_with_unplayed_games:
+        num_unplayed = players_with_unplayed_games[player_name]
+        for round_no in range(from_round, round_no_to_generate):
+            num_unplayed_this_round = max_played[round_no] - num_played[round_no].get(player_name, 0)
+            if num_unplayed_this_round == 0:
+                continue
+            if num_unplayed_this_round > num_unplayed:
+                # ???
+                num_unplayed_this_round = num_unplayed
+            adj = adjustments.get(player_name, [0, 0, 0])
+            adj[0] += wins_adjustment_per_missed_game * num_unplayed_this_round
+            adj[1] += draws_adjustment_per_missed_game * num_unplayed_this_round
+            adj[2] += points_adjustment_per_missed_game.get(round_no, 0) * num_unplayed_this_round
+            adjustments[player_name] = adj
+            num_unplayed -= num_unplayed_this_round
+            if num_unplayed <= 0:
+                break
+    return adjustments
+
+
 def generate(tourney, settings, div_rounds):
     (ready, excuse) = check_ready(tourney, div_rounds);
     if not ready:
@@ -436,6 +563,22 @@ def generate(tourney, settings, div_rounds):
             standings = tourney.get_standings_from_round_onwards(div_index, round_no - num_rounds_to_use)
         else:
             standings = tourney.get_standings(div_index, calculate_qualification=False)
+
+        unplayed_adjustment_policy = int_or_none(settings.get("unplayedadjustmentpolicy", 0))
+        if unplayed_adjustment_policy is None:
+            unplayed_adjustment_policy = 0
+        adjustments = get_adjustments_for_unplayed_games(tourney, div_index,
+                round_no, num_rounds_to_use, games, standings,
+                unplayed_adjustment_policy)
+        if adjustments:
+            print("[fixgen_swiss] Adjustments for missed games:", file=sys.stderr)
+            for name in adjustments:
+                print("[fixgen_swiss]    %s: +%d wins, +%d draws, +%d points" % (name, adjustments[name][0], adjustments[name][1], adjustments[name][2]), file=sys.stderr)
+            # Regenerate standings with the adjustments for unplayed games
+            if num_rounds_to_use:
+                standings = tourney.get_standings_from_round_onwards(div_index, from_round, adjustments=adjustments)
+            else:
+                standings = tourney.get_standings(div_index, calculate_qualification=False, adjustments=adjustments)
 
         # Determine whether any of these players have played a game yet...
         is_first_round = True
