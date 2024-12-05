@@ -114,7 +114,6 @@ def add_fixtures(tourney, round_number, fixtures, division=0):
     params["jsonfixtureplan"] = json.dumps(json_fixture_lump)
     params["accept"] = "Accept Fixtures"
     params["generator"] = "fixgen_manual"
-    
     make_request("fixturegen", tourney.get_name(), ["fixgen_manual"], params)
 
 def post_result(tourney, round_number, name1, score1, name2, score2, tb=False):
@@ -182,6 +181,17 @@ def division_diversion(tourney):
     for div in divs:
         for name in div:
             assert_equal(tourney.get_player_from_name(name).get_division(), 0, name)
+
+def make_fixture_edit_params_from_games(games):
+    params = {}
+    for g in games:
+        round_no = g.get_round_no()
+        seq = g.get_round_seq()
+        p = g.get_players()
+        params["gamep1_%d_%d" % (round_no, seq)] = p[0].get_name()
+        params["gamep2_%d_%d" % (round_no, seq)] = p[1].get_name()
+        params["gametype_%d_%d" % (round_no, seq)] = g.get_game_type()
+    return params
 
 def main():
     tourney_name = "_webhandlertest"
@@ -278,6 +288,219 @@ Todd Bonzalez
     post_result(tourney, 1, "Darryl Archideld", 44, "Kevin Nogilny", 72)
     post_result(tourney, 1, "Willie Dustice", 69, "Pruney McPruneface", 0)
     post_result(tourney, 1, "Todd Bonzalez", 65, "Bobson Dugnutt", 55, True)
+
+    # Assign teams to the players
+    teams = tourney.get_teams()
+    name_to_id = {}
+    for p in tourney.get_players():
+        name_to_id[p.get_name()] = p.get_id()
+
+    params = {
+            "playerteamsubmit" : "Submit"
+    }
+    for (pname, team_index) in [
+            ("Sleve McDichael", 0), ("Mike Truk", 1),
+            ("Darryl Archideld", 0), ("Kevin Nogilny", 0),
+            ("Willie Dustice", 0), ("Todd Bonzalez", 1),
+            ("Bobson Dugnutt", 1) ]:
+        params["player%d" % (name_to_id[pname])] = teams[team_index].get_id()
+    make_request("teamsetup", tourney_name, [], params)
+
+    # Team scores should be 1-0 to teams[0]
+    team_scores = tourney.get_team_scores()
+    for (team, score) in team_scores:
+        if team.get_id() == teams[0].get_id():
+            assert_equal(score, 1)
+        elif team.get_id() == teams[1].get_id():
+            assert_equal(score, 0)
+        else:
+            print("Unexpected team_id: %d" % (team.get_id()), file=sys.stderr)
+            assert_equal(1, 0)
+
+    # Clear team assignments
+    make_request("teamsetup", tourney_name, [], { "clearteams" : "Clear Teams" })
+
+    # Team scores should now be 0-0
+    team_scores = tourney.get_team_scores()
+    for (team_id, score) in team_scores:
+        assert_equal(score, 0)
+
+
+    # Test player.py. Withdraw Bobson Dugnutt...
+    make_request("player", tourney_name, [ str(name_to_id["Bobson Dugnutt"]) ], { "withdrawplayer" : "Withdraw Bobson Dugnutt" })
+
+    # Add Onson Sweemey
+    make_request("player", tourney_name, [], {
+        "newplayersubmit" : "Create Player",
+        "setname" : "Onson Sweemey",
+        "setrating" : "1000",
+        "setdivision" : "0",
+        "setwithdrawn" : "0",
+        "setavoidprune" : "0",
+        "setrequiresaccessibletable" : "0",
+        "setpreferredtable" : "1", # Let's say Onson prefers table 1
+        "setnewbie" : "1" # and is a newbie
+    })
+
+    # Add Jeromy Gride
+    make_request("player", tourney_name, [], {
+        "newplayersubmit" : "Create Player",
+        "setname" : "Jeromy Gride",
+        "setrating" : "1150",
+        "setdivision" : "0",
+        "setwithdrawn" : "0",
+        "setavoidprune" : "1",
+        "setrequiresaccessibletable" : "0",
+        "setpreferredtable" : None,
+        "setnewbie" : "0"
+    })
+
+    # Check players
+    for p in tourney.get_players():
+        name = p.get_name()
+        if name == "Onson Sweemey":
+            assert_equal(p.get_preferred_table(), 1)
+            assert_equal(p.is_newbie(), True)
+            name_to_id[name] = p.get_id()
+        elif name == "Jeromy Gride":
+            assert_equal(p.is_avoiding_prune(), True)
+            assert_equal(p.get_preferred_table(), None)
+            assert_equal(p.is_newbie(), False)
+            assert_equal(p.get_rating(), 1150)
+            name_to_id[name] = p.get_id()
+        elif name == "Bobson Dugnutt":
+            assert_equal(p.is_withdrawn(), True)
+
+    assert_equal("Onson Sweemey" in name_to_id, True)
+    assert_equal("Jeromy Gride" in name_to_id, True)
+
+    # Reinstate Bobson Dugnutt
+    make_request("player", tourney_name, [ str(name_to_id["Bobson Dugnutt"]) ], { "reinstateplayer" : "Reinstate Bobson Dugnutt" })
+    p = tourney.get_player_from_name("Bobson Dugnutt")
+    assert_equal(p.is_withdrawn(), False)
+
+    tourney.close()
+
+    # Round 2
+    tourney = countdowntourney.tourney_open(tourney_name)
+    add_fixtures(tourney, 2, [
+        (1, "Sleve McDichael", "Darryl Archideld"),
+        (2, "Kevin Nogilny", "Willie Dustice"),
+        (3, "Pruney McPruneface", "Todd Bonzalez"),
+        (4, "Bobson Dugnutt", "Mike Truk")
+    ])
+
+    games = tourney.get_games(round_no=2)
+    assert_equal(len(games), 4)
+
+    # Test fixtureedit.py.
+    # Delete the Pruney game. This is seq=3 in this round - within a round,
+    # game sequence numbers are automatically numbered from 1.
+    params = make_fixture_edit_params_from_games(games)
+    params["save"] = "Save Changes"
+    params["deletegame_2_3"] = "1"
+    make_request("fixtureedit", tourney_name, [ "2" ], params)
+
+    games = tourney.get_games(round_no=2)
+    assert_equal(len(games), 3)
+
+    # Add a game between Onson Sweemey and Jeromy Gride (seq = 5)
+    params = make_fixture_edit_params_from_games(games)
+    params["save"] = "Save Changes"
+    params["addgame_div0"] = "1"
+    params["addgame_p1_div0"] = "Onson Sweemey"
+    params["addgame_p2_div0"] = "Jeromy Gride"
+    params["addgame_type_div0"] = "P"
+    params["addgame_table_div0"] = "3"
+    make_request("fixtureedit", tourney_name, [ "2" ], params)
+
+    games = tourney.get_games(round_no=2)
+    assert_equal(len(games), 4)
+
+    # Add a game between Todd Bonzalez and Prune (seq = 6)
+    params = make_fixture_edit_params_from_games(games)
+    params["save"] = "Save Changes"
+    params["addgame_div0"] = "1"
+    params["addgame_p1_div0"] = "Todd Bonzalez"
+    params["addgame_p2_div0"] = "Pruney McPruneface"
+    params["addgame_type_div0"] = "P"
+    params["addgame_table_div0"] = "5"
+    make_request("fixtureedit", tourney_name, [ "2" ], params)
+
+    games = tourney.get_games(round_no=2)
+    assert_equal(len(games), 5)
+
+    # Change our mind - we want Onson Sweemey to play Prune, and Jeromy Gride
+    # to play Todd Bonzalez
+    params = make_fixture_edit_params_from_games(games)
+    params["save"] = "Save Changes"
+    params["gamep1_2_5"] = "Onson Sweemey"
+    params["gamep2_2_5"] = "Pruney McPruneface"
+    params["gamep1_2_6"] = "Jeromy Gride"
+    params["gamep2_2_6"] = "Todd Bonzalez"
+    make_request("fixtureedit", tourney_name, [ "2" ], params)
+
+    # Fetch the edited list of games, order by table number
+    games = tourney.get_games(round_no=2)
+    assert_equal(len(games), 5)
+    games.sort(key=lambda x : x.get_table_no())
+    expected_games = [
+            # table number, p1, p2
+            (1, "Sleve McDichael", "Darryl Archideld"),
+            (2, "Kevin Nogilny", "Willie Dustice"),
+            (3, "Onson Sweemey", "Pruney McPruneface"),
+            (4, "Bobson Dugnutt", "Mike Truk"),
+            (5, "Jeromy Gride", "Todd Bonzalez")
+    ]
+
+    # Check the games are as expected
+    for gi in range(len(games)):
+        g = games[gi]
+        p = g.get_players()
+        e = expected_games[gi]
+        assert_equal(p[0].get_name(), e[1])
+        assert_equal(p[1].get_name(), e[2])
+        assert_equal(g.get_table_no(), e[0])
+        assert_equal(g.get_game_type(), "P")
+
+    # Post round 2 results
+    post_result(tourney, 2, "Sleve McDichael", 75, "Darryl Archideld", 49)
+    post_result(tourney, 2, "Kevin Nogilny", 41, "Willie Dustice", 47)
+    post_result(tourney, 2, "Onson Sweemey", 59, "Pruney McPruneface", 0)
+    post_result(tourney, 2, "Bobson Dugnutt", 69, "Mike Truk", 30)
+    post_result(tourney, 2, "Jeromy Gride", 43, "Todd Bonzalez", 56)
+
+    # Check that all games are complete
+    games = tourney.get_games(round_no=2)
+    for g in games:
+        assert_equal(g.is_complete(), True)
+
+    # Standings table should look like this:
+    expected_standings = [
+            # position, name, played, wins, points
+            (1, "Sleve McDichael",  2, 2, 135),
+            (2, "Willie Dustice",   2, 2, 116),
+            (3, "Todd Bonzalez",    2, 2, 111),
+            (4, "Bobson Dugnutt",   2, 1, 124),
+            (5, "Kevin Nogilny",    2, 1, 113),
+            (6, "Onson Sweemey",    1, 1,  59),
+            (7, "Darryl Archideld", 2, 0,  93),
+            (8, "Mike Truk",        2, 0,  80),
+            (9, "Jeromy Gride",     1, 0,  43),
+    ]
+
+    # Check standings table is correct
+    standings = tourney.get_standings()
+    assert_equal(len(standings), len(expected_standings))
+    for i in range(len(standings)):
+        so = standings[i]
+        se = expected_standings[i]
+        context = "standings[%d], name %s" % (i, se[1])
+        assert_equal(so.position, se[0], context)
+        assert_equal(so.name, se[1], context)
+        assert_equal(so.played, se[2], context)
+        assert_equal(so.wins, se[3], context)
+        assert_equal(so.points, se[4], context)
 
     tourney.close()
 
