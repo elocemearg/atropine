@@ -6,8 +6,9 @@ import countdowntourney
 
 def include_scripts(response, dir_name, url_path):
     for filename in sorted(os.listdir(dir_name)):
-        if (os.path.isdir(dir_name + "/" + filename)):
-            include_scripts(response, dir_name + "/" + filename, url_path + "/" + filename)
+        filepath = os.path.join(dir_name, filename)
+        if os.path.isdir(filepath):
+            include_scripts(response, filepath, url_path + "/" + filename)
         elif filename[-3:] == ".js":
             base_filename = os.path.basename(filename)
             response.writeln("<script src=\"%s/%s\"></script>" % (htmlcommon.escape(url_path, True), htmlcommon.escape(base_filename, True)))
@@ -68,7 +69,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     # Now load everything under teleost/views, loading the files and contents
     # of directories in alphabetical order. The order is important, because
     # some files depend on others.
-    include_scripts(response, "./teleost/views", "/teleost/views")
+    include_scripts(response, os.path.join(".", "teleost", "views"), "/teleost/views")
 
     # Finally, load main_post.js
     response.writeln("<script src=\"/teleost/main_post.js\"></script>")
