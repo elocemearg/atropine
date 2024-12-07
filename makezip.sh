@@ -3,10 +3,18 @@
 # makezip.sh
 # Package up Atropine into a zip file suitable for distribution.
 
+if [ "$1" = "-b" ]; then
+    # Include buildscripts directory
+    buildscripts=buildscripts
+    shift
+else
+    buildscripts=""
+fi
+
 ATROPINE_VERSION=$1
 if [ -z "$ATROPINE_VERSION" ]; then
     # Display help
-    echo "Usage: makezip.sh <version>"
+    echo "Usage: makezip.sh [-b] <version>"
     echo "<version> is in the form x.y.z[-extrastuff]"
     exit 1
 fi
@@ -54,7 +62,7 @@ VER_DIR="atropine-$ATROPINE_VERSION"
 mkdir "$TEMP_DIR/$VER_DIR" || exit 1
 
 # Copy all the files we need to $TEMP_DIR/$VER_DIR, and change to $TEMP_DIR
-cp -a generators py webroot licence.txt atropine.py fixpaths.sh "$TEMP_DIR/$VER_DIR/" || exit 1
+cp -a generators py webroot $buildscripts licence.txt atropine.py fixpaths.sh "$TEMP_DIR/$VER_DIR/" || exit 1
 
 cd "$TEMP_DIR" || exit 1
 
