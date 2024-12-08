@@ -10,7 +10,9 @@ import rank
 import html
 
 SW_VERSION_SPLIT = (1, 2, 4)
-SW_VERSION = ".".join([str(x) for x in SW_VERSION_SPLIT])
+SW_VERSION_SUFFIX = ""
+SW_VERSION_WITHOUT_SUFFIX = ".".join([str(x) for x in SW_VERSION_SPLIT])
+SW_VERSION = SW_VERSION_WITHOUT_SUFFIX + SW_VERSION_SUFFIX
 EARLIEST_COMPATIBLE_DB_VERSION = (0, 7, 0)
 
 # SQLite3 db file containing installation-wide preferences, applicable to all tourneys.
@@ -3286,7 +3288,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             cur.execute("delete from display_profile where name = ?", (profile_name,))
 
             # Add the new profile
-            cur.execute("insert into display_profile(name, atropine_version, last_modified_ts) values (?, ?, current_timestamp)", (profile_name, SW_VERSION))
+            cur.execute("insert into display_profile(name, atropine_version, last_modified_ts) values (?, ?, current_timestamp)", (profile_name, SW_VERSION_WITHOUT_SUFFIX))
             option_rows = [ (profile_name, opt.name, str(opt.value)) for opt in self.get_teleost_options() ]
             for (general_opt_name, value_fn) in display_profile_general_options:
                 value = value_fn(self)
@@ -4256,7 +4258,7 @@ def tourney_create(dbname, directory=None, load_display_profile_name=None):
     tourney = Tourney(dbpath, dbname, versioncheck=False);
     tourney.db_version = SW_VERSION_SPLIT;
     tourney.db.executescript(create_tables_sql);
-    tourney.db.execute("insert into options values ('atropineversion', ?)", (SW_VERSION,))
+    tourney.db.execute("insert into options values ('atropineversion', ?)", (SW_VERSION_WITHOUT_SUFFIX,))
 
     # We now generate a unique ID for each tourney db file. This helps with the
     # web broadcast feature. It stops us from accidentally uploading an
