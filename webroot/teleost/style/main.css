@@ -771,6 +771,11 @@ td.highscoresround {
     color: orange;
 }
 
+span.highlightscore {
+    font-weight: bold;
+    color: yellow;
+}
+
 /* Clock */
 img.teleostclockhourhand {
     position: absolute;

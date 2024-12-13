@@ -130,17 +130,25 @@ class HighScoresView extends PagedTableView {
                 }
             }
             else {
-                var entry = obj.entries[rowNum];
-                var rowName = "highscoresrow" + rowNum.toString();
+                let entry = obj.entries[rowNum];
+                let rowName = "highscoresrow" + rowNum.toString();
 
-                var roundText = "R" + entry.round_num.toString();
+                let roundText = "R" + entry.round_num.toString();
+                let highlightScore1 = false;
+                let highlightScore2 = false;
+
                 if (entry.div_short_name) {
                     roundText += " " + entry.div_short_name;
                 }
 
                 document.getElementById(rowName + "_round").innerText = roundText;
                 document.getElementById(rowName + "_p1").innerText = entry.name1;
-                document.getElementById(rowName + "_score").innerHTML = formatScore(entry.score1, entry.score2, entry.tb);
+
+                /* On page 0 (highest winning scores), highlight the winner.
+                 * On page 1 (highest losing scores), highlight the loser. */
+                highlightScore1 = (this.currentPageIndex == 0 && entry.score1 > entry.score2) || (this.currentPageIndex == 1 && entry.score1 < entry.score2);
+                highlightScore2 = (this.currentPageIndex == 0 && entry.score2 > entry.score1) || (this.currentPageIndex == 1 && entry.score2 < entry.score1);
+                document.getElementById(rowName + "_score").innerHTML = formatScore(entry.score1, entry.score2, entry.tb, highlightScore1, highlightScore2);
                 document.getElementById(rowName + "_p2").innerText = entry.name2;
 
                 this.showRow(rowNum);

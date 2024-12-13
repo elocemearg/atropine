@@ -70,24 +70,28 @@ function makeWithdrawn(str, esc) {
     return spanned;
 }
 
-function formatScore(s1, s2, tb) {
+function highlightScore(score) {
+    return "<span class=\"highlightscore\">" + score.toString() + "</span>";
+}
+
+function formatScore(s1, s2, tb, highlight1=false, highlight2=false) {
     var text;
     if (s1 == null || s2 == null) {
         /* Game hasn't been played yet */
         text = "&ndash;";
     }
     else if (s1 == 0 && s2 == 0 && tb) {
-        /* Double-loss, for when we eventually support this: X - X */
+        /* Double-loss: X - X */
         text = "&#10006; &ndash; &#10006;";
     }
     else {
         /* Game is complete */
-        text = s1.toString();
+        text = highlight1 ? highlightScore(s1) : s1.toString();
         if (tb && s1 > s2) {
             text += "*";
         }
         text += " &ndash; ";
-        text += s2.toString();
+        text += highlight2 ? highlightScore(s2) : s2.toString();
         if (tb && s2 >= s1) {
             text += "*";
         }
