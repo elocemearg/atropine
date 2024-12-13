@@ -100,17 +100,17 @@ def round_standings_add(round_standings, player_name, field, increment):
     player_stats = round_standings[player_name]
     player_stats[field] = player_stats.get(field, 0) + increment
 
-def check_standings_field(expected_standings, starting_round, latest_round_no, player_name, field_name, observed_value, context):
+def check_standings_field(expected_standings, starting_round, ending_round, player_name, field_name, observed_value, context):
     expected_value = 0
     if starting_round <= 0:
         starting_round = 1
-    for r in range(starting_round, latest_round_no + 1):
+    for r in range(starting_round, ending_round + 1):
         round_standings = expected_standings.get(r, {})
         player_stats = round_standings.get(player_name, {})
         expected_value += player_stats.get(field_name, 0)
 
     if expected_value != observed_value:
-        print("check_standings_field() failed. Rounds %d-%d, player \"%s\", field \"%s\", expected %d, observed %d." % (starting_round, latest_round_no, player_name, field_name, expected_value, observed_value))
+        print("check_standings_field() failed. Rounds %d-%d, player \"%s\", field \"%s\", expected %d, observed %d." % (starting_round, ending_round, player_name, field_name, expected_value, observed_value))
         print("Context: %s" % (context))
         raise TestFailedException()
     return True
@@ -144,39 +144,50 @@ def check_standings(tourney, division, played_games, latest_round_no):
             round_standings_add(expected_round_standings, names[pi], "spread", points[pi] - points[pi ^ 1])
         round_standings_add(expected_round_standings, names[0], "playedfirst", 1)
 
-    # Now ask the tourney what the standings are for each subsequence of rounds,
-    # starting with [latest_round_no], then
-    # [latest_round_no - 1, latest_round_no], etc.
+    # Now ask the tourney what the standings are for each subsequence of
+    # rounds between 1 and latest_round_no.
     for starting_round in range(latest_round_no, -1, -1):
-        if starting_round == 0:
-            # Test the get_standings() function as well
-            observed_standings = tourney.get_standings(division=division, calculate_qualification=False, rank_finals=False)
-        else:
-            observed_standings = tourney.get_standings_from_round_onwards(division, starting_round)
+        # If starting_round is 0, we only want to test get_standings(), so
+        # set ending_round to latest_round_no. Otherwise, test with every
+        # value for ending_round from starting_round to latest_round_no.
+        for ending_round in range(starting_round if starting_round > 0 else latest_round_no, latest_round_no + 1):
+            if starting_round == 0:
+                # Test the get_standings() function
+                observed_standings = tourney.get_standings(division=division, calculate_qualification=False, rank_finals=False)
+            elif ending_round == latest_round_no:
+                # Test the get_standings_from_round_onwards function
+                observed_standings = tourney.get_standings_from_round_onwards(division, starting_round)
+            else:
+                # Test the most general function, get_standings_from_rounds()
+                observed_standings = tourney.get_standings_from_rounds(division, starting_round, ending_round)
 
-        # Make sure we have a standings row for every player in this division,
-        # including the withdrawn players, and that we have no other rows.
-        observed_name_list = sorted([ s.name for s in observed_standings ])
-        expected_name_list = sorted([ p.get_name() for p in players ])
-        if observed_name_list != expected_name_list:
-            print("get_standings_from_round_onwards() returned incorrect player list.")
-            print("Expected: " + str(expected_name_list))
-            print("Observed: " + str(observed_name_list))
-            raise TestFailedException()
+            # Make sure we have a standings row for every player in this
+            # division, including the withdrawn players, and that we have
+            # no other rows.
+            observed_name_list = sorted([ s.name for s in observed_standings ])
+            expected_name_list = sorted([ p.get_name() for p in players ])
+            if observed_name_list != expected_name_list:
+                print("get_standings_from_round_onwards() returned incorrect player list.")
+                print("Expected: " + str(expected_name_list))
+                print("Observed: " + str(observed_name_list))
+                raise TestFailedException()
 
-        if starting_round < 0:
-            context = "get_standings(division=%d), latest_round_no=%d" % (division, latest_round_no)
-        else:
-            context = "get_standings_from_round_onwards(division=%d, starting_round=%d), latest_round_no %d" % (division, starting_round, latest_round_no)
-        for row in observed_standings:
-            name = row.name
-            check_standings_field(expected_standings, starting_round, latest_round_no, name, "played", row.played, context)
-            check_standings_field(expected_standings, starting_round, latest_round_no, name, "wins", row.wins, context)
-            check_standings_field(expected_standings, starting_round, latest_round_no, name, "draws", row.draws, context)
-            check_standings_field(expected_standings, starting_round, latest_round_no, name, "points", row.points, context)
-            check_standings_field(expected_standings, starting_round, latest_round_no, name, "spread", row.spread, context)
-            check_standings_field(expected_standings, starting_round, latest_round_no, name, "playedfirst", row.played_first, context)
-        #print("Checked %d standings rows" % (len(observed_standings)))
+            if starting_round <= 0:
+                context = "get_standings(division=%d), latest_round_no=%d" % (division, latest_round_no)
+            elif ending_round == latest_round_no:
+                context = "get_standings_from_round_onwards(division=%d, starting_round=%d), latest_round_no %d" % (division, starting_round, latest_round_no)
+            else:
+                context = "get_standings_from_rounds(division=%d, starting_round=%d, ending_round=%d), latest_round_no %d" % (division, starting_round, ending_round, latest_round_no)
+
+            for row in observed_standings:
+                name = row.name
+                check_standings_field(expected_standings, starting_round, ending_round, name, "played", row.played, context)
+                check_standings_field(expected_standings, starting_round, ending_round, name, "wins", row.wins, context)
+                check_standings_field(expected_standings, starting_round, ending_round, name, "draws", row.draws, context)
+                check_standings_field(expected_standings, starting_round, ending_round, name, "points", row.points, context)
+                check_standings_field(expected_standings, starting_round, ending_round, name, "spread", row.spread, context)
+                check_standings_field(expected_standings, starting_round, ending_round, name, "playedfirst", row.played_first, context)
+            #print("Checked %d standings rows" % (len(observed_standings)))
 
     # If we get here, get_standings() and get_standings_from_round_onwards() passed the test.
 

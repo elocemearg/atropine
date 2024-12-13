@@ -2846,8 +2846,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         cur.close()
         return result
 
-    # Exclude any game played before from_round_no.
-    def get_standings_from_round_onwards(self, division, from_round_no, adjustments={}):
+    def get_standings_from_rounds(self, division, from_round_no, to_round_no=None, adjustments={}):
         if not self.has_per_round_standings():
             raise PerRoundStandingsNotSupportedException()
 
@@ -2860,6 +2859,10 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             conditions.append("p.division = %d" % (division))
         conditions.append("p.id >= 0")
         where_clause = "where " + " and ".join(conditions)
+
+        round_condition = "s1.round_no >= %d" % (from_round_no)
+        if to_round_no is not None:
+            round_condition += " and s1.round_no <= %d" % (to_round_no)
 
         cur = self.db.cursor()
         cur.execute("""
@@ -2874,9 +2877,9 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                  sum(s1.points - s1.points_against) spread,
                  sum(s1.played_first) played_first
                  from round_standings s1
-                 where s1.round_no >= %d group by s1.p_id) s on p.id = s.p_id
+                 where %s group by s1.p_id) s on p.id = s.p_id
                  left outer join tournament_rating tr on tr.id = p.id
-            %s""" % (from_round_no, where_clause))
+            %s""" % (round_condition, where_clause))
         standings = []
         for x in cur:
             adj = adjustments.get(x[0], (0, 0, 0))
@@ -2888,6 +2891,10 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         rank_method.sort_standings_rows(standings, games, self.get_players(), False)
         return standings
+
+    # Exclude any game played before from_round_no.
+    def get_standings_from_round_onwards(self, division, from_round_no, adjustments={}):
+        return self.get_standings_from_rounds(division, from_round_no, to_round_no=None, adjustments=adjustments)
 
     def get_standings(self, division=None, exclude_withdrawn_with_no_games=False, calculate_qualification=True, rank_finals=None, adjustments={}):
         rank_method_id = self.get_rank_method_id();
