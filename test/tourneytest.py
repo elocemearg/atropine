@@ -25,6 +25,29 @@ div_scenario = {
             "division" : (n - 1) // 4,
         } for n in range(1, 13)
     ],
+    "expected_second_wind" : [
+        [
+            # Division A
+            ( "P1", 40, 70, 30 ),
+            ( "P4", 51, 81, 30 ),
+            ( "P3", 57, 55, -2 ),
+            ( "P2", 50, 43, -7 ),
+        ],
+        [
+            # Division B
+            ( "P7", 24, 36, 12 ),
+            ( "P6", 61, 60, -1 ),
+            ( "P5", 60, 50, -10 ),
+            ( "P8", 50, 40, -10 ),
+        ],
+        [
+            # Division C
+            ( "P11", 42, 43, 1 ),
+            ( "P9", 62, 51, -11 ), # first game score of 72 was on a tiebreak
+            ( "P12", 56, 44, -12 ),
+            ( "P10", 62, 31, -31 ),
+        ]
+    ],
     "rounds" : [
         {
             "name" : "Round 1",
@@ -164,6 +187,33 @@ def diff_files(observed, expected):
     else:
         return True
 
+def check_second_wind(tourney, scenario):
+    # If the scenario has an "expected_second_wind" member, check that the
+    # results of tourney.get_score_diff_between_rounds() match its contents.
+    if "expected_second_wind" in scenario:
+        for (div_index, expected_second_wind) in enumerate(scenario["expected_second_wind"]):
+            observed_second_wind = tourney.get_score_diff_between_rounds(div_index, 1, 2, limit=None)
+
+            if len(expected_second_wind) != len(observed_second_wind):
+                print("second wind, div %d: expected %d rows, observed %d rows" % (div_index, len(expected_second_wind), len(observed_second_wind)))
+                return False
+            for rownum in range(len(expected_second_wind)):
+                observed_player_name = observed_second_wind[rownum][0].get_name()
+                expected_player_name = expected_second_wind[rownum][0]
+                fail_reason = None
+                if observed_player_name != expected_player_name:
+                    fail_reason = "expected player %s, observed player %s" % (expected_player_name, observed_player_name)
+                else:
+                    col_names = [ "name", "round1score", "round2score", "difference" ]
+                    for col in (1, 2, 3):
+                        if observed_second_wind[rownum][col] != expected_second_wind[rownum][col]:
+                            fail_reason = "column \"%s\": expected %d, observed %d" % (col_names[col], expected_second_wind[rownum][col], observed_second_wind[rownum][col])
+                            break
+                if fail_reason:
+                    print("second wind, div %d, row %d: %s" % (div_index, rownum, fail_reason))
+                    return False
+    return True
+
 def test_scenario(test_name, scenario):
     tourney_name = "_" + test_name
     tourney_file = os.path.join("tourneys", "%s.db" % (tourney_name))
@@ -174,6 +224,9 @@ def test_scenario(test_name, scenario):
     tourney = countdowntourney.tourney_open(tourney_name, "tourneys")
 
     apply_scenario(tourney, scenario)
+
+    if not check_second_wind(tourney, scenario):
+        return False
 
     # Export the tourney as plain text and check the output is as it should be.
     # We compare the output file with the appropriately named *.expected
@@ -189,6 +242,7 @@ def test_scenario(test_name, scenario):
         os.unlink(output_file)
         print("%s passed." % (test_name))
         return True
+
 
 def main():
     if not test_scenario("divtest", div_scenario):

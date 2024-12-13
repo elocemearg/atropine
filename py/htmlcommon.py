@@ -500,14 +500,16 @@ def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links
 
             misc_links_html = """
 <a href="/atropine/$TOURNEY/tableindex">Name-table index</a>
-<br />
+<br>
 <a href="/atropine/$TOURNEY/tuffluck">Tuff Luck</a>
-<br />
+<br>
 <a href="/atropine/$TOURNEY/timdownaward">Tim Down Award</a>
-<br />
+<br>
 <a href="/atropine/$TOURNEY/luckystiff">Lucky Stiff</a>
-<br />
+<br>
 <a href="/atropine/$TOURNEY/overachievers">Overachievers</a>
+<br>
+<a href="/atropine/$TOURNEY/secondwind">Second Wind</a>
 """
             misc_links_html = misc_links_html.replace("$TOURNEY", escape(tourney.name))
 

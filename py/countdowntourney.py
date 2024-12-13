@@ -3677,6 +3677,36 @@ order by 1""")
             prev_rating = rating
         return p_id_to_seed
 
+    def get_score_diff_between_rounds(self, div_index, r1, r2, limit=None):
+        sql = """select p.id, score1, score2, score2 - score1 diff
+from
+player p,
+(select p_id,
+ sum(case when tiebreak > 0 and p_score > opp_score then opp_score else p_score end) score1
+ from heat_game_divided
+ where round_no = ? and p_score is not null and opp_score is not null
+ group by p_id) hgd1
+on p.id = hgd1.p_id,
+(select p_id,
+ sum(case when tiebreak > 0 and p_score > opp_score then opp_score else p_score end) score2
+ from heat_game_divided
+ where round_no = ? and p_score is not null and opp_score is not null
+ group by p_id) hgd2
+on p.id = hgd2.p_id
+where p.division = ? and p.rating != 0 and p.id >= 0"""
+        cur = self.db.cursor()
+        cur.execute(sql, (r1, r2, div_index))
+        result = []
+        for row in cur:
+            result.append((self.get_player_from_id(row[0]), row[1], row[2], row[3]))
+        cur.close()
+        result.sort(key=lambda x : (-x[3], x[0].get_name()))
+        if limit:
+            while limit < len(result) and result[limit][3] == result[limit - 1][3]:
+                limit += 1
+            result = result[:limit]
+        return result
+
     def get_players_overachievements(self, div_index, limit=None):
         # Get every player's standing position in this division
         standings = self.get_standings(div_index)

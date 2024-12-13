@@ -18,6 +18,7 @@ ATROPINE_DYNAMIC_PAGES = [
     "overachievers",
     "player",
     "preferences",
+    "secondwind",
     "sql",
     "standings",
     "tableindex",
