@@ -220,18 +220,78 @@ try:
         if hasattr(module, "handle"):
             AtropineHTTPRequestHandler.add_webpage_module(module_name, module)
 except Exception as e:
-    fatal_error("Failed to import former CGI script modules.", e)
+    fatal_error("Failed to import webpage modules.", e)
 
 # Success! If you reach this point then Atropine was installed correctly.
 
-print("*******************************************************************************")
-print("* Atropine " + SW_VERSION)
-print("* Copyright © 2014-2024 by Graeme Cole.")
-print("* Released under the BSD 3-clause licence. See licence.txt.")
-print("* Visit https://greem.uk/atropine/ for updates.")
-print("* Python version is %d.%d.%d." % tuple(sys.version_info[0:3]))
-print("*******************************************************************************")
-print()
+intro_screen = r"""###############################################################################
+                                                                    __
+     ___   __                   _                                  (__)
+    /   | / /__________  ____  (_)___  ___                       _/|__|\_
+   / /| |/ __/ ___/ __ \/ __ \/ / __ \/ _ \                     / \____/ \
+  / ___ / /_/ /  / /_/ / /_/ / / / / /  __/                    /  ,-      \
+ /_/  |_\__/_/   \____/ .___/_/_/ /_/\___/                    |  ( o )     |
+                     /_/           $VERSION                    \  `-      /
+                                                                \________/
+                                                                  \    /
+                                                       ,---mm-    //  ,===o.
+ $TITLE                                               (____/\\___//|  |   ||
+ $COPYRIGHT                                                  `---' (  |  (//
+ $LICENCE                                                          |  |
+ $WEBSITE                                                        __|   \
+ $PYTHONVERSION                                                (((______)
+
+###############################################################################
+
+"""
+
+# { variable -> replacement }
+intro_text = {
+        "VERSION" : SW_VERSION,
+        "TITLE" : "Atropine " + SW_VERSION,
+        "COPYRIGHT" : "Copyright © 2014-2024 by Graeme Cole.",
+        "LICENCE" : "Released under the BSD 3-clause licence.",
+        "WEBSITE" : "Visit https://greem.uk/atropine/ for updates.",
+        "PYTHONVERSION" : "Python version is %d.%d.%d" % (tuple(sys.version_info[0:3])) + (" (PyInstaller executable)" if running_from_pyinstaller_bundle() else "")
+}
+
+# Substitute the required information into our intro screen.
+# Where we see a $VARIABLE string, where that variable is listed in intro_text,
+# replace the "$VARIABLE" string with the replacement text.
+# The replacement text overwrites anything in its way, and if it's shorter
+# than the "$VARIABLE" string, the rest of the "$VARIABLE" string is
+# overwritten with spaces.
+for line in intro_screen.splitlines():
+    line = line.rstrip()
+    pos = 0
+    dollar_pos = 0
+    while dollar_pos >= 0:
+        # Find the next dollar sign, after any previous replacement
+        dollar_pos = line.find("$", pos)
+        if dollar_pos >= 0:
+            # We've found a dollar sign - what variable name comes after it?
+            var_name_end = dollar_pos + 1
+            while var_name_end < len(line) and (line[var_name_end].isalpha() or line[var_name_end].isdigit() or line[var_name_end] == '_'):
+                var_name_end += 1
+            var_length = var_name_end - dollar_pos
+            var_name = line[(dollar_pos + 1):var_name_end]
+
+            # Is this a variable name we recognise?
+            if var_name in intro_text:
+                # Yes - replace it with the replacement text, ensuring that
+                # the replacement text overwrites anything in its way rather
+                # than inserting text.
+                replacement = intro_text[var_name]
+                if len(replacement) < var_length:
+                    replacement = replacement.ljust(var_length)
+                line = line[0:dollar_pos] + replacement + line[(dollar_pos + len(replacement)):]
+                pos = dollar_pos + len(replacement)
+            else:
+                # No - leave the $VARIABLE as it is and continue from after
+                # the end of the "$VARIABLE" string.
+                pos = dollar_pos + len(var_length)
+    # No more substitutions to do - print modified line.
+    print(line)
 
 try:
     uploader.start_uploader_thread()
@@ -264,4 +324,4 @@ except Exception as e:
     input()
     sys.exit(1)
 
-sys.exit(0);
+sys.exit(0)
