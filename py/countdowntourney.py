@@ -9,7 +9,7 @@ import qualification
 import rank
 import html
 
-SW_VERSION_SPLIT = (1, 2, 4)
+SW_VERSION_SPLIT = (1, 3, 0)
 SW_VERSION_SUFFIX = ""
 SW_VERSION_WITHOUT_SUFFIX = ".".join([str(x) for x in SW_VERSION_SPLIT])
 SW_VERSION = SW_VERSION_WITHOUT_SUFFIX + SW_VERSION_SUFFIX
