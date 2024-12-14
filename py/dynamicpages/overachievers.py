@@ -71,33 +71,39 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         if tourney.get_num_games() == 0:
             response.writeln("<p>No games have been played yet.</p>")
         else:
-            response.writeln("<form method=\"GET\">")
-            response.writeln("<div class=\"simpleformline\">")
-            response.writeln("<label for=\"limit\">Show the top <input type=\"number\" min=\"0\" name=\"limit\" id=\"limit\" value=\"%d\"> rows in each table, plus ties.</label>" % (0 if not table_row_limit else table_row_limit))
-            response.writeln("</div>")
-            response.writeln("<div class=\"simpleformline\">")
-            response.writeln("<input type=\"checkbox\" name=\"rating\" id=\"rating\" %s><label for=\"rating\"> Calculate Slingshot gaps by rating difference, not seeding difference</label>" % ("checked" if slingshot_by_rating else ""))
-            response.writeln("</div>")
-            response.writeln("<div class=\"simpleformline\">")
-            response.writeln("<input type=\"submit\" value=\"Refresh\">")
-            response.writeln("</div>")
-            response.writeln("</form>")
-            response.writeln("<p>Each player is assigned a seed according to their rating, with the top-rated player in a division being the #1 seed, and so on down. Players are listed here in order of the difference between their position in the standings table and their seed position.</p>")
-
             num_divisions = tourney.get_num_divisions()
+            player_ratings_uniform_by_div = []
+            for div_index in range(num_divisions):
+                player_ratings_uniform_by_div.append(tourney.are_player_ratings_uniform(div_index))
+
+            # Only show the form and blurb if we're going to be showing tables
+            if False in player_ratings_uniform_by_div:
+                response.writeln("<form method=\"GET\">")
+                response.writeln("<div class=\"simpleformline\">")
+                response.writeln("<label for=\"limit\">Show the top <input type=\"number\" min=\"0\" name=\"limit\" id=\"limit\" value=\"%d\"> rows in each table, plus ties.</label>" % (0 if not table_row_limit else table_row_limit))
+                response.writeln("</div>")
+                response.writeln("<div class=\"simpleformline\">")
+                response.writeln("<input type=\"checkbox\" name=\"rating\" id=\"rating\" %s><label for=\"rating\"> Calculate Slingshot gaps by rating difference, not seeding difference</label>" % ("checked" if slingshot_by_rating else ""))
+                response.writeln("</div>")
+                response.writeln("<div class=\"simpleformline\">")
+                response.writeln("<input type=\"submit\" value=\"Refresh\">")
+                response.writeln("</div>")
+                response.writeln("</form>")
+                response.writeln("<p>Each player is assigned a seed according to their rating, with the top-rated player in a division being the #1 seed, and so on down. Players are listed here in order of the difference between their position in the standings table and their seed position.</p>")
+
             do_show_rerate_button = False
             for div_index in range(num_divisions):
                 div_name = tourney.get_division_name(div_index)
-                overachievements = tourney.get_players_overachievements(div_index, limit=table_row_limit)
                 if num_divisions > 1:
                     response.writeln("<h2>%s</h2>" % (htmlcommon.escape(div_name)))
-                if not overachievements:
-                    response.writeln("<p>There are no players to show.</p>")
-                    continue
-                if tourney.are_player_ratings_uniform(div_index):
+                if player_ratings_uniform_by_div[div_index]:
                     htmlcommon.show_warning_box(response, "<p>All the players have the same rating. This means the Overachievers table won't be meaningful. If when you set up the tournament you pasted the players into the player list in order of rating but forgot to tell Atropine you'd done that, try the \"Rerate players by player ID\" button below.</p>")
                     do_show_rerate_button = True
                 else:
+                    overachievements = tourney.get_players_overachievements(div_index, limit=table_row_limit)
+                    if not overachievements:
+                        response.writeln("<p>There are no players to show.</p>")
+                        continue
                     htmlcommon.write_ranked_table(
                             response,
                             [ "Player", "Seed", "Pos", "+/-" ],
