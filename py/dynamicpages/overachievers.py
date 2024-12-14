@@ -56,7 +56,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     response.writeln("<body>")
 
     try:
-        htmlcommon.show_sidebar(response, tourney, show_misc_table_links=True)
+        htmlcommon.show_sidebar(response, tourney, expand_spot_prize_links=True)
 
         response.writeln("<div class=\"mainpane\">")
         response.writeln("<h1>Overachievers</h1>")

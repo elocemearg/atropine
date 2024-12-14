@@ -124,11 +124,23 @@ div.sidebarversioninfo {
     border-bottom: 1px dotted hsl(0deg, 100%, 40%);
 }
 
-#miscstats {
+#spotprizes {
     padding-left: 20px;
 }
 
-#miscstatslink {
+button.transparentexpandbutton {
+    border: none;
+    margin-left: 0;
+    padding-left: 0;
+    background: transparent;
+    font-size: 12pt;
+    cursor: pointer;
+}
+
+div.expandbuttonsquare {
+    display: inline-block;
+    background-color: #eeeeee;
+    border: 1px solid black;
     font-size: 10pt;
 }
 

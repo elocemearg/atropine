@@ -28,7 +28,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
     response.writeln("<body>")
 
-    htmlcommon.show_sidebar(response, tourney, show_misc_table_links=True)
+    htmlcommon.show_sidebar(response, tourney)
 
     response.writeln("<div class=\"mainpane\">")
 

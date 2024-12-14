@@ -11,7 +11,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     response.writeln("<body>")
 
     try:
-        htmlcommon.show_sidebar(response, tourney, show_misc_table_links=True)
+        htmlcommon.show_sidebar(response, tourney, expand_spot_prize_links=True)
         num_wins = htmlcommon.int_or_none(form.getfirst("numwins", 3))
         if num_wins is None or num_wins <= 0:
             num_wins = 3

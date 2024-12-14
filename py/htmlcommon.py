@@ -396,7 +396,7 @@ setupUploadWidget();
     response.writeln(upload_widget_script_text)
 
 
-def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links=False, non_local_client=False, show_manage_tourneys_link=False):
+def show_sidebar(response, tourney, show_setup_links=True, expand_spot_prize_links=False, non_local_client=False, show_manage_tourneys_link=False):
     new_window_html = "<img src=\"/images/opensinnewwindow.png\" alt=\"Opens in new window\" title=\"Opens in new window\" />"
     response.writeln("""
 <div class="sidebar">
@@ -498,49 +498,51 @@ def show_sidebar(response, tourney, show_setup_links=True, show_misc_table_links
             response.writeln("<a href=\"/atropine/%s/standings\">Standings</a>" % (escape(tourney.name)))
             response.writeln("</div>")
 
-            misc_links_html = """
-<a href="/atropine/$TOURNEY/tableindex">Name-table index</a>
-<br>
-<a href="/atropine/$TOURNEY/tuffluck">Tuff Luck</a>
-<br>
-<a href="/atropine/$TOURNEY/timdownaward">Tim Down Award</a>
-<br>
-<a href="/atropine/$TOURNEY/luckystiff">Lucky Stiff</a>
-<br>
-<a href="/atropine/$TOURNEY/overachievers">Overachievers</a>
-<br>
-<a href="/atropine/$TOURNEY/secondwind">Second Wind</a>
-"""
-            misc_links_html = misc_links_html.replace("$TOURNEY", escape(tourney.name))
-
             response.writeln("<div class=\"misclinks\">")
             response.writeln("<a href=\"/atropine/%s/export\">Export results...</a>" % (escape(tourney.name)))
             response.writeln("</div>")
 
+            response.writeln("<div class=\"misclinks\">")
+            response.writeln("<a href=\"/atropine/%s/tableindex\">Name-table index</a>" % (escape(tourney.name)))
+            response.writeln("</div>")
+
+            spot_prizes_html = """
+<div class="spotprizeitem"><a href="/atropine/$TOURNEY/tuffluck">Tuff Luck</a></div>
+<div class="spotprizeitem"><a href="/atropine/$TOURNEY/luckystiff">Lucky Stiff</a></div>
+<div class="spotprizeitem"><a href="/atropine/$TOURNEY/timdownaward">Tim Down Award</a></div>
+<div class="spotprizeitem"><a href="/atropine/$TOURNEY/overachievers">Overachievers</a></div>
+<div class="spotprizeitem"><a href="/atropine/$TOURNEY/secondwind">Second Wind</a></div>
+"""
+            spot_prizes_html = spot_prizes_html.replace("$TOURNEY", escape(tourney.name))
+
             response.writeln("<noscript><div class=\"misclinks\">")
-            response.writeln(misc_links_html)
+            response.writeln(spot_prizes_html)
             response.writeln("</div></noscript>")
 
             response.writeln("""<script>
-function toggleMiscStats() {
-    var miscStatsLink = document.getElementById("miscstatslink");
-    var miscStatsDiv = document.getElementById("miscstats");
-    if (miscStatsDiv.style.display == "block") {
-        miscStatsDiv.style.display = "none";
-        miscStatsLink.innerText = "[Expand]";
+function toggleSpotPrizes() {
+    var spotPrizesSquare = document.getElementById("spotprizessquare");
+    var spotPrizesDiv = document.getElementById("spotprizes");
+    if (spotPrizesDiv.style.display == "block") {
+        spotPrizesDiv.style.display = "none";
+        spotPrizesSquare.innerText = "▼";
     }
     else {
-        miscStatsDiv.style.display = "block";
-        miscStatsLink.innerText = "[Collapse]";
+        spotPrizesDiv.style.display = "block";
+        spotPrizesSquare.innerText = "▲";
     }
 }
 </script>""")
 
-            response.writeln("More")
-            response.writeln("<a id=\"miscstatslink\" class=\"fakelink\" onclick=\"toggleMiscStats();\">%s</a>" % ("[Collapse]" if show_misc_table_links else "[Expand]"))
-            response.writeln("<div style=\"clear: both\"></div>")
-            response.writeln("<div class=\"misclinks\" id=\"miscstats\" style=\"display: %s;\">" % ("block" if show_misc_table_links else "none"))
-            response.writeln(misc_links_html)
+            response.writeln("<div>")
+            response.writeln("""
+<button class="transparentexpandbutton" onclick="toggleSpotPrizes();" id="spotprizeslink">
+<div class="expandbuttonsquare" id="spotprizessquare">%s</div>
+Spot prizes
+</button>""" % ("▲" if expand_spot_prize_links else "▼"))
+            response.writeln("</div>")
+            response.writeln("<div class=\"misclinks\" id=\"spotprizes\" style=\"display: %s;\">" % ("block" if expand_spot_prize_links else "none"))
+            response.writeln(spot_prizes_html)
             response.writeln("</div>")
 
     if not non_local_client:
