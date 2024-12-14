@@ -530,104 +530,38 @@ def export_csv(tourney, response, filename, show_standings, selected_divisions, 
                 round_text, game_format, 1 if g.is_tiebreak() else None))
     response.write(csv_string.getvalue())
 
-
-###############################################################################
-
-def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
-    started_html = False;
+def show_export_report_form(response, tourney, num_finals_games, finals_noun,
+        wikitext_date_y, wikitext_date_m, wikitext_date_d, wikitext_game_prefix):
     tourney_name = tourney.name
-    export_format = form.getfirst("format");
-    wikitext_date_d = int_or_none(form.getfirst("wikitextday"));
-    wikitext_date_m = int_or_none(form.getfirst("wikitextmonth"))
-    wikitext_date_y = int_or_none(form.getfirst("wikitextyear"))
-    wikitext_game_prefix = form.getfirst("wikitextgameprefix")
-    wikitext_submit = form.getfirst("wikitextsubmit")
 
-    csv_event_code = form.getfirst("csveventcode")
-    csv_game_format = form.getfirst("csvgameformat")
-    csv_table = form.getfirst("csvtable")
-
-    standings_finals = form.getfirst("finals")
-    if not standings_finals:
-        standings_finals = "after"
-
-    submit_view = form.getfirst("submitview")
-    submit_download = form.getfirst("submitdownload")
-    submit = submit_view or submit_download
-
-    if csv_event_code is None:
-        csv_event_code = ""
-    if csv_game_format is None:
-        csv_game_format = ""
-
-    num_finals_games = tourney.get_num_games(finals_only=True)
-    finals_noun = "final" if num_finals_games == 1 else "finals"
-
-    non_local_client = httpreq is not None and not httpreq.is_client_from_localhost()
-
-    if not submit:
-        # Show the form asking the user what format they want, and any other
-        # options.
-
-        # Default value for Wikitext event date is the event date recorded in
-        # the tourney, or the current date if that is not set.
-        (year, month, day) = tourney.get_event_date()
-        if year and month and day:
-            wikitext_date_d = day
-            wikitext_date_m = month
-            wikitext_date_y = year
-        else:
-            today = datetime.date.today()
-            wikitext_date_d = today.day
-            wikitext_date_m = today.month
-            wikitext_date_y = today.year
-
-        # Set up the default game ID prefix for the Wikitext format
-        wikitext_game_prefix = ""
-        for c in tourney_name.upper():
-            if c.isupper() or c.isdigit():
-                wikitext_game_prefix += c
-        if wikitext_game_prefix[-1].isdigit():
-            wikitext_game_prefix += "."
-
-        # No format specified: display a list of possible formats to choose from
-        started_html = True
-        htmlcommon.print_html_head(response, "Export results: " + str(tourney_name))
-
-        response.writeln("<body>")
-
-        htmlcommon.show_sidebar(response, tourney, non_local_client=non_local_client)
-
-        response.writeln("<div class=\"mainpane\">")
-
-        # Wikitext only: build a month selector
-        month_options = ""
-        for m in range(1, 13):
-            month_options += '<option value="%d" %s>%s</option>' % (
-                    m, "selected " if m == wikitext_date_m else "",
-                    htmlcommon.escape(calendar.month_name[m])
+    # CSV only: let the user choose which divisions they want to include.
+    division_options = ""
+    num_divisions = tourney.get_num_divisions()
+    if num_divisions > 1:
+        # All checkboxes start checked, and also disabled because they're in
+        # the CSV-specific section, which is not shown on page load.
+        division_options += "<div class=\"formline\">"
+        division_options += "<div class=\"formlabel\"><label>Which divisions?</label></div>"
+        division_options += "<div class=\"formcontrol\">"
+        for div in range(num_divisions):
+            division_options += "<input type=\"checkbox\" name=\"csvdiv%d\" id=\"csvdiv%d\" value=\"1\" checked disabled /> <label for=\"csvdiv%d\">%s</label><br />" % (
+                    div, div, div, htmlcommon.escape(tourney.get_division_name(div))
             )
+        division_options += "</div>"
+        division_options += "</div>"
 
-        # CSV only: let the user choose which divisions they want to include.
-        division_options = ""
-        num_divisions = tourney.get_num_divisions()
-        if num_divisions > 1:
-            # All checkboxes start checked, and also disabled because they're in
-            # the CSV-specific section, which is not shown on page load.
-            division_options += "<div class=\"formline\">"
-            division_options += "<div class=\"formlabel\"><label>Which divisions?</label></div>"
-            division_options += "<div class=\"formcontrol\">"
-            for div in range(num_divisions):
-                division_options += "<input type=\"checkbox\" name=\"csvdiv%d\" id=\"csvdiv%d\" value=\"1\" checked disabled /> <label for=\"csvdiv%d\">%s</label><br />" % (
-                        div, div, div, htmlcommon.escape(tourney.get_division_name(div))
-                )
-            division_options += "</div>"
-            division_options += "</div>"
+    # Wikitext only: build a month selector
+    month_options = ""
+    for m in range(1, 13):
+        month_options += '<option value="%d" %s>%s</option>' % (
+                m, "selected " if m == wikitext_date_m else "",
+                htmlcommon.escape(calendar.month_name[m])
+        )
 
-        if num_finals_games == 0:
-            finals_options = ""
-        else:
-            finals_options = """
+    if num_finals_games == 0:
+        finals_options = ""
+    else:
+        finals_options = """
 <div class="formline">
     <div class="formlabel"><label for="finals">Standings</label></div>
     <div class="formcontrol">
@@ -639,10 +573,10 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     </div>
 </div>
 """ % {
-                "finals" : finals_noun
-            }
+            "finals" : finals_noun
+        }
 
-        html = """<h1>Export results</h1>
+    html = """<h1>Export results</h1>
 <script>
 function formatDropDownChange() {
     let formatSelect = document.getElementById("format");
@@ -833,18 +767,94 @@ Show or download a report of the tourney results and/or standings.
 </form>
 </div> <!-- formbox -->
 """ % {
-            "tourneyname" : htmlcommon.escape(tourney_name),
-            "wikitextday" : wikitext_date_d,
-            "monthoptions" : month_options,
-            "wikitextyear" : wikitext_date_y,
-            "wikitextgameprefix" : htmlcommon.escape(wikitext_game_prefix),
-            "divisionoptions" : division_options,
-            "finalsoptions" : finals_options
-        }
-        response.writeln(html)
+        "tourneyname" : htmlcommon.escape(tourney_name),
+        "wikitextday" : wikitext_date_d,
+        "monthoptions" : month_options,
+        "wikitextyear" : wikitext_date_y,
+        "wikitextgameprefix" : htmlcommon.escape(wikitext_game_prefix),
+        "divisionoptions" : division_options,
+        "finalsoptions" : finals_options
+    }
+    response.writeln(html)
 
-        # Write a link to grab the .db file
-        response.writeln("""
+###############################################################################
+
+def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
+    started_html = False;
+    tourney_name = tourney.name
+    export_format = form.getfirst("format");
+    wikitext_date_d = int_or_none(form.getfirst("wikitextday"));
+    wikitext_date_m = int_or_none(form.getfirst("wikitextmonth"))
+    wikitext_date_y = int_or_none(form.getfirst("wikitextyear"))
+    wikitext_game_prefix = form.getfirst("wikitextgameprefix")
+    wikitext_submit = form.getfirst("wikitextsubmit")
+
+    csv_event_code = form.getfirst("csveventcode")
+    csv_game_format = form.getfirst("csvgameformat")
+    csv_table = form.getfirst("csvtable")
+
+    standings_finals = form.getfirst("finals")
+    if not standings_finals:
+        standings_finals = "after"
+
+    submit_view = form.getfirst("submitview")
+    submit_download = form.getfirst("submitdownload")
+    submit = submit_view or submit_download
+
+    if csv_event_code is None:
+        csv_event_code = ""
+    if csv_game_format is None:
+        csv_game_format = ""
+
+    num_finals_games = tourney.get_num_games(finals_only=True)
+    finals_noun = "final" if num_finals_games == 1 else "finals"
+
+    non_local_client = httpreq is not None and not httpreq.is_client_from_localhost()
+
+    if not submit:
+        # Show the form asking the user what format they want, and any other
+        # options.
+
+        # Default value for Wikitext event date is the event date recorded in
+        # the tourney, or the current date if that is not set.
+        (year, month, day) = tourney.get_event_date()
+        if year and month and day:
+            wikitext_date_d = day
+            wikitext_date_m = month
+            wikitext_date_y = year
+        else:
+            today = datetime.date.today()
+            wikitext_date_d = today.day
+            wikitext_date_m = today.month
+            wikitext_date_y = today.year
+
+        # Set up the default game ID prefix for the Wikitext format
+        wikitext_game_prefix = ""
+        for c in tourney_name.upper():
+            if c.isupper() or c.isdigit():
+                wikitext_game_prefix += c
+        if wikitext_game_prefix[-1].isdigit():
+            wikitext_game_prefix += "."
+
+        # No format specified: display a list of possible formats to choose from
+        started_html = True
+        htmlcommon.print_html_head(response, "Export results: " + str(tourney_name))
+
+        response.writeln("<body>")
+
+        htmlcommon.show_sidebar(response, tourney, non_local_client=non_local_client)
+
+        response.writeln("<div class=\"mainpane\">")
+
+        # Show the form asking the user what format they want to export in,
+        # and any other options.
+        show_export_report_form(response, tourney, num_finals_games,
+                finals_noun, wikitext_date_y, wikitext_date_m, wikitext_date_d,
+                wikitext_game_prefix)
+
+        if not non_local_client:
+            # Write a link to grab the .db file
+            response.writeln("""
 <h2>Database file</h2>
 <p>
 Download link for the SQLite3 database file for this tourney. Useful if you
@@ -854,16 +864,16 @@ want to save a backup or import this tourney to another Atropine installation.
 <a href="/atropine/%(tourneyname)s/exportdbfile">%(tourneyname)s.db</a>
 </blockquote>
 """ % {
-            "tourneyname" : htmlcommon.escape(tourney_name)
-        })
+                "tourneyname" : htmlcommon.escape(tourney_name)
+            })
 
         response.writeln("</div>") #mainpane
-
         response.writeln("</body>")
         response.writeln("</html>")
         return
 
     # If we get here, the form was submitted.
+    # Output the exported tournament information in the requested format.
     try:
         show_standings_before_finals = (standings_finals in ("before", "both"))
         show_standings_after_finals = (standings_finals in ("after", "both"))
