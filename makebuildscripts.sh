@@ -94,7 +94,7 @@ cat >buildscripts/build_windows_standalone.bat <<EOF
 REM    This batch file must be run on a Windows computer, from the directory
 REM    above the buildscripts directory. It requires pyinstaller.
 
-pyinstaller --onefile -p py -p py\\servicehandlers -p py\\dynamicpages -p generators $HTTP_SERVICE_HANDLER_MODULE_IMPORTS $DYNAMIC_PAGE_MODULE_IMPORTS $GENERATOR_MODULE_IMPORTS --add-data .\\webroot:webroot .\\atropine.py
+pyinstaller -p py -p py\\servicehandlers -p py\\dynamicpages -p generators $HTTP_SERVICE_HANDLER_MODULE_IMPORTS $DYNAMIC_PAGE_MODULE_IMPORTS $GENERATOR_MODULE_IMPORTS --add-data .\\webroot:webroot .\\atropine.py
 
-pyi-set_version .\\buildscripts\\windows_file_version_info.txt .\\dist\\atropine.exe
+pyi-set_version .\\buildscripts\\windows_file_version_info.txt .\\dist\\atropine\\atropine.exe
 EOF
