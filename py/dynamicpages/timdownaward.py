@@ -57,7 +57,16 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                         formatters={2 : (lambda x : "%.2f" % (x)) }
                 )
 
-        response.writeln("<p>Only games which count towards the standings are considered.</p>")
+        response.writeln("""
+<p>
+Only games which count towards the standings are considered.
+</p>
+<p>
+This page was added to Atropine in 2019 and named after Tim Down, who often
+found himself subject to a tough draw. As of December 2024, the Tim Down Award
+has never been won by Tim Down.
+</p>
+""")
         response.writeln("</div>") # mainpane
     except countdowntourney.TourneyException as e:
         htmlcommon.show_tourney_exception(response, e)

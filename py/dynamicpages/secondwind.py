@@ -28,7 +28,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         response.writeln("<div class=\"mainpane\">")
         response.writeln("<h1>Second Wind</h1>")
 
-        response.writeln("<p>The players with the biggest score improvement in the second round compared to the first. Points scored on a tiebreak do not count.</p>")
+        response.writeln("<p>The players with the biggest score improvement in the second round compared to the first.</p>")
 
         latest_round = tourney.get_latest_round_no()
 
@@ -64,6 +64,12 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                             3 : add_sign
                         }
                 )
+        response.writeln("""
+<p>
+Only games which count towards the standings are considered.
+Points scored on tiebreaks do not count.
+</p>
+""")
         response.writeln("</div>") #mainpane
     except countdowntourney.TourneyException as e:
         htmlcommon.show_tourney_exception(response, e)

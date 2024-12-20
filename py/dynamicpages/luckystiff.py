@@ -47,8 +47,16 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                     lambda x : x[3],
                     [ 0 ]
             )
-        response.writeln("<p>")
-        response.writeln("For the purpose of Lucky Stiff, games won a tiebreak have a margin of zero. Only games which count towards the standings are considered.")
+        response.writeln("""
+<p>
+For the purpose of Lucky Stiff, games won a tiebreak have a margin of zero.
+Only games which count towards the standings are considered.
+</p>
+<p>
+Lucky Stiff, like Tuff Luck, predates Atropine. It's one of those spot prizes
+that originated in Scrabble tournaments and then found its way to co-events.
+</p>
+""")
         response.writeln("</p>")
         response.writeln("</div>") #mainpane
     except countdowntourney.TourneyException as e:

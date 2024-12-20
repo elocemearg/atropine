@@ -49,8 +49,18 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                     lambda x : x[3],
                     no_escape_html=[0]
             )
-        response.writeln("<p>")
-        response.writeln("For the purpose of Tuff Luck, games lost on a tiebreak have a margin of zero. Games adjudicated as a loss for both players do not count. Only games which count towards the standings are considered.")
+        response.writeln("""
+<p>
+For the purpose of Tuff Luck, games lost on a tiebreak have a margin of zero.
+Games adjudicated as a loss for both players do not count.
+Only games which count towards the standings are considered.
+</p>
+<p>
+Tuff Luck not only predates Atropine, it predates co-events. It has its origins
+in Scrabble tournaments, where Tuff Luck prizes are reported to have been
+awarded as long ago as 1989.
+</p>
+""")
         response.writeln("</p>")
         response.writeln("</div>") #mainpane
     except countdowntourney.TourneyException as e:
