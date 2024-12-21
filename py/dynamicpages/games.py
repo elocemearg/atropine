@@ -2,6 +2,7 @@
 
 import re
 import json
+import random
 
 import htmlcommon
 import countdowntourney
@@ -1065,6 +1066,90 @@ def parse_score(score):
             tb = False;
         return (s1, s2, tb)
 
+# Set the game's scores randomly, with probabilities weighted by the player's
+# ratings. round_format should be a string consisting of "L", "N" and "C",
+# for example "LLLNLLLNC" or "LLNLLNLLNLLLLNC".
+# Adapted from set_random_score() gameslist.py, but refined a bit and with the
+# stuff about Scrabble removed.
+def set_random_score(game, round_format):
+    r1 = game.p1.rating
+    r2 = game.p2.rating
+
+    if r1 + r2 == 0:
+        game.set_score(0, 0, False)
+        return
+
+    p1_threshold = r1 / (r1 + r2)
+    p2_threshold = r2 / (r1 + r2)
+    p1_threshold *= 0.7
+    p2_threshold *= 0.7
+    p2_threshold = 1.0 - p2_threshold
+
+    p1_score = 0
+    p2_score = 0
+
+    for r in round_format.upper():
+        x = random.random()
+        if r == "L":
+            # Choose the score the winning player will get: 5, 6, 7, 8 or 18.
+            round_score = random.randint(5, 10)
+            if round_score == 9:
+                # Make nines rare; 75% of the time change it to a more common 7
+                if random.randint(1, 4) == 1:
+                    round_score = 18
+                else:
+                    round_score = 7
+        elif r == "N":
+            # Choose the score the winning player will get, biasing more
+            # towards solving the numbers exactly.
+            round_score = random.choice([0, 5, 7, 7, 10, 10, 10])
+        elif r == "C":
+            # Conundrum: score is always 10.
+            round_score = 10
+        else:
+            # What round is this?
+            round_score = 0
+
+        if r == "C":
+            # Simulate conundrum: only one player can score
+            if (r1 > 0 or r2 > 0) and random.random() >= 0.2:
+                if r2 == 0 or random.random() < (r1 / (r1 + r2)):
+                    p1_score += round_score
+                else:
+                    p2_score += round_score
+        else:
+            # Simulate letters or numbers round: either player might score
+            if r1 > 0 and x < p1_threshold:
+                p1_score += round_score
+            elif r2 > 0 and x > p2_threshold:
+                p2_score += round_score
+            else:
+                if r1 > 0:
+                    p1_score += round_score
+                if r2 > 0:
+                    p2_score += round_score
+
+    if p1_score == p2_score:
+        # Simulate tiebreak, make this a 50-50 tossup
+        if random.randint(0, 1) == 0:
+            p1_score += 10
+        else:
+            p2_score += 10
+        tb = True
+    else:
+        tb = False
+
+    game.set_score(p1_score, p2_score, tb)
+
+# Fill in random scores for all unplayed games in this round.
+# For testing purposes only.
+def set_random_scores(tourney, round_no, round_format="LLLNLLLNC"):
+    games = tourney.get_games(round_no=round_no, only_unplayed=True)
+    for g in games:
+        set_random_score(g, round_format)
+    tourney.merge_games(games)
+
+
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
     htmlcommon.print_html_head(response, "Games: " + str(tourney_name), othercssfiles=["games.css"])
@@ -1158,6 +1243,12 @@ function games_on_load() {
                     # Must fill in both names or neither
                     last_entry_error = "Only one name is filled in. You need to fill in both."
                     control_with_error = "entryname1" if not name1 else "entryname2"
+                elif name1.lower() == "random scores" and name2.lower() == "random scores":
+                    # Special testing feature: fill in unplayed games with
+                    # random scores, using player ratings as a guide.
+                    # Assume 9-rounders unless the first score box has 15 in it.
+                    set_random_scores(tourney, round_no, round_format=("LLNLLNLLNLLLLNC" if score1 == "15" else "LLLNLLLNC"))
+                    last_entry_valid = True
                 else:
                     # Check that the player names exist
                     try:
