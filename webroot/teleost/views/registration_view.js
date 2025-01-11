@@ -78,10 +78,15 @@ class CheckInView extends PagedTableView {
             return mod;
     }
 
-    getOptimalColumnCount(numPlayers, numRows) {
+    getOptimalColumnCount(numPlayers, numRows, squareScreen) {
         let columnCountOptions = [3, 4];
         let bestColumnCounts = [];
         let bestValue = null;
+
+        if (squareScreen) {
+            /* If we don't have a wide screen, never use four columns. */
+            return 3;
+        }
 
         /* Choose the column count which gives us the fewest number of pages. */
         for (let i = 0; i < columnCountOptions.length; ++i) {
@@ -212,9 +217,15 @@ class CheckInView extends PagedTableView {
             /* Sort the names alphabetically */
             activePlayers.sort(function(a, b) { return a.name < b.name ? -1 : (a.name == b.name ? 0 : 1); });
 
+            /* Does it look like we're using an old 4:3 screen rather than a
+             * modern wide screen? If the aspect ratio is closer to 4/3 than
+             * to 16/9, assume so. The midpoint of 4/3 and 16/9 is 14/9. */
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            const squareScreen = (aspectRatio < 14.0 / 9.0);
+
             /* Set the optimal column count, which may have changed since the
              * last time we redrew the table */
-            let bestColCount = this.getOptimalColumnCount(activePlayers.length, this.rowsPerColumn);
+            let bestColCount = this.getOptimalColumnCount(activePlayers.length, this.rowsPerColumn, squareScreen);
             if (bestColCount != this.columnsPerPage) {
                 /* Redraw the table with a better number of columns */
                 this.columnsPerPage = bestColCount;
