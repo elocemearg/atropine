@@ -249,9 +249,9 @@ intro_screen = r"""#############################################################
 intro_text = {
         "VERSION" : SW_VERSION,
         "TITLE" : "Atropine " + SW_VERSION,
-        "COPYRIGHT" : "Copyright © 2014-2024 by Graeme Cole.",
+        "COPYRIGHT" : "Copyright © 2014-2025 by Graeme Cole.",
         "LICENCE" : "Released under the BSD 3-clause licence.",
-        "WEBSITE" : "Visit https://greem.uk/atropine/ for updates.",
+        "WEBSITE" : "See https://greem.uk/atropine/ for updates.",
         "PYTHONVERSION" : "Python version is %d.%d.%d" % (tuple(sys.version_info[0:3])) + (" (PyInstaller executable)" if running_from_pyinstaller_bundle() else "")
 }
 
