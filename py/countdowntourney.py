@@ -78,6 +78,9 @@ AUTO_WIDESCREEN_RESULTS_DURING_ROUND_DEFAULT = 1
 # display, so you can see who is player 1 and who is player 2.
 AUTO_NO_TABLE_INDEX_IF_ONE_GAME_PER_TABLE_DEFAULT = 1
 
+# After all that, don't use the table index by default anyway.
+AUTO_USE_TABLE_INDEX_DEFAULT = 0
+
 # Groups in which we display the thumbnails for the various display modes
 DISPLAY_GROUP_NONE = 0
 DISPLAY_GROUP_SETUP = 1
@@ -256,7 +259,7 @@ for idx in range(len(teleost_modes)):
 
 teleost_per_view_option_list = [
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autouseplayercheckin", CONTROL_CHECKBOX, "$CONTROL Show Player Check-In screen before first fixtures are generated", 1),
-    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindex", CONTROL_CHECKBOX, "$CONTROL Show name-to-table index instead of fixture list at start of round if there are at least...", 1),
+    (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindex", CONTROL_CHECKBOX, "$CONTROL Show name-to-table index instead of fixture list at start of round if there are at least...", AUTO_USE_TABLE_INDEX_DEFAULT),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autousetableindexthreshold", CONTROL_NUMBER, "$INDENT $CONTROL active players", AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autonotableindexifonegamepertable", CONTROL_CHECKBOX, "$INDENT $CONTROL Never use name-to-table index if there are two-player tables", AUTO_NO_TABLE_INDEX_IF_ONE_GAME_PER_TABLE_DEFAULT),
     (teleost_mode_id_to_num["TELEOST_MODE_AUTO"], "autocurrentroundmusthavegamesinalldivisions", CONTROL_CHECKBOX, "$CONTROL Only switch to Fixtures display after fixtures are generated for all divisions", 1),
@@ -2690,7 +2693,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         self.set_attribute("autousetableindex", str(int(value)))
 
     def get_auto_use_table_index(self, round_no):
-        use_table_index = self.get_int_attribute("autousetableindex", 1) != 0
+        use_table_index = self.get_int_attribute("autousetableindex", AUTO_USE_TABLE_INDEX_DEFAULT) != 0
         if use_table_index:
             threshold = self.get_int_attribute("autousetableindexthreshold", AUTO_USE_TABLE_INDEX_THRESHOLD_DEFAULT)
             if self.get_num_active_players() >= threshold:
