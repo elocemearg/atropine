@@ -2533,7 +2533,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         return games;
 
-    def get_games(self, round_no=None, table_no=None, game_type=None, division=None, only_unplayed=False):
+    def get_games(self, round_no=None, table_no=None, game_type=None, division=None, only_unplayed=False, only_complete=False):
         conditions = [];
         params = [];
 
@@ -2551,6 +2551,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             params.append(division)
         if only_unplayed:
             conditions.append("(g.p1_score is null or g.p2_score is null)")
+        if only_complete:
+            conditions.append("(g.p1_score is not null and g.p2_score is not null)")
 
         cur = self.db.cursor();
         sql = """select g.round_no, g.seq, g.table_no, g.division, g.game_type,

@@ -49,6 +49,65 @@ def get_date_string(tourney):
         date_string = None
     return date_string
 
+def get_top_placings(tourney, div_index, show_standings_after_finals):
+    standings = tourney.get_standings(division=div_index, rank_finals=show_standings_after_finals)
+
+    # Was there a final?
+    finals = tourney.get_games(game_type="F", division=div_index, only_complete=True)
+    semi_finals = tourney.get_games(game_type="SF", division=div_index, only_complete=True)
+    third_place = tourney.get_games(game_type="3P", division=div_index, only_complete=True)
+
+    excuse = None
+    top_placings = []
+    if len(finals) == 1 and finals[0].is_complete():
+        # The winner of the final is in 1st place, and the loser of the
+        # final is in 2nd place. If the final is drawn, then I guess the
+        # two players are both in 1st place?
+        final = finals[0]
+        final_players = final.get_players()
+        if not final.is_draw():
+            winner = final.get_winner()
+            loser = final.get_loser()
+            top_placings.append((1, winner.get_name(), "Won final %s against %s" % (final.format_score(force_winner_first=True), loser.get_name())))
+            top_placings.append((2, loser.get_name(), "Lost final"))
+        else:
+            top_placings.append((1, final_players[0].get_name(), "Drew final %s against %s" % (final.format_score(), final_players[1].get_name())))
+            top_placings.append((1, final_players[1].get_name(), "Drew final"))
+        if not semi_finals:
+            # If there are no semi-finals, 3rd place is just whoever is
+            # third in the standings. Add to the podium anyone who is 3rd or
+            # higher and didn't play in the final.
+            if len(standings) >= 3:
+                i = 0
+                while i < len(standings) and standings[i].position <= 3:
+                    if standings[i].name != final_players[0].get_name() and standings[i].name != final_players[1].get_name():
+                        top_placings.append((standings[i].position, standings[i].name, ""))
+                    i += 1
+        elif len(third_place) == 1 and third_place[0].is_complete():
+            # If there are semi-finals but there's also a third-place
+            # play-off, the person in third is the winner of that.
+            if third_place[0].is_draw():
+                # Both in third place
+                ps = third_place[0].get_players()
+                for p in ps:
+                    top_placings.append((3, p.get_name(), "Drew third-place playoff %s" % (third_place[0].format_score(force_winner_first=True))))
+            else:
+                winner = third_place[0].get_winner()
+                loser = third_place[0].get_loser()
+                top_placings.append((3, winner.get_name(), "Won third-place playoff %s against %s" % (third_place[0].format_score(force_winner_first=True), loser.get_name())))
+        # Otherwise there is no easily-agreed third place
+    else:
+        if len(finals) > 1:
+            # Huh?
+            excuse = "More than one final (game type F) played: can't calculate winners."
+        else:
+            # No final: 1st, 2nd and 3rd are looked up from the standings
+            i = 0
+            while i < len(standings) and standings[i].position <= 3:
+                top_placings.append((standings[i].position, standings[i].name, ""))
+                i += 1
+    return (top_placings, excuse)
+
 def export_html(tourney, response, filename, show_standings_before_finals, show_standings_after_finals, finals_noun):
     full_name = tourney.get_full_name() or tourney.get_name()
     venue = tourney.get_venue()
@@ -70,6 +129,30 @@ def export_html(tourney, response, filename, show_standings_before_finals, show_
         response.writeln("<p>%s</p>" % (htmlcommon.escape(venue)))
     if date_string:
         response.writeln("<p>%s</p>" % (htmlcommon.escape(date_string)))
+
+    response.writeln("<h2>Podium</h2>")
+    num_divisions = tourney.get_num_divisions()
+    for div_index in range(num_divisions):
+        if num_divisions > 1:
+            response.writeln("<h3>%s</h3>" % (tourney.get_division_name(div_index)))
+        (top_placings, excuse) = get_top_placings(tourney, div_index, show_standings_after_finals)
+        if excuse:
+            response.writeln("<p>%s</p>" % (excuse))
+        else:
+            response.writeln("<table class=\"ranktable\">")
+            num_non_empty_remarks = len([ p[2] for p in top_placings if p[2] ])
+            for (position, name, remark) in top_placings:
+                response.writeln("<tr>")
+                response.writeln("<td>%s place</td><td>%s</td>" % (
+                    htmlcommon.ordinal_number(position),
+                    htmlcommon.escape(name),
+                ))
+                if num_non_empty_remarks > 0:
+                    response.writeln("<td>%s</td>" % (
+                        htmlcommon.escape(remark)
+                    ))
+                response.writeln("</tr>")
+            response.writeln("</table>")
 
     response.writeln("<h2>Standings</h2>")
     num_divisions = tourney.get_num_divisions()
@@ -260,6 +343,30 @@ def export_text(tourney, response, filename, show_standings_before_finals, show_
         response.writeln(venue)
     if date_string:
         response.writeln(date_string)
+
+    response.writeln("")
+    response.writeln("PODIUM")
+    response.writeln("")
+    num_divisions = tourney.get_num_divisions()
+    for div_index in range(num_divisions):
+        if num_divisions > 1:
+            response.writeln("%s" % (tourney.get_division_name(div_index)))
+        (top_placings, excuse) = get_top_placings(tourney, div_index, show_standings_after_finals)
+        if excuse:
+            response.writeln("%s" % (excuse))
+        else:
+            longest_name_length = max([ len(p[1]) for p in top_placings ])
+            for (position, name, remark) in top_placings:
+                if remark:
+                    remark = "(" + remark + ")"
+                response.writeln("%4s place: %-*s %s" % (
+                    htmlcommon.ordinal_number(position),
+                    longest_name_length,
+                    htmlcommon.escape(name),
+                    htmlcommon.escape(remark)
+                ))
+        response.writeln("")
+
     response.writeln("")
     response.writeln("STANDINGS")
     response.writeln("")
@@ -530,7 +637,8 @@ def export_csv(tourney, response, filename, show_standings, selected_divisions, 
                 round_text, game_format, 1 if g.is_tiebreak() else None))
     response.write(csv_string.getvalue())
 
-def show_export_report_form(response, tourney, num_finals_games, finals_noun,
+def show_export_report_form(response, tourney, num_final_games,
+        num_complete_final_games, finals_noun,
         wikitext_date_y, wikitext_date_m, wikitext_date_d, wikitext_game_prefix):
     tourney_name = tourney.name
 
@@ -558,8 +666,12 @@ def show_export_report_form(response, tourney, num_finals_games, finals_noun,
                 htmlcommon.escape(calendar.month_name[m])
         )
 
-    if num_finals_games == 0:
-        finals_options = ""
+    finals_options = ""
+    finals_warning = ""
+    if num_final_games == 0:
+        finals_warning = "<p><strong>Note:</strong> was a final played? If so, you haven't created a fixture for it so it will not show up in the report.</p>"
+    elif num_complete_final_games == 0:
+        finals_warning = "<p><strong>Note:</strong> you have created a fixture for the final but its score has not been entered.</p>"
     else:
         finals_options = """
 <div class="formline">
@@ -679,6 +791,8 @@ function validateDate() {
 Show or download a report of the tourney results and/or standings.
 </p>
 
+%(finalswarning)s
+
 <div class="formbox exportformbox">
 <form method="GET" target="_blank">
 
@@ -773,7 +887,8 @@ Show or download a report of the tourney results and/or standings.
         "wikitextyear" : wikitext_date_y,
         "wikitextgameprefix" : htmlcommon.escape(wikitext_game_prefix),
         "divisionoptions" : division_options,
-        "finalsoptions" : finals_options
+        "finalsoptions" : finals_options,
+        "finalswarning" : finals_warning
     }
     response.writeln(html)
 
@@ -807,6 +922,9 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         csv_game_format = ""
 
     num_finals_games = tourney.get_num_games(finals_only=True)
+    final_games = tourney.get_games(game_type="F")
+    num_final_games = len(final_games)
+    num_complete_final_games = len( [ g for g in final_games if g.is_complete() ] )
     finals_noun = "final" if num_finals_games == 1 else "finals"
 
     non_local_client = httpreq is not None and not httpreq.is_client_from_localhost()
@@ -848,8 +966,9 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         # Show the form asking the user what format they want to export in,
         # and any other options.
-        show_export_report_form(response, tourney, num_finals_games,
-                finals_noun, wikitext_date_y, wikitext_date_m, wikitext_date_d,
+        show_export_report_form(response, tourney, num_final_games,
+                num_complete_final_games, finals_noun,
+                wikitext_date_y, wikitext_date_m, wikitext_date_d,
                 wikitext_game_prefix)
 
         if not non_local_client:
