@@ -3689,35 +3689,58 @@ order by 1""")
             prev_rating = rating
         return p_id_to_seed
 
-    def get_score_diff_between_rounds(self, div_index, r1, r2, limit=None):
-        sql = """select p.id, score1, score2, score2 - score1 diff
-from
-player p,
-(select p_id,
- sum(case when tiebreak > 0 and p_score > opp_score then opp_score else p_score end) score1
- from heat_game_divided
- where round_no = ? and p_score is not null and opp_score is not null
- group by p_id) hgd1
-on p.id = hgd1.p_id,
-(select p_id,
- sum(case when tiebreak > 0 and p_score > opp_score then opp_score else p_score end) score2
- from heat_game_divided
- where round_no = ? and p_score is not null and opp_score is not null
- group by p_id) hgd2
-on p.id = hgd2.p_id
-where p.division = ? and p.rating != 0 and p.id >= 0"""
+    def get_score_per_player_per_heat_round(self, div_index):
+        sql = """select p.id, p.name, round_no,
+ sum(case when tiebreak > 0 and p_score > opp_score then opp_score else p_score end) score
+ from player p, heat_game_divided g
+ on p.id = g.p_id
+ where p.division = ? and p.rating != 0 and p.id >= 0 and g.p_score is not null and g.opp_score is not null
+ group by 1, 2, 3 order by 1, 3"""
         cur = self.db.cursor()
-        cur.execute(sql, (r1, r2, div_index))
+        cur.execute(sql, (div_index,))
         result = []
         for row in cur:
-            result.append((self.get_player_from_id(row[0]), row[1], row[2], row[3]))
+            result.append(row)
         cur.close()
-        result.sort(key=lambda x : (-x[3], x[0].get_name()))
-        if limit:
-            while limit < len(result) and result[limit][3] == result[limit - 1][3]:
-                limit += 1
-            result = result[:limit]
         return result
+
+    def get_adj_round_score_diffs(self, div_index, limit=None):
+        """
+        Return a list of tuples:
+        (player, round1, round2, round1score, round2score, difference)
+        ordered by difference descending.
+        round2 will be the next round this player played a heat game in after round1.
+        """
+
+        round_scores = self.get_score_per_player_per_heat_round(div_index)
+        adj_diffs = []
+        prev_p_id = None
+        prev_round_no = None
+        prev_score = None
+
+        player_id_to_player = {}
+        players = self.get_players()
+        for p in players:
+            player_id_to_player[p.get_id()] = p
+
+        # Find each player's improvement between round N and round N+1
+        for (p_id, p_name, round_no, score) in round_scores:
+            if prev_p_id is not None and p_id == prev_p_id:
+                adj_diffs.append((player_id_to_player[p_id], prev_round_no, round_no, prev_score, score, score - prev_score))
+            prev_p_id = p_id
+            prev_round_no = round_no
+            prev_score = score
+
+        # Sort by improvement descending
+        adj_diffs.sort(key=lambda x : (-x[5], x[0].get_name()))
+
+        # Remove all rows "worse" than the last one allowed by the limit.
+        if limit and len(adj_diffs) > limit:
+            n = limit
+            while n < len(adj_diffs) and adj_diffs[n][5] == adj_diffs[limit - 1][5]:
+                n += 1
+            adj_diffs = adj_diffs[0:n]
+        return adj_diffs
 
     def get_players_overachievements(self, div_index, limit=None):
         # Get every player's standing position in this division

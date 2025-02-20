@@ -28,7 +28,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         response.writeln("<div class=\"mainpane\">")
         response.writeln("<h1>Second Wind</h1>")
 
-        response.writeln("<p>The players with the biggest score improvement in the second round compared to the first.</p>")
+        response.writeln("<p>The players with the biggest score improvement between one round and the next.</p>")
 
         latest_round = tourney.get_latest_round_no()
 
@@ -49,19 +49,21 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                 div_name = tourney.get_division_name(div_index)
                 if num_divisions > 1:
                     response.writeln("<h2>%s</h2>" % (htmlcommon.escape(div_name)))
-                rows = tourney.get_score_diff_between_rounds(div_index, 1, 2, limit=table_row_limit)
+                adj_diffs = tourney.get_adj_round_score_diffs(div_index, table_row_limit)
                 htmlcommon.write_ranked_table(
                         response,
-                        [ "Player", "Round 1 score", "Round 2 score", "Difference" ],
-                        [ "rankname", "ranknumber", "ranknumber", "ranknumber rankhighlight" ],
+                        [ "Player", "Round", "Score", "Next round", "Next round score", "Difference" ],
+                        [ "rankname", "ranknumber", "ranknumber", "ranknumber", "ranknumber", "ranknumber rankhighlight" ],
                         [
                             (htmlcommon.player_to_link(row[0], tourney_name),
-                                row[1], row[2], row[3]) for row in rows
+                                "Round " + str(row[1]), row[3],
+                                "Round " + str(row[2]), row[4], row[5]
+                            ) for row in adj_diffs
                         ],
-                        key_fn=lambda x : -x[3],
+                        key_fn=lambda x : -x[5],
                         no_escape_html=[0],
                         formatters={
-                            3 : add_sign
+                            5 : add_sign
                         }
                 )
         response.writeln("""

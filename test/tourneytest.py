@@ -28,24 +28,36 @@ div_scenario = {
     "expected_second_wind" : [
         [
             # Division A
-            ( "P1", 40, 70, 30 ),
-            ( "P4", 51, 81, 30 ),
-            ( "P3", 57, 55, -2 ),
-            ( "P2", 50, 43, -7 ),
+            ( "P2", 2, 3, 43, 76, 33 ),
+            ( "P1", 1, 2, 40, 70, 30 ),
+            ( "P4", 1, 2, 51, 81, 30 ),
+            ( "P3", 1, 2, 57, 55, -2 ),
+            ( "P2", 1, 2, 50, 43, -7 ),
+            ( "P3", 2, 3, 55, 41, -14 ),
+            ( "P4", 2, 3, 81, 60, -21 ),
+            ( "P1", 2, 3, 70, 30, -40 ),
         ],
         [
             # Division B
-            ( "P7", 24, 36, 12 ),
-            ( "P6", 61, 60, -1 ),
-            ( "P5", 60, 50, -10 ),
-            ( "P8", 50, 40, -10 ),
+            ( "P7", 2, 3, 36, 53, 17 ),
+            ( "P5", 2, 3, 50, 63, 13 ),
+            ( "P7", 1, 2, 24, 36, 12 ),
+            ( "P8", 2, 3, 40, 42, 2 ),
+            ( "P6", 1, 2, 61, 60, -1 ),
+            ( "P5", 1, 2, 60, 50, -10 ),
+            ( "P8", 1, 2, 50, 40, -10 ),
+            ( "P6", 2, 3, 60, 20, -40 ),
         ],
         [
             # Division C
-            ( "P11", 42, 43, 1 ),
-            ( "P9", 62, 51, -11 ), # first game score of 72 was on a tiebreak
-            ( "P12", 56, 44, -12 ),
-            ( "P10", 62, 31, -31 ),
+            ( "P10", 2, 3, 31, 55, 24 ),
+            ( "P11", 2, 3, 43, 56, 13 ),
+            ( "P12", 2, 3, 44, 48, 4 ),
+            ( "P11", 1, 2, 42, 43, 1 ),
+            ( "P9", 2, 3, 51, 43, -8 ),
+            ( "P9", 1, 2, 62, 51, -11 ), # first game score of 72 was on a tiebreak
+            ( "P12", 1, 2, 56, 44, -12 ),
+            ( "P10", 1, 2, 62, 31, -31 ),
         ]
     ],
     "rounds" : [
@@ -189,10 +201,10 @@ def diff_files(observed, expected):
 
 def check_second_wind(tourney, scenario):
     # If the scenario has an "expected_second_wind" member, check that the
-    # results of tourney.get_score_diff_between_rounds() match its contents.
+    # results of tourney.get_adj_round_score_diffs() match its contents.
     if "expected_second_wind" in scenario:
         for (div_index, expected_second_wind) in enumerate(scenario["expected_second_wind"]):
-            observed_second_wind = tourney.get_score_diff_between_rounds(div_index, 1, 2, limit=None)
+            observed_second_wind = tourney.get_adj_round_score_diffs(div_index, limit=None)
 
             if len(expected_second_wind) != len(observed_second_wind):
                 print("second wind, div %d: expected %d rows, observed %d rows" % (div_index, len(expected_second_wind), len(observed_second_wind)))
@@ -204,8 +216,8 @@ def check_second_wind(tourney, scenario):
                 if observed_player_name != expected_player_name:
                     fail_reason = "expected player %s, observed player %s" % (expected_player_name, observed_player_name)
                 else:
-                    col_names = [ "name", "round1score", "round2score", "difference" ]
-                    for col in (1, 2, 3):
+                    col_names = [ "name", "round", "score", "nextround", "nextscore", "difference" ]
+                    for col in (1, 2, 3, 4, 5):
                         if observed_second_wind[rownum][col] != expected_second_wind[rownum][col]:
                             fail_reason = "column \"%s\": expected %d, observed %d" % (col_names[col], expected_second_wind[rownum][col], observed_second_wind[rownum][col])
                             break
