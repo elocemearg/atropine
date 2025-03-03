@@ -210,13 +210,12 @@ function add_game_checkbox_click(div_index) {
             additions = []
             deletions = []
             for g in games:
-                seq = g.seq;
                 set1 = form.getfirst("gamep1_%d_%d" % (g.round_no, g.seq));
                 set2 = form.getfirst("gamep2_%d_%d" % (g.round_no, g.seq));
                 set_type = form.getfirst("gametype_%d_%d" % (g.round_no, g.seq))
                 delete_game = form.getfirst("deletegame_%d_%d" % (g.round_no, g.seq))
                 if delete_game and delete_game == "1":
-                    deletions.append((round_no, seq))
+                    deletions.append((g.round_no, g.seq))
                 else:
                     new_p1 = lookup_player(players, set1);
                     new_p2 = lookup_player(players, set2);
@@ -228,7 +227,7 @@ function add_game_checkbox_click(div_index) {
                     if new_p1 == new_p2:
                         remarks[(g.round_no, g.seq)] = "Not updated (%s v %s): players can't play themselves" % (new_p1.get_name(), new_p2.get_name());
                     elif g.p1 != new_p1 or g.p2 != new_p2 or g.game_type != new_game_type:
-                        alterations.append((round_no, seq, new_p1, new_p2, new_game_type));
+                        alterations.append((g.round_no, g.seq, new_p1, new_p2, new_game_type));
 
             # Check the add-game section of each division form, and add the new
             # game details to "additions".
@@ -302,8 +301,8 @@ function add_game_checkbox_click(div_index) {
                     seq = 1
                 else:
                     seq += 1
-                for (round_no, div_index, table_number, new_p1, new_p2, new_game_type) in additions:
-                    new_game = countdowntourney.Game(round_no, seq, table_number, div_index, new_game_type, new_p1, new_p2);
+                for (r, div_index, table_number, new_p1, new_p2, new_game_type) in additions:
+                    new_game = countdowntourney.Game(r, seq, table_number, div_index, new_game_type, new_p1, new_p2);
                     merged_games.append(new_game)
                     seq += 1
                 num_games_added = tourney.merge_games(merged_games)
@@ -312,12 +311,20 @@ function add_game_checkbox_click(div_index) {
             if deletions:
                 num_games_deleted = tourney.delete_games(deletions)
 
-            for (round_no, seq, new_p1, new_p2, new_game_type) in alterations:
+            for (r, seq, new_p1, new_p2, new_game_type) in alterations:
                 remarks[seq] = "Updated";
 
-        response.writeln("<p>")
-        response.writeln("<a href=\"/atropine/%s/games/%d\">Back to the score editor</a>" % (htmlcommon.escape(tourney_name), round_no));
-        response.writeln("</p>")
+        score_editor_url = "/atropine/%s/games/%d" % (htmlcommon.escape(tourney_name), round_no)
+        round_name = tourney.get_round_name(round_no)
+        response.writeln("""<p>
+On this page you can add or remove games in this round, or change which players
+are involved in a game.
+</p>
+<p>
+You cannot use this page to enter or edit the score of a game. Use the
+<a href="%s">%s Results Entry</a> page to do that.
+</p>
+""" % (score_editor_url, round_name))
 
         if num_games_updated:
             response.writeln("<p>%d games updated.</p>" % (num_games_updated));

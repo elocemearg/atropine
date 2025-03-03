@@ -428,6 +428,17 @@ div.resultsentrytitle {
     padding: 5px;
 }
 
+div.resultsentryeditlink {
+    float: right;
+}
+
+div.resultsentryeditlink a {
+    background-color: white;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    border-radius: 5px;
+}
+
 /* Round name */
 div.roundnamebox {
     display: inline-block;

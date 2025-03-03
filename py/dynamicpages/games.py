@@ -1451,12 +1451,19 @@ function games_on_load() {
         response.writeln("</div>"); #entrymainpane
 
         # Show games as a list, to the right of the entry controls, or, if
-        # it won't fit there, below the entry controls.
-
+        # it won't fit there, below the entry controls. Put an "Edit fixtures"
+        # link in the top-right hand corner.
         response.writeln("<div class=\"gamelistpane boxshadow\">")
-        response.writeln("<div class=\"resultsentrytitle\">Games</div>")
-        response.writeln("<div class=\"gamelistpanebody\">")
+        response.writeln("""
+<div class="resultsentrytitle">
+Games
+<div class="resultsentryeditlink">
+<a href="/atropine/%s/fixtureedit/%d" title="Add or remove games, or change the players involved in a game">Edit fixtures</a>
+</div>
+</div>
+""" % (htmlcommon.escape(tourney_name), round_no))
 
+        response.writeln("<div class=\"gamelistpanebody\">")
         games_by_division = dict()
         num_divisions = tourney.get_num_divisions()
         for g in games:
