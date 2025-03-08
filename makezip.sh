@@ -62,7 +62,7 @@ VER_DIR="atropine-$ATROPINE_VERSION"
 mkdir "$TEMP_DIR/$VER_DIR" || exit 1
 
 # Copy all the files we need to $TEMP_DIR/$VER_DIR, and change to $TEMP_DIR
-cp -a generators py webroot $buildscripts licence.txt atropine.py fixpaths.sh "$TEMP_DIR/$VER_DIR/" || exit 1
+cp -a generators py webroot $buildscripts licence.txt atropine.py "$TEMP_DIR/$VER_DIR/" || exit 1
 
 cd "$TEMP_DIR" || exit 1
 
