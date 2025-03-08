@@ -15,6 +15,14 @@ def check_ready(tourney, div_rounds):
         if existing_games:
             return (False, "%s: round %d already has %d games in it." % (tourney.get_division_name(div), round_no, len(existing_games)))
 
+        existing_finals = tourney.get_games(game_type="F", division=div)
+        if existing_finals:
+            final_player_names = existing_finals[0].get_player_names()
+            return (False, "%s: this division already has a final (%s v %s). Generating another one will make a mess of the standings table." % (
+                tourney.get_division_name(div),
+                final_player_names[0], final_player_names[1]
+            ))
+
         standings = tourney.get_standings(division=div, calculate_qualification=False)
         if len(standings) < 2:
             return (False, "%s: can't generate a final because there are fewer than two players in this division." % (tourney.get_division_name(div)))
