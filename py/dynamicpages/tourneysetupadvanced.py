@@ -112,6 +112,16 @@ player's name.</p>""")
         response.writeln("<div class=\"generalsetupcontrolgroup\">")
         response.writeln('<label for="prunename">Automatic Prune name: <input type="text" name="prunename" id="prunename" value="%s" /></label>' % (htmlcommon.escape(prune_name, True)))
         response.writeln("</div>")
+        response.writeln("""
+<p>
+<b>Note: do not use this to represent a new player who has taken Prune's place!</b>
+The automatic prune is treated specially and should not be used to represent a
+human player. Instead, create the new player on the
+<a href="player?addplayer=1">Add New Player</a> page.
+If they already played any games recorded as being played by Prune, use the
+round's Edit Fixtures page to record that the new player, not Prune, played the
+games.
+</p>""")
         response.writeln('<p><input type="submit" name="submit" value="Save Changes" class="bigbutton" /></p>')
 
     response.writeln("<h2>Tournament Ratings</h2>")
