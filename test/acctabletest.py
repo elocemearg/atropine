@@ -36,7 +36,7 @@ def run_cttable_tests(num_players, players_per_table, num_tests, verbose=False):
         div = 0
         for i in range(num_players):
             p = countdowntourney.Player(name=("Player %d" % (i)), rating=1000,
-                    team=None, short_name=None, withdrawn=False, division=div,
+                    team=None, withdrawn=False, division=div,
                     division_fixed=False, player_id=i)
 
             # Make some players require an accessible table, and some of those

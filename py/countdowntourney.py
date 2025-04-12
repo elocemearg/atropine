@@ -369,7 +369,6 @@ create table if not exists player (
     name text not null,
     rating float,
     team_id int,
-    short_name text,
     withdrawn int not null default 0,
     division int not null default 0,
     division_fixed int not null default 0, -- no longer used
@@ -378,10 +377,9 @@ create table if not exists player (
     preferred_table int not null default -1,
     newbie int not null default 0,
     unique(name),
-    unique(short_name),
     foreign key (team_id) references team(id)
 );
-insert into player (id, name, rating, team_id, short_name) values (-1, 'Prune', 0, null, 'Prune');
+insert into player (id, name, rating, team_id) values (-1, 'Prune', 0, null);
 
 -- GAME table, containing scheduled games and played games
 create table if not exists game (
@@ -814,7 +812,7 @@ def get_teleost_mode_services_to_fetch(mode):
         return teleost_modes[mode]["fetch"]
 
 class Player(object):
-    def __init__(self, name, rating=0, team=None, short_name=None,
+    def __init__(self, name, rating=0, team=None,
             withdrawn=False, division=0, division_fixed=False, player_id=None,
             avoid_prune=False, require_accessible_table=False,
             preferred_table=None, newbie=False):
@@ -822,10 +820,6 @@ class Player(object):
         self.rating = rating;
         self.team = team;
         self.withdrawn = bool(withdrawn)
-        if short_name:
-            self.short_name = short_name
-        else:
-            self.short_name = name
         self.division = division
 
         # No longer used
@@ -894,9 +888,6 @@ class Player(object):
         else:
             return None
 
-    def get_short_name(self):
-        return self.short_name
-
     def get_division(self):
         return self.division
 
@@ -922,32 +913,6 @@ class PrunePlayer(Player):
     def __init__(self, name):
         super().__init__(name, rating=0, player_id=-1)
 
-def get_first_name(name):
-    return name.split(" ", 1)[0]
-
-def get_first_name_and_last_initial(name):
-    names = name.split(" ", 1)
-    if len(names) < 2 or len(names[1]) < 1:
-        return get_first_name(name)
-    else:
-        return names[0] + " " + names[1][0]
-
-def get_short_name(name, player_names):
-    short_name = get_first_name(name)
-    for op in player_names:
-        if name != op and short_name == get_first_name(op):
-            break
-    else:
-        return short_name
-
-    short_name = get_first_name_and_last_initial(name)
-    for op in player_names:
-        if name != op and short_name == get_first_name_and_last_initial(op):
-            break
-    else:
-        return short_name
-    return name
-
 # When we submit a player list to a new tournament, set_players() takes a list
 # of these objects.
 class EnteredPlayer(object):
@@ -956,7 +921,6 @@ class EnteredPlayer(object):
             requires_accessible_table=False, preferred_table=None,
             newbie=False):
         self.name = name.strip()
-        self.short_name = self.name
         self.rating = rating
         self.division = division
         self.team_id = team_id
@@ -974,12 +938,6 @@ class EnteredPlayer(object):
 
     def set_rating(self, rating):
         self.rating = rating
-
-    def set_short_name(self, short_name):
-        self.short_name = short_name
-
-    def get_short_name(self):
-        return self.short_name
 
     def get_division(self):
         return self.division
@@ -1176,9 +1134,6 @@ class Game(object):
 
     def get_player_names(self):
         return [self.p1.get_name(), self.p2.get_name()];
-
-    def get_short_player_names(self):
-        return [self.p1.get_short_name(), self.p2.get_short_name()]
 
     def get_player_score(self, player):
         if self.p1 == player:
@@ -1741,17 +1696,9 @@ class Tourney(object):
         if self.player_name_exists(name):
             raise PlayerExistsException("Can't add player \"%s\" because there is already a player with that name." % (name))
         cur = self.db.cursor()
-        cur.execute("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed) values(?, ?, ?, ?, ?, ?, ?)",
-                (name, rating, None, "", 0, division, 0))
+        cur.execute("insert into player(name, rating, team_id, withdrawn, division, division_fixed) values(?, ?, ?, ?, ?, ?)",
+                (name, rating, None, 0, division, 0))
         cur.close()
-        self.db.commit()
-
-        # Recalculate everyone's short names
-        cur = self.db.cursor()
-        players = self.get_players()
-        for p in players:
-            short_name = get_short_name(p.get_name(), [ x.get_name() for x in players ])
-            cur.execute("update player set short_name = ? where (lower(name) = ? or name = ?)", (short_name, p.get_name().lower(), p.get_name()))
         self.db.commit()
 
     # players must be a list of EnteredPlayer objects.
@@ -1792,12 +1739,6 @@ class Tourney(object):
             team = p.get_team_id()
             if team is not None and team not in team_ids:
                 raise InvalidTeamException("Player \"%s\" is being assigned to a team with an invalid or nonexistent number.\n" % (p.get_name()))
-
-        # For each player, work out a "short name", which will be the first
-        # of their first name, first name and last initial, and full name,
-        # which is unique for that player.
-        for p in players:
-            p.set_short_name(get_short_name(p.get_name(), [ x.get_name() for x in players]))
 
         # Check the ratings, if given, are sane
         new_players = [];
@@ -1846,10 +1787,10 @@ class Tourney(object):
 
         self.db.execute("delete from player where id >= 0");
 
-        self.db.executemany("insert into player(name, rating, team_id, short_name, withdrawn, division, division_fixed, avoid_prune, require_accessible_table, preferred_table, newbie) values (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)",
+        self.db.executemany("insert into player(name, rating, team_id, withdrawn, division, division_fixed, avoid_prune, require_accessible_table, preferred_table, newbie) values (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)",
                 [ (p.get_name(), p.get_rating(), p.get_team_id(),
-                    p.get_short_name(), int(p.get_withdrawn()),
-                    p.get_division(), int(p.get_avoid_prune()),
+                    int(p.get_withdrawn()), p.get_division(),
+                    int(p.get_avoid_prune()),
                     int(p.get_requires_accessible_table()),
                     int(p.get_preferred_table()) if p.get_preferred_table() is not None else -1,
                     int(p.is_newbie())) for p in players ]);
@@ -1880,7 +1821,7 @@ class Tourney(object):
         # the given SQL condition which will be placed after a WHERE, and
         # the optional list of order-by columns.
         sql = "select p.name, p.rating, t.id, t.name, t.colour, " + \
-            "p.short_name, p.withdrawn, p.division, p.division_fixed, p.id, " + \
+            "p.withdrawn, p.division, p.division_fixed, p.id, " + \
             "%s, %s, %s, %s from player p left outer join team t on p.team_id = t.id" % (
                 # Some columns weren't always present in the PLAYER table. Use
                 # default values in their place where necessary.
@@ -1901,10 +1842,10 @@ class Tourney(object):
                 team = Team(row[2], row[3], row[4])
             else:
                 team = None
-            if row[9] == PRUNE_PLAYER_ID:
+            if row[8] == PRUNE_PLAYER_ID:
                 p = PrunePlayer(row[0])
             else:
-                p = Player(row[0], row[1], team, row[5], bool(row[6]), row[7], row[8], row[9], bool(row[10]), bool(row[11]), row[12], bool(row[13]))
+                p = Player(row[0], row[1], team, bool(row[5]), row[6], row[7], row[8], bool(row[9]), bool(row[10]), row[11], bool(row[12]))
             players.append(p)
         cur.close()
         return players
@@ -1976,16 +1917,6 @@ class Tourney(object):
             self.db.rollback();
             raise PlayerDoesNotExistException("Cannot rename player \"" + oldname + "\" because no player by that name exists.");
         cur.close();
-
-        # Recalculate everyone's short names, because this name change might
-        # mean that short names are no longer unique
-        cur = self.db.cursor()
-        players = self.get_players()
-        for p in players:
-            short_name = get_short_name(p.get_name(), [ x.get_name() for x in players ])
-            cur.execute("update player set short_name = ? where (lower(name) = ? or name = ?)", (short_name, p.get_name().lower(), p.get_name()))
-
-        cur.close()
         self.db.commit();
 
     def set_player_division(self, player_name, new_division):
