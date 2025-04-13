@@ -7,6 +7,7 @@ from io import StringIO
 
 import countdowntourney
 import htmlcommon
+import progressivestandings
 
 def int_or_none(s):
     try:
@@ -48,6 +49,15 @@ def get_date_string(tourney):
     else:
         date_string = None
     return date_string
+
+def get_standings_per_round(tourney, division):
+    max_round = tourney.get_latest_complete_round_in_division(division, game_type="P")
+    round_standings = {}
+    rounds = tourney.get_rounds()
+    for r in rounds:
+        if r["num"] <= max_round:
+            round_standings[r["num"]] = tourney.get_standings_from_rounds(division, 1, r["num"])
+    return round_standings
 
 def get_top_placings(tourney, div_index, show_standings_after_finals):
     standings = tourney.get_standings(division=div_index, rank_finals=show_standings_after_finals)
@@ -234,6 +244,16 @@ def export_html(tourney, response, filename, show_standings_before_finals, show_
         game_seq += 1
     if prev_round_no is not None:
         response.writeln("</table>")
+
+    if tourney.has_per_round_standings():
+        response.writeln("<h2>Standings progression</h2>")
+        for division in range(num_divisions):
+            if num_divisions > 1:
+                response.writeln("<h3>" + htmlcommon.escape(tourney.get_division_name(division)) + "</h3>")
+            round_standings = get_standings_per_round(tourney, division)
+            sptable = progressivestandings.ProgressiveStandings(tourney, round_standings)
+            response.writeln(sptable.to_html())
+
     response.writeln("</div>")
     response.writeln("</body></html>");
 
@@ -437,6 +457,21 @@ def export_text(tourney, response, filename, show_standings_before_finals, show_
         prev_table_no = g.table_no
         prev_division = g.division
         game_seq += 1
+
+    if tourney.has_per_round_standings():
+        response.writeln("")
+        response.writeln("")
+        response.writeln("STANDINGS PROGRESSION")
+        response.writeln("")
+        for division in range(num_divisions):
+            if num_divisions > 1:
+                response.writeln(tourney.get_division_name(division))
+                response.writeln("")
+            round_standings = get_standings_per_round(tourney, division)
+            sptable = progressivestandings.ProgressiveStandings(tourney, round_standings)
+            response.writeln(sptable.to_text())
+            response.writeln("")
+            response.writeln("")
 
 def export_wikitext(tourney, response, filename, show_standings_before_finals,
         show_standings_after_finals, finals_noun, date_d, date_m, date_y,

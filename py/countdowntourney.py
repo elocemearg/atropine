@@ -1027,6 +1027,20 @@ class StandingsRow(object):
     def is_prune(self):
         return self.rating == 0
 
+    def get_wins_inc_draws(self):
+        return self.wins + 0.5 * self.draws
+
+    def get_wins_inc_draws_str(self):
+        whole_wins = int(self.wins + 0.5 * self.draws)
+        half = (self.draws % 2 == 1)
+        if half:
+            if whole_wins == 0:
+                return "½"
+            else:
+                return str(whole_wins) + "½"
+        else:
+            return str(whole_wins)
+
 class Game(object):
     def __init__(self, round_no, seq, table_no, division, game_type, p1, p2, s1=None, s2=None, tb=False):
         self.round_no = round_no;
@@ -2372,6 +2386,32 @@ where round_no = ? and seq = ?""", alterations_reordered);
             latest_round = row[0]
         cur.close()
         return latest_round
+
+    # Get the latest round number for which all games of the given type are
+    # complete, or if game_type==None, for which all games are complete.
+    # Only consider games in the specified division.
+    def get_latest_complete_round_in_division(self, division, game_type=None):
+        conditions = [ "division = ?" ]
+        params = (division,)
+        if game_type:
+            conditions.append("game_type = ?")
+            params = (division, game_type)
+        cur = self.db.cursor()
+        sql = """
+select round_no,
+       sum(case when p1_score is null or p2_score is null then 1 else 0 end) num_incomplete_games,
+       count(*) num_games
+from game
+"""
+        sql += "where " + " and ".join(conditions)
+        sql += " group by round_no order by round_no;"
+        cur.execute(sql, params)
+        round_no = None
+        for row in cur:
+            if row[1] == 0 and row[2] > 0:
+                round_no = int(row[0])
+        cur.close()
+        return round_no
 
     def get_played_unplayed_counts(self, round_no=None):
         cur = self.db.cursor();

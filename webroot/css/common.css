@@ -611,8 +611,61 @@ table.ranktable td.rankhighlight, table.misctable td.highlight {
     font-weight: bold;
 }
 
+table.ranktable tr.withdrawn {
+    background-color: #cccccc;
+}
+
+table.ranktable td.withdrawn {
+    background-color: #cccccc;
+}
+
+table.ranktable tr.windifferentiator1 {
+    background-color: #ffdd66;
+}
+
+table.ranktable td.windifferentiator1 {
+    background-color: #ffdd66;
+}
+
+table.ranktable tr.windifferentiator2 {
+    background-color: #ffff88;
+}
+
+table.ranktable td.windifferentiator2 {
+    background-color: #ffff88;
+}
+
+table.ranktable tr.qualified {
+    background-color: #66ff66;
+}
+
+table.ranktable tr.finals {
+    background-color: #aaffaa;
+}
+
 table.ranktable td.winlossform {
     font-family: monospace;
+}
+
+td.verticalseparator, th.verticalseparator {
+    background-color: white !important;
+    border-top: none !important;
+    border-bottom: none !important;
+}
+
+th.emptycell, td.emptycell {
+    background-color: white !important;
+    border: none !important;
+}
+
+div.formattedtableset {
+}
+
+div.formattedtablecontainer {
+    display: inline-block;
+    vertical-align: top;
+    margin-top: 10px;
+    margin-right: 10px;
 }
 
 /* Special case border removal for name-to-table index page */

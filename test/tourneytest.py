@@ -187,14 +187,14 @@ def export_text(tourney, output_file):
         export_page_module.handle(None, response, tourney, "GET", form, query_string, [])
         out.write(response.get_string())
 
-def diff_files(observed, expected):
+def diff_files(expected, observed):
     p = subprocess.run(
-            ["diff", "-b", observed, expected],
+            ["diff", "-b", expected, observed],
             universal_newlines=True
     )
     if p.returncode != 0:
         print("-------------------------------------------------------------------------------")
-        print("%s and %s differ." % (observed, expected))
+        print("%s and %s differ." % (expected, observed))
         return False
     else:
         return True
@@ -247,7 +247,7 @@ def test_scenario(test_name, scenario):
     expected_file = os.path.join("test", "tourneytestfiles", "%s.expected" % (test_name))
 
     export_text(tourney, output_file)
-    if not diff_files(output_file, expected_file):
+    if not diff_files(expected_file, output_file):
         print("%s failed." % (test_name))
         return False
     else:

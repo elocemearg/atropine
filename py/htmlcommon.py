@@ -910,7 +910,6 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
         html.append("</tr>")
 
         last_wins_inc_draws = None;
-        tr_bgcolours = ["#ffdd66", "#ffff88" ];
         bgcolour_index = 0;
         for s in standings:
             (pos, name, played, wins, points, draws, spread, num_first) = s[0:8];
@@ -924,29 +923,30 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             finals_points = s.finals_points
             player = tourney.get_player_from_name(name)
             if finals_form and show_finals_column:
-                bgcolour = "#aaffaa"
+                tr_class = "finals"
             elif ranking_by_wins:
+                wins_inc_draws = s.get_wins_inc_draws()
                 if last_wins_inc_draws is None:
                     bgcolour_index = 0;
-                elif last_wins_inc_draws != wins + 0.5 * draws:
+                elif last_wins_inc_draws != wins_inc_draws:
                     bgcolour_index = (bgcolour_index + 1) % 2;
-                last_wins_inc_draws = wins + 0.5 * draws;
+                last_wins_inc_draws = wins_inc_draws;
 
                 if player.is_withdrawn():
-                    bgcolour = "#cccccc"
+                    tr_class = "withdrawn"
                 elif s.qualified and show_qualified:
-                    bgcolour = "#66ff66"
+                    tr_class = "qualified"
                 else:
-                    bgcolour = tr_bgcolours[bgcolour_index]
+                    tr_class = "windifferentiator%d" % (bgcolour_index + 1)
             else:
                 if player.is_withdrawn():
-                    bgcolour = "#cccccc"
+                    tr_class = "withdrawn"
                 elif s.qualified and show_qualified:
-                    bgcolour = "#66ff66"
+                    tr_class = "qualified"
                 else:
-                    bgcolour = "#ffdd66"
+                    tr_class = "windifferentiator1"
 
-            html.append("<tr style=\"background-color: %s\">" % (bgcolour));
+            html.append("<tr class=\"%s\">" % (tr_class))
 
             highlight_class = " rankhighlight"
             if ranking_by_wins:
@@ -961,7 +961,14 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             if show_finals_column:
                 html.append("<td class=\"rankright winlossform\">%s</td>" % (finals_form.upper()))
             html.append("<td class=\"ranknumber\">%d</td>" % played);
-            html.append("<td class=\"ranknumber%s\">%d</td>" % (wins_class, wins));
+
+            if not show_draws_column:
+                # If we're not showing the draws column but someone has got
+                # a draw anyway, we need to show e.g. "3½" not "3".
+                wins_str = s.get_wins_inc_draws_str()
+            else:
+                wins_str = str(wins)
+            html.append("<td class=\"ranknumber%s\">%s</td>" % (wins_class, wins_str));
             if show_draws_column:
                 html.append("<td class=\"ranknumber%s\">%d</td>" % (draws_class, draws));
             for sec_value in s.get_secondary_rank_value_strings():
