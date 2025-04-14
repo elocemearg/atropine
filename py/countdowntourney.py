@@ -1061,7 +1061,16 @@ class Game(object):
             return False;
 
     def is_draw(self):
-        return self.s1 is not None and self.s2 is not None and self.s1 == self.s2
+        return self.s1 is not None and self.s2 is not None and self.s1 == self.s2 and not self.is_double_loss()
+
+    def is_player_winner(self, player):
+        winner = self.get_winner()
+        return winner and winner == player
+
+    def is_player_loser(self, player):
+        return self.is_complete() and not self.is_draw() and \
+          ((self.is_double_loss() and (player == self.p1 or player == self.p2))\
+          or self.get_loser() == player)
 
     def get_team_colours(self):
         return [self.p1.get_team_colour_tuple(), self.p2.get_team_colour_tuple()]

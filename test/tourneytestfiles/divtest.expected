@@ -94,7 +94,7 @@ Division C
 P10  55 - 56  P11
 
 
-STANDINGS PROGRESSION
+STANDINGS AFTER EACH ROUND
 
 Division A
 
@@ -126,6 +126,38 @@ Division C
 2 P12 1  56    2 P12 2 100    2 P9  2 156
 3 P10 0  62    3 P10 0  93    3 P11 1 141
 4 P11 0  42    4 P11 0  85    4 P10 0 148
+
+
+
+PROGRESS PER PLAYER
+
+Division A
+
+Player  Round 1 Pos W Pts    Round 2 Pos W Pts    Round 3 Pos W Pts
+P1      L P2    4th 0  40    W P3    3rd 1 110    L P4    4th 1 140
+P2      W P1    2nd 1  50    L P4    4th 1  93    W P3    2nd 2 169
+P3      W P4    1st 1  57    L P1    2nd 1 112    L P2    3rd 1 153
+P4      L P3    3rd 0  51    W P2    1st 1 132    W P1    1st 2 192
+
+
+
+Division B
+
+Player  Round 1 Pos W Pts    Round 2 Pos W Pts    Round 3 Pos W Pts
+P5      L P6    3rd 0  60    W P7    2nd 1 110    W P8    1st 2 173
+P6      W P5    1st 1  61    W P8    1st 2 121    L P7    2nd 2 141
+P7      L P8    4th 0  24    L P5    4th 0  60    W P6    4th 1 113
+P8      W P7    2nd 1  50    L P6    3rd 1  90    L P5    3rd 1 132
+
+
+
+Division C
+
+Player  Round 1 Pos W Pts    Round 2 Pos W Pts    Round 3 Pos W Pts
+P10     L P9    3rd 0  62    L P12   3rd 0  93    L P11   4th 0 148
+P11     L P12   4th 0  42    L P9    4th 0  85    W P10   3rd 1 141
+P12     W P11   2nd 1  56    W P10   2nd 2 100    W P9    1st 3 148
+P9      W P10   1st 1  62    W P11   1st 2 113    L P12   2nd 2 156
 
 
 

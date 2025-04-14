@@ -397,13 +397,18 @@ span.faintoutline {
 /* W, D and L symbols to show a player's sequence of wins and losses */
 span.wdl {
     display: inline-block;
-    width: 1.5em;
+    min-width: 1.0em;
     height: 1.5em;
+    padding-left: 0.25em;
+    padding-right: 0.25em;
     line-height: 1.5em;
     text-align: center;
     color: white;
-    margin-right: 2px;
     background-color: black;
+}
+
+span.wdl_no_additional {
+    margin-right: 2px;
 }
 
 span.wdl_w {
@@ -422,6 +427,31 @@ span.wdl_unplayed {
     color: black;
 }
 
+/* Additional lighter-backgrounded information attached to a WDL box */
+span.wdl_additional {
+    display: inline-block;
+    min-width: 1.0em;
+    height: 1.5em;
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+    line-height: 1.5em;
+    text-align: center;
+    color: black;
+    margin-right: 2px;
+    background-color: white;
+}
+
+span.wdl_additional_w {
+    background-color: hsl(120deg, 100%, 85%);
+}
+
+span.wdl_additional_d {
+    background-color: hsl(60deg, 100%, 85%);
+}
+
+span.wdl_additional_l {
+    background-color: hsl(0deg, 100%, 87%);
+}
 
 /* Warnings and exceptions */
 
@@ -647,15 +677,37 @@ table.ranktable td.winlossform {
     font-family: monospace;
 }
 
-td.verticalseparator, th.verticalseparator {
-    background-color: white !important;
-    border-top: none !important;
-    border-bottom: none !important;
-}
-
 th.emptycell, td.emptycell {
     background-color: white !important;
     border: none !important;
+}
+
+table.progressiontable {
+    font-size: 10pt;
+}
+
+th.progressionroundspace, td.progressionroundspace {
+    background-color: #dddddd;
+}
+
+.progressionalternate1 {
+    background-color: #ffff88;
+}
+
+.progressionalternate2 {
+    background-color: #ffdd66;
+}
+
+.progressionalternate3 {
+    background-color: hsl(240deg, 100%, 90%);
+}
+
+.progressionalternate4 {
+    background-color: hsl(240deg, 100%, 80%);
+}
+
+td.progressionstandings {
+    text-align: right;
 }
 
 div.formattedtableset {

@@ -229,8 +229,12 @@ def abbreviate_names(names: list[str]) -> dict[str, str]:
 
 
 class FormattedTableCell(object):
-    def __init__(self, content, align=ALIGN_NONE, colspan=1, classes=[]):
+    def __init__(self, content, align=ALIGN_NONE, colspan=1, classes=[], html_content=None):
         self.content = str(content)
+        if html_content:
+            self.html_content = str(html_content)
+        else:
+            self.html_content = htmlcommon.escape(self.content)
         self.align = align
         self.colspan = colspan
         self.classes = classes[:]
@@ -254,7 +258,7 @@ class FormattedTableCell(object):
             out.write(" ".join([ htmlcommon.escape(c) for c in self.classes ]))
             out.write("\"")
         out.write(">")
-        out.write(htmlcommon.escape(self.content))
+        out.write(self.html_content)
         out.write("</")
         out.write(tag)
         out.write(">\n")
@@ -301,8 +305,8 @@ class FormattedTable(object):
             for i in range(cell.get_colspan() - 1):
                 self.rows[row_number].append(None)
 
-    def append_cell(self, row_number, content, align=ALIGN_NONE, colspan=1, classes=[]):
-        self._append_cell(row_number, FormattedTableCell(content, align=align, colspan=colspan, classes=classes))
+    def append_cell(self, row_number, content, align=ALIGN_NONE, colspan=1, classes=[], html_content=None):
+        self._append_cell(row_number, FormattedTableCell(content, align=align, colspan=colspan, classes=classes, html_content=html_content))
 
     def get_num_cells(self, row_number):
         if row_number < 0 or row_number >= len(self.rows):
@@ -436,11 +440,119 @@ class FormattedTable(object):
             out.write("\n")
         return out.getvalue()
 
+class ProgressByPlayer(FormattedTable):
+    def __init__(self, tourney: countdowntourney.Tourney, division: int,
+                round_standings: dict[int, list[countdowntourney.StandingsRow]],
+                names_to_abbrs=None):
+        super().__init__()
+        self.table_classes = [ "misctable", "progressiontable" ]
+
+        rank_method = tourney.get_rank_method()
+        round_standings_headings = [ "Pos", "W" ] + rank_method.get_secondary_rank_headings(short=True)
+
+        round_numbers = sorted(list(round_standings))
+
+        # Heading row:
+        # Player name | Round 1 games | Pos | W | Pts | | Round 2 games | ...
+        self.mark_header_row(0)
+        self.append_cell(0, "Player")
+        self.append_cell(0, "", classes=["progressionroundspace"])
+        for round_no in round_numbers:
+            self.append_cell(0, tourney.get_round_name(round_no))
+            for (idx, heading) in enumerate(round_standings_headings):
+                self.append_cell(0, heading, align=ALIGN_RIGHT)
+            if round_no != round_numbers[-1]:
+                # Add a spacer cell
+                self.append_cell(0, "  ", classes=["progressionroundspace"])
+
+        player_names = sorted([ p.get_name() for p in tourney.get_players_from_division(division) ])
+        player_short_display = {}
+        for name in player_names:
+            if names_to_abbrs and name in names_to_abbrs and names_to_abbrs[name] != name:
+                player_short_display[name] = "[" + names_to_abbrs[name] + "]"
+            else:
+                player_short_display[name] = name
+        prune_name = tourney.get_auto_prune_name()
+        player_short_display[prune_name] = "Prune"
+
+        # Build a dict where we can look up the games any player played in a
+        # given round, and another where can look up a player's standings
+        # position at the end of a round.
+        round_player_games = {} # (round_no, player_name) -> [ ("W"/"D"/"L"/"?", opponent_name, Game) ]
+        round_player_standings_row = {} # (round_no, player_name) -> StandingsRow
+        for round_no in round_numbers:
+            games = tourney.get_games(round_no=round_no, division=division)
+            standings = round_standings[round_no]
+            for game in games:
+                game_players = game.get_players()
+                for i in [0, 1]:
+                    gp = game_players[i]
+                    gp_opp = game_players[i ^ 1]
+                    dict_key = (round_no, gp.get_name())
+                    if dict_key not in round_player_games:
+                        round_player_games[dict_key] = []
+                    if game.is_draw():
+                        result = "D"
+                    elif game.is_player_winner(gp):
+                        result = "W"
+                    elif game.is_player_loser(gp):
+                        result = "L"
+                    else:
+                        result = "?"
+                    opponent_name = gp_opp.get_name()
+                    round_player_games[dict_key].append((result, opponent_name, game))
+            for standing in standings:
+                round_player_standings_row[(round_no, standing.name)] = standing
+
+        row_number = 0
+        for player_name in player_names:
+            row_number += 1
+            classes = ["progressionalternate%d" % (row_number % 2 + 1)]
+
+            disp = player_short_display[player_name]
+            td_classes = classes + ["progressionplayername"]
+            if disp and disp != player_name:
+                self.append_cell(row_number, player_name + " " + disp, classes=td_classes)
+            else:
+                self.append_cell(row_number, player_name, classes=td_classes)
+
+            self.append_cell(row_number, "", classes=["progressionroundspace"])
+            for round_no in round_numbers:
+                # First cell: show this player's results in this round,
+                # in a highly abbreviated form. Format this differently
+                # depending on whether it will be text or HTML.
+                text_results = ", ".join([
+                    result + " " + player_short_display.get(opponent_name, opponent_name) \
+                    for (result, opponent_name, game) in round_player_games.get((round_no, player_name), [])
+                ])
+                html_results = " ".join([
+                    htmlcommon.win_loss_letter_to_html(result, additional_text=player_short_display.get(opponent_name, opponent_name)) + " " \
+                    for (result, opponent_name, game) in round_player_games.get((round_no, player_name), [])
+                ])
+                self.append_cell(row_number, text_results, classes=classes + ["progressiongames"], html_content=html_results)
+
+                # Second and subsequent cells: position, wins, secondary rankers
+                standings_row = round_player_standings_row.get((round_no, player_name))
+                if standings_row:
+                    td_classes = classes + ["progressionstandings"]
+                    self.append_cell(row_number, htmlcommon.ordinal_number(standings_row.position), align=ALIGN_RIGHT, classes=td_classes)
+                    self.append_cell(row_number, standings_row.get_wins_inc_draws_str(), align=ALIGN_RIGHT, classes=td_classes)
+                    sec_rank_strings = standings_row.get_secondary_rank_value_strings()
+                    for (idx, val) in enumerate(sec_rank_strings):
+                        self.append_cell(row_number, val, align=ALIGN_RIGHT, classes=classes + ["progressionstandings"])
+                else:
+                    for (idx, val) in enumerate(round_standings_headings):
+                        self.append_cell(row_number, "", classes=classes)
+
+                if round_no != round_numbers[-1]:
+                    # Don't forget the spacer cell to set this apart from the next round
+                    self.append_cell(row_number, "  ", classes=["progressionroundspace"])
+
 
 class ProgressiveStandings(FormattedTable):
     def __init__(self, tourney: countdowntourney.Tourney, round_standings: dict[int, list[countdowntourney.StandingsRow]], names_to_abbrs=None):
         super().__init__()
-        self.table_classes = [ "ranktable" ]
+        self.table_classes = [ "ranktable", "progressiontable" ]
 
         # Build a table containing each round's standings table side by side.
         # First, work out how many columns we need for each standings row
@@ -462,8 +574,6 @@ class ProgressiveStandings(FormattedTable):
             col_no += len(round_standings_headings)
         self.mark_header_row(0)
         self.mark_header_row(1)
-
-        player_names = [ p.get_name() for p in tourney.get_players(include_prune=True) ]
 
         col_no = 0
         for round_no in round_numbers:
