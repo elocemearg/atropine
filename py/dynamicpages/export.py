@@ -487,7 +487,7 @@ def export_text(tourney, response, filename, show_standings_before_finals, show_
                 response.writeln(tourney.get_division_name(division))
                 response.writeln("")
             round_standings = div_to_round_standings[division]
-            sptable = progressivestandings.ProgressiveStandings(tourney, round_standings, abbreviated_names)
+            sptable = progressivestandings.ProgressiveStandings(tourney, round_standings, abbreviated_names if len(round_standings) > 3 else None)
             response.writeln(sptable.to_text())
             response.writeln("")
             response.writeln("")
