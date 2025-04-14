@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import io
+import re
 
 import countdowntourney
 import htmlcommon
@@ -12,6 +13,220 @@ ALIGN_RIGHT = 3
 
 ALIGN_CSS_VALUES = [ "none", "left", "center", "right" ]
 ALIGN_FORMATS = [ "", "<", "^", ">" ]
+
+MAX_ABBR_LENGTH = 6
+
+WORD_DELIM = re.compile(r"\W+")
+def split_into_words(s: str) -> list[str]:
+    return [ word for word in WORD_DELIM.split(s) if len(word) > 0 ]
+
+# Yield all permutations of n positive integers which sum to total.
+def get_permutations_with_sum(n, total):
+    if n < 1 or total < n:
+        return
+    if n == 1:
+        if total >= 1:
+            yield [ total ]
+    else:
+        for first_number in range(total - (n - 1), 0, -1):
+            for remainder in get_permutations_with_sum(n - 1, total - first_number):
+                yield [ first_number ] + remainder
+
+def disallow_for_prefixes_matching_another_name(word_prefix_lengths, proposed_abbr, this_name, names_to_words):
+    proposed_abbr = proposed_abbr.upper()
+    this_name_words = names_to_words[this_name]
+    longest_word_prefix_length = max(MAX_ABBR_LENGTH - len(this_name_words), 1)
+    for other_name in names_to_words:
+        if other_name == this_name:
+            continue
+        other_name_words = names_to_words[other_name]
+
+        # Check that the corresponding abbreviation of the other name doesn't
+        # match this name, ignoring case.
+        # Note that if word_prefix_lengths[i] is greater than the length of
+        # this_name_words[i], (example: this_name is "Tom Frobnicate",
+        # other_name is "Tombola Frobnicate", word_prefix_lengths = [ 4, 2 ])
+        # then we don't return True here. We allow it, because no amount of
+        # extra letters from "Tom Frobnicate" can make it truly unambiguous
+        # from "Tombola Frobnicate", but we've included the full first word.
+        other_abbr = "".join([ other_name_words[i][0:word_prefix_lengths[i]] for i in range(min(len(other_name_words), len(word_prefix_lengths)))])
+        if other_abbr.upper() == proposed_abbr:
+            return True
+    return False
+
+def find_unique_abbreviations(names: list[str],
+        names_to_words: dict[str, list[str]], banned_abbrs: set[str]) -> dict[str, str]:
+    num_words = min([ len(names_to_words[name]) for name in names ])
+    num_words = min(num_words, MAX_ABBR_LENGTH)
+
+    names_remaining = set(names)
+    abbrs_assigned = set()
+    name_to_abbr = {}
+    for abbr_length in range(num_words, MAX_ABBR_LENGTH + 1):
+        for word_prefix_lengths in get_permutations_with_sum(num_words, abbr_length):
+            # get_permutations_with_sum will return permutations with high
+            # numbers in the first position first. But we'd rather use
+            # letters from the surname first, then the first name, then any
+            # other names, so remove the first number from word_prefix_lengths
+            # and stick it on the end.
+            word_prefix_lengths = word_prefix_lengths[1:] + [ word_prefix_lengths[0] ]
+            candidate_name_to_abbr = {}
+            for name in sorted(names_remaining):
+                words = names_to_words[name][0:MAX_ABBR_LENGTH]
+                abbr = "".join([ words[i][0:word_prefix_lengths[i]] for i in range(len(word_prefix_lengths))])
+                abbr_up = abbr.upper()
+                if abbr_up != name.upper() and (abbr_up in banned_abbrs or abbr_up in abbrs_assigned):
+                    # abbr isn't unique
+                    pass
+                elif disallow_for_prefixes_matching_another_name(word_prefix_lengths, abbr_up, name, names_to_words):
+                    # This set of word prefixes could also describe
+                    # another name, even if that name hasn't actually been
+                    # assigned this abbreviation.
+                    pass
+                else:
+                    # We can assign this abbreviation to this name, unless we
+                    # find later on that this list of prefix lengths also gives
+                    # this same abbreviation when applied to another name.
+                    candidate_name_to_abbr[name] = abbr
+            # Anything left in candidate_name_to_abbr is good to assign
+            for name in candidate_name_to_abbr:
+                names_remaining.remove(name)
+                abbrs_assigned.add(candidate_name_to_abbr[name].upper())
+                name_to_abbr[name] = candidate_name_to_abbr[name]
+            if len(names_remaining) == 0:
+                break
+        if len(names_remaining) == 0:
+            break
+
+    # If there are still names which haven't been assigned an abbreviation,
+    # then give up - choose an abbreviation containing the maximum number of
+    # letters we allow, and stick a serial number on the end.
+    for name in sorted(names_remaining):
+        word_prefix_lengths = []
+        words = names_to_words[name]
+        abbr_length = 0
+        # Choose how many letters we're going to use from each word
+        for x in range(min(len(words), MAX_ABBR_LENGTH)):
+            word_prefix_lengths.append(1)
+            abbr_length += 1
+        # Prefer to use letters from the last name
+        for word_index in range(len(words) - 1, -1, -1):
+            if abbr_length >= MAX_ABBR_LENGTH:
+                break
+            extra_letters = min(len(words[word_index]) - 1, MAX_ABBR_LENGTH - abbr_length)
+            word_prefix_lengths[word_index] += extra_letters
+            abbr_length += extra_letters
+
+        abbr = "".join([ words[i][0:word_prefix_lengths[i]] for i in range(len(word_prefix_lengths)) ])
+        n = 1
+        found = False
+        while not found:
+            numbered_abbr = abbr + str(n)
+            numbered_abbr_up = numbered_abbr.upper()
+            if numbered_abbr_up not in abbrs_assigned and numbered_abbr_up not in banned_abbrs:
+                abbrs_assigned.add(numbered_abbr_up)
+                name_to_abbr[name] = numbered_abbr
+                found = True
+            else:
+                n += 1
+
+    return name_to_abbr
+
+
+# Given a list of all player names, find an abbreviation for each one which
+# isn't the same as any other player's abbreviation. Return a dict which
+# maps each player name to its abbreviation.
+def abbreviate_names(names: list[str]) -> dict[str, str]:
+    # First, split each name into words.
+    names_to_words = {}
+    for name in names:
+        names_to_words[name] = split_into_words(name)
+
+    # As an initial attempt (ho ho!), abbreviate each player's name to the
+    # first letter of each word. If a player's name is only one word,
+    # also count any capital letters in that word. Do not use more than
+    # MAX_ABBR_LENGTH initials.
+    # For example:
+    #   "Fred Bloggs" becomes "FB"
+    #   "Mary O'Brien" becomes "MOB"
+    #   "Joe Smith-Jones" becomes "JSJ"
+    #   "Iron de Havilland" becomes "IdH"
+    #   "Pierre LAPIN" becomes "PL"
+    #   "My Name Is Far Too Long To Use All My Initials" becomes "MNIFTL"
+    #   "ConundrumMachine" becomes "CM"
+    #   "MSR" becomes "MSR"
+    name_to_abbr = {}
+    abbr_to_names = {}
+
+    # Upcased abbreviations we have decided must not be used even if no other
+    # name uses it, because it's equal to someone else's full name.
+    ambiguous_abbrs = set()
+    for name in names:
+        ambiguous_abbrs.add(name.upper())
+
+    for name in sorted(names_to_words):
+        words = names_to_words[name][0:MAX_ABBR_LENGTH]
+        if len(words) == 0:
+            # Name consists only of non-word characters?
+            abbr = name[0]
+        elif len(words) == 1:
+            abbr = words[0][0] + "".join([ x for x in words[0][1:] if x.isupper() ])
+        else:
+            abbr = "".join([ word[0] for word in words ])
+        name_to_abbr[name] = abbr
+        abbr_upcased = abbr.upper()
+        if abbr_upcased not in abbr_to_names:
+            abbr_to_names[abbr_upcased] = []
+        abbr_to_names[abbr_upcased].append(name)
+
+    # Acceptable abbreviations which we have assigned to a player, so no
+    # other player is allowed to use it.
+    used_abbrs = set()
+
+    # If any abbreviation has been used for more than one name (disregarding
+    # case of abbreviation) then we have to disambiguate them by adding other
+    # characters from the name.
+    # For example, if we have Joe Bloggs and Jim Blaggs, we might abbreviate
+    # them to JoB and JiB, provided there were no other players with those
+    # abbrevations.
+    for abbr_upcased in abbr_to_names:
+        if len(abbr_to_names[abbr_upcased]) == 1:
+            # We can use this abbreviation if it matches the player's name or
+            # doesn't match any player's name.
+            if abbr_upcased == abbr_to_names[abbr_upcased][0].upper() or abbr_upcased not in ambiguous_abbrs:
+                used_abbrs.add(abbr_upcased)
+
+    for abbr_upcased in sorted(abbr_to_names):
+        abbr_names = abbr_to_names[abbr_upcased]
+        if len(abbr_names) > 1 or (abbr_upcased != abbr_names[0].upper() and abbr_upcased in ambiguous_abbrs):
+            # This abbreviation isn't acceptable.
+            # Find unique abbreviations for this set of names.
+            # If some of these names have a different number of words
+            # to other names with the same abbreviation, deal with them
+            # separately. find_unique_abbreviations() only works if all
+            # the names you give it have the same number of words.
+            word_counts_done = set()
+            finished = False
+            while not finished:
+                word_count = None
+                name_sub_list = []
+                for name in sorted(abbr_names):
+                    words = names_to_words[name][0:MAX_ABBR_LENGTH]
+                    if word_count is None and len(words) not in word_counts_done:
+                        word_count = len(words)
+                    if word_count is not None and word_count == len(words):
+                        name_sub_list.append(name)
+                if word_count:
+                    these_names_to_abbrs = find_unique_abbreviations(name_sub_list, names_to_words, ambiguous_abbrs | used_abbrs)
+                    for n in these_names_to_abbrs:
+                        a = these_names_to_abbrs[n]
+                        used_abbrs.add(a)
+                        name_to_abbr[n] = a
+                    word_counts_done.add(word_count)
+                else:
+                    finished = True
+    return name_to_abbr
+
 
 class FormattedTableCell(object):
     def __init__(self, content, align=ALIGN_NONE, colspan=1, classes=[]):
@@ -223,7 +438,7 @@ class FormattedTable(object):
 
 
 class ProgressiveStandings(FormattedTable):
-    def __init__(self, tourney: countdowntourney.Tourney, round_standings: dict[int, list[countdowntourney.StandingsRow]]):
+    def __init__(self, tourney: countdowntourney.Tourney, round_standings: dict[int, list[countdowntourney.StandingsRow]], names_to_abbrs=None):
         super().__init__()
         self.table_classes = [ "ranktable" ]
 
@@ -248,6 +463,8 @@ class ProgressiveStandings(FormattedTable):
         self.mark_header_row(0)
         self.mark_header_row(1)
 
+        player_names = [ p.get_name() for p in tourney.get_players(include_prune=True) ]
+
         col_no = 0
         for round_no in round_numbers:
             row_number = 2
@@ -265,6 +482,19 @@ class ProgressiveStandings(FormattedTable):
                 if prev_wins_inc_draws is not None and wins_inc_draws != prev_wins_inc_draws:
                     win_bgcolor_idx = (win_bgcolor_idx + 1) % 2
 
+                if len(round_numbers) > 2 and names_to_abbrs and sr.name in names_to_abbrs and sr.name != names_to_abbrs[sr.name]:
+                    # This player has an abbreviation that isn't their full name
+                    abbr = names_to_abbrs[sr.name]
+                    if round_no == round_numbers[0] or round_no == round_numbers[-1]:
+                        # This is the first or last round: show the player name
+                        # in full, with the abbreviation alongside.
+                        player_name = sr.name + " [" + abbr + "]"
+                    else:
+                        # Use the abbreviation only
+                        player_name = "[" + abbr + "]"
+                else:
+                    player_name = sr.name
+
                 # Make sure we start in the correct column - earlier rounds
                 # might have omitted some players who hadn't played any games.
                 self.pad_row(row_number, col_no)
@@ -275,7 +505,7 @@ class ProgressiveStandings(FormattedTable):
                 # Append the standings info for this player for this round
                 # on to the end of the current table row.
                 self.append_cell(row_number, sr.position, align=ALIGN_RIGHT, classes=classes + ["rankpos"])
-                self.append_cell(row_number, sr.name, classes=classes + ["rankname"])
+                self.append_cell(row_number, player_name, classes=classes + ["rankname"])
                 self.append_cell(row_number, wins_str, align=ALIGN_RIGHT, classes=classes + ["ranknumber"])
                 for val in sr.get_secondary_rank_values():
                     self.append_cell(row_number, str(val), align=ALIGN_RIGHT, classes=classes + ["ranknumber"])

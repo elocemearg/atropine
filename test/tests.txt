@@ -1,3 +1,4 @@
+abbreviationtest.py
 acctabletest.py
 fieldstoragetest.py
 finalsranktest.py
