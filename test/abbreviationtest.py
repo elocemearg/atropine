@@ -4,7 +4,7 @@ import sys
 
 sys.path.append("py")
 
-import progressivestandings
+import exportedtables
 
 tests = [
         {},
@@ -82,7 +82,7 @@ def main():
     for (test_idx, test) in enumerate(tests):
         test_num = test_idx + 1
         names = list(test)
-        names_to_abbrs_observed = progressivestandings.abbreviate_names(names)
+        names_to_abbrs_observed = exportedtables.abbreviate_names(names)
         names_to_abbrs_expected = test
         fail = False
         for n in names_to_abbrs_expected:
