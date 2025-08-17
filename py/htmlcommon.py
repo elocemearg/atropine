@@ -1025,7 +1025,7 @@ def ordinal_number(n):
     else:
         return "%dth" % (n)
 
-def win_loss_letter_to_html(x, additional_text=None):
+def win_loss_letter_to_html(x, additional_text=None, title_text=None):
     if x in "WDL":
         wdl_class = "wdl_" + x.lower()
     elif x == "-":
@@ -1034,7 +1034,11 @@ def win_loss_letter_to_html(x, additional_text=None):
     else:
         wdl_class = ""
     if additional_text:
-        return "<span class=\"wdl %s\">%s</span><span class=\"wdl_additional wdl_additional_%s\">%s</span>" % (wdl_class, x, x.lower(), additional_text)
+        if title_text:
+            title_attr = " title=\"" + htmlescape(title_text) + "\""
+        else:
+            title_attr = ""
+        return "<span class=\"wdl %s\">%s</span><span class=\"wdl_additional wdl_additional_%s\"%s>%s</span>" % (wdl_class, x, x.lower(), title_attr, additional_text)
     else:
         return "<span class=\"wdl wdl_no_additional %s\">%s</span>" % (wdl_class, x)
 

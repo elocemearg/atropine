@@ -526,7 +526,9 @@ class ProgressByPlayer(FormattedTable):
                     for (result, opponent_name, game) in round_player_games.get((round_no, player_name), [])
                 ])
                 html_results = " ".join([
-                    htmlcommon.win_loss_letter_to_html(result, additional_text=player_short_display.get(opponent_name, opponent_name)) + " " \
+                    htmlcommon.win_loss_letter_to_html(result,
+                        additional_text=player_short_display.get(opponent_name, opponent_name),
+                        title_text=opponent_name) + " " \
                     for (result, opponent_name, game) in round_player_games.get((round_no, player_name), [])
                 ])
                 self.append_cell(row_number, text_results, classes=classes + ["progressiongames"], html_content=html_results)
