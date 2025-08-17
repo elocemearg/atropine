@@ -109,7 +109,7 @@ class HTMLFormCheckBox(HTMLFormElement):
         s += "<label for=\"%s\"> " % (html.escape(self.name, True))
         s += html.escape(self.label);
         if self.small_print:
-            s += "<div style=\"font-size: 10pt; color: gray;\">%s</div>" % (html.escape(self.small_print))
+            s += "<div class=\"fixgencontrolsmallprint\">%s</div>" % (html.escape(self.small_print))
         s += "</label>"
         return s;
 
@@ -165,10 +165,14 @@ class HTMLFormNumberInput(HTMLFormElement):
         }
 
 class HTMLFormRadioButton(HTMLFormElement):
-    def __init__(self, name, label, choices, other_attrs=None):
+    def __init__(self, name, label, choices, other_attrs=None, small_print=None, small_print_is_html=False):
         super(HTMLFormRadioButton, self).__init__(name, other_attrs);
         self.label = label;
         self.choices = choices;
+        if small_print_is_html or not small_print:
+            self.small_print_html = small_print
+        else:
+            self.small_print_html = html.escape(small_print)
 
     def get_value(self):
         for c in self.choices:
@@ -184,11 +188,11 @@ class HTMLFormRadioButton(HTMLFormElement):
                 c.selected = False;
 
     def html(self):
-        s = self.label;
-        s += "<br />";
+        s = "<div class=\"fixgencontrolheading\">" + self.label + "</div>";
         num = 0
         for c in self.choices:
-            s += "<input type=\"radio\" style=\"margin-left: 1.5em;\" name=\"%s\" id=\"%s_%d\" value=\"%s\" %s %s /><label for=\"%s_%d\" %s> %s</label>" % (
+            s += "<div class=\"fixgencontrolchoice\">"
+            s += "<input type=\"radio\" name=\"%s\" id=\"%s_%d\" value=\"%s\" %s %s /><label for=\"%s_%d\" %s> %s</label>" % (
                     html.escape(self.name, True),
                     html.escape(self.name, True), num,
                     html.escape(c.value, True),
@@ -197,8 +201,10 @@ class HTMLFormRadioButton(HTMLFormElement):
                     html.escape(self.name, True), num,
                     "" if c.enabled else "style=\"color: gray;\"",
                     html.escape(c.label));
-            s += "<br />\n";
+            s += "</div>"
             num += 1
+        if self.small_print_html:
+            s += "<div class=\"fixgencontrolsmallprint\">%s</div>" % (self.small_print_html)
         return s;
 
 class HTMLFormSubmitButton(HTMLFormElement):

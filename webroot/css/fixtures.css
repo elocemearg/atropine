@@ -135,3 +135,17 @@ div.fixgencontrol {
     margin-bottom: 15px;
 }
 
+div.fixgencontrolheading {
+    margin-bottom: 5px;
+}
+
+div.fixgencontrolsmallprint {
+    margin-left: 20px;
+    margin-top: 5px;
+    font-size: 10pt;
+    color: gray;
+}
+
+div.fixgencontrolchoice {
+    margin-left: 20px;
+}

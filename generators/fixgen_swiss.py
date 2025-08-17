@@ -9,7 +9,9 @@ import gencommon
 
 name = "Swiss Army Blunderbuss";
 description = "Players are matched against opponents who have performed similarly to them so far in the tourney, but repeats of previous fixtures are avoided. This is the most commonly-used fixture generator for the second round onwards.";
+
 valid_group_sizes = (2, 3, 4, 5, -5)
+MATCHING_STRATEGY_DEFAULT = "classic"
 
 def int_or_none(s):
     try:
@@ -227,11 +229,14 @@ function generate_fixtures_clicked() {
         elements.append(htmlform.HTMLFormControlEnd())
 
     elements.append(htmlform.HTMLFormControlStart())
-    elements.append(htmlform.HTMLFormCheckBox("equalwinsareequalplayers",
-        "Match players by number of wins then random chance, ignoring standings position",
-        bool(settings.get("equalwinsareequalplayers", False)),
-        small_print="This option tries to match every player with random opponents on the same number of wins as them. Specific standings position is disregarded, except that if someone must play an opponent with more wins than them, prefer that to be the highest-ranked player(s) on the lower number of wins.")
-    )
+    matching_strategy_radio_buttons = htmlform.HTMLFormRadioButton("matchingstrategy", "Player matching strategy", [
+            htmlform.HTMLFormChoice("classic", "Classic: pair players by position in standings table"),
+            htmlform.HTMLFormChoice("birmingham", "Birmingham: pair players by win count then random chance, ignoring standings position")
+        ],
+        small_print="The Birmingham, or <abbr title=\"Mix Strata Randomly\">MSR</abbr>, strategy tries to match every player with random opponents on the same number of wins. Specific standings position is disregarded, except that if we must promote someone to play an opponent with a higher win count, prefer to promote the highest-ranked player(s) on the lower number of wins.",
+        small_print_is_html=True)
+    matching_strategy_radio_buttons.set_value(settings.get("matchingstrategy", MATCHING_STRATEGY_DEFAULT))
+    elements.append(matching_strategy_radio_buttons)
     elements.append(htmlform.HTMLFormControlEnd())
 
     elements.append(htmlform.HTMLFormControlStart())
@@ -547,7 +552,7 @@ def generate(tourney, settings, div_rounds):
         if group_size > 0 and tourney.has_auto_prune():
             gencommon.add_auto_prunes(tourney, players, group_size)
 
-        equal_wins_are_equal_players = settings.get("equalwinsareequalplayers", False)
+        equal_wins_are_equal_players = settings.get("matchingstrategy", MATCHING_STRATEGY_DEFAULT) == "birmingham"
 
         # Set a sensible cap of five minutes, in case the user has entered a
         # huge number to be clever
