@@ -108,7 +108,7 @@ const gerunds = [
     "Overwriting", "Containerising", "Resetting", "Evaluating", "Compressing",
     "Plotting", "Mapping", "Indexing", "Cancelling", "Distributing",
     "Reconsidering", "Backtracking", "Avoiding", "Collecting", "Downloading",
-    "Decompressing", "Connecting"
+    "Decompressing", "Connecting", "Vibe coding"
 ];
 
 const nouns = [
@@ -120,7 +120,7 @@ const nouns = [
     "system clock", "file descriptors", "syntax tree", "binary tree",
     "dictionary", "homework", "breakfast", "contextualiser", "supercluster",
     "record books", "sandwiches", "grouping strategy", "reality", "spatula",
-    "Eyebergine", "scripts", "blockchain", "phone charger", "fixtures",
+    "Eyebergine", "scripts", "chatbot", "phone charger", "fixtures",
     "associative arrays", "browser window", "subfolders", "scorecard",
     "references", "ranking order", "to-do list", "column headings", "fonts"
 ];
@@ -133,7 +133,8 @@ const specials = [
     "Seasoning to taste", "Stealing towels", "Reversing polarity",
     "Untangling headphones", "Compounding misery", "Reticulating splines",
     "Hoisting flag", "Ringing bell", "Clearing paper jam", "Potting black",
-    "Walking dog", "Checking glossary", "Fetching larger tool"
+    "Walking dog", "Checking glossary", "Fetching larger tool",
+    "Cancelling subscription"
 ];
 
 function spam_progress_label() {
