@@ -6,14 +6,14 @@ import countdowntourney
 def handle(httpreq, response, tourney, request_method, form, query_string, extra_components):
     tourney_name = tourney.get_name()
 
-    htmlcommon.print_html_head(response, "Grudge matches: " + str(tourney_name))
+    htmlcommon.print_html_head(response, "Defeated Rivals: " + str(tourney_name))
     response.writeln("<body>")
 
     try:
         htmlcommon.show_sidebar(response, tourney, expand_spot_prize_links=True)
 
         response.writeln("<div class=\"mainpane\">")
-        response.writeln("<h1>Grudge Matches</h1>")
+        response.writeln("<h1>Defeated Rivals</h1>")
 
         games = tourney.get_games_where_player_beat_rival()
         if games:

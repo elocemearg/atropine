@@ -383,7 +383,8 @@ create table if not exists player (
 insert into player (id, name, rating, team_id) values (-1, 'Prune', 0, null);
 
 -- RIVALS table: player_id's rival is rival_id, and matches between them will
--- show up as "grudge matches". Players can have any number of rivals.
+-- show up as "grudge matches" or "defeated rivals" or "revenge is a dish
+-- best served at COLIN" etc. A player can have any number of rivals.
 create table if not exists rivals (
     player_id integer not null,
     rival_id integer not null,

@@ -2,6 +2,7 @@
 
 ATROPINE_DYNAMIC_PAGES = [
     "checkin",
+    "defeatedrivals",
     "delround",
     "displayoptions",
     "display",
@@ -12,7 +13,6 @@ ATROPINE_DYNAMIC_PAGES = [
     "fixturegen",
     "gameslist",
     "games",
-    "grudgematches",
     "hello",
     "home",
     "luckystiff",

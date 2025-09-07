@@ -512,7 +512,7 @@ def show_sidebar(response, tourney, show_setup_links=True, expand_spot_prize_lin
 <div class="spotprizeitem"><a href="/atropine/$TOURNEY/timdownaward">Tim Down Award</a></div>
 <div class="spotprizeitem"><a href="/atropine/$TOURNEY/overachievers">Overachievers</a></div>
 <div class="spotprizeitem"><a href="/atropine/$TOURNEY/secondwind">Second Wind</a></div>
-<div class="spotprizeitem"><a href="/atropine/$TOURNEY/grudgematches">Grudge Matches</a></div>
+<div class="spotprizeitem"><a href="/atropine/$TOURNEY/defeatedrivals">Defeated Rivals</a></div>
 """
             spot_prizes_html = spot_prizes_html.replace("$TOURNEY", escape(tourney.name))
 
