@@ -9,7 +9,7 @@ import qualification
 import rank
 import html
 
-SW_VERSION_SPLIT = (1, 3, 1)
+SW_VERSION_SPLIT = (1, 3, 2)
 SW_VERSION_SUFFIX = ""
 SW_VERSION_WITHOUT_SUFFIX = ".".join([str(x) for x in SW_VERSION_SPLIT])
 SW_VERSION = SW_VERSION_WITHOUT_SUFFIX + SW_VERSION_SUFFIX
@@ -350,6 +350,7 @@ SCREEN_SHAPE_PROFILES = [
         }
 ]
 
+# SQL script which is run on tourney creation, to initialise the database.
 create_tables_sql = """
 begin transaction;
 
@@ -380,6 +381,15 @@ create table if not exists player (
     foreign key (team_id) references team(id)
 );
 insert into player (id, name, rating, team_id) values (-1, 'Prune', 0, null);
+
+-- RIVALS table: player_id's rival is rival_id, and matches between them will
+-- show up as "grudge matches". Players can have any number of rivals.
+create table if not exists rivals (
+    player_id integer not null,
+    rival_id integer not null,
+    foreign key(player_id) references player(id) on delete cascade,
+    foreign key(rival_id) references player(id) on delete cascade
+);
 
 -- GAME table, containing scheduled games and played games
 create table if not exists game (
@@ -704,6 +714,9 @@ class DuplicatePlayerException(TourneyException):
     description = "No two players are allowed to have the same name."
     pass
 
+class OwnRivalException(TourneyException):
+    description = "A player is not allowed to be their own rival."
+
 class UnknownRankMethodException(TourneyException):
     description = "Unknown ranking method."
     pass;
@@ -815,7 +828,7 @@ class Player(object):
     def __init__(self, name, rating=0, team=None,
             withdrawn=False, division=0, division_fixed=False, player_id=None,
             avoid_prune=False, require_accessible_table=False,
-            preferred_table=None, newbie=False):
+            preferred_table=None, newbie=False, rival_names=[]):
         self.name = name;
         self.rating = rating;
         self.team = team;
@@ -830,6 +843,7 @@ class Player(object):
         self.require_accessible_table = require_accessible_table
         self.preferred_table = preferred_table
         self.newbie = newbie
+        self.rival_names = set(rival_names)
 
     def __eq__(self, other):
         if other is None:
@@ -909,6 +923,15 @@ class Player(object):
     def is_newbie(self):
         return self.newbie
 
+    def add_rival_name(self, rival_name):
+        self.rival_names.add(rival_name)
+
+    def get_rival_names(self):
+        return self.rival_names.copy()
+
+    def is_rival(self, rival_name):
+        return rival_name in self.rival_names
+
 class PrunePlayer(Player):
     def __init__(self, name):
         super().__init__(name, rating=0, player_id=-1)
@@ -919,7 +942,7 @@ class EnteredPlayer(object):
     def __init__(self, name, rating, division=0, team_id=None,
             avoid_prune=False, withdrawn=False,
             requires_accessible_table=False, preferred_table=None,
-            newbie=False):
+            newbie=False, rival_names=[]):
         self.name = name.strip()
         self.rating = rating
         self.division = division
@@ -929,6 +952,7 @@ class EnteredPlayer(object):
         self.requires_accessible_table = requires_accessible_table
         self.preferred_table = preferred_table
         self.newbie = newbie
+        self.rival_names = rival_names
 
     def get_name(self):
         return self.name
@@ -959,6 +983,9 @@ class EnteredPlayer(object):
 
     def is_newbie(self):
         return self.newbie
+
+    def get_rival_names(self):
+        return self.rival_names[:]
 
 
 # COLIN Hangover 2015: each player is assigned a team
@@ -1510,6 +1537,9 @@ class Tourney(object):
     def has_per_round_standings(self):
         return self.db_version >= (1, 2, 3)
 
+    def has_rivals(self):
+        return self.db_version >= (1, 3, 2)
+
     def get_rank_method_list(self, exclude_incompatible=True):
         return [ (i, RANK_METHODS[i]) for i in RANK_METHODS if self.db_version >= RANK_METHODS[i].get_min_db_version() ]
 
@@ -1707,7 +1737,7 @@ class Tourney(object):
         cur.close()
         return row[0]
 
-    def add_player(self, name, rating, division=0):
+    def add_player(self, name, rating, division=0, rival_names=[]):
         if not name or not name.strip():
             raise InvalidPlayerNameException()
         try:
@@ -1718,10 +1748,35 @@ class Tourney(object):
             raise InvalidRatingException()
         if self.player_name_exists(name):
             raise PlayerExistsException("Can't add player \"%s\" because there is already a player with that name." % (name))
+
+        # Check rival list is sane
+        name_cf = name.casefold()
+        for rival_name in rival_names:
+            if rival_name.casefold() == name_cf:
+                raise OwnRivalException("Can't add player \"%s\" because their own name is in their rival list." % (name))
+            if not self.player_name_exists(rival_name):
+                raise PlayerDoesNotExistException("Can't add player \"%s\" because one of their rivals (\"%s\") is not the name of any known player." % (name, rival_name))
+
         cur = self.db.cursor()
         cur.execute("insert into player(name, rating, team_id, withdrawn, division, division_fixed) values(?, ?, ?, ?, ?, ?)",
                 (name, rating, None, 0, division, 0))
         cur.close()
+        if rival_names:
+            # Look up the new player's ID
+            cur = self.db.cursor()
+            cur.execute("select id from player where name = ?", (name,))
+            row = cur.fetchone()
+            if row is None or row[0] is None:
+                cur.close()
+                self.db.rollback()
+                raise PlayerDoesNotExistException("Internal error: just added player %s but they don't seem to have an ID!" % (name))
+            new_player_id = row[0]
+            cur.close()
+            # Insert (new_player_id, rival_id) into rivals for each rival this new player has.
+            cur = self.db.cursor()
+            cur.executemany("insert into rivals(player_id, rival_id) select %d, id from player where lower(name) = ?" % (new_player_id),
+                    [ (r.lower(),) for r in rival_names ])
+            cur.close()
         self.db.commit()
 
     # players must be a list of EnteredPlayer objects.
@@ -1744,15 +1799,37 @@ class Tourney(object):
             if not p.get_name().strip():
                 raise InvalidPlayerNameException()
 
+        # Set of player names, case-folded for case-insensitive matching
+        player_name_set = set()
+
+        # case-folded name to actual name
+        player_name_case_fold_to_canonical = {}
+
+        # (player_name, rival_name) for all rival assignments
+        player_rival_names = []
+
         # Make sure all the player names are case-insensitively unique, and
         # also do not match the Prune player's name.
-        prune_name = self.get_auto_prune_name().lower()
-        for pi in range(len(players)):
-            for opi in range(pi + 1, len(players)):
-                if players[pi].get_name().lower() == players[opi].get_name().lower():
-                    raise DuplicatePlayerException("No two players are allowed to have the same name, and you've got more than one %s." % (players[pi].get_name()))
-            if players[pi].get_name().lower() == prune_name:
-                raise DuplicatePlayerException("The player name \"%s\" is not allowed because it is reserved for the automatic Prune player. If required, you can change the automatic Prune player's name in Advanced Setup." % (players[pi].get_name()))
+        prune_name = self.get_auto_prune_name().casefold()
+        for p in players:
+            case_folded_name = p.get_name().casefold()
+            if case_folded_name in player_name_set:
+                raise DuplicatePlayerException("No two players are allowed to have the same name, and you've got more than one %s." % (p.get_name()))
+            if case_folded_name == prune_name:
+                raise DuplicatePlayerException("The player name \"%s\" is not allowed because it is reserved for the automatic Prune player. If required, you can change the automatic Prune player's name in Advanced Setup." % (p.get_name()))
+            player_name_set.add(case_folded_name)
+            player_name_case_fold_to_canonical[case_folded_name] = p.get_name()
+
+        # Make sure that if any player has a list of rivals, each named rival
+        # is a valid player name and is not that same player.
+        for p in players:
+            for r in p.get_rival_names():
+                rcf = r.casefold()
+                if rcf not in player_name_set:
+                    raise PlayerDoesNotExistException("Player \"%s\" has been assigned a rival named \"%s\" but this rival does not exist." % (p.get_name(), r))
+                if rcf == p.get_name().casefold():
+                    raise OwnRivalException("Player \"%s\" cannot be assigned themselves as a rival." % (p.get_name()))
+                player_rival_names.append((p.get_name(), player_name_case_fold_to_canonical[rcf]))
 
         teams = self.get_teams()
         team_ids = [t.get_id() for t in teams]
@@ -1817,8 +1894,29 @@ class Tourney(object):
                     int(p.get_requires_accessible_table()),
                     int(p.get_preferred_table()) if p.get_preferred_table() is not None else -1,
                     int(p.is_newbie())) for p in players ]);
+
+        if self.has_rivals():
+            self.db.execute("delete from rivals")
+            if player_rival_names:
+                self.db.executemany("insert into rivals select p.id, r.id from player p, player r where p.name = ? and r.name = ?", player_rival_names)
+
         self.db.execute("delete from game_log")
         self.db.commit();
+
+    def set_player_rivals(self, player_name, rival_names):
+        if not self.has_rivals():
+            return
+        player = self.get_player_from_name(player_name)
+        rivals = [ self.get_player_from_name(rival_name) for rival_name in rival_names ]
+        for r in rivals:
+            if r == player:
+                raise OwnRivalException("Cannot set rivals for player \"%s\": a player cannot be their own rival." % (player.get_name()))
+        cur = self.db.cursor()
+        cur.execute("delete from rivals where player_id = ?", (player.get_id(),))
+        if rival_names:
+            cur.executemany("insert into rivals values (?, ?)", [ (player.get_id(), rival.get_id()) for rival in rivals ])
+        cur.close()
+        self.db.commit()
 
     def get_auto_rating_behaviour(self):
         return self.get_int_attribute("autoratingbehaviour", RATINGS_UNIFORM)
@@ -1870,6 +1968,15 @@ class Tourney(object):
             else:
                 p = Player(row[0], row[1], team, bool(row[5]), row[6], row[7], row[8], bool(row[9]), bool(row[10]), row[11], bool(row[12]))
             players.append(p)
+
+        if self.has_rivals():
+            # Populate each player's rival list, which consists only of
+            # player names, not player objects.
+            for p in players:
+                cur.execute("select rp.name from rivals r, player rp on r.rival_id = rp.id where r.player_id = ?", (p.get_id(),))
+                for row in cur:
+                    p.add_rival_name(row[0])
+
         cur.close()
         return players
 
@@ -1963,14 +2070,19 @@ class Tourney(object):
         cur = self.db.cursor()
         cur.execute("delete from player where name = ? and id >= 0 and not exists(select p1, p2 from game where p1 = player.id or p2 = player.id)", (name,))
         count = cur.rowcount
+        if self.has_rivals():
+            cur.execute("delete from rivals where player_id not in (select id from player) or rival_id not in (select id from player)")
         cur.close()
-        self.db.commit()
         if count == 0:
+            self.db.rollback()
             raise CannotDeletePlayerException("Failed to delete player \"%s\". This player either already appears in one or more games or does not exist." % (name))
+        self.db.commit()
 
     def delete_all_withdrawn_players(self):
         cur = self.db.cursor()
         cur.execute("delete from player where id >= 0 and withdrawn > 0 and not exists(select p1, p2 from game where p1 = player.id or p2 = player.id)")
+        if self.has_rivals():
+            cur.execute("delete from rivals where player_id not in (select id from player) or rival_id not in (select id from player)")
         count = cur.rowcount
         cur.close()
         self.db.commit()

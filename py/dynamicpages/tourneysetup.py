@@ -322,6 +322,7 @@ function setDateToday() {
             player_team_id = None
             player_table_pref = None
             player_is_newbie = False
+            player_rival_names = []
 
             if player_name == "-":
                 # This is a division separator, not a player name. It tells us
@@ -345,11 +346,14 @@ function setDateToday() {
                 #   player is on a team: 1 or 2.
                 # * If it's "P" followed immediately by an integer, then the
                 #   player's preferred table is that number.
+                # * If it's "R=" followed by another player's name, then
+                #   add that other player to this player's rivals list.
                 # * Otherwise, it is ignored.
                 for field in row[1:]:
                     try:
                         player_rating = float(field)
                     except ValueError:
+                        original_case_field = field.strip()
                         field = field.upper().strip()
                         if field == "A":
                             player_requires_accessible_table = True
@@ -371,12 +375,15 @@ function setDateToday() {
                                     player_table_pref = None
                             except ValueError:
                                 player_table_pref = None
+                        elif field and field.startswith("R="):
+                            rival_name = original_case_field[2:].strip()
+                            player_rival_names.append(rival_name)
 
                 player_list.append(countdowntourney.EnteredPlayer(player_name,
                     player_rating, div_index, player_team_id,
                     player_avoid_prune, player_withdrawn,
                     player_requires_accessible_table, player_table_pref,
-                    player_is_newbie))
+                    player_is_newbie, player_rival_names))
             prev_player_name = player_name
         try:
             tourney.set_players(player_list, auto_rating_behaviour);
@@ -683,6 +690,8 @@ function setDateToday() {
                     row.append("W")
                 if p.is_avoiding_prune():
                     row.append("NP")
+                for rival_name in sorted(p.get_rival_names()):
+                    row.append("R=" + rival_name)
                 writer.writerow(tuple(row))
                 prev_div_index = div_index
             response.write(string_stream.getvalue())
@@ -733,6 +742,7 @@ function setDateToday() {
         response.writeln("<tr><td><span class=\"fixedwidth\">NP</span></td><td>Player will avoid playing Prune.</td></tr>")
         response.writeln("<tr><td><span class=\"fixedwidth\">P</span><span style=\"font-style: italic;\">n</span></td><td>Player would prefer to be on table number <span style=\"font-style: italic;\">n</span>.</td></tr>")
         response.writeln("<tr><td><span class=\"fixedwidth\">W</span></td><td>Player is withdrawn.</td></tr>")
+        response.writeln("<tr><td><span class=\"fixedwidth\">R=</span><span style=\"font-style: italic;\">name</span></td><td>Player has <span style=\"font-style: italic;\">name</span> as a rival.</td></tr>")
         response.writeln("</table>")
         response.writeln("<p>")
         response.writeln("For example, the line:")

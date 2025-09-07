@@ -123,6 +123,13 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         if form.getfirst("editplayer"):
             new_rating = float_or_none(form.getfirst("setrating"))
             new_name = form.getfirst("setname")
+            new_rivals = form.getfirst("rivals")
+            if new_rivals:
+                # Make the rivals list a list, removing any blank lines
+                new_rivals = [ x.strip() for x in new_rivals.splitlines() ]
+                new_rivals = [ x for x in new_rivals if x ]
+            else:
+                new_rivals = []
 
             # Withdrawn checkbox might not be present for editplayer. If it
             # isn't, leave the player's withdrawn status as it is.
@@ -212,6 +219,17 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                     edit_notifications.append("%s is now %sa newbie" % (player_name, "" if new_newbie else "not "))
                 except countdowntourney.TourneyException as e:
                     exceptions_to_show.append(("<p>Failed to set player's newbie status...</p>", e))
+
+            # Set player's rivals, if what's in the textarea differs from the player's current rival list
+            if tourney.has_rivals():
+                current_rival_list = sorted([ r.casefold() for r in player.get_rival_names() ])
+                new_rival_list = sorted([ r.casefold() for r in new_rivals ])
+                if current_rival_list != new_rival_list:
+                    try:
+                        tourney.set_player_rivals(player.get_name(), new_rivals)
+                        edit_notifications.append("Successfully updated rivals for %s" % (player_name))
+                    except countdowntourney.TourneyException as e:
+                        exceptions_to_show.append(("<p>Failed to set player's list of rivals...</p>", e))
 
             player = tourney.get_player_from_id(player_id)
         elif form.getfirst("newplayersubmit"):
@@ -423,7 +441,8 @@ function showDeletePlayerDialog() {
                 ), wide=True)
 
         write_h2(response, player, "Edit player")
-        htmlcommon.show_player_form(response, tourney, player)
+        rivals_textarea_value = form.getfirst("rivals")
+        htmlcommon.show_player_form(response, tourney, player, rivals_textarea_value=(rivals_textarea_value if rivals_textarea_value else None))
 
         response.writeln("<hr />")
 

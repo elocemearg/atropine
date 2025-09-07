@@ -1055,7 +1055,7 @@ def show_division_drop_down_box(response, control_name, tourney, player):
                 tourney.get_num_active_players(div)))
     response.writeln("</select>")
 
-def show_player_form(response, tourney, player, custom_query_string=""):
+def show_player_form(response, tourney, player, custom_query_string="", rivals_textarea_value=None):
     # Output HTML for a form for adding a new player (if player is None) or
     # editing an existing player (if player is not None).
     num_divisions = tourney.get_num_divisions()
@@ -1100,6 +1100,28 @@ def show_player_form(response, tourney, player, custom_query_string=""):
 
     if tourney.has_player_newbie_feature():
         response.writeln("<tr><td>Newbie?</td><td><input type=\"checkbox\" name=\"setnewbie\" value=\"1\" %s> <span class=\"playercontrolhelp\">(if ticked, some fixture generators can be made to avoid generating all-newbie tables)</span></td></tr>" % ("checked" if player and player.is_newbie() else ""))
+
+    if tourney.has_rivals():
+        response.writeln("<tr><td style=\"vertical-align: top;\">Rivals</td>")
+        response.writeln("<td>")
+        if rivals_textarea_value is None:
+            # Default to showing the player's current rivals
+            if player:
+                rival_names = sorted(player.get_rival_names())
+            else:
+                rival_names = []
+        else:
+            # Show whatever the user entered last, which may be invalid
+            rival_names = rivals_textarea_value.splitlines()
+        textarea_rows = max(4, len(rival_names) + 1)
+        response.writeln("<span class=\"playercontrolhelp\">Here you can enter the names of this player's rivals, one per line. This does not affect fixture generation, but matches between rivals will be highlighted.</span>")
+        response.writeln("<br>")
+        response.writeln("<textarea name=\"rivals\" rows=\"%d\", cols=\"40\">" % (textarea_rows))
+        for rival_name in rival_names:
+            response.writeln(escape(rival_name))
+        response.writeln("</textarea>")
+        response.writeln("</td></tr>")
+
     response.writeln("</table>")
     response.writeln("<input type=\"hidden\" name=\"tourney\" value=\"%s\" />" % (escape(tourney.get_name(), True)))
     if player:
@@ -1152,7 +1174,13 @@ def add_new_player_from_form(tourney, form):
     new_requires_accessible_table = int_or_zero(form.getfirst("setrequiresaccessibletable"))
     new_preferred_table = int_or_none(form.getfirst("setpreferredtable"))
     new_newbie = int_or_zero(form.getfirst("setnewbie"))
-    tourney.add_player(new_player_name, new_player_rating, new_player_division)
+    new_rivals = form.getfirst("rivals")
+    if new_rivals:
+        new_rivals = [ x.strip() for x in new_rivals.splitlines() ]
+        new_rivals = [ x for x in new_rivals if x ]
+    else:
+        new_rivals = []
+    tourney.add_player(new_player_name, new_player_rating, new_player_division, rival_names=new_rivals)
     if new_withdrawn:
         tourney.set_player_withdrawn(new_player_name, True)
     if new_avoid_prune:
