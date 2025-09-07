@@ -512,6 +512,7 @@ def show_sidebar(response, tourney, show_setup_links=True, expand_spot_prize_lin
 <div class="spotprizeitem"><a href="/atropine/$TOURNEY/timdownaward">Tim Down Award</a></div>
 <div class="spotprizeitem"><a href="/atropine/$TOURNEY/overachievers">Overachievers</a></div>
 <div class="spotprizeitem"><a href="/atropine/$TOURNEY/secondwind">Second Wind</a></div>
+<div class="spotprizeitem"><a href="/atropine/$TOURNEY/grudgematches">Grudge Matches</a></div>
 """
             spot_prizes_html = spot_prizes_html.replace("$TOURNEY", escape(tourney.name))
 
@@ -618,7 +619,7 @@ def show_games_as_html_table(response, games, editable=True, remarks=None,
         include_round_column=False, round_namer=None, player_to_link=None,
         remarks_heading="", show_game_type=True, game_onclick_fn=None,
         colour_win_loss=True, score_id_prefix=None, show_heading_row=True,
-        hide_game_type_if_p=False):
+        hide_game_type_if_p=False, include_table_number_column=True):
     if round_namer is None:
         round_namer = lambda x : ("Round %d" % (x))
 
@@ -641,7 +642,8 @@ def show_games_as_html_table(response, games, editable=True, remarks=None,
         if include_round_column:
             response.writeln("<th>Round</th>")
 
-        response.writeln("<th>Table</th>");
+        if include_table_number_column:
+            response.writeln("<th>Table</th>");
 
         if show_game_type:
             response.writeln("<th>Type</th>");
@@ -651,14 +653,14 @@ def show_games_as_html_table(response, games, editable=True, remarks=None,
             response.writeln("<th>%s</th>" % (escape(remarks_heading)));
         response.writeln("</tr>")
 
-    last_table_no = None;
+    last_table_no = None
     last_round_no = None
     game_seq = 0
     for g in games:
         player_html_strings = (player_to_link(g.p1), player_to_link(g.p2));
         tr_classes = ["gamerow"];
 
-        if last_round_no is None or last_round_no != g.round_no or last_table_no is None or last_table_no != g.table_no:
+        if include_table_number_column and (last_round_no is None or last_round_no != g.round_no or last_table_no is None or last_table_no != g.table_no):
             tr_classes.append("firstgameintable");
             # Count how many consecutive games appear with this table
             # number, so we can group them together in the table.
@@ -671,6 +673,8 @@ def show_games_as_html_table(response, games, editable=True, remarks=None,
 
         if last_round_no is None or last_round_no != g.round_no:
             tr_classes.append("firstgameinround")
+            if not include_table_number_column:
+                tr_classes.append("firstgameintable");
             num_games_in_round = 0
             while game_seq + num_games_in_round < len(games) and games[game_seq + num_games_in_round].round_no == g.round_no:
                 num_games_in_round += 1
@@ -691,7 +695,7 @@ def show_games_as_html_table(response, games, editable=True, remarks=None,
         response.writeln("<tr class=\"%s\" %s>" % (" ".join(tr_classes), onclick_attr));
         if first_game_in_round and include_round_column:
             response.writeln("<td class=\"roundno\" rowspan=\"%d\">%s</td>" % (num_games_in_round, round_namer(g.round_no)))
-        if first_game_in_table:
+        if first_game_in_table and include_table_number_column:
             response.writeln("<td class=\"tableno\" rowspan=\"%d\"><div class=\"tablebadge\">%d</div></td>" % (num_games_on_table, g.table_no));
 
         if show_game_type:

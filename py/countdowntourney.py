@@ -1810,12 +1810,15 @@ class Tourney(object):
 
         # Make sure all the player names are case-insensitively unique, and
         # also do not match the Prune player's name.
-        prune_name = self.get_auto_prune_name().casefold()
+        prune_name = self.get_auto_prune_name()
+        prune_name_cf = prune_name.casefold()
+        player_name_set.add(prune_name_cf)
+        player_name_case_fold_to_canonical[prune_name_cf] = prune_name
         for p in players:
             case_folded_name = p.get_name().casefold()
             if case_folded_name in player_name_set:
                 raise DuplicatePlayerException("No two players are allowed to have the same name, and you've got more than one %s." % (p.get_name()))
-            if case_folded_name == prune_name:
+            if case_folded_name == prune_name_cf:
                 raise DuplicatePlayerException("The player name \"%s\" is not allowed because it is reserved for the automatic Prune player. If required, you can change the automatic Prune player's name in Advanced Setup." % (p.get_name()))
             player_name_set.add(case_folded_name)
             player_name_case_fold_to_canonical[case_folded_name] = p.get_name()
@@ -1833,8 +1836,7 @@ class Tourney(object):
 
         teams = self.get_teams()
         team_ids = [t.get_id() for t in teams]
-        # Make sure for each player that if they're on a team, that team
-        # exists
+        # Make sure for each player that if they're on a team, that team exists
         for p in players:
             team = p.get_team_id()
             if team is not None and team not in team_ids:
@@ -2577,28 +2579,27 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         conditions = []
         params = []
 
+        player_id_to_player = {}
+        try:
+            p1 = self.get_player_from_name(player_name_1)
+            p2 = self.get_player_from_name(player_name_2)
+            player_id_to_player[p1.get_id()] = p1
+            player_id_to_player[p2.get_id()] = p2
+        except PlayerDoesNotExistException:
+            # Can't be any games if one of the players doesn't exist
+            return []
+
         if round_no is not None:
             conditions.append("g.round_no = ?")
             params.append(round_no)
-
-        conditions.append("(((lower(p1.name) = ? or p1.name = ?) and (lower(p2.name) = ? or p2.name = ?)) or ((lower(p2.name) = ? or p2.name = ?) and (lower(p1.name) = ? or p1.name = ?)))")
-        params.append(player_name_1.lower())
-        params.append(player_name_1)
-        params.append(player_name_2.lower())
-        params.append(player_name_2)
-        params.append(player_name_1.lower())
-        params.append(player_name_1)
-        params.append(player_name_2.lower())
-        params.append(player_name_2)
-
-        conditions.append("(g.p1 is not null and g.p2 is not null)")
+        conditions.append("((g.p1 = %(p1)d and g.p2 = %(p2)d) or (g.p1 = %(p2)d and g.p2 = %(p1)d))" % {
+            "p1" : p1.get_id(), "p2" : p2.get_id()
+        })
 
         cur = self.db.cursor()
         sql = """select g.round_no, g.seq, g.table_no, g.division, g.game_type,
                  g.p1, g.p1_score, g.p2, g.p2_score, g.tiebreak
-                 from game g, player p1 on g.p1 = p1.id,
-                 player p2 on g.p2 = p2.id
-                 where g.p1 is not null and g.p2 is not null """;
+                 from game g where g.p1 is not null and g.p2 is not null """;
         for c in conditions:
             sql += " and " + c
         sql += "\norder by g.round_no, g.division, g.seq";
@@ -2609,14 +2610,14 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         games = []
         for row in cur:
-            (round_no, game_seq, table_no, division, game_type, p1, p1_score, p2, p2_score, tb) = row
+            (round_no, game_seq, table_no, division, game_type, p1_id, p1_score, p2_id, p2_score, tb) = row
             if tb is not None:
                 if tb:
                     tb = True
                 else:
                     tb = False
-            p1 = self.get_player_from_id(p1)
-            p2 = self.get_player_from_id(p2)
+            p1 = player_id_to_player[p1_id]
+            p2 = player_id_to_player[p2_id]
             game = Game(round_no, game_seq, table_no, division, game_type, p1, p2, p1_score, p2_score, tb)
             games.append(game);
 
@@ -2625,7 +2626,12 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         return games;
 
-    def get_games(self, round_no=None, table_no=None, game_type=None, division=None, only_unplayed=False, only_complete=False):
+    def get_games_where_player_beat_rival(self):
+        return self.get_games(only_complete=True, only_rival_wins=True)
+
+    def get_games(self, round_no=None, table_no=None, game_type=None,
+                division=None, only_unplayed=False, only_complete=False,
+                only_rival_wins=False):
         conditions = [];
         params = [];
 
@@ -2643,13 +2649,18 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             params.append(division)
         if only_unplayed:
             conditions.append("(g.p1_score is null or g.p2_score is null)")
-        if only_complete:
+        if only_complete or only_rival_wins:
             conditions.append("(g.p1_score is not null and g.p2_score is not null)")
+        if only_rival_wins:
+            conditions.append("((g.p1_score > g.p2_score and g.p1 = r.player_id and g.p2 = r.rival_id) or (g.p1_score < g.p2_score and g.p2 = r.player_id and g.p1 = r.rival_id))")
 
         cur = self.db.cursor();
         sql = """select g.round_no, g.seq, g.table_no, g.division, g.game_type,
                 g.p1, g.p1_score, g.p2, g.p2_score, g.tiebreak
-                from game g where 1=1 """;
+                from game g"""
+        if only_rival_wins:
+            sql += ", rivals r on ((g.p1 = r.player_id and g.p2 = r.rival_id) or (g.p2 = r.player_id and g.p1 = r.rival_id))"
+        sql += " where 1=1"
         for c in conditions:
             sql += " and " + c;
         sql += "\norder by g.round_no, g.division, g.table_no, g.seq";
@@ -2660,7 +2671,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
         rounds = self.get_rounds();
 
-        games = [];
+        games = []
+        id_to_player = {}
         for row in cur:
             (round_no, game_seq, table_no, division, game_type, p1, p1_score, p2, p2_score, tb) = row
             if tb is not None:
@@ -2674,7 +2686,11 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
                 else:
                     p_id = p2;
                 assert(p_id is not None)
-                p = self.get_player_from_id(p_id);
+                if p_id in id_to_player:
+                    p = id_to_player[p_id]
+                else:
+                    p = self.get_player_from_id(p_id);
+                    id_to_player[p_id] = p
                 if p_index == 1:
                     p1 = p;
                 else:

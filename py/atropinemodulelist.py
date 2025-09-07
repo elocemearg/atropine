@@ -12,6 +12,7 @@ ATROPINE_DYNAMIC_PAGES = [
     "fixturegen",
     "gameslist",
     "games",
+    "grudgematches",
     "hello",
     "home",
     "luckystiff",
