@@ -1974,10 +1974,18 @@ class Tourney(object):
         if self.has_rivals():
             # Populate each player's rival list, which consists only of
             # player names, not player objects.
+            # Build a lookup of ID to Player...
+            id_to_player = {}
             for p in players:
-                cur.execute("select rp.name from rivals r, player rp on r.rival_id = rp.id where r.player_id = ?", (p.get_id(),))
-                for row in cur:
-                    p.add_rival_name(row[0])
+                id_to_player[p.get_id()] = p
+
+            # For each player ID, get that player's rivals' names...
+            cur.execute("select r.player_id, rp.name from rivals r, player rp on r.rival_id = rp.id")
+            for row in cur:
+                # Add this rival to the player object's rival list.
+                p = id_to_player.get(row[0])
+                if p:
+                    p.add_rival_name(row[1])
 
         cur.close()
         return players
@@ -2653,6 +2661,8 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
             conditions.append("(g.p1_score is not null and g.p2_score is not null)")
         if only_rival_wins:
             conditions.append("((g.p1_score > g.p2_score and g.p1 = r.player_id and g.p2 = r.rival_id) or (g.p1_score < g.p2_score and g.p2 = r.player_id and g.p1 = r.rival_id))")
+            if not self.has_rivals():
+                return []
 
         cur = self.db.cursor();
         sql = """select g.round_no, g.seq, g.table_no, g.division, g.game_type,

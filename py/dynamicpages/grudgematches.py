@@ -15,8 +15,6 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         response.writeln("<div class=\"mainpane\">")
         response.writeln("<h1>Grudge Matches</h1>")
 
-        response.writeln("<p>The following players have beaten one or more of their Rivals.</p>")
-
         games = tourney.get_games_where_player_beat_rival()
         if games:
             # Group these games by the name of the winner
@@ -38,6 +36,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
             # Show the list of people who have beaten a rival, along with the
             # names of the rivals they beat.
+            response.writeln("<p>The following players have beaten one or more of their Rivals.</p>")
             response.writeln("<ul>")
             for winner_name in sorted(winner_games):
                 # Build a frequency map of the number of times this winner beat each of their rivals.
@@ -68,10 +67,46 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
             # Show the full list of games in order
             response.writeln("<h2>Games</h2>")
+            response.writeln("<p>These are the games in which a player beat one of their Rivals.</p>")
             htmlcommon.show_games_as_html_table(response,
                     games, editable=False, include_round_column=True,
                     include_table_number_column=False, colour_win_loss=True,
                     round_namer=lambda x : tourney.get_short_round_name(x))
+
+        # Get complete list of players, so we can show all rivalries
+        players = tourney.get_players(include_prune=True)
+        name_to_player = {}
+        num_rivalries = 0
+        for p in players:
+            num_rivalries += len(p.get_rival_names())
+            name_to_player[p.get_name()] = p
+
+        response.writeln("<h2>Rivalries</h2>")
+        if num_rivalries == 0:
+            if tourney.has_rivals():
+                response.writeln("<p>No players have any Rivals set. You can set players' rivals using <a href=\"/atropine/%s/player\">Player Setup</a>.</p>" % (htmlcommon.escape(tourney_name)))
+            else:
+                response.writeln("<p>This tourney was created with a version of Atropine prior to 1.3.2. Rivals are not supported, so this page isn't of any use to you.</p>")
+        else:
+            # Show table of all rivalries
+            response.writeln("<p>All rivalries in effect for this tourney are listed here. A player in the left-hand column will appear above if they beat one of their rivals in the right-hand column.</p>")
+            response.writeln("<p>A player's rivalries can be edited on their <a href=\"/atropine/%s/player\">Player Setup</a> page.</p>" % (htmlcommon.escape(tourney_name)))
+            response.writeln("<table class=\"misctable\">")
+            response.writeln("<th>Player</th><th>Player's rivals</th>")
+            for p in sorted(players, key=lambda x : x.get_name()):
+                rival_names = p.get_rival_names()
+                if rival_names:
+                    response.writeln("<tr>")
+                    response.writeln("<td>%s</td>" % (htmlcommon.player_to_link(p, tourney_name, open_in_new_window=True)))
+                    response.writeln("<td>")
+                    first = True
+                    for rival_name in sorted(rival_names):
+                        rival = name_to_player.get(rival_name)
+                        if rival:
+                            response.write("%s%s" % ("" if first else ", ", htmlcommon.player_to_link(rival, tourney_name, open_in_new_window=True)))
+                            first = False
+                    response.writeln("</td></tr>")
+            response.writeln("</table>")
 
         response.writeln("</div>") #mainpane
     except countdowntourney.TourneyException as e:
