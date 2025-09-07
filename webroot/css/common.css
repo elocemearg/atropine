@@ -251,6 +251,9 @@ table.scorestable td.gamescore {
 }
 
 table.scorestable td.gameremarks {
+    font-size: 10pt;
+    border-left: 2px solid black;
+    border-top: 1px dashed gray;
     padding-left: 0.5em;
     padding-right: 0.5em;
 }

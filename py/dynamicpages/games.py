@@ -827,9 +827,7 @@ def write_videprinter(response, tourney, round_no):
 
     response.writeln("</div>") # videprinter
 
-def write_blinkenlights(response, tourney, round_no):
-    games = tourney.get_games(round_no)
-
+def write_blinkenlights(response, tourney, round_no, games):
     if not games:
         return
 
@@ -1200,7 +1198,6 @@ function games_on_load() {
             response.writeln("</div></div></body></html>")
             return
 
-        games = tourney.get_games(round_no=round_no);
         rounds = tourney.get_rounds();
         round_name = None;
         for r in rounds:
@@ -1210,7 +1207,6 @@ function games_on_load() {
         if not round_name:
             round_name = "Round " + str(round_no);
 
-        remarks = dict();
         response.writeln("<div class=\"roundnamebox boxshadow\">")
         response.writeln(htmlcommon.escape(round_name));
         response.writeln("</div>")
@@ -1410,11 +1406,10 @@ function games_on_load() {
 
         write_videprinter(response, tourney, round_no)
 
-        write_blinkenlights(response, tourney, round_no)
-
         # Fetch the games in the tourney now, after any changes which may
         # have just been applied.
         games = tourney.get_games(round_no=round_no)
+        write_blinkenlights(response, tourney, round_no, games)
 
         # If the user got something wrong, the control with the mistake
         # should have focus. If the user just submitted a news item then
@@ -1466,11 +1461,27 @@ Games
         response.writeln("<div class=\"gamelistpanebody\">")
         games_by_division = dict()
         num_divisions = tourney.get_num_divisions()
+        remarks = {}
+        rivals_remarks = [
+            None,
+            "P1 rival match",
+            "P2 rival match",
+            "Two-way rival match"
+        ]
+
         for g in games:
             if g.division in games_by_division:
                 games_by_division[g.division].append(g)
             else:
                 games_by_division[g.division] = [g]
+            rival_status = g.get_rival_status()
+            if rival_status:
+                remarks[(g.get_round_no(), g.get_round_seq())] = rivals_remarks[rival_status]
+        if len(remarks) > 0:
+            remarks_heading = "Grudge matches"
+        else:
+            remarks_heading = ""
+            remarks = None
 
         for div in sorted(games_by_division):
             div_games = games_by_division[div]
@@ -1479,9 +1490,9 @@ Games
                 response.writeln(htmlcommon.escape(tourney.get_division_name(div)))
                 response.writeln("</div>")
             htmlcommon.show_games_as_html_table(response,
-                    div_games, editable=False, remarks=None,
+                    div_games, editable=False, remarks=remarks,
                     include_round_column=False, round_namer=None,
-                    player_to_link=None, remarks_heading="",
+                    player_to_link=None, remarks_heading=remarks_heading,
                     show_game_type=True,
                     game_onclick_fn=lambda rnd, seq : "select_game(%d, false);" % (seq),
                     colour_win_loss=False, score_id_prefix="gamelistscore",

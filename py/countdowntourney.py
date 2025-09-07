@@ -930,7 +930,11 @@ class Player(object):
     def get_rival_names(self):
         return self.rival_names.copy()
 
-    def is_rival(self, rival_name):
+    def has_player_as_rival(self, rival):
+        if isinstance(rival, str):
+            rival_name = rival
+        else:
+            rival_name = rival.get_name()
         return rival_name in self.rival_names
 
 class PrunePlayer(Player):
@@ -1320,6 +1324,19 @@ class Game(object):
             return self.get_player_win_count(self.p2)
         else:
             raise PlayerNotInGameException("Player \"%s\" is not in the game between %s and %s." % (name, self.p1.get_name(), self.p2.get_name()))
+
+    # Return 0 if neither player is a rival of the other.
+    # Return 1 if P2 is P1's rival.
+    # Return 2 if P1 is P2's rival.
+    # Return 3 if P1 and P2 are each other's rivals.
+    def get_rival_status(self):
+        mask = 0
+        if self.p1 and self.p2:
+            if self.p1.has_player_as_rival(self.p2):
+                mask |= 1
+            if self.p2.has_player_as_rival(self.p1):
+                mask |= 2
+        return mask
 
     # Emulate a list of values
     def __len__(self):
