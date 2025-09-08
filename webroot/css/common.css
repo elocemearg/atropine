@@ -397,6 +397,29 @@ span.faintoutline {
         1px 1px 1px #aaa;
 }
 
+span.rivaldot {
+    display: inline-block;
+    font-size: 9pt;
+    text-align: center;
+    line-height: 12pt;
+    vertical-align: middle;
+    width: 12pt;
+    height: 12pt;
+    border-radius: 1em;
+}
+
+span.defeatedrivaldot {
+    background-color: black;
+    border: none;
+    color: yellow;
+}
+
+span.unplayedrivaldot {
+    background-color: white;
+    border: 1px dashed black;
+    color: black;
+}
+
 /* W, D and L symbols to show a player's sequence of wins and losses */
 span.wdl {
     display: inline-block;

@@ -485,7 +485,9 @@ function showDeletePlayerDialog() {
                 response.writeln("<p>%s %s</p>" % (form, win_loss_record))
 
             # Now show all games involving this player
-            htmlcommon.show_games_as_html_table(response, games, False, None, True, lambda x : tourney.get_short_round_name(x), player_to_link)
+            htmlcommon.show_games_as_html_table(response, games, False, None,
+                    True, lambda x : tourney.get_short_round_name(x),
+                    player_to_link, show_rivalries=True)
 
         response.writeln("<hr />")
         write_h2(response, player, "Stats Corner")

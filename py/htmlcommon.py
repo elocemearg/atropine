@@ -605,6 +605,32 @@ def make_team_dot_html(team):
 def make_player_dot_html(player):
     return make_team_dot_html(player.get_team())
 
+def make_rival_win_dot_html():
+    return '<span class="rivaldot defeatedrivaldot" title="This player beat one of their Rivals">R</span>'
+
+def make_rival_unplayed_dot_html():
+    return '<span class="rivaldot unplayedrivaldot" title="This player is playing against one of their Rivals">R</span>'
+
+def make_rival_dot_html(game, which_player, show_rivalries):
+    if not show_rivalries:
+        return ""
+    if which_player == 1:
+        player = game.p1
+        opponent = game.p2
+    else:
+        player = game.p2
+        opponent = game.p1
+    if player.has_player_as_rival(opponent):
+        if game.is_complete():
+            if game.is_player_winner(player):
+                return make_rival_win_dot_html()
+            else:
+                return ""
+        else:
+            return make_rival_unplayed_dot_html()
+    else:
+        return ""
+
 def show_team_score_table(response, team_scores):
     response.writeln("<table class=\"ranktable\">")
     response.writeln('<th colspan="2">Team score</th>')
@@ -619,7 +645,8 @@ def show_games_as_html_table(response, games, editable=True, remarks=None,
         include_round_column=False, round_namer=None, player_to_link=None,
         remarks_heading="", show_game_type=True, game_onclick_fn=None,
         colour_win_loss=True, score_id_prefix=None, show_heading_row=True,
-        hide_game_type_if_p=False, include_table_number_column=True):
+        hide_game_type_if_p=False, include_table_number_column=True,
+        show_rivalries=False):
     if round_namer is None:
         round_namer = lambda x : ("Round %d" % (x))
 
@@ -720,8 +747,8 @@ def show_games_as_html_table(response, games, editable=True, remarks=None,
                 p2_classes.append("winningplayer");
 
         team_string = make_player_dot_html(g.p1)
-
-        response.writeln("<td class=\"%s\">%s %s</td>" % (" ".join(p1_classes), player_html_strings[0], team_string));
+        rival_string = make_rival_dot_html(g, 1, show_rivalries)
+        response.writeln("<td class=\"%s\">%s %s %s</td>" % (" ".join(p1_classes), player_html_strings[0], rival_string, team_string));
         if g.is_double_loss():
             edit_box_score = "0 - 0*"
             html_score = "&#10006; - &#10006;"
@@ -744,7 +771,8 @@ onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.roun
 
         response.writeln("</td>");
         team_string = make_player_dot_html(g.p2)
-        response.writeln("<td class=\"%s\">%s %s</td>" % (" ".join(p2_classes), team_string, player_html_strings[1]));
+        rival_string = make_rival_dot_html(g, 2, show_rivalries)
+        response.writeln("<td class=\"%s\">%s %s %s</td>" % (" ".join(p2_classes), team_string, rival_string, player_html_strings[1]));
         if remarks is not None:
             response.writeln("<td class=\"gameremarks\">%s</td>" % escape(remarks.get((g.round_no, g.seq), "")));
         response.writeln("</tr>");

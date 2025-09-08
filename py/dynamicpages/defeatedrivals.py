@@ -16,7 +16,9 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         response.writeln("<h1>Defeated Rivals</h1>")
 
         games = tourney.get_games_where_player_beat_rival()
-        if games:
+        if not games:
+            response.writeln("<p>No games have been won by a player against one of their Rivals.</p>")
+        else:
             # Group these games by the name of the winner
             winner_games = {}
             name_to_player = {}
@@ -70,8 +72,9 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
             response.writeln("<p>These are the games in which a player beat one of their Rivals.</p>")
             htmlcommon.show_games_as_html_table(response,
                     games, editable=False, include_round_column=True,
-                    include_table_number_column=False, colour_win_loss=True,
-                    round_namer=lambda x : tourney.get_short_round_name(x))
+                    include_table_number_column=False, colour_win_loss=False,
+                    round_namer=lambda x : tourney.get_short_round_name(x),
+                    show_rivalries=True)
 
         # Get complete list of players, so we can show all rivalries
         players = tourney.get_players(include_prune=True)

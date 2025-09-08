@@ -1461,27 +1461,12 @@ Games
         response.writeln("<div class=\"gamelistpanebody\">")
         games_by_division = dict()
         num_divisions = tourney.get_num_divisions()
-        remarks = {}
-        rivals_remarks = [
-            None,
-            "P1 rival match",
-            "P2 rival match",
-            "Two-way rival match"
-        ]
 
         for g in games:
             if g.division in games_by_division:
                 games_by_division[g.division].append(g)
             else:
                 games_by_division[g.division] = [g]
-            rival_status = g.get_rival_status()
-            if rival_status:
-                remarks[(g.get_round_no(), g.get_round_seq())] = rivals_remarks[rival_status]
-        if len(remarks) > 0:
-            remarks_heading = "Grudge matches"
-        else:
-            remarks_heading = ""
-            remarks = None
 
         for div in sorted(games_by_division):
             div_games = games_by_division[div]
@@ -1490,13 +1475,14 @@ Games
                 response.writeln(htmlcommon.escape(tourney.get_division_name(div)))
                 response.writeln("</div>")
             htmlcommon.show_games_as_html_table(response,
-                    div_games, editable=False, remarks=remarks,
+                    div_games, editable=False, remarks=None,
                     include_round_column=False, round_namer=None,
-                    player_to_link=None, remarks_heading=remarks_heading,
+                    player_to_link=None, remarks_heading="",
                     show_game_type=True,
                     game_onclick_fn=lambda rnd, seq : "select_game(%d, false);" % (seq),
                     colour_win_loss=False, score_id_prefix="gamelistscore",
-                    show_heading_row=False, hide_game_type_if_p=True)
+                    show_heading_row=False, hide_game_type_if_p=True,
+                    show_rivalries=True)
 
         response.writeln("</div>") #gamelistpanebody
         response.writeln("</div>") #gamelistpane
