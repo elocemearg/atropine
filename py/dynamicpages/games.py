@@ -1453,7 +1453,7 @@ function games_on_load() {
 <div class="resultsentrytitle">
 Games
 <div class="resultsentryeditlink">
-<a href="/atropine/%s/fixtureedit/%d" title="Add or remove games, or change the players involved in a game">Edit fixtures</a>
+<a href="/atropine/%s/fixtureedit/%d" title="Add or remove games, or change the players involved in a game">Add/edit fixtures</a>
 </div>
 </div>
 """ % (htmlcommon.escape(tourney_name), round_no))
