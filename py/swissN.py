@@ -108,6 +108,27 @@ class PlayerNotInStandingsException(BaseException):
     pass;
 
 
+def get_win_difference_penalty(win_diff):
+    if win_diff > 0:
+        return ( WIN_DIFFERENCE_PENALTY_BASE ** float(win_diff) )
+    else:
+        return 0
+
+# Return the additional penalty for p1 and p2 playing each other on different
+# numbers of wins, due to the lower-win player's distance from the top of their
+# win group in the standings.
+# For example, if p1 has 2 wins and p2 has 1 win, but p2 is the top-ranked
+# 1-win player, return 0. If p2 is the second-ranked 1-win player, return 1,
+# and so on.
+# This function is useful only if equal_wins_are_equal_players is in effect.
+def get_group_promotion_penalty(p1_wins, p1_position, p2_wins, p2_position, highest_pos_by_win_count):
+    if p1_wins < p2_wins:
+        return p1_position - highest_pos_by_win_count[p1_wins]
+    elif p1_wins > p2_wins:
+        return p2_position - highest_pos_by_win_count[p2_wins]
+    else:
+        return 0
+
 # Calculate number of penalty points associated with p1 playing p2, taking
 # into account that they've played before num_played times, and p1's win count
 # differs from p2's win count by win_diff (which is always non-negative).
@@ -137,11 +158,7 @@ def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_
     if not rank_by_wins and not equal_wins_are_equal_players:
         win_diff = 0
 
-    if win_diff > 0:
-        game_pen = ( WIN_DIFFERENCE_PENALTY_BASE ** float(win_diff) )
-    else:
-        game_pen = 0
-
+    game_pen = get_win_difference_penalty(win_diff)
     if equal_wins_are_equal_players:
         if win_diff > 0:
             # If we have to put one or more players with N-1 wins with a
@@ -152,10 +169,7 @@ def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_
             # lower-ranked player is, plus whatever win difference penalty was
             # calculated above. This "promotes" the highest ranked lower-win
             # players to be honorary higher-win players.
-            if p1.wins < p2.wins:
-                game_pen += p1.position - highest_pos_by_win_count[p1.wins]
-            else:
-                game_pen += p2.position - highest_pos_by_win_count[p2.wins]
+            game_pen += get_group_promotion_penalty(p1.wins, p1.position, p2.wins, p2.position, highest_pos_by_win_count)
     else:
         # Take into account these two players' difference in standings.
         game_pen += ( POSITION_DIFFERENCE_PENALTY_BASE ** float(pos_diff) )
@@ -166,16 +180,9 @@ def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_
     return pen;
 
 # Calculate the matrix of penalties for each pair of players.
-def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank_by_wins=True, equal_wins_are_equal_players=False):
+def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, highest_pos_by_win_count, rank_by_wins=True, equal_wins_are_equal_players=False):
     matrix_size = len(players);
     matrix = [];
-
-    # For each win count, work out the position of the highest-ranked player
-    # with that win count. get_penalty() may use this.
-    highest_pos_by_win_count = {}
-    for p in players:
-        if p.wins not in highest_pos_by_win_count or p.position < highest_pos_by_win_count[p.wins]:
-            highest_pos_by_win_count[p.wins] = p.position
 
     for i1 in range(matrix_size):
         p1 = players[i1]
@@ -417,15 +424,30 @@ class PlayerGroup(object):
     def __len__(self):
         return len(self.player_list);
 
-def shuffle_joint_positioned_players(players, equal_wins_are_equal_players=False):
+def shuffle_joint_positioned_players(players, group_size, equal_wins_are_equal_players=False):
+    promotee = [ False for p in players ]
+    if equal_wins_are_equal_players and group_size > 0 and len(players) % group_size == 0:
+        # Establish which positions are likely to be promoted to the next win group
+        for idx in range(0, len(players), group_size):
+            for i in range(group_size):
+                for j in range(i + 1, group_size):
+                    if players[idx + i].wins != players[idx + j].wins:
+                        promotee[idx + j] = True
+    sys.stderr.write("promotees: %s\n" % (promotee))
     i = 0
     while i < len(players):
         pos = players[i].position
         wins = players[i].wins
         j = i + 1
         # If equal_wins_are_equal_players, chunks of players on the same number
-        # of wins are shuffled, regardless of points or anything else.
-        while j < len(players) and ((not equal_wins_are_equal_players and players[j].position == pos) or (equal_wins_are_equal_players and players[j].wins == wins)):
+        # of wins are shuffled, regardless of points.
+        # If a position will contain someone promoted from a lower win count,
+        # leave the player in that position where they are. This is likely to
+        # get the lowest penalty because we prefer to promote players from the
+        # top of a win group, and leaving them where they are will make us
+        # more likely to try this arrangement first, so we'd be more likely to
+        # find it.
+        while j < len(players) and (players[j].position == pos or (equal_wins_are_equal_players and players[j].wins == wins and not promotee[j])):
             j += 1
         if j - i > 1:
             # The chunk of the array in the interval [i, j) must be shuffled
@@ -446,6 +468,39 @@ def to_ordinal(n):
         return str(n) + "rd"
     else:
         return str(n) + "th"
+
+# Given that we are ranking by wins, and equal_wins_are_equal_players is in
+# effect, return a lower bound on the total penalty for the best possible
+# configuration. This takes into account that the number of players on N
+# wins might not be a multiple of the group size and there must be some
+# promotees, but doesn't take into account rematches or anything else.
+def get_penalty_lower_bound_given_equal_wins_are_equal_players(win_counts, standings_positions, highest_pos_by_win_count, group_size):
+    # For the lower bound, assume the minimum possible number of matches
+    # between players of different win counts.
+    assert(len(win_counts) % group_size == 0)
+    lower_bound_weight = 0
+    for idx in range(0, len(win_counts), group_size):
+        # Count the penalty for matches between different win counts, and
+        # add any penalty for players being promoted to a higher win group
+        # and not being top of their win group. Assume for the lower bound
+        # that there are no rematches or any other effects on the penalty.
+        num_promotees = 0
+        for i in range(group_size):
+            if win_counts[idx + i] != win_counts[idx]:
+                num_promotees += 1
+        if num_promotees > 0:
+            table_weight = 0
+            for i in range(group_size):
+                for j in range(i + 1, group_size):
+                    table_weight += get_win_difference_penalty(abs(win_counts[idx + i] - win_counts[idx + j]))
+                    table_weight += get_group_promotion_penalty(
+                            win_counts[idx + i],
+                            standings_positions[idx + i],
+                            win_counts[idx + j],
+                            standings_positions[idx + j],
+                            highest_pos_by_win_count)
+            lower_bound_weight += table_weight / group_size
+    return lower_bound_weight
 
 def swissN_first_round(cdt_players, group_size):
     if group_size > 0 and len(cdt_players) % group_size != 0:
@@ -708,12 +763,17 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     # the combinations we can in a limited time.
     players = sorted(players, key=lambda x : x.position)
 
+    # List of standings positions, in order, which may not be just 1..n because
+    # there may be people in "joint-Nth". Useful for helping to calculate the
+    # lower bound on the total penalty when equal_wins_are_equal_players.
+    standings_positions = [ p.position for p in players ]
+
     # If any set of two or more players have exactly the same position,
     # randomly shuffle their positions in that part of the array. This ensures
     # that when we have such a set of people in joint Nth place, the person
     # whose name is nearest the beginning of the alphabet doesn't always get
     # selected first to play on a stronger table.
-    shuffle_joint_positioned_players(players, equal_wins_are_equal_players)
+    shuffle_joint_positioned_players(players, group_size, equal_wins_are_equal_players and rank_by_wins)
 
     # Check that the group size makes sense for the number of players. By
     # this point we should have added any required auto-prunes, so the number
@@ -784,7 +844,14 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
             win_diff_row.append(abs(p.wins - opponent.wins))
         win_diff_matrix.append(win_diff_row)
 
-    penalty_matrix = calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, rank_by_wins, equal_wins_are_equal_players);
+    # For each win count, work out the position of the highest-ranked player
+    # with that win count. get_penalty() needs this.
+    highest_pos_by_win_count = {}
+    for p in players:
+        if p.wins not in highest_pos_by_win_count or p.position < highest_pos_by_win_count[p.wins]:
+            highest_pos_by_win_count[p.wins] = p.position
+
+    penalty_matrix = calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, highest_pos_by_win_count, rank_by_wins, equal_wins_are_equal_players)
     penalty_matrix_size = len(players);
 
     best_grouping = None
@@ -815,6 +882,22 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
             else:
                 max_wins_diff = 0
 
+    # If equal_wins_are_equal_players, we want to avoid wasting time trying
+    # combinations which are effectively equivalent and optimal because they
+    # only shuffle equivalent players around.
+    # There may be a nonzero lower bound on the total penalty, for example
+    # if the number of players on N wins isn't a multiple of the group size
+    # for some N. Calculate what this lower bound is, and if we find any
+    # grouping with that penalty, we're done.
+    # Setting the lower bound too low is always safe but might waste time.
+    if equal_wins_are_equal_players and rank_by_wins and group_size > 0:
+        win_counts = sorted([ p.wins for p in players ], reverse=True)
+        lower_bound_weight = get_penalty_lower_bound_given_equal_wins_are_equal_players(win_counts, standings_positions, highest_pos_by_win_count, group_size)
+        if log:
+            sys.stderr.write("[swissN] Lower bound penalty is %f\n" % (lower_bound_weight))
+    else:
+        lower_bound_weight = 0
+
     while best_grouping is None:
         if log:
             sys.stderr.write("[swissN] Trying with max_wins_diff %d, max_rematches %d\n" % (max_wins_diff, max_rematches))
@@ -828,10 +911,9 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
                     sys.stderr.write("[swissN] New best plan is %f, %s\n" % (best_weight, str(best_grouping)))
             if limit_ms and time.time() - start_time > float(limit_ms) / 1000.0:
                 break
-            if best_weight == 0:
-                # Can't improve on this, which might happen if
-                # equal_wins_are_equal_players is set and the size of each
-                # win count group is a multiple of the group size.
+            if best_weight <= lower_bound_weight:
+                # Can't improve on this - stop searching.
+                sys.stderr.write("[swissN] Found grouping which meets the lower bound. Finishing early.\n")
                 break
         if limit_ms and time.time() - start_time > float(limit_ms) / 1000.0:
             if log:
@@ -893,6 +975,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
             for p in g:
                 print("[swissN]     [%2d]  %4s  %dW  %s" % (p, to_ordinal(players[p].position), players[p].wins, players[p].name), file=sys.stderr)
             group_no += 1
+        sys.stderr.write("[swissN] Total penalty: %f\n" % (weight))
         sys.stderr.write("[swissN] Max position difference: %d (table %s)\n" % ( largest_pos_diff, ", ".join(map(str, largest_pos_diff_groups))))
         sys.stderr.write("[swissN] Max win difference: %d (table %s)\n" % (largest_win_diff, ", ".join(map(str, largest_win_diff_groups))))
 
