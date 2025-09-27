@@ -425,29 +425,29 @@ class PlayerGroup(object):
         return len(self.player_list);
 
 def shuffle_joint_positioned_players(players, group_size, equal_wins_are_equal_players=False):
-    promotee = [ False for p in players ]
+    promotees = [ False for p in players ]
     if equal_wins_are_equal_players and group_size > 0 and len(players) % group_size == 0:
         # Establish which positions are likely to be promoted to the next win group
         for idx in range(0, len(players), group_size):
             for i in range(group_size):
                 for j in range(i + 1, group_size):
                     if players[idx + i].wins != players[idx + j].wins:
-                        promotee[idx + j] = True
-    sys.stderr.write("promotees: %s\n" % (promotee))
+                        promotees[idx + j] = True
     i = 0
     while i < len(players):
         pos = players[i].position
         wins = players[i].wins
+        likely_promotee = promotees[i]
         j = i + 1
         # If equal_wins_are_equal_players, chunks of players on the same number
         # of wins are shuffled, regardless of points.
         # If a position will contain someone promoted from a lower win count,
-        # leave the player in that position where they are. This is likely to
-        # get the lowest penalty because we prefer to promote players from the
-        # top of a win group, and leaving them where they are will make us
-        # more likely to try this arrangement first, so we'd be more likely to
-        # find it.
-        while j < len(players) and (players[j].position == pos or (equal_wins_are_equal_players and players[j].wins == wins and not promotee[j])):
+        # leave the player in that position where they are, or only shuffle
+        # them with adjacent likely promotees. This is to get the lowest
+        # penalty because we prefer to promote players from the top of a win
+        # group, and leaving them where they are will make us more likely to
+        # try this arrangement first, leading us to the solution quicker.
+        while j < len(players) and (players[j].position == pos or (equal_wins_are_equal_players and players[j].wins == wins and promotees[j] == likely_promotee)):
             j += 1
         if j - i > 1:
             # The chunk of the array in the interval [i, j) must be shuffled
@@ -773,6 +773,10 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     # that when we have such a set of people in joint Nth place, the person
     # whose name is nearest the beginning of the alphabet doesn't always get
     # selected first to play on a stronger table.
+    # If equal_wins_are_equal_players, we also shuffle any "equivalent" players
+    # (same win count) so they get a random position in their win group, except
+    # that players at the top of their win group and likely to be chosen for
+    # promotion to the next win group are left at the top of their win group.
     shuffle_joint_positioned_players(players, group_size, equal_wins_are_equal_players and rank_by_wins)
 
     # Check that the group size makes sense for the number of players. By
@@ -1054,6 +1058,90 @@ def unit_test_generate_table_and_seat_indices(groups, count, dist, expected):
     if not lists_equal(expected, observed):
         raise TestFailedException("generate_table_and_seat_indices test failed.\nGroups: %s\ncount: %d\ndist: %d\nExpected: %s\nObserved: %s" % (groups, count, dist, str(expected), str(observed)))
 
+def unit_test_shuffle_joint_positioned_players():
+    # Test the shuffle_joint_positioned_players() function
+    players = [
+            #               Name  Ratg  W Pos P  F  AvoidingPrune
+            StandingsPlayer("P1", 1000, 2, 1, 2, 1, False),
+            StandingsPlayer("P2", 1000, 2, 2, 2, 1, False),
+            StandingsPlayer("P3", 1000, 2, 3, 2, 1, False),
+            StandingsPlayer("P4", 1000, 2, 4, 2, 1, False),
+            StandingsPlayer("P5", 1000, 1, 5, 2, 1, False),
+            StandingsPlayer("P6", 1000, 1, 6, 2, 1, False),
+            StandingsPlayer("P7", 1000, 1, 7, 2, 1, False),
+            StandingsPlayer("P8", 1000, 1, 8, 2, 1, False),
+            StandingsPlayer("P9", 1000, 0, 9, 2, 1, False),
+            StandingsPlayer("P10", 1000, 0, 10, 2, 1, False),
+            StandingsPlayer("P11", 1000, 0, 11, 2, 1, False),
+            StandingsPlayer("P12", 1000, 0, 12, 2, 1, False),
+    ]
+    # We want to split the players into groups of 3.
+    # P5 and P6 can expect to be first in line for promotion to the 2-winsers.
+    # P9 can expect to be first in line for promotion to the 1-winsers.
+    # P5 and P6 can be shuffled amongst themselves, and P9 should stay where
+    # they are, but all other players should move.
+    # Do 20 shuffles - any player which is allowed to be moved will be very
+    # likely to have moved after then.
+    group_size = 3
+    moved = [ False for p in players ]
+    for trial in range(20):
+        shuffled = players[:]
+        shuffle_joint_positioned_players(shuffled, group_size, True)
+        for (i, p) in enumerate(shuffled):
+            if int(p.name[1:]) != i + 1:
+                moved[i] = True
+            if p.wins != players[i].wins:
+                raise TestFailedException("unit_test_shuffle_joint_positioned_players (initial test): player %s shuffled into the %d-win zone! shuffled: %s" % (p.name, players[i].wins, str([x.name for x in shuffled])))
+    for i in range(len(players)):
+        moved_expected = (i + 1 != 9)
+        if moved[i] != moved_expected:
+            raise TestFailedException("unit_test_shuffle_joint_positioned_players (initial test): player %s: expected moved = %s, observed otherwise. shuffled: %s" % (players[i].name, moved_expected, str([ p.name for p in shuffled ])))
+
+    # shuffle_joint_positioned_players with equal_wins_are_equal_players False
+    # should have no effect here - there are no joint positions.
+    shuffled = players[:]
+    shuffle_joint_positioned_players(shuffled, group_size, False)
+    for (i, p) in enumerate(shuffled):
+        if p.position != i + 1:
+            raise TestFailedException("unit_test_shuffle_joint_positioned_players (equal_wins_... = False): no joint positions but player %s has moved (position %d in list, rank %d)" % (p.name, i, p.position))
+
+    # Make P6 joint fifth. They should now be equivalent to P5.
+    # Shuffle can exchange P5 and P6, but not either of those with anyone else.
+    players[5].position = 5
+    moved = [ False for p in players ]
+    for trial in range(20):
+        shuffled = players[:]
+        shuffle_joint_positioned_players(shuffled, group_size, True)
+        for (i, p) in enumerate(shuffled):
+            if int(p.name[1:]) != i + 1:
+                moved[i] = True
+            if p.wins != players[i].wins:
+                raise TestFailedException("unit_test_shuffle_joint_positioned_players (P5/P6 joint 5th): player %s shuffled into the %d-win zone! shuffled: %s" % (p.name, players[i].wins, str([x.name for x in shuffled])))
+        if shuffled[4].name not in ("P5", "P6") or shuffled[5].name not in ("P5", "P6"):
+            raise TestFailedException("unit_test_shuffle_joint_positioned_players: P5 and P6 joint 5th but one or both has been shuffled out of joint 5th. shuffled: %s" % (str([ p.name for p in shuffled ])))
+    # Only P9 should not have moved at all
+    for i in range(len(players)):
+        moved_expected = (i + 1 != 9)
+        if moved[i] != moved_expected:
+            raise TestFailedException("unit_test_shuffle_joint_positioned_players (P5 and P6 joint 5th): player %s: expected moved = %s, observed otherwise." % (players[i].name, moved_expected))
+
+    # Put P6 as 6th in their own right again
+    players[5].position = 6
+
+    # Every win group's size is a multiple of 2, so if the group size is 2
+    # we expect no promotees. Everyone is eligible for shuffling.
+    group_size = 2
+    moved = [ False for p in players ]
+    for trial in range(20):
+        shuffled = players[:]
+        shuffle_joint_positioned_players(shuffled, group_size, True)
+        for (i, p) in enumerate(shuffled):
+            if p.position != i + 1:
+                moved[i] = True
+    if False in moved:
+        raise TestFailedException("unit_test_shuffle_joint_positioned_players: group_size 2: expected all players to be eligible for moving. moved = %s" % (str(moved)))
+
+
 def unit_tests():
     # Self-contained tests for the rotate_players and
     # generate_table_and_seat_indices functions.
@@ -1105,6 +1193,8 @@ def unit_tests():
                 [ (1, 1), (2, 1), (3, 1) ]
             ]
         )
+
+        unit_test_shuffle_joint_positioned_players()
     except TestFailedException as e:
         print(str(e))
         return False
