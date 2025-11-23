@@ -11,7 +11,7 @@ name = "Swiss Army Blunderbuss";
 description = "Players are matched against opponents who have performed similarly to them so far in the tourney, but repeats of previous fixtures are avoided. This is the most commonly-used fixture generator for the second round onwards.";
 
 valid_group_sizes = (2, 3, 4, 5, -5)
-MATCHING_STRATEGY_DEFAULT = "classic"
+MATCHING_STRATEGY_DEFAULT = "birmingham"
 
 def int_or_none(s):
     try:
