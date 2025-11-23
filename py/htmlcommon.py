@@ -1057,22 +1057,24 @@ def ordinal_number(n):
     else:
         return "%dth" % (n)
 
-def win_loss_letter_to_html(x, additional_text=None, title_text=None):
+def win_loss_letter_to_html(x, additional_text=None, title_text=None, additional_classes=None, attrs=None):
     if x in "WDL":
         wdl_class = "wdl_" + x.lower()
+        wdl_additional_class = "wdl_additional_" + x.lower()
     elif x == "-":
         x = "&ndash;"
         wdl_class = "wdl_unplayed"
+        wdl_additional_class = "wdl_additional_unplayed"
     else:
         wdl_class = ""
+        wdl_additional_class = ""
+    attrs_str = (" " + " ".join(["%s=\"%s\"" % (name, escape(attrs[name])) for name in attrs])) if attrs else ""
+    additional_classes_str = (" " + " ".join(additional_classes)) if additional_classes else ""
+    title_attr = (" title=\"" + htmlescape(title_text) + "\"") if title_text else ""
     if additional_text:
-        if title_text:
-            title_attr = " title=\"" + htmlescape(title_text) + "\""
-        else:
-            title_attr = ""
-        return "<span class=\"wdl %s\">%s</span><span class=\"wdl_additional wdl_additional_%s\"%s>%s</span>" % (wdl_class, x, x.lower(), title_attr, additional_text)
+        return "<span class=\"wdl %s\"%s>%s</span><span class=\"wdl_additional %s %s\"%s%s>%s</span>" % (wdl_class, title_attr, x, wdl_additional_class, additional_classes_str, title_attr, attrs_str, additional_text)
     else:
-        return "<span class=\"wdl wdl_no_additional %s\">%s</span>" % (wdl_class, x)
+        return "<span class=\"wdl wdl_no_additional %s%s\"%s%s>%s</span>" % (wdl_class, additional_classes_str, title_attr, attrs_str, x)
 
 def win_loss_string_to_html(win_loss_string, additional_text=None):
     return "".join([ win_loss_letter_to_html(x) for x in win_loss_string.upper() ])

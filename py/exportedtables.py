@@ -229,7 +229,7 @@ def abbreviate_names(names: list[str]) -> dict[str, str]:
 
 
 class FormattedTableCell(object):
-    def __init__(self, content, align=ALIGN_NONE, colspan=1, classes=[], html_content=None):
+    def __init__(self, content, align=ALIGN_NONE, colspan=1, classes=[], html_content=None, attrs=None):
         self.content = str(content)
         if html_content:
             self.html_content = str(html_content)
@@ -239,6 +239,7 @@ class FormattedTableCell(object):
         self.colspan = colspan
         self.classes = classes[:]
         self.content_width = len(self.content)
+        self.attrs = {} if attrs is None else attrs
 
     def get_colspan(self):
         return self.colspan
@@ -257,6 +258,8 @@ class FormattedTableCell(object):
             out.write(" class=\"")
             out.write(" ".join([ htmlcommon.escape(c) for c in self.classes ]))
             out.write("\"")
+        for name in self.attrs:
+            out.write(" %s=\"%s\"" % (name, htmlcommon.escape(self.attrs[name])))
         out.write(">")
         out.write(self.html_content)
         out.write("</")
@@ -305,8 +308,8 @@ class FormattedTable(object):
             for i in range(cell.get_colspan() - 1):
                 self.rows[row_number].append(None)
 
-    def append_cell(self, row_number, content, align=ALIGN_NONE, colspan=1, classes=[], html_content=None):
-        self._append_cell(row_number, FormattedTableCell(content, align=align, colspan=colspan, classes=classes, html_content=html_content))
+    def append_cell(self, row_number, content, align=ALIGN_NONE, colspan=1, classes=[], html_content=None, attrs=None):
+        self._append_cell(row_number, FormattedTableCell(content, align=align, colspan=colspan, classes=classes, html_content=html_content, attrs=attrs))
 
     def get_num_cells(self, row_number):
         if row_number < 0 or row_number >= len(self.rows):
@@ -326,8 +329,11 @@ class FormattedTable(object):
         out = io.StringIO()
         split_tables = (len(self.separator_before_columns) > 0)
         if split_tables:
-            # We will write out a number of tables side by side
-            out.write("<div class=\"formattedtableset\">\n")
+            # We will write out a number of tables side by side.
+            # Mark this with the highlightonhoverboundary class so that when
+            # we hover over a player name, we highlight all elements with the
+            # same player name, but only those within this div.
+            out.write("<div class=\"formattedtableset highlightonhoverboundary\">\n")
 
         first_columns = [0] + sorted(list(self.separator_before_columns))
         for (idx, first_column) in enumerate(first_columns):
@@ -445,7 +451,7 @@ class ProgressByPlayer(FormattedTable):
                 round_standings: dict[int, list[countdowntourney.StandingsRow]],
                 names_to_abbrs=None):
         super().__init__()
-        self.table_classes = [ "misctable", "progressiontable" ]
+        self.table_classes = [ "misctable", "progressiontable", "highlightonhoverboundary" ]
 
         rank_method = tourney.get_rank_method()
         round_standings_headings = [ "Pos", "W" ] + rank_method.get_secondary_rank_headings(short=True)
@@ -498,7 +504,7 @@ class ProgressByPlayer(FormattedTable):
                     elif game.is_player_loser(gp):
                         result = "L"
                     else:
-                        result = "?"
+                        result = "-"
                     opponent_name = gp_opp.get_name()
                     round_player_games[dict_key].append((result, opponent_name, game))
             for standing in standings:
@@ -510,11 +516,16 @@ class ProgressByPlayer(FormattedTable):
             classes = ["progressionalternate%d" % (row_number % 2 + 1)]
 
             disp = player_short_display[player_name]
-            td_classes = classes + ["progressionplayername"]
+            td_classes = classes + ["progressionplayername", "highlightonhover"]
+
+            # Tag player names and abbreviations with data-hover-key so that
+            # we can write functions to highlight the other appearances of that
+            # player name when the user hovers over one.
+            attrs = { "data-hover-key" : player_name }
             if disp and disp != player_name:
-                self.append_cell(row_number, player_name + " " + disp, classes=td_classes)
+                self.append_cell(row_number, player_name + " " + disp, classes=td_classes, attrs=attrs)
             else:
-                self.append_cell(row_number, player_name, classes=td_classes)
+                self.append_cell(row_number, player_name, classes=td_classes, attrs=attrs)
 
             self.append_cell(row_number, "", classes=["progressionroundspace"])
             for round_no in round_numbers:
@@ -528,7 +539,8 @@ class ProgressByPlayer(FormattedTable):
                 html_results = " ".join([
                     htmlcommon.win_loss_letter_to_html(result,
                         additional_text=player_short_display.get(opponent_name, opponent_name),
-                        title_text=opponent_name) + " " \
+                        title_text=game.get_short_string(), additional_classes=["highlightonhover"],
+                        attrs={"data-hover-key" : opponent_name}) + " " \
                     for (result, opponent_name, game) in round_player_games.get((round_no, player_name), [])
                 ])
                 self.append_cell(row_number, text_results, classes=classes + ["progressiongames"], html_content=html_results)
@@ -617,10 +629,77 @@ class ProgressiveStandings(FormattedTable):
                 # Append the standings info for this player for this round
                 # on to the end of the current table row.
                 self.append_cell(row_number, sr.position, align=ALIGN_RIGHT, classes=classes + ["rankpos"])
-                self.append_cell(row_number, player_name, classes=classes + ["rankname"])
+                self.append_cell(row_number, player_name, classes=classes + ["rankname", "highlightonhover"], attrs={"data-hover-key" : player_name})
                 self.append_cell(row_number, wins_str, align=ALIGN_RIGHT, classes=classes + ["ranknumber"])
                 for val in sr.get_secondary_rank_values():
                     self.append_cell(row_number, str(val), align=ALIGN_RIGHT, classes=classes + ["ranknumber"])
                 row_number += 1
                 prev_wins_inc_draws = wins_inc_draws
             col_no += len(round_standings_headings)
+
+highlight_on_hover_script = """
+/* Call highlightOnHoverSetup() on or after page load to enable linked
+   highlight-on-hover capability between elements with the same player name.
+
+   When the user hovers over an element with the "highlightonhover" class,
+   we add the "linkedhoverhighlight" class to that element and all the
+   other elements with the same "data-hover-key" attribute inside the nearest
+   enclosing boundary element. A boundary element is an element with the
+   "highlightonhoverboundary" class.
+
+   The "linkedhoverhighlight" classes are removed when the user's cursor
+   leaves the element.
+
+   This is how we highlight all the "John Smith" cells in a table when
+   the user hovers over one of the "John Smith" cells.
+*/
+
+function getHoverBoundary(x) {
+    while (x != null) {
+        if (x.classList.contains("highlightonhoverboundary")) {
+            return x;
+        }
+        x = x.parentElement;
+    }
+    return null;
+}
+
+function highlightOnHoverSetup() {
+    const highlightable = document.getElementsByClassName("highlightonhover");
+
+    /* { boundary div -> { player name -> [ list of elements ] } } */
+    let tablePlayerElements = {};
+
+    for (let i = 0; i < highlightable.length; i++) {
+        const bound = getHoverBoundary(highlightable[i]);
+        const hoverKey = highlightable[i].getAttribute("data-hover-key");
+        if (bound) {
+            if (!(bound in tablePlayerElements)) {
+                tablePlayerElements[bound] = {};
+            }
+            if (!(hoverKey in tablePlayerElements[bound])) {
+                tablePlayerElements[bound][hoverKey] = [];
+            }
+            tablePlayerElements[bound][hoverKey].push(highlightable[i]);
+        }
+    }
+
+    for (const table in tablePlayerElements) {
+        for (const hoverKey in tablePlayerElements[table]) {
+            const elementList = tablePlayerElements[table][hoverKey];
+            for (let i = 0; i < elementList.length; i++) {
+                elementList[i].addEventListener("mouseenter", function(event) {
+                    for (let j = 0; j < elementList.length; ++j) {
+                        elementList[j].classList.add("linkedhoverhighlight");
+                    }
+                });
+                elementList[i].addEventListener("mouseleave", function(event) {
+                    for (let j = 0; j < elementList.length; ++j) {
+                        elementList[j].classList.remove("linkedhoverhighlight");
+                    }
+                });
+            }
+        }
+    }
+}
+"""

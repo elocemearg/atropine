@@ -479,6 +479,30 @@ span.wdl_additional_l {
     background-color: hsl(0deg, 100%, 87%);
 }
 
+span.wdl_additional_unplayed {
+    background-color: white;
+}
+
+span.wdl_additional_w.linkedhoverhighlight {
+    color: hsl(120deg, 100%, 85%);
+    background-color: black !important;
+}
+
+span.wdl_additional_d.linkedhoverhighlight {
+    color: hsl(60deg, 100%, 87%);
+    background-color: black !important;
+}
+
+span.wdl_additional_l.linkedhoverhighlight {
+    color: hsl(0deg, 100%, 87%);
+    background-color: black !important;
+}
+
+span.wdl_additional_unplayed.linkedhoverhighlight {
+    color: white;
+    background-color: black !important;
+}
+
 /* Warnings and exceptions */
 
 div.warningbox {
@@ -679,7 +703,7 @@ table.ranktable tr.windifferentiator1 {
     background-color: #ffdd66;
 }
 
-table.ranktable td.windifferentiator1 {
+table.ranktable td.windifferentiator1:not(.linkedhoverhighlight) {
     background-color: #ffdd66;
 }
 
@@ -687,7 +711,7 @@ table.ranktable tr.windifferentiator2 {
     background-color: #ffff88;
 }
 
-table.ranktable td.windifferentiator2 {
+table.ranktable td.windifferentiator2:not(.linkedhoverhighlight) {
     background-color: #ffff88;
 }
 
@@ -1053,4 +1077,12 @@ button.contextmenuitem {
 .contextmenuitem:hover {
     background-color: blue;
     color: white;
+}
+
+/* Default way to display an element which is highlighted because we've
+ * hovered over something with the same data-hover-key attribute value.
+ * Other classes (at least wdl_additional_*) override it. */
+.linkedhoverhighlight {
+    background-color: black;
+    color: #ffff88;
 }

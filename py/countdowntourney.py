@@ -1290,9 +1290,6 @@ class Game(object):
                 right += "*";
         return left + " - " + right;
 
-    def is_draw(self):
-        return self.s1 is not None and self.s2 is not None and self.s1 == self.s2
-
     def is_double_loss(self):
         if self.s1 is not None and self.s2 is not None and self.s1 == 0 and self.s2 == 0 and self.tb:
             return True

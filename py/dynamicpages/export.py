@@ -132,7 +132,10 @@ def export_html(tourney, response, filename, show_standings_before_finals, show_
 
     htmlcommon.print_html_head_local(response, full_name);
 
-    response.writeln("<body>");
+    response.writeln("<body onload=\"highlightOnHoverSetup();\">")
+    response.writeln("<script>")
+    response.writeln(exportedtables.highlight_on_hover_script)
+    response.writeln("</script>")
     response.writeln("<div class=\"exportedstandings\">")
     response.writeln("<h1>%s</h1>" % (htmlcommon.escape(full_name)))
     if venue:
