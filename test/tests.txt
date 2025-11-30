@@ -6,6 +6,7 @@ qualtest.py
 randomdrawtest.py
 randomfixgentest.py
 ranktest.py
+roundrobinfixgentest.py
 standingstest.py
 swissNscenariotest.py
 swissNtest.py
