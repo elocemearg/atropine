@@ -188,8 +188,8 @@ def find_next_not_in_set(cur, s):
         cur += 1
     return cur
 
-def get_candidate_tables(generated_groups_round, players_without_games, occupied_tables, accessible_tables, acc_default):
-    current_table_no = 0
+def get_candidate_tables(generated_groups_round, players_without_games, occupied_tables, accessible_tables, acc_default, first_table_number=1):
+    current_table_no = first_table_number - 1
     voting_groups = []
 
     # Mapping of division numbers to a list of table numbers which the

@@ -88,11 +88,12 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     accessible_tables_string = form.getfirst("accessibletables")
     if not accessible_tables_string:
         accessible_tables_string = ""
+    first_table_number = int_or_none(form.getfirst("firsttablenumber"))
     rules_submit = form.getfirst("rulessubmit");
 
     htmlcommon.print_html_head(response, "Tourney Setup: " + str(tourneyname), othercssfiles=["tourneysetup.css"])
 
-    response.writeln("<body onload=\"textAreaChange(); playerListExtraHelpShow();\">");
+    response.writeln("<body onload=\"initPage();\">");
 
     response.writeln("<script>")
     response.writeln("""
@@ -298,6 +299,29 @@ function setDateToday() {
     dayBox.value = today.getDate().toString();
 }
 
+let accessibleTableNumbersDescription = null;
+let accessibleTablesDefault0 = null;
+let accessibleTablesDefault1 = null;
+
+function initPage() {
+    textAreaChange();
+    playerListExtraHelpShow();
+    accessibleTableNumbersDescription = document.getElementById("accessibletablenumbersdescription");
+    accessibleTablesDefault0 = document.getElementById("accessibletablesdefault_0");
+    accessibleTablesDefault1 = document.getElementById("accessibletablesdefault_1");
+}
+
+function accessibleDefaultChange() {
+    if (accessibleTableNumbersDescription) {
+        if (accessibleTablesDefault0 && accessibleTablesDefault0.checked) {
+            accessibleTableNumbersDescription.innerText = "Accessible table numbers";
+        }
+        else if (accessibleTablesDefault1 && accessibleTablesDefault1.checked) {
+            accessibleTableNumbersDescription.innerText = "Non-accessible table numbers";
+        }
+    }
+}
+
 </script>
 """)
 
@@ -396,6 +420,10 @@ function setDateToday() {
     if request_method == "POST" and rules_submit:
         try:
             # User submitted new tourney rules, so set them
+
+            # First table number
+            if first_table_number is not None:
+                tourney.set_first_table_number(first_table_number)
 
             # Accessible tables
             try:
@@ -557,16 +585,24 @@ function setDateToday() {
         response.writeln("</div>") #generalsetupcontrolgroup
 
         (table_list, accessible_default) = tourney.get_accessible_tables()
-        response.writeln("<h3>Accessibility</h3>")
+        response.writeln("<h3>Accessibility and table numbers</h3>")
+        if tourney.has_first_table_number_feature():
+            response.writeln("""
+<p>What's the first table number assigned to this tournament? This is almost always 1, but you can increase it if some tables belong to a separate tournament.</p>
+<div class="generalsetupcontrolgroup">
+<label for="firsttablenumber" style="padding-right: 10px;">Table numbers start at</label>
+<input type="number" id="firsttablenumber" name="firsttablenumber" value="%d" min="1">
+</div>
+""" % (tourney.get_first_table_number()))
         response.writeln("<p>If a player requires an accessible table, you can set this on the <a href=\"/atropine/%s/player\">configuration page for that player</a>.</p>" % (htmlcommon.escape(tourney.get_name())))
         response.writeln("<div class=\"generalsetupcontrolgroup\">")
-        response.writeln("<span style=\"padding-right: 10px;\">Table numbers</span> <input type=\"text\" name=\"accessibletables\" value=\"%s\" />" % (", ".join([ str(x) for x in table_list ])))
+        response.writeln("<label for=\"accessibletables\" style=\"padding-right: 10px;\" id=\"accessibletablenumbersdescription\">%s</label> <input type=\"text\" name=\"accessibletables\" id=\"accessibletables\" value=\"%s\" />" % ("Non-accessible table numbers" if accessible_default else "Accessible table numbers", ", ".join([ str(x) for x in table_list ])))
         response.writeln(" <span style=\"color: #808080; font-size: 10pt\">(Enter table numbers separated by commas, e.g. <span class=\"fixedwidth\">1,2,5</span>)</span>")
         response.writeln("</div>")
         response.writeln("<div class=\"generalsetupcontrolgroup\">")
-        response.writeln("<input type=\"radio\" name=\"accessibletablesdefault\" value=\"0\" id=\"accessibletablesdefault_0\" %s /><label for=\"accessibletablesdefault_0\"> The above table numbers are the accessible tables.</label>" % ("" if accessible_default else "checked"))
+        response.writeln("<input type=\"radio\" name=\"accessibletablesdefault\" value=\"0\" id=\"accessibletablesdefault_0\" oninput=\"accessibleDefaultChange();\" %s /><label for=\"accessibletablesdefault_0\"> The above table numbers are the accessible tables.</label>" % ("" if accessible_default else "checked"))
         response.writeln("<br />")
-        response.writeln("<input type=\"radio\" name=\"accessibletablesdefault\" value=\"1\" id=\"accessibletablesdefault_1\" %s /><label for=\"accessibletablesdefault_1\"> All tables are accessible <em>except</em> for the table numbers listed above.</label>" % ("checked" if accessible_default else ""))
+        response.writeln("<input type=\"radio\" name=\"accessibletablesdefault\" value=\"1\" id=\"accessibletablesdefault_1\" oninput=\"accessibleDefaultChange();\" %s /><label for=\"accessibletablesdefault_1\"> All tables are accessible <em>except</em> for the table numbers listed above.</label>" % ("checked" if accessible_default else ""))
         response.writeln("</div>")
 
         response.writeln("<h3>Intended number of rounds, and qualification</h3>")

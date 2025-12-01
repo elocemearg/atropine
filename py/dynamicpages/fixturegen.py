@@ -278,6 +278,7 @@ def make_fixtures_from_groups(tourney, generated_groups):
     players = tourney.get_active_players()
 
     (all_accessible_tables, acc_default) = tourney.get_accessible_tables()
+    first_table_number = tourney.get_first_table_number()
 
     for rd in generated_groups.get_rounds():
         round_no = rd.get_round_no()
@@ -312,7 +313,7 @@ def make_fixtures_from_groups(tourney, generated_groups):
         else:
             next_round_seq = start_round_seq + 1
 
-        candidate_tables = cttable.get_candidate_tables(rd, remaining_players, occupied_tables, all_accessible_tables, acc_default)
+        candidate_tables = cttable.get_candidate_tables(rd, remaining_players, occupied_tables, all_accessible_tables, acc_default, first_table_number)
 
         for ct in candidate_tables:
             group_fixtures = make_fixtures_from_group(ct.get_group(),

@@ -818,6 +818,10 @@ class NoTourneysPathException(Exception):
 class InvalidNumberOfDivisionsException(Exception):
     description = "The number of divisions must be between 1 and %d." % (MAX_DIVISIONS)
 
+class InvalidTableNumberException(TourneyException):
+    description = "All table numbers must be positive integers."
+    pass
+
 
 def get_teleost_mode_services_to_fetch(mode):
     if mode < 0 or mode >= len(teleost_modes):
@@ -1553,6 +1557,9 @@ class Tourney(object):
         return self.db_version >= (1, 2, 3)
 
     def has_rivals(self):
+        return self.db_version >= (1, 3, 2)
+
+    def has_first_table_number_feature(self):
         return self.db_version >= (1, 3, 2)
 
     def get_rank_method_list(self, exclude_incompatible=True):
@@ -4169,6 +4176,18 @@ order by 1""")
         cur.executemany("insert into board (table_no, accessible) values (?, ?)", params)
         cur.close()
         self.db.commit()
+
+    def set_first_table_number(self, table_number):
+        try:
+            table_number = int(table_number)
+            if table_number <= 0:
+                raise InvalidTableNumberException()
+            self.set_attribute("firsttablenumber", table_number)
+        except ValueError:
+            raise InvalidTableNumberException()
+
+    def get_first_table_number(self):
+        return self.get_int_attribute("firsttablenumber", 1)
 
     def get_unique_id(self):
         unique_id = self.get_attribute("uniqueid", None)
