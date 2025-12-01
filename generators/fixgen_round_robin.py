@@ -3,7 +3,7 @@ import fixgen
 import random
 
 name = "Round Robin"
-description = "Pairs only. Every player plays every other player in their division once. We generate N-1 rounds, where N is the number of players in the largest selected division. Smaller selected divisions will sit out later rounds."
+description = "Within each selected division, everyone plays everyone else once, playing one opponent in each round. If a division contains an odd number of players, each player will sit out one of the rounds. The fixture order is random."
 
 def int_or_none(s):
     try:
