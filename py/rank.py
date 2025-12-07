@@ -352,7 +352,7 @@ class RankWinsCumulative(RankMethod):
         return [ "wins", "cumulwins", "points" ]
 
     def get_description(self):
-        return "Players are ranked by number of wins, then sum of their cumulative win count after reach round, then points scored."
+        return "Players are ranked by number of wins, then sum of their cumulative win count after each round, then points scored."
 
     def get_extra_description(self):
         return """

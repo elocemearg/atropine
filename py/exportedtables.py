@@ -631,8 +631,8 @@ class ProgressiveStandings(FormattedTable):
                 self.append_cell(row_number, sr.position, align=ALIGN_RIGHT, classes=classes + ["rankpos"])
                 self.append_cell(row_number, player_name, classes=classes + ["rankname", "highlightonhover"], attrs={"data-hover-key" : player_name})
                 self.append_cell(row_number, wins_str, align=ALIGN_RIGHT, classes=classes + ["ranknumber"])
-                for val in sr.get_secondary_rank_values():
-                    self.append_cell(row_number, str(val), align=ALIGN_RIGHT, classes=classes + ["ranknumber"])
+                for val in sr.get_secondary_rank_value_strings():
+                    self.append_cell(row_number, val, align=ALIGN_RIGHT, classes=classes + ["ranknumber"])
                 row_number += 1
                 prev_wins_inc_draws = wins_inc_draws
             col_no += len(round_standings_headings)

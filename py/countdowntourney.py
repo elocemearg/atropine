@@ -2998,7 +2998,7 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
         rank_method_id = self.get_rank_method_id()
         rank_method = RANK_METHODS[rank_method_id]
 
-        games = [ g for g in self.get_games(game_type="P") if g.get_round_no() >= from_round_no ]
+        games = [ g for g in self.get_games(game_type="P") if g.get_round_no() >= from_round_no and (to_round_no is None or g.get_round_no() <= to_round_no) ]
         conditions = []
         if division is not None:
             conditions.append("p.division = %d" % (division))
