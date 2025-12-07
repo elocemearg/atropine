@@ -52,6 +52,8 @@ def get_date_string(tourney):
 
 def get_standings_per_round(tourney, division):
     max_round = tourney.get_latest_complete_round_in_division(division, game_type="P")
+    if max_round is None:
+        return {}
     round_standings = {}
     rounds = tourney.get_rounds()
     for r in rounds:
