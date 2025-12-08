@@ -1267,11 +1267,13 @@ class Game(object):
     def get_game_type(self):
         return self.game_type
 
-    def format_score(self, force_winner_first=False):
+    def format_score(self, force_winner_first=False, force_player_name_first=None):
         if self.s1 is None and self.s2 is None:
             return ""
 
-        if self.s1 is not None and self.s2 is not None and force_winner_first and self.s1 < self.s2:
+        if self.s1 is not None and self.s2 is not None and \
+                ((force_winner_first and self.s1 < self.s2) or \
+                (force_player_name_first and force_player_name_first.lower() == self.p2.get_name().lower())):
             (s1, s2) = (self.s2, self.s1)
         else:
             (s1, s2) = (self.s1, self.s2)

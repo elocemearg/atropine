@@ -136,6 +136,7 @@ def find_unique_abbreviations(names: list[str],
 # Given a list of all player names, find an abbreviation for each one which
 # isn't the same as any other player's abbreviation. Return a dict which
 # maps each player name to its abbreviation.
+# Not currently used?
 def abbreviate_names(names: list[str]) -> dict[str, str]:
     # First, split each name into words.
     names_to_words = {}
@@ -446,7 +447,223 @@ class FormattedTable(object):
             out.write("\n")
         return out.getvalue()
 
-class ProgressByPlayer(FormattedTable):
+def get_games_and_standings_per_round_per_player(
+        tourney: countdowntourney.Tourney, division: int,
+        round_standings : dict[int, list[countdowntourney.StandingsRow]]):
+    # Build a dict where we can look up the games any player played in a
+    # given round, and another where can look up a player's standings
+    # position at the end of a round.
+    standings_round_numbers = sorted(list(round_standings))
+    round_player_games = {} # (round_no, player_name) -> [ ("W"/"D"/"L"/"-", opponent_name, Game) ]
+    round_player_standings_row = {} # (round_no, player_name) -> StandingsRow
+    rounds = tourney.get_rounds()
+    round_numbers = [ r["num"] for r in rounds ]
+    for round_no in round_numbers:
+        games = tourney.get_games(round_no=round_no, division=division)
+        standings = round_standings.get(round_no, None)
+        for game in games:
+            game_players = game.get_players()
+            for i in [0, 1]:
+                gp = game_players[i]
+                gp_opp = game_players[i ^ 1]
+                dict_key = (round_no, gp.get_name())
+                if dict_key not in round_player_games:
+                    round_player_games[dict_key] = []
+                if game.is_draw():
+                    result = "D"
+                elif game.is_player_winner(gp):
+                    result = "W"
+                elif game.is_player_loser(gp):
+                    result = "L"
+                else:
+                    result = "-"
+                opponent_name = gp_opp.get_name()
+                round_player_games[dict_key].append((result, opponent_name, game))
+        if standings:
+            for standing in standings:
+                round_player_standings_row[(round_no, standing.name)] = standing
+    return (round_player_games, round_player_standings_row)
+
+class ProgressByPlayer(object):
+    def __init__(self, tourney: countdowntourney.Tourney, division: int,
+                round_standings: dict[int, list[countdowntourney.StandingsRow]]):
+        (round_player_games, round_player_standings_row) = get_games_and_standings_per_round_per_player(tourney, division, round_standings)
+        self.rounds = tourney.get_rounds()
+        self.player_names = sorted([ p.get_name() for p in tourney.get_players_from_division(division) ])
+
+        round_names = {}
+        round_numbers = []
+        for r in self.rounds:
+            num = r["num"]
+            round_names[num] = r["name"]
+            round_numbers.append(num)
+
+        rank_method = tourney.get_rank_method()
+        secondary_rank_headings = rank_method.get_secondary_rank_headings(short=True)
+
+        # One section per player.
+        # dict: playername -> [
+        #     {
+        #         "round": "<Round name>",
+        #         "games": [ { "result" : "W/D/L/-", "opponent" : "<name>", "score" : "<score_str>" }, ... ],
+        #         "standing" : {
+        #             "pos" : <position>,
+        #             "wins" : "<wins_str>",
+        #             "secondary_rankers" : [
+        #                 { "name" : "<short name>", "value" : "<value_str>" }, ...
+        #             ]
+        #         }
+        #     }
+        # ]
+        #
+        self.player_sections = {}
+        for player_name in self.player_names:
+            rounds = []
+            self.player_sections[player_name] = rounds
+            for round_number in round_numbers:
+                r = {}
+                round_name = round_names.get(round_number, "Round %d" % (round_number))
+                r["name"] = round_name
+                if round_name.startswith("Round "):
+                    short_name = "R%d" % (round_number)
+                else:
+                    short_name = round_name
+                r["shortname"] = short_name
+                r["name"] = round_names.get(round_number, "R%d" % (round_number))
+                r["games"] = []
+                for (result, opponent_name, game) in round_player_games.get((round_number, player_name), []):
+                    r["games"].append({
+                        "result" : result,
+                        "opponent" : opponent_name,
+                        "score" : game.format_score(force_player_name_first=player_name).replace(" ", "")
+                    })
+                standings_row = round_player_standings_row.get((round_number, player_name))
+                if standings_row:
+                    secondary_rank_values = standings_row.get_secondary_rank_value_strings()
+                    r["standing"] = {
+                        "pos" : standings_row.position,
+                        "wins" : standings_row.get_wins_inc_draws_str(),
+                        "wins_value" : standings_row.get_wins_inc_draws(),
+                        "secondary_rankers" : [
+                            { "name" : secondary_rank_headings[i], "value" : secondary_rank_values[i] } for i in range(len(secondary_rank_values))
+                        ]
+                    }
+                if r["games"] or "standing" in r:
+                    rounds.append(r)
+            self.player_sections[player_name] = rounds
+
+    def to_html(self):
+        lines = []
+        lines.append("<table class=\"progressbyplayer\">")
+
+        lines.append("<tr>")
+        lines.append("<th></th>") # Player name column
+        for r in self.rounds:
+            lines.append("<th>" + htmlcommon.escape(r["name"]) + "</th>")
+        lines.append("</tr>")
+
+        player_index = 0
+        for player_name in self.player_names:
+            rounds = self.player_sections.get(player_name, [])
+            if not rounds:
+                continue
+
+            # Find the most games this player played in a round, and the
+            # player name cell must span that many rows plus one.
+            # The extra one is for the standings summary for each round.
+            most_games_in_round = 0
+            for r in rounds:
+                num_games = len(r.get("games", []))
+                if num_games > most_games_in_round:
+                    most_games_in_round = num_games
+
+            if most_games_in_round == 0:
+                # This player played no games
+                continue
+
+            player_index += 1
+            player_parity_class = ("oddplayer" if player_index % 2 else "evenplayer")
+            lines.append("<tr class=\"progressbyplayernewplayer %s\">" % (player_parity_class))
+            lines.append("<td rowspan=\"%d\" class=\"progressbyplayername\">%s</td>" % (most_games_in_round + 1, htmlcommon.escape(player_name)))
+
+            # Each round is in a different column, so output the player's
+            # first game in each round, then the player's second game in each
+            # round, and so on.
+            row_number = 0
+            for row_number in range(most_games_in_round):
+                row = []
+                games_in_row = 0
+                for (round_idx, round_obj) in enumerate(self.rounds):
+                    if round_idx >= len(rounds):
+                        games = []
+                    else:
+                        games = rounds[round_idx].get("games", [])
+                    if row_number < len(games):
+                        row.append(games[row_number])
+                        games_in_row += 1
+                    else:
+                        row.append(None)
+                if row_number > 0:
+                    lines.append("<tr class=\"" + player_parity_class + "\">")
+                if games_in_row > 0:
+                    for game in row:
+                        lines.append("<td>")
+                        if game:
+                            lines.append(htmlcommon.win_loss_letter_to_html(game["result"]))
+                            lines.append(htmlcommon.escape(game["score"]) + " " + htmlcommon.escape(game["opponent"]))
+                        lines.append("</td>")
+                lines.append("</tr>")
+
+            # One more row to show this player's standing after each round
+            lines.append("<tr class=\"%s\">" % (player_parity_class))
+            for (round_idx, round_obj) in enumerate(self.rounds):
+                if round_idx >= len(rounds):
+                    standing = None
+                else:
+                    standing = rounds[round_idx].get("standing")
+                lines.append("<td class=\"progressbyplayerstandings\">")
+                standing_fragments = []
+                if standing:
+                    standing_fragments.append(htmlcommon.ordinal_number(standing["pos"]) + ", " + standing["wins"] + (" win" if standing["wins_value"] > 0 and standing["wins_value"] <= 1 else " wins"))
+                    for ranker in standing.get("secondary_rankers", []):
+                        if ranker["name"] == "Pts":
+                            standing_fragments.append(", " + ranker["value"] + " pts")
+                        else:
+                            standing_fragments.append(", " + ranker["name"] + " " + ranker["value"])
+                    lines.append("".join(standing_fragments))
+                lines.append("</td>")
+            lines.append("</tr>")
+        lines.append("</table>")
+        return "\n".join(lines)
+
+    def to_text(self):
+        lines = []
+        for player_name in self.player_names:
+            lines.append(player_name)
+            rounds = self.player_sections.get(player_name, [])
+            if not rounds:
+                lines.append("(No rounds to show)")
+            for r in rounds:
+                round_fragments = [ r.get("shortname", "") + ": "]
+                games = r.get("games", [])
+                round_fragments.append(", ".join([ (g.get("result", "?") + " " + g.get("score", "") + " " + g.get("opponent", "")) for g in games ]))
+                if "standing" in r:
+                    if games:
+                        round_fragments.append("; ")
+                    s = r["standing"]
+                    round_fragments.append(htmlcommon.ordinal_number(s["pos"]) + " " + s["wins"] + "W")
+                    for ranker in s.get("secondary_rankers", []):
+                        if ranker["name"] == "Pts":
+                            round_fragments.append(" " + ranker["value"] + "pts")
+                        else:
+                            round_fragments.append(" " + ranker["name"] + " " + ranker["value"])
+                lines.append("".join(round_fragments))
+            lines.append("")
+        return "\n".join(lines)
+
+# Not currently used, prefer ProgressByPlayer which doesn't abbreviate names
+# and displays the information less compactly but a lot clearly.
+class ProgressByPlayerTable(FormattedTable):
     def __init__(self, tourney: countdowntourney.Tourney, division: int,
                 round_standings: dict[int, list[countdowntourney.StandingsRow]],
                 names_to_abbrs=None):
@@ -481,34 +698,7 @@ class ProgressByPlayer(FormattedTable):
         prune_name = tourney.get_auto_prune_name()
         player_short_display[prune_name] = "Prune"
 
-        # Build a dict where we can look up the games any player played in a
-        # given round, and another where can look up a player's standings
-        # position at the end of a round.
-        round_player_games = {} # (round_no, player_name) -> [ ("W"/"D"/"L"/"?", opponent_name, Game) ]
-        round_player_standings_row = {} # (round_no, player_name) -> StandingsRow
-        for round_no in round_numbers:
-            games = tourney.get_games(round_no=round_no, division=division)
-            standings = round_standings[round_no]
-            for game in games:
-                game_players = game.get_players()
-                for i in [0, 1]:
-                    gp = game_players[i]
-                    gp_opp = game_players[i ^ 1]
-                    dict_key = (round_no, gp.get_name())
-                    if dict_key not in round_player_games:
-                        round_player_games[dict_key] = []
-                    if game.is_draw():
-                        result = "D"
-                    elif game.is_player_winner(gp):
-                        result = "W"
-                    elif game.is_player_loser(gp):
-                        result = "L"
-                    else:
-                        result = "-"
-                    opponent_name = gp_opp.get_name()
-                    round_player_games[dict_key].append((result, opponent_name, game))
-            for standing in standings:
-                round_player_standings_row[(round_no, standing.name)] = standing
+        (round_player_games, round_player_standings_row) = get_games_and_standings_per_round_per_player(tourney, division, round_standings)
 
         row_number = 0
         for player_name in player_names:

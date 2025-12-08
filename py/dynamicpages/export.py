@@ -235,13 +235,13 @@ def export_html(tourney, response, filename, show_standings_before_finals, show_
             if show_table_numbers:
                 response.writeln("<tr class=\"tablenumberrow\"><th colspan=\"3\">Table %d</th></tr>" % g.table_no)
         response.writeln("<tr class=\"gamerow\">")
-        names = g.get_player_names();
-        response.writeln("<td class=\"gameplayer1\">%s</td>" % names[0]);
+        names = g.get_player_names()
+        response.writeln("<td class=\"gameplayer1\">%s</td>" % htmlcommon.escape(names[0]))
         if g.s1 is None or g.s2 is None:
             response.writeln("<td class=\"gamescore\"> v </td>")
         else:
-            response.writeln("<td class=\"gamescore\">%s</td>" % htmlcommon.escape(g.format_score()));
-        response.writeln("<td class=\"gameplayer2\">%s</td>" % names[1]);
+            response.writeln("<td class=\"gamescore\">%s</td>" % htmlcommon.escape(g.format_score()))
+        response.writeln("<td class=\"gameplayer2\">%s</td>" % htmlcommon.escape(names[1]))
         response.writeln("</tr>")
         prev_table_no = g.table_no
         prev_round_no = g.round_no
@@ -251,26 +251,26 @@ def export_html(tourney, response, filename, show_standings_before_finals, show_
         response.writeln("</table>")
 
     if tourney.has_per_round_standings():
-        response.writeln("<h2>Standings after each round</h2>")
         player_names = [ p.get_name() for p in tourney.get_players(include_prune=True) ]
         div_to_round_standings = {}
         for division in range(num_divisions):
             div_to_round_standings[division] = get_standings_per_round(tourney, division)
+        #abbreviated_names = exportedtables.abbreviate_names(player_names)
+        response.writeln("<h2>Progress by player</h2>")
+        for division in range(num_divisions):
+            if num_divisions > 1:
+                response.writeln("<h3>" + htmlcommon.escape(tourney.get_division_name(division)) + "</h3>")
+            round_standings = div_to_round_standings[division]
+            table = exportedtables.ProgressByPlayer(tourney, division, round_standings)
+            response.writeln(table.to_html())
+
+        response.writeln("<h2>Standings after each round</h2>")
         for division in range(num_divisions):
             if num_divisions > 1:
                 response.writeln("<h3>" + htmlcommon.escape(tourney.get_division_name(division)) + "</h3>")
             round_standings = div_to_round_standings[division]
             sptable = exportedtables.ProgressiveStandings(tourney, round_standings)
             response.writeln(sptable.to_html())
-
-        abbreviated_names = exportedtables.abbreviate_names(player_names)
-        response.writeln("<h2>Progress per player</h2>")
-        for division in range(num_divisions):
-            if num_divisions > 1:
-                response.writeln("<h3>" + htmlcommon.escape(tourney.get_division_name(division)) + "</h3>")
-            round_standings = div_to_round_standings[division]
-            table = exportedtables.ProgressByPlayer(tourney, division, round_standings, abbreviated_names)
-            response.writeln(table.to_html())
 
     response.writeln("</div>")
     response.writeln("</body></html>");
@@ -479,10 +479,9 @@ def export_text(tourney, response, filename, show_standings_before_finals, show_
     if tourney.has_per_round_standings():
         response.writeln("")
         response.writeln("")
-        response.writeln("STANDINGS AFTER EACH ROUND")
+        response.writeln("PROGRESS BY PLAYER")
         response.writeln("")
         player_names = [ p.get_name() for p in tourney.get_players(include_prune=True) ]
-        abbreviated_names = exportedtables.abbreviate_names(player_names)
 
         div_to_round_standings = {}
         for division in range(num_divisions):
@@ -492,19 +491,7 @@ def export_text(tourney, response, filename, show_standings_before_finals, show_
                 response.writeln(tourney.get_division_name(division))
                 response.writeln("")
             round_standings = div_to_round_standings[division]
-            sptable = exportedtables.ProgressiveStandings(tourney, round_standings, abbreviated_names if len(round_standings) > 3 else None)
-            response.writeln(sptable.to_text())
-            response.writeln("")
-            response.writeln("")
-
-        response.writeln("PROGRESS PER PLAYER")
-        response.writeln("")
-        for division in range(num_divisions):
-            if num_divisions > 1:
-                response.writeln(tourney.get_division_name(division))
-                response.writeln("")
-            round_standings = div_to_round_standings[division]
-            table = exportedtables.ProgressByPlayer(tourney, division, round_standings, abbreviated_names)
+            table = exportedtables.ProgressByPlayer(tourney, division, round_standings)
             response.writeln(table.to_text())
             response.writeln("")
             response.writeln("")

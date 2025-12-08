@@ -388,6 +388,47 @@ div.exportedresults {
 	margin-left: 20px;
 }
 
+table.progressbyplayer {
+    border: 1px solid black;
+    border-collapse: collapse;
+    font-size: 10pt;
+}
+
+table.progressbyplayer td.progressbyplayername {
+    font-weight: bold;
+    font-size: 12pt;
+}
+
+table.progressbyplayer tr.progressbyplayernewplayer {
+    border-top: 4px double black;
+}
+
+table.progressbyplayer td.progressbyplayerstandings {
+    border-top: 1px dashed gray;
+    padding: 5px;
+}
+
+table.progressbyplayer th {
+    background-color: #dddddd;
+    font-size: 12pt;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+}
+
+table.progressbyplayer td {
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    padding: 5px;
+}
+
+table.progressbyplayer tr.evenplayer {
+    background-color: #ffee77;
+}
+
+table.progressbyplayer tr.oddplayer {
+    background-color: #ffffaa;
+}
+
 /* Put a faint grey border round the coloured team dot so it shows up better */
 span.faintoutline {
     text-shadow:
