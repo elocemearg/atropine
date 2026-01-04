@@ -102,7 +102,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
         response.writeln("<div class=\"mainpane\">");
 
         round_name = tourney.get_round_name(round_no);
-        response.writeln("<h1>Fixture editor: %s</h1>" % round_name);
+        response.writeln("<h1>Add/edit fixtures: %s</h1>" % round_name);
 
         # Javascript function to tick/untick all heat game boxes for a division
         response.writeln("""
@@ -321,8 +321,8 @@ On this page you can add or remove games in this round, or change which players
 are involved in a game.
 </p>
 <p>
-You cannot use this page to enter or edit the score of a game. Use the
-<a href="%s">%s Results Entry</a> page to do that.
+You cannot use this page to set a game's score.
+Use the <a href="%s">%s Results Entry</a> page to do that.
 </p>
 """ % (score_editor_url, round_name))
 

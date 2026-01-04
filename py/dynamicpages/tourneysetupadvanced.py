@@ -119,8 +119,8 @@ The automatic prune is treated specially and should not be used to represent a
 human player. Instead, create the new player on the
 <a href="player?addplayer=1">Add New Player</a> page.
 If they already played any games recorded as being played by Prune, use the
-round's Edit Fixtures page to record that the new player, not Prune, played the
-games.
+round's Add/Edit Fixtures page to record that the new player, not Prune, played
+the games.
 </p>""")
         response.writeln('<p><input type="submit" name="submit" value="Save Changes" class="bigbutton" /></p>')
 
