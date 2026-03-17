@@ -133,7 +133,7 @@ def get_group_promotion_penalty(p1_wins, p1_position, p2_wins, p2_position, high
 # into account that they've played before num_played times, and p1's win count
 # differs from p2's win count by win_diff (which is always non-negative).
 # This is also called the "weighting".
-def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_wins=True, equal_wins_are_equal_players=False):
+def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_wins=True, equal_wins_are_equal_players=False, upfloat_prefer_highest=True):
     pen = 0;
 
     # No, you are not allowed to play yourself
@@ -160,7 +160,7 @@ def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_
 
     game_pen = get_win_difference_penalty(win_diff)
     if equal_wins_are_equal_players:
-        if win_diff > 0:
+        if win_diff > 0 and upfloat_prefer_highest:
             # If we have to put one or more players with N-1 wins with a
             # player with N wins, prefer to select the highest-ranked players
             # on N-1 wins, who should play random player(s) on N wins.
@@ -180,7 +180,9 @@ def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_
     return pen;
 
 # Calculate the matrix of penalties for each pair of players.
-def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, highest_pos_by_win_count, rank_by_wins=True, equal_wins_are_equal_players=False):
+def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix,
+        highest_pos_by_win_count, rank_by_wins=True,
+        equal_wins_are_equal_players=False, upfloat_prefer_highest=True):
     matrix_size = len(players);
     matrix = [];
 
@@ -196,10 +198,10 @@ def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, high
             p2 = players[i2]
             pen = max(get_penalty(p1, p2, played_matrix[i1][i2],
                 win_diff_matrix[i1][i2], highest_pos_by_win_count,
-                rank_by_wins, equal_wins_are_equal_players),
+                rank_by_wins, equal_wins_are_equal_players, upfloat_prefer_highest),
                 get_penalty(p2, p1, played_matrix[i2][i1],
                     win_diff_matrix[i2][i1], highest_pos_by_win_count,
-                    rank_by_wins, equal_wins_are_equal_players)
+                    rank_by_wins, equal_wins_are_equal_players, upfloat_prefer_highest)
             );
             vector.append(pen);
 
@@ -424,9 +426,9 @@ class PlayerGroup(object):
     def __len__(self):
         return len(self.player_list);
 
-def shuffle_joint_positioned_players(players, group_size, equal_wins_are_equal_players=False):
+def shuffle_joint_positioned_players(players, group_size, equal_wins_are_equal_players=False, upfloat_prefer_highest=True):
     promotees = [ False for p in players ]
-    if equal_wins_are_equal_players and group_size > 0 and len(players) % group_size == 0:
+    if equal_wins_are_equal_players and group_size > 0 and len(players) % group_size == 0 and upfloat_prefer_highest:
         # Establish which positions are likely to be promoted to the next win group
         for idx in range(0, len(players), group_size):
             for i in range(group_size):
@@ -457,6 +459,22 @@ def shuffle_joint_positioned_players(players, group_size, equal_wins_are_equal_p
                 players[k] = chunk[k - i]
         i = j
 
+    # Players now at the top of their shuffled win group will be selected
+    # first for upfloating to the next win group if necessary. However, we
+    # don't want to upfloat a Prune unless there's no other option, so bubble
+    # any Prunes down to the bottom of their win group.
+    changed = True
+    while changed:
+        changed = False
+        for cur_pos in range(len(players) - 1):
+            # If the player at cur_pos is a prune and is on the same number of
+            # wins as the player at cur_pos + 1, swap them over.
+            if players[cur_pos].is_prune() and not(players[cur_pos + 1].is_prune()) and players[cur_pos].wins == players[cur_pos + 1].wins:
+                if not players[cur_pos + 1].is_prune():
+                    changed = True
+                    (players[cur_pos], players[cur_pos + 1]) = (players[cur_pos + 1], players[cur_pos])
+
+
 def to_ordinal(n):
     if (n // 10) % 10 == 1:
         return str(n) + "th"
@@ -474,7 +492,9 @@ def to_ordinal(n):
 # configuration. This takes into account that the number of players on N
 # wins might not be a multiple of the group size and there must be some
 # promotees, but doesn't take into account rematches or anything else.
-def get_penalty_lower_bound_given_equal_wins_are_equal_players(win_counts, standings_positions, highest_pos_by_win_count, group_size):
+def get_penalty_lower_bound_given_equal_wins_are_equal_players(win_counts,
+        standings_positions, highest_pos_by_win_count, group_size,
+        upfloat_prefer_highest):
     # For the lower bound, assume the minimum possible number of matches
     # between players of different win counts.
     assert(len(win_counts) % group_size == 0)
@@ -493,12 +513,13 @@ def get_penalty_lower_bound_given_equal_wins_are_equal_players(win_counts, stand
             for i in range(group_size):
                 for j in range(i + 1, group_size):
                     table_weight += get_win_difference_penalty(abs(win_counts[idx + i] - win_counts[idx + j]))
-                    table_weight += get_group_promotion_penalty(
-                            win_counts[idx + i],
-                            standings_positions[idx + i],
-                            win_counts[idx + j],
-                            standings_positions[idx + j],
-                            highest_pos_by_win_count)
+                    if upfloat_prefer_highest:
+                        table_weight += get_group_promotion_penalty(
+                                win_counts[idx + i],
+                                standings_positions[idx + i],
+                                win_counts[idx + j],
+                                standings_positions[idx + j],
+                                highest_pos_by_win_count)
             lower_bound_weight += table_weight / group_size
     return lower_bound_weight
 
@@ -676,7 +697,8 @@ def hill_climb(groups, penalty_matrix, time_limit_ms=None):
 
 def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
         limit_ms=None, init_max_rematches=0, init_max_win_diff=0,
-        ignore_rematches_before=None, equal_wins_are_equal_players=False):
+        ignore_rematches_before=None, equal_wins_are_equal_players=False,
+        upfloat_prefer_highest=True):
     """swissN(): the public entry point to the SwissN generator.
 
     Generate a number of groups (or "tables"), each with a number of players
@@ -732,8 +754,16 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     equal_wins_are_equal_players: do not distinguish between players on the
     same number of wins. This effectively matches each player with random
     opponents on the same win count if possible. Standings position is only
-    considered when deciding who has to be promoted to play people of a higher
+    considered when deciding who has to be upfloated to play people of a higher
     win count.
+
+    upfloat_prefer_highest: if equal_wins_are_equal_players is True, and we
+    have to "upfloat" players to a higher win group because the number of
+    people on X wins isn't a convenient multiple of group_size, then prefer
+    to upfloat a win-count group's highest-ranked players if
+    upfloat_prefer_highest is True. If upfloat_prefer_highest is False, upfloat
+    randomly chosen players in a win-count group.
+    If equal_wins_are_equal_players is False, this argument is ignored.
 """
 
     log = True
@@ -776,8 +806,10 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     # If equal_wins_are_equal_players, we also shuffle any "equivalent" players
     # (same win count) so they get a random position in their win group, except
     # that players at the top of their win group and likely to be chosen for
-    # promotion to the next win group are left at the top of their win group.
-    shuffle_joint_positioned_players(players, group_size, equal_wins_are_equal_players and rank_by_wins)
+    # upfloating to the next win group are left at the top of their win group.
+    shuffle_joint_positioned_players(players, group_size,
+            equal_wins_are_equal_players and rank_by_wins,
+            upfloat_prefer_highest)
 
     # Check that the group size makes sense for the number of players. By
     # this point we should have added any required auto-prunes, so the number
@@ -855,7 +887,9 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
         if p.wins not in highest_pos_by_win_count or p.position < highest_pos_by_win_count[p.wins]:
             highest_pos_by_win_count[p.wins] = p.position
 
-    penalty_matrix = calculate_weight_matrix(games, players, played_matrix, win_diff_matrix, highest_pos_by_win_count, rank_by_wins, equal_wins_are_equal_players)
+    penalty_matrix = calculate_weight_matrix(games, players, played_matrix,
+            win_diff_matrix, highest_pos_by_win_count, rank_by_wins,
+            equal_wins_are_equal_players, upfloat_prefer_highest)
     penalty_matrix_size = len(players);
 
     best_grouping = None
@@ -896,7 +930,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     # Setting the lower bound too low is always safe but might waste time.
     if equal_wins_are_equal_players and rank_by_wins and group_size > 0:
         win_counts = sorted([ p.wins for p in players ], reverse=True)
-        lower_bound_weight = get_penalty_lower_bound_given_equal_wins_are_equal_players(win_counts, standings_positions, highest_pos_by_win_count, group_size)
+        lower_bound_weight = get_penalty_lower_bound_given_equal_wins_are_equal_players(win_counts, standings_positions, highest_pos_by_win_count, group_size, upfloat_prefer_highest)
         if log:
             sys.stderr.write("[swissN] Lower bound penalty is %f\n" % (lower_bound_weight))
     else:

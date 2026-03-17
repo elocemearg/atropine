@@ -12,6 +12,7 @@ description = "Players are matched against opponents who have performed similarl
 
 valid_group_sizes = (2, 3, 4, 5, -5)
 MATCHING_STRATEGY_DEFAULT = "birmingham"
+UPFLOAT_STRATEGY_DEFAULT = "preferhighest"
 
 def int_or_none(s):
     try:
@@ -231,13 +232,24 @@ function generate_fixtures_clicked() {
 
     elements.append(htmlform.HTMLFormControlStart())
     matching_strategy_radio_buttons = htmlform.HTMLFormRadioButton("matchingstrategy", "Player matching strategy", [
-            htmlform.HTMLFormChoice("classic", "Classic: pair players by position in standings table"),
-            htmlform.HTMLFormChoice("birmingham", "Birmingham: pair players by win count then random chance, ignoring standings position")
+            htmlform.HTMLFormChoice("classic", "Classic: match players by position in standings table"),
+            htmlform.HTMLFormChoice("birmingham", "Birmingham: match players by win count then random chance, ignoring standings position")
         ],
-        small_print="The Birmingham, or <abbr title=\"Mix Strata Randomly\">MSR</abbr>, strategy tries to match every player with random opponents on the same number of wins. Specific standings position is disregarded, except that if we must promote someone to play an opponent with a higher win count, prefer to promote the highest-ranked player(s) on the lower number of wins.",
+        small_print="The Birmingham, or <abbr title=\"Mix Strata Randomly\">MSR</abbr>, strategy tries to match every player with random opponents on the same number of wins. Specific standings position is disregarded except when choosing a player to upfloat (see below).",
         small_print_is_html=True)
     matching_strategy_radio_buttons.set_value(settings.get("matchingstrategy", MATCHING_STRATEGY_DEFAULT))
     elements.append(matching_strategy_radio_buttons)
+    elements.append(htmlform.HTMLFormControlEnd())
+
+    elements.append(htmlform.HTMLFormControlStart(indent=True))
+    birmingham_upfloat_radio_buttons = htmlform.HTMLFormRadioButton("upfloatstrategy", "When using the Birmingham strategy, if we have to upfloat players to a higher win-count group:", [
+            htmlform.HTMLFormChoice("preferhighest", "Prefer to upfloat the highest-ranked player(s) in a win-count group"),
+            htmlform.HTMLFormChoice("random", "Upfloat randomly selected player(s) in a win-count group")
+        ],
+        small_print="An \"upfloat\" is what happens when it's impossible for everyone to play opponents on the same win count, and one or more players must be treated as if they're on a higher win count. Prune will not be upfloated unless it's unavoidable.",
+    )
+    birmingham_upfloat_radio_buttons.set_value(settings.get("upfloatstrategy", UPFLOAT_STRATEGY_DEFAULT))
+    elements.append(birmingham_upfloat_radio_buttons)
     elements.append(htmlform.HTMLFormControlEnd())
 
     elements.append(htmlform.HTMLFormControlStart())
@@ -554,6 +566,7 @@ def generate(tourney, settings, div_rounds):
             gencommon.add_auto_prunes(tourney, players, group_size)
 
         equal_wins_are_equal_players = settings.get("matchingstrategy", MATCHING_STRATEGY_DEFAULT) == "birmingham"
+        upfloat_prefer_highest = not(equal_wins_are_equal_players) or (settings.get("upfloatstrategy", UPFLOAT_STRATEGY_DEFAULT) == "preferhighest")
 
         # Set a sensible cap of five minutes, in case the user has entered a
         # huge number to be clever
@@ -603,7 +616,8 @@ def generate(tourney, settings, div_rounds):
                     init_max_rematches=init_max_rematches,
                     init_max_win_diff=init_max_win_diff,
                     ignore_rematches_before=ignore_rematches_before,
-                    equal_wins_are_equal_players=equal_wins_are_equal_players)
+                    equal_wins_are_equal_players=equal_wins_are_equal_players,
+                    upfloat_prefer_highest=upfloat_prefer_highest)
 
         if groups is None:
             raise countdowntourney.FixtureGeneratorException("%s: Unable to generate any permissible groupings in the given time limit." % (tourney.get_division_name(div_index)))
