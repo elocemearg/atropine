@@ -96,7 +96,8 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                 show_finals_column=False,
                 rank_finals=False,
                 starting_from_round=starting_from_round,
-                last_round=last_round)
+                last_round=last_round,
+                show_float_balance_column=True)
 
         if show_finals_placings:
             response.writeln("<h2>After finals</h2>")
@@ -109,7 +110,8 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                     show_finals_column=True,
                     rank_finals=True,
                     starting_from_round=starting_from_round,
-                    last_round=last_round)
+                    last_round=last_round,
+                    show_float_balance_column=True)
 
         response.writeln("</div>"); #mainpane
     except countdowntourney.TourneyException as e:

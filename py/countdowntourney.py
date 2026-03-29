@@ -4268,6 +4268,75 @@ order by 1""")
     def set_rank_finals(self, rank_finals):
         return self.set_attribute("rankfinals", 1 if rank_finals else 0)
 
+    def get_float_balances(self, from_round=1, to_round=None):
+        return get_float_balances(self.get_games(game_type="P"), from_round, to_round)
+
+# Return a dict { player_name -> float_balance } based on the Game objects
+# in the list "games" which have type = "P".
+def get_float_balances(games, from_round=1, to_round=None):
+    rounds = {}
+    round_numbers = []
+    for g in games:
+        if g.get_game_type() == "P":
+            round_no = g.get_round_no()
+            if round_no < from_round or (to_round is not None and round_no > to_round):
+                continue
+            if round_no not in rounds:
+                rounds[round_no] = []
+                round_numbers.append(round_no)
+            rounds[round_no].append(g)
+    round_numbers.sort()
+
+    # player_name -> wins, up to but not including the round currently being worked on by the loop below.
+    player_wins = {}
+
+    # player_name -> float baance, including every game the loop has visited so far.
+    player_float_balance = {}
+
+    for round_no in round_numbers:
+        # First, just consider the matchups - take account of any win-count
+        # difference between opponents and add that to their float balances.
+        # Also count the number of wins each player got in this round,
+        # but don't add them to player_wins yet - we want to calculate
+        # float balance changes with respect to what the win counts were
+        # at the start of the round.
+        player_wins_this_round = {}
+        for g in rounds[round_no]:
+            player_names = g.get_player_names()
+            wins = []
+            for i in (0, 1):
+                wins.append(player_wins.get(player_names[i], 0))
+            if wins[0] != wins[1]:
+                # If P1 has a greater win count than P2, then P1 is said
+                # to have floated down and P2 is said to have floated up.
+                for i in (0, 1):
+                    player_float_balance[player_names[i]] = player_float_balance.get(player_names[i], 0) + (wins[i ^ 1] - wins[i])
+
+            if g.is_complete():
+                if g.is_draw():
+                    # Give both players 0.5 wins
+                    for i in (0, 1):
+                        player_wins_this_round[player_names[i]] = player_wins_this_round.get(player_names[i], 0) + 0.5
+                elif not g.is_double_loss():
+                    # Give the winner 1 win and the loser 0
+                    if g.s1 > g.s2:
+                        winner_index = 0
+                    elif g.s2 > g.s1:
+                        winner_index = 1
+                    else:
+                        winner_index = None
+                    if winner_index is not None:
+                        player_wins_this_round[player_names[winner_index]] = player_wins_this_round.get(player_names[winner_index], 0) + 1
+
+        # We handled all the games in this round.
+        # Now add the wins for each player achieved in this round to the
+        # win totals so far in player_wins. This will form the basis of
+        # calculating float balances for the next round.
+        for player_name in player_wins_this_round:
+            player_wins[player_name] = player_wins.get(player_name, 0) + player_wins_this_round.get(player_name, 0)
+
+    return player_float_balance
+
 
 def get_game_types():
     return [

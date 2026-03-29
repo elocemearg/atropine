@@ -866,18 +866,20 @@ def show_standings_table(response, tourney, show_draws_column,
         show_points_column, show_spread_column, show_first_second_column=False,
         linkify_players=False, show_tournament_rating_column=None,
         show_qualified=False, which_division=None, show_finals_column=True,
-        rank_finals=None, starting_from_round=1, last_round=None):
+        rank_finals=None, starting_from_round=1, last_round=None,
+        show_float_balance_column=False):
     response.writeln(make_standings_table(tourney, show_draws_column,
         show_points_column, show_spread_column, show_first_second_column,
         linkify_players, show_tournament_rating_column, show_qualified,
         which_division, show_finals_column, rank_finals, starting_from_round,
-        last_round=last_round))
+        last_round=last_round, show_float_balance_column=show_float_balance_column))
 
 def make_standings_table(tourney, show_draws_column, show_points_column,
         show_spread_column, show_first_second_column=False,
         linkify_players=False, show_tournament_rating_column=None,
         show_qualified=False, which_division=None, show_finals_column=True,
-        rank_finals=None, starting_from_round=1, last_round=None):
+        rank_finals=None, starting_from_round=1, last_round=None,
+        show_float_balance_column=False):
     html = []
 
     num_divisions = tourney.get_num_divisions()
@@ -901,6 +903,11 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
 
     if show_tournament_rating_column is None:
         show_tournament_rating_column = tourney.get_show_tournament_rating_column()
+
+    if show_float_balance_column:
+        name_to_float_balance = tourney.get_float_balances(starting_from_round, last_round)
+    else:
+        name_to_float_balance = {}
 
     html.append("<table class=\"ranktable\">")
     for div_index in div_list:
@@ -937,6 +944,8 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             html.append("<th>Spread</th>")
         if show_first_second_column:
             html.append("<th>1st/2nd</th>")
+        if show_float_balance_column:
+            html.append("<th title=\"Upfloat/downfloat balance. When a player is drawn to play an opponent on a higher number of wins, this is an upfloat (+) and the opposite is a downfloat (-).\">Float balance</th>")
         if show_tournament_rating_column:
             html.append("<th>Tournament Rating</th>")
         html.append("</tr>")
@@ -1011,6 +1020,8 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
                 html.append("<td class=\"ranknumber\">%+d</td>" % (spread))
             if show_first_second_column:
                 html.append("<td class=\"rankright\">%d/%d</td>" % (num_first, played - num_first))
+            if show_float_balance_column:
+                html.append("<td class=\"ranknumber\">%s</td>" % (halves_to_html(int(name_to_float_balance.get(name, 0) * 2), show_sign=True)))
             if show_tournament_rating_column:
                 html.append("<td class=\"ranknumber\">")
                 if tournament_rating is not None:
@@ -1056,6 +1067,25 @@ def ordinal_number(n):
         return "%drd" % (n)
     else:
         return "%dth" % (n)
+
+# halves is an integer. We divide it by 2 and produce the result with a "½"
+# character if necessary using "&frac12;", e.g. 2½ or -½.
+def halves_to_html(halves, show_sign=False):
+    if halves < 0:
+        sign = "-"
+    elif halves > 0 and show_sign:
+        sign = "+"
+    else:
+        sign = ""
+    halves = abs(halves)
+    if halves % 2 == 1:
+        if halves == 1:
+            return sign + "&frac12;"
+        else:
+            return "%s%d&frac12;" % (sign, halves // 2)
+    else:
+        return "%s%d" % (sign, halves // 2)
+
 
 def win_loss_letter_to_html(x, additional_text=None, title_text=None, additional_classes=None, attrs=None):
     if x in "WDL":

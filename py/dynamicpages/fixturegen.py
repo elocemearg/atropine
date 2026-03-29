@@ -73,7 +73,6 @@ class FixtureGeneratorSettings(object):
     def get_previous_settings(self):
         return self.default_settings
 
-
 def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds, fixgen_settings):
     tourney_name = tourney.get_name()
     response.writeln("<form method=\"POST\">");
@@ -86,6 +85,9 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
     response.writeln("</div>")
     num_divisions = tourney.get_num_divisions()
     show_wins_and_played = False
+
+    player_name_to_float_balance = tourney.get_float_balances()
+
     for r in rounds:
         round_no = r.get_round_no()
         response.writeln("<h2>%s</h2>" % htmlcommon.escape(r.get_round_name()))
@@ -128,30 +130,40 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
                     standings_row = standings_dict.get(name, None)
                     if player.is_auto_prune():
                         player_td_html.append(htmlcommon.player_to_non_link(player, emboldenise=True))
-                        game_standings_info_td_html.append(["", "", ""])
+                        game_standings_info_td_html.append(["", "", "", ""])
                     elif standings_row is None:
                         player_td_html.append(htmlcommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True) + " ?")
-                        game_standings_info_td_html.append(["", "", ""])
+                        game_standings_info_td_html.append(["", "", "", ""])
                     else:
+                        standings_position_str = "<span title=\"Current position in standings\">" + htmlcommon.ordinal_number(standings_row.position) + "</span>"
                         if show_wins_and_played:
                             # Display win count as e.g. "3" or "2½"
                             w = 2 * standings_row.wins + standings_row.draws
-                            if w % 2 == 1:
-                                wins_str = "%d&frac12;" % (w // 2)
-                            else:
-                                wins_str = "%d" % (w // 2)
+                            wins_str = htmlcommon.halves_to_html(w)
                             win_loss_record = "%s/%d" % (wins_str, standings_row.played)
+                            win_loss_record = "<span title=\"%s wins/%d games played\">%s</span>" % (wins_str, standings_row.played, win_loss_record)
                         else:
                             # Display wins-losses[-draws]
-                            win_loss_record = "%d-%d" % (standings_row.wins, standings_row.played - standings_row.wins - standings_row.draws)
+                            wins = standings_row.wins
+                            draws = standings_row.draws
+                            losses = standings_row.played - wins - draws
+                            win_loss_record = "%d-%d" % (wins, losses)
                             if standings_row.draws:
-                                win_loss_record += "-%d" % (standings_row.draws)
+                                win_loss_record += "-%d" % (draws)
+                                win_loss_record = "<span title=\"%d wins - %d losses - %d draws\">%s</span>" % (wins, losses, draws, win_loss_record)
+                            else:
+                                win_loss_record = "<span title=\"%d wins - %d losses\">%s</span>" % (wins, losses, win_loss_record)
+
+                        fb = int(2 * player_name_to_float_balance.get(name, 0))
+                        float_balance_str = "<span title=\"Upfloat/downfloat (+/-) balance so far\">(" + htmlcommon.halves_to_html(fb, show_sign=True) + ")</span>"
+
                         player_td_html.append(htmlcommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True))
                         game_standings_info_td_html.append(
                                 [
-                                    htmlcommon.ordinal_number(standings_row.position),
+                                    standings_position_str,
                                     htmlcommon.win_loss_string_to_html(form_dict.get(name, "")),
-                                    win_loss_record
+                                    win_loss_record,
+                                    float_balance_str
                                 ]
                         )
 

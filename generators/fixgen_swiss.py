@@ -243,8 +243,9 @@ function generate_fixtures_clicked() {
 
     elements.append(htmlform.HTMLFormControlStart(indent=True))
     birmingham_upfloat_radio_buttons = htmlform.HTMLFormRadioButton("upfloatstrategy", "When using the Birmingham strategy, if we have to upfloat players to a higher win-count group:", [
-            htmlform.HTMLFormChoice("preferhighest", "Prefer to upfloat the highest-ranked player(s) in a win-count group"),
-            htmlform.HTMLFormChoice("random", "Upfloat randomly selected player(s) in a win-count group")
+            htmlform.HTMLFormChoice("random", "Upfloat randomly selected players in a win-count group"),
+            htmlform.HTMLFormChoice("floatbalance", "Redress the balance from earlier upfloats/downfloats if applicable, otherwise upfloat randomly selected players"),
+            htmlform.HTMLFormChoice("preferhighest", "Prefer to upfloat the highest-ranked players in a win-count group"),
         ],
         small_print="An \"upfloat\" is what happens when it's impossible for everyone to play opponents on the same win count, and one or more players must be treated as if they're on a higher win count. Prune will not be upfloated unless it's unavoidable.",
     )
@@ -565,8 +566,19 @@ def generate(tourney, settings, div_rounds):
         if group_size > 0 and tourney.has_auto_prune():
             gencommon.add_auto_prunes(tourney, players, group_size)
 
-        equal_wins_are_equal_players = settings.get("matchingstrategy", MATCHING_STRATEGY_DEFAULT) == "birmingham"
-        upfloat_prefer_highest = not(equal_wins_are_equal_players) or (settings.get("upfloatstrategy", UPFLOAT_STRATEGY_DEFAULT) == "preferhighest")
+        group_by_standings_position = settings.get("matchingstrategy", MATCHING_STRATEGY_DEFAULT) == "classic"
+        if group_by_standings_position:
+            upfloat_strategy = swissN.UPFLOAT_BY_RANK
+        else:
+            upfloat_strategy_str = settings.get("upfloatstrategy", UPFLOAT_STRATEGY_DEFAULT)
+            if upfloat_strategy_str == "preferhighest":
+                upfloat_strategy = swissN.UPFLOAT_BY_RANK
+            elif upfloat_strategy_str == "random":
+                upfloat_strategy = swissN.UPFLOAT_BY_RANDOM
+            elif upfloat_strategy_str == "floatbalance":
+                upfloat_strategy = swissN.UPFLOAT_BY_FLOAT_BALANCE
+            else:
+                upfloat_strategy = swissN.UPFLOAT_BY_RANDOM
 
         # Set a sensible cap of five minutes, in case the user has entered a
         # huge number to be clever
@@ -616,8 +628,8 @@ def generate(tourney, settings, div_rounds):
                     init_max_rematches=init_max_rematches,
                     init_max_win_diff=init_max_win_diff,
                     ignore_rematches_before=ignore_rematches_before,
-                    equal_wins_are_equal_players=equal_wins_are_equal_players,
-                    upfloat_prefer_highest=upfloat_prefer_highest)
+                    group_by_standings_position=group_by_standings_position,
+                    upfloat_strategy=upfloat_strategy)
 
         if groups is None:
             raise countdowntourney.FixtureGeneratorException("%s: Unable to generate any permissible groupings in the given time limit." % (tourney.get_division_name(div_index)))

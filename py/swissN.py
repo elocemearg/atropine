@@ -13,21 +13,20 @@ from fixgen import get_table_sizes
 HUGE_PENALTY_EXPONENT = 10
 HUGE_PENALTY = 10 ** HUGE_PENALTY_EXPONENT
 
-# A fixture between two players with a difference in their standings position
-# of pos_diff is given a penalty of POSITION_DIFFERENCE_PENALTY_BASE^pos_diff.
-POSITION_DIFFERENCE_PENALTY_BASE = 1.6
-
-# A fixture between two players with a difference in their win counts of
-# win_diff is given a penalty of WIN_DIFFERENCE_PENALTY_BASE^win_diff.
-# Let's treat a fixture with a win difference of 1 the same as a position
-# difference of 4.
-WIN_DIFFERENCE_PENALTY_BASE = POSITION_DIFFERENCE_PENALTY_BASE ** 4
-
 # Maximum number of entries in swissN()'s cache of table penalties.
 TABLE_PENALTY_CACHE_MAX_SIZE = 1000000
 
 ENABLE_PENALTY_CAP_OPTIMISATION = True
 ENABLE_RESULTS_CACHE_OPTIMISATION = True
+
+# Upfloat decision strategies
+UPFLOAT_BY_RANDOM = 0
+UPFLOAT_BY_RANK = 1
+UPFLOAT_BY_FLOAT_BALANCE = 2
+
+# A fixture between two players with a difference in their standings position
+# of pos_diff is given a penalty of POSITION_DIFFERENCE_PENALTY_BASE^pos_diff.
+POSITION_DIFFERENCE_PENALTY_BASE = 1.6
 
 # Consider this standings table, of people whose names happen to coincide with
 # their standings position...
@@ -67,15 +66,34 @@ ENABLE_RESULTS_CACHE_OPTIMISATION = True
 # So a POSITION_DIFFERENCE_PENALTY_BASE value of 1.6 favours the first
 # arrangement, which is what we want.
 
+# A fixture between two players with a difference in their win counts of
+# win_diff is given a penalty of WIN_DIFFERENCE_PENALTY_BASE^win_diff.
+# Let's treat a fixture with a win difference of 1 the same as a position
+# difference of 4.
+WIN_DIFFERENCE_PENALTY_BASE = POSITION_DIFFERENCE_PENALTY_BASE ** 4
+
+
 class StandingsPlayer(object):
-    def __init__(self, name, rating, wins, position, played, played_first, avoid_prune):
+    def __init__(self, name, rating, wins, position, played, played_first, avoid_prune, float_balance=0):
         self.name = name;
         self.rating = rating
-        self.wins = wins
+        self.wins = wins # = wins + draws/2
         self.position = position
         self.games_played = played
         self.games_played_first = played_first
         self.avoid_prune = avoid_prune
+
+        # Float balance:
+        # The total win-count mismatch across all games of type 'P' for this
+        # player so far in the tournament. If player P played player Q, and
+        # before that round, player Q had one more win than player P, this
+        # adds 1 to player P's float balance, and subtracts 1 from player Q's
+        # float balance.
+        self.float_balance = float_balance
+
+        # Random tiebreaker - used to ensure equivalent players are shuffled
+        # randomly in no particular order amongst themselves.
+        self.random_tiebreaker = random.random()
 
     def get_name(self):
         return self.name
@@ -94,6 +112,11 @@ class StandingsPlayer(object):
         else:
             return float(100 * self.games_played_first) / self.games_played
 
+    def rerandomise_tiebreaker(self):
+        # Used in unit tests to check that players actually get shuffled if they can be shuffled
+        self.random_tiebreaker = random.random()
+
+
 class UnknownPlayerException(BaseException):
     pass;
 
@@ -107,6 +130,9 @@ class PlayerNotInStandingsException(BaseException):
     description = "I've been asked to arrange fixtures for a player who isn't in the standings table. This is a bug."
     pass;
 
+class UnsupportedCombinationException(BaseException):
+    pass
+
 
 def get_win_difference_penalty(win_diff):
     if win_diff > 0:
@@ -115,25 +141,62 @@ def get_win_difference_penalty(win_diff):
         return 0
 
 # Return the additional penalty for p1 and p2 playing each other on different
-# numbers of wins, due to the lower-win player's distance from the top of their
-# win group in the standings.
-# For example, if p1 has 2 wins and p2 has 1 win, but p2 is the top-ranked
-# 1-win player, return 0. If p2 is the second-ranked 1-win player, return 1,
-# and so on.
-# This function is useful only if equal_wins_are_equal_players is in effect.
-def get_group_promotion_penalty(p1_wins, p1_position, p2_wins, p2_position, highest_pos_by_win_count):
-    if p1_wins < p2_wins:
-        return p1_position - highest_pos_by_win_count[p1_wins]
-    elif p1_wins > p2_wins:
-        return p2_position - highest_pos_by_win_count[p2_wins]
+# numbers of wins. This may be due to the lower-win player's distance from the
+# top of their win group in the standings (if upfloat_strategy is
+# UPFLOAT_BY_RANK), or their respective upfloat/downfloat history
+# (if upfloat_strategy is UPFLOAT_BY_FLOAT_BALANCE).
+# This function is useful only if group_by_standings_position is False.
+def get_group_promotion_penalty(p1_wins, p1_position, p1_float_balance,
+        p2_wins, p2_position, p2_float_balance, highest_pos_by_win_count,
+        upfloat_strategy):
+    if p1_wins == p2_wins or upfloat_strategy == UPFLOAT_BY_RANDOM:
+        return 0
+
+    if upfloat_strategy == UPFLOAT_BY_RANK:
+        # If we have to put one or more players with N-1 wins with a
+        # player with N wins, prefer to select the highest-ranked players
+        # on N-1 wins, who should play random player(s) on N wins.
+        # For this reason, we make the penalty between P1 and P2 the
+        # number of places away from the top of their win-count-group the
+        # lower-ranked player is, plus whatever win difference penalty was
+        # calculated above. This "promotes" the highest ranked lower-win
+        # players to be honorary higher-win players.
+        if p1_wins < p2_wins:
+            return p1_position - highest_pos_by_win_count[p1_wins]
+        elif p1_wins > p2_wins:
+            return p2_position - highest_pos_by_win_count[p2_wins]
+        else:
+            return 0
+    elif upfloat_strategy == UPFLOAT_BY_FLOAT_BALANCE:
+        # If we have to upfloat a player on N-1 wins to play against a
+        # player on N wins, prefer to make the N-1-win player play an N-win
+        # player with a complementary float balance.
+        # Suppose Alice has 4 wins, and Bob and Charlie have 3 wins each.
+        # Alice's float history is +1, Bob's is 0 and Charlie's is -1.
+        # Prefer to play Alice against Charlie, because Alice has previously
+        # played one opponent who had one fewer win, and Charlie has previously
+        # played one opponent who had one more win.
+
+        if p1_wins < p2_wins:
+            # If p1 has fewer wins than p2, swap them over
+            (p1_wins, p2_wins) = (p2_wins, p1_wins)
+            (p1_float_balance, p2_float_balance) = (p2_float_balance, p1_float_balance)
+        # p1 has more wins than p2. p1 is being downfloated, p2 upfloated.
+        # The more positive p1's float balance is, and the more negative p2's
+        # float balance is, the more desirable this is.
+        # Scale by 1/100 so this is only used as a tiebreaker and very unlikely
+        # to be given a higher priority than the players' win counts.
+        return (p2_float_balance - p1_float_balance) / 100
     else:
+        # If upfloat strategy is random, ignore everything except win counts
         return 0
 
 # Calculate number of penalty points associated with p1 playing p2, taking
 # into account that they've played before num_played times, and p1's win count
 # differs from p2's win count by win_diff (which is always non-negative).
 # This is also called the "weighting".
-def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_wins=True, equal_wins_are_equal_players=False, upfloat_prefer_highest=True):
+def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count,
+        rank_by_wins, group_by_standings_position, upfloat_strategy):
     pen = 0;
 
     # No, you are not allowed to play yourself
@@ -151,25 +214,20 @@ def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_
     # Fixtures between players whose win counts differ by 1 are usually
     # unavoidable, but there should be exponentially harsher penalties for
     # putting people on the same table whose win counts differ by more.
-    # Unless equal_wins_are_equal_players, we also take into account the
+    # If group_by_standings_position is True, we also take into account the
     # difference in standings position, so that we group together people in
     # roughly the same part of the standings.
     pos_diff = abs(p1.position - p2.position)
-    if not rank_by_wins and not equal_wins_are_equal_players:
+    if not rank_by_wins or group_by_standings_position:
         win_diff = 0
 
     game_pen = get_win_difference_penalty(win_diff)
-    if equal_wins_are_equal_players:
-        if win_diff > 0 and upfloat_prefer_highest:
-            # If we have to put one or more players with N-1 wins with a
-            # player with N wins, prefer to select the highest-ranked players
-            # on N-1 wins, who should play random player(s) on N wins.
-            # For this reason, we make the penalty between P1 and P2 the
-            # number of places away from the top of their win-count-group the
-            # lower-ranked player is, plus whatever win difference penalty was
-            # calculated above. This "promotes" the highest ranked lower-win
-            # players to be honorary higher-win players.
-            game_pen += get_group_promotion_penalty(p1.wins, p1.position, p2.wins, p2.position, highest_pos_by_win_count)
+    if not group_by_standings_position:
+        if win_diff > 0:
+            # Find the penalty for matching these unequal-win players
+            game_pen += get_group_promotion_penalty(p1.wins, p1.position,
+                    p1.float_balance, p2.wins, p2.position, p2.float_balance,
+                    highest_pos_by_win_count, upfloat_strategy)
     else:
         # Take into account these two players' difference in standings.
         game_pen += ( POSITION_DIFFERENCE_PENALTY_BASE ** float(pos_diff) )
@@ -181,8 +239,8 @@ def get_penalty(p1, p2, num_played, win_diff, highest_pos_by_win_count, rank_by_
 
 # Calculate the matrix of penalties for each pair of players.
 def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix,
-        highest_pos_by_win_count, rank_by_wins=True,
-        equal_wins_are_equal_players=False, upfloat_prefer_highest=True):
+        highest_pos_by_win_count, rank_by_wins,
+        group_by_standings_position, upfloat_strategy):
     matrix_size = len(players);
     matrix = [];
 
@@ -198,10 +256,10 @@ def calculate_weight_matrix(games, players, played_matrix, win_diff_matrix,
             p2 = players[i2]
             pen = max(get_penalty(p1, p2, played_matrix[i1][i2],
                 win_diff_matrix[i1][i2], highest_pos_by_win_count,
-                rank_by_wins, equal_wins_are_equal_players, upfloat_prefer_highest),
+                rank_by_wins, group_by_standings_position, upfloat_strategy),
                 get_penalty(p2, p1, played_matrix[i2][i1],
                     win_diff_matrix[i2][i1], highest_pos_by_win_count,
-                    rank_by_wins, equal_wins_are_equal_players, upfloat_prefer_highest)
+                    rank_by_wins, group_by_standings_position, upfloat_strategy)
             );
             vector.append(pen);
 
@@ -426,43 +484,11 @@ class PlayerGroup(object):
     def __len__(self):
         return len(self.player_list);
 
-def shuffle_joint_positioned_players(players, group_size, equal_wins_are_equal_players=False, upfloat_prefer_highest=True):
-    promotees = [ False for p in players ]
-    if equal_wins_are_equal_players and group_size > 0 and len(players) % group_size == 0 and upfloat_prefer_highest:
-        # Establish which positions are likely to be promoted to the next win group
-        for idx in range(0, len(players), group_size):
-            for i in range(group_size):
-                for j in range(i + 1, group_size):
-                    if players[idx + i].wins != players[idx + j].wins:
-                        promotees[idx + j] = True
-    i = 0
-    while i < len(players):
-        pos = players[i].position
-        wins = players[i].wins
-        likely_promotee = promotees[i]
-        j = i + 1
-        # If equal_wins_are_equal_players, chunks of players on the same number
-        # of wins are shuffled, regardless of points.
-        # If a position will contain someone promoted from a lower win count,
-        # leave the player in that position where they are, or only shuffle
-        # them with adjacent likely promotees. This is to get the lowest
-        # penalty because we prefer to promote players from the top of a win
-        # group, and leaving them where they are will make us more likely to
-        # try this arrangement first, leading us to the solution quicker.
-        while j < len(players) and (players[j].position == pos or (equal_wins_are_equal_players and players[j].wins == wins and promotees[j] == likely_promotee)):
-            j += 1
-        if j - i > 1:
-            # The chunk of the array in the interval [i, j) must be shuffled
-            chunk = players[i:j]
-            random.shuffle(chunk)
-            for k in range(i, j):
-                players[k] = chunk[k - i]
-        i = j
-
-    # Players now at the top of their shuffled win group will be selected
-    # first for upfloating to the next win group if necessary. However, we
-    # don't want to upfloat a Prune unless there's no other option, so bubble
-    # any Prunes down to the bottom of their win group.
+def bubble_prunes_to_bottom_of_win_groups(players):
+    # Players at the top of their shuffled win group will be selected first for
+    # upfloating to the next win group if necessary. However, we don't want to
+    # upfloat a Prune unless there's no other option, so bubble any Prunes down
+    # to the bottom of their win group.
     changed = True
     while changed:
         changed = False
@@ -474,6 +500,40 @@ def shuffle_joint_positioned_players(players, group_size, equal_wins_are_equal_p
                     changed = True
                     (players[cur_pos], players[cur_pos + 1]) = (players[cur_pos + 1], players[cur_pos])
 
+def shuffle_equivalent_players(players, group_size, group_by_standings_position, upfloat_strategy):
+    if group_by_standings_position:
+        # Sort "players" by their position in the standings table, as that
+        # means we try the most likely combinations first when later on we
+        # generate all the combinations we can in a limited time.
+        # Players on the same standings position are sorted randomly.
+        players.sort(key=lambda x : (x.position, x.random_tiebreaker))
+    elif upfloat_strategy in (UPFLOAT_BY_RANK, UPFLOAT_BY_FLOAT_BALANCE):
+        promotees = set()
+        if upfloat_strategy == UPFLOAT_BY_RANK:
+            players.sort(key=lambda x : (x.position, x.random_tiebreaker))
+        else:
+            players.sort(key=lambda x : (-x.wins, x.float_balance, x.random_tiebreaker))
+        if group_size > 0 and len(players) % group_size == 0:
+            # Establish which positions are likely to be upfloated.
+            # This is an optimisation to ensure these players are at the tops
+            # of their win groups so will be tried for upfloating first.
+            # When we run the search, get_penalty() already prefers to upfloat
+            # the highest-ranked or most-previously-downfloated players
+            # according to upfloat_strategy.
+            for idx in range(0, len(players), group_size):
+                for i in range(group_size):
+                    for j in range(i + 1, group_size):
+                        if players[idx + i].wins != players[idx + j].wins:
+                            promotees.add(players[idx + j].name)
+        players.sort(key=lambda x : (-x.wins, -int(x.name in promotees), x.random_tiebreaker))
+    else:
+        # upfloat_strategy must be UPFLOAT_BY_RANDOM.
+        # Sort "players" by win count descending, then random chance.
+        players.sort(key=lambda x : (-x.wins, x.random_tiebreaker))
+
+    # Ensure that any Prunes are at the bottom of their win groups, making
+    # them the last choice to be upfloated.
+    bubble_prunes_to_bottom_of_win_groups(players)
 
 def to_ordinal(n):
     if (n // 10) % 10 == 1:
@@ -487,14 +547,14 @@ def to_ordinal(n):
     else:
         return str(n) + "th"
 
-# Given that we are ranking by wins, and equal_wins_are_equal_players is in
+# Given that we are ranking by wins, and group_by_standings_position is NOT in
 # effect, return a lower bound on the total penalty for the best possible
 # configuration. This takes into account that the number of players on N
 # wins might not be a multiple of the group size and there must be some
 # promotees, but doesn't take into account rematches or anything else.
-def get_penalty_lower_bound_given_equal_wins_are_equal_players(win_counts,
-        standings_positions, highest_pos_by_win_count, group_size,
-        upfloat_prefer_highest):
+def get_penalty_lower_bound_given_not_grouping_by_standings(win_counts,
+        index_standings_positions, index_float_balances,
+        highest_pos_by_win_count, group_size, upfloat_strategy):
     # For the lower bound, assume the minimum possible number of matches
     # between players of different win counts.
     assert(len(win_counts) % group_size == 0)
@@ -513,13 +573,15 @@ def get_penalty_lower_bound_given_equal_wins_are_equal_players(win_counts,
             for i in range(group_size):
                 for j in range(i + 1, group_size):
                     table_weight += get_win_difference_penalty(abs(win_counts[idx + i] - win_counts[idx + j]))
-                    if upfloat_prefer_highest:
-                        table_weight += get_group_promotion_penalty(
-                                win_counts[idx + i],
-                                standings_positions[idx + i],
-                                win_counts[idx + j],
-                                standings_positions[idx + j],
-                                highest_pos_by_win_count)
+                    table_weight += get_group_promotion_penalty(
+                            win_counts[idx + i],
+                            index_standings_positions[idx + i],
+                            index_float_balances[idx + i],
+                            win_counts[idx + j],
+                            index_standings_positions[idx + j],
+                            index_float_balances[idx + j],
+                            highest_pos_by_win_count,
+                            upfloat_strategy)
             lower_bound_weight += table_weight / group_size
     return lower_bound_weight
 
@@ -694,11 +756,10 @@ def hill_climb(groups, penalty_matrix, time_limit_ms=None):
             break
     return current_penalty
 
-
 def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
         limit_ms=None, init_max_rematches=0, init_max_win_diff=0,
-        ignore_rematches_before=None, equal_wins_are_equal_players=False,
-        upfloat_prefer_highest=True):
+        ignore_rematches_before=None, group_by_standings_position=True,
+        upfloat_strategy=UPFLOAT_BY_RANK):
     """swissN(): the public entry point to the SwissN generator.
 
     Generate a number of groups (or "tables"), each with a number of players
@@ -751,23 +812,49 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     is set to a positive integer, matches in the "games" list before that
     round number are ignored when applying this rule.
 
-    equal_wins_are_equal_players: do not distinguish between players on the
-    same number of wins. This effectively matches each player with random
-    opponents on the same win count if possible. Standings position is only
-    considered when deciding who has to be upfloated to play people of a higher
-    win count.
+    group_by_standings_position: Swiss "classic" mode. upfloat_strategy is
+    ignored and players are matched with other players close to them in the
+    standings.
 
-    upfloat_prefer_highest: if equal_wins_are_equal_players is True, and we
-    have to "upfloat" players to a higher win group because the number of
-    people on X wins isn't a convenient multiple of group_size, then prefer
-    to upfloat a win-count group's highest-ranked players if
-    upfloat_prefer_highest is True. If upfloat_prefer_highest is False, upfloat
-    randomly chosen players in a win-count group.
-    If equal_wins_are_equal_players is False, this argument is ignored.
+    upfloat_strategy: determines how we decide who gets "upfloated" to play
+    opponents on a higher win count when the number of people on X wins isn't a
+    convenient multiple of the group size.
+    - UPFLOAT_BY_FLOAT_BALANCE: prefer to upfloat players with the lowest float
+    balance so far. A player's float balance is a measure of how they have been
+    upfloated or downfloated in previous rounds. When a player P plays against
+    an opponent Q who has one more win than P, P's float balance goes up by 1
+    and Q's goes down by 1.
+    - UPFLOAT_BY_RANK: prefer to upfloat those who are higher in the standings.
+    - UPFLOAT_BY_RANDOM: randomly choose a player to be upfloated.
 """
 
     log = True
-    players = [];
+    players = []
+
+    if group_by_standings_position:
+        upfloat_strategy = UPFLOAT_BY_RANK
+
+    if not(rank_by_wins) and not(group_by_standings_position):
+        raise UnsupportedCombinationException("This tourney is not ranked by wins - Birmingham matching strategy is not available.")
+
+    if upfloat_strategy == UPFLOAT_BY_FLOAT_BALANCE:
+        # Calculate each player's float balance, which is a measure of how many
+        # opponents on different win-counts this player has played so far.
+        # If in an earlier round a player played an opponent with one more win
+        # than them, this allows us to prioritise that player for a downfloat
+        # next time.
+        name_to_float_balance = countdowntourney.get_float_balances(games)
+
+        # no_float_balance: set to True if every player's float balance is zero,
+        # which helps with optimisation below.
+        no_float_balance = True
+        for name in name_to_float_balance:
+            if name_to_float_balance[name] != 0:
+                no_float_balance = False
+                break
+    else:
+        name_to_float_balance = {}
+        no_float_balance = True
 
     # If we have auto-prunes, we'll need to invent a standings position for
     # them because they won't be in the standings. Put all auto-prunes in joint
@@ -777,39 +864,32 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     for p in cdt_players:
         if p.is_auto_prune():
             # Make up a standings row for the auto-prune
-            players.append(StandingsPlayer(p.name, 0, 0, last_place, 0, 0, True))
+            players.append(StandingsPlayer(p.name, 0, 0, last_place, 0, 0, True, 0))
         else:
             # Look up this player in the standings
             for s in standings:
                 if s.name == p.name:
-                    players.append(StandingsPlayer(p.name, p.rating, s.wins + float(s.draws) / 2, s.position, s.played, s.played_first, p.is_avoiding_prune()));
+                    players.append(StandingsPlayer(p.name, p.rating,
+                        s.wins + float(s.draws) / 2, s.position, s.played,
+                        s.played_first, p.is_avoiding_prune(),
+                        name_to_float_balance.get(p.name, 0)));
                     break
             else:
                 print(p.name + " not in standings table for this division", file=sys.stderr)
                 raise PlayerNotInStandingsException()
 
-    # Sort "players" by their position in the standings table, as that means
-    # we try the most likely combinations first when later on we generate all
-    # the combinations we can in a limited time.
-    players = sorted(players, key=lambda x : x.position)
+    shuffle_equivalent_players(players, group_size, group_by_standings_position, upfloat_strategy)
+
+    if upfloat_strategy == UPFLOAT_BY_FLOAT_BALANCE:
+        index_float_balances = [ p.float_balance for p in players ]
+    else:
+        index_float_balances = [ 0 for p in players ]
 
     # List of standings positions, in order, which may not be just 1..n because
     # there may be people in "joint-Nth". Useful for helping to calculate the
-    # lower bound on the total penalty when equal_wins_are_equal_players.
-    standings_positions = [ p.position for p in players ]
-
-    # If any set of two or more players have exactly the same position,
-    # randomly shuffle their positions in that part of the array. This ensures
-    # that when we have such a set of people in joint Nth place, the person
-    # whose name is nearest the beginning of the alphabet doesn't always get
-    # selected first to play on a stronger table.
-    # If equal_wins_are_equal_players, we also shuffle any "equivalent" players
-    # (same win count) so they get a random position in their win group, except
-    # that players at the top of their win group and likely to be chosen for
-    # upfloating to the next win group are left at the top of their win group.
-    shuffle_joint_positioned_players(players, group_size,
-            equal_wins_are_equal_players and rank_by_wins,
-            upfloat_prefer_highest)
+    # lower bound on the total penalty when group_by_standings_position is
+    # False and upfloat_strategy is UPFLOAT_BY_RANK.
+    index_standings_positions = [ p.position for p in players ]
 
     # Check that the group size makes sense for the number of players. By
     # this point we should have added any required auto-prunes, so the number
@@ -889,7 +969,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
 
     penalty_matrix = calculate_weight_matrix(games, players, played_matrix,
             win_diff_matrix, highest_pos_by_win_count, rank_by_wins,
-            equal_wins_are_equal_players, upfloat_prefer_highest)
+            group_by_standings_position, upfloat_strategy)
     penalty_matrix_size = len(players);
 
     best_grouping = None
@@ -920,17 +1000,20 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
             else:
                 max_wins_diff = 0
 
-    # If equal_wins_are_equal_players, we want to avoid wasting time trying
-    # combinations which are effectively equivalent and optimal because they
-    # only shuffle equivalent players around.
+    # If we're not trying to group players by standings position, but only by
+    # wins, we want to avoid wasting time trying combinations which are
+    # effectively equivalent and optimal because they only shuffle equivalent
+    # players around.
     # There may be a nonzero lower bound on the total penalty, for example
-    # if the number of players on N wins isn't a multiple of the group size
-    # for some N. Calculate what this lower bound is, and if we find any
-    # grouping with that penalty, we're done.
+    # if the number of players on N wins and M floats isn't a multiple of the
+    # group size for some N,M. Calculate what this lower bound is, and if we
+    # find any grouping with that penalty, we're done.
     # Setting the lower bound too low is always safe but might waste time.
-    if equal_wins_are_equal_players and rank_by_wins and group_size > 0:
+    if not group_by_standings_position and rank_by_wins and group_size > 0 and (no_float_balance or upfloat_strategy != UPFLOAT_BY_FLOAT_BALANCE):
         win_counts = sorted([ p.wins for p in players ], reverse=True)
-        lower_bound_weight = get_penalty_lower_bound_given_equal_wins_are_equal_players(win_counts, standings_positions, highest_pos_by_win_count, group_size, upfloat_prefer_highest)
+        lower_bound_weight = get_penalty_lower_bound_given_not_grouping_by_standings(
+                win_counts, index_standings_positions, index_float_balances,
+                highest_pos_by_win_count, group_size, upfloat_strategy)
         if log:
             sys.stderr.write("[swissN] Lower bound penalty is %f\n" % (lower_bound_weight))
     else:
@@ -938,7 +1021,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
 
     while best_grouping is None:
         if log:
-            sys.stderr.write("[swissN] Trying with max_wins_diff %d, max_rematches %d\n" % (max_wins_diff, max_rematches))
+            sys.stderr.write("[swissN] Trying with max_wins_diff %d, max_rematches %d, lower bound %f\n" % (max_wins_diff, max_rematches, lower_bound_weight))
         for (groups, weight) in generate_all_groupings(group_size_list,
                 played_matrix, win_diff_matrix, penalty_matrix, max_rematches,
                 max_wins_diff, prune_set, start_time, limit_ms):
@@ -980,7 +1063,7 @@ def swissN(games, cdt_players, standings, group_size, rank_by_wins=True,
     # Sort the groups. Put the pruney tables at the end. If we're treating
     # players on equal numbers of wins as equal, sort by average wins on that
     # table. Otherwise sort by average standings position on that table.
-    if equal_wins_are_equal_players:
+    if not group_by_standings_position:
         second_sort_key = lambda group : -sum([(players[pi].wins) for pi in group]) / len(group)
     else:
         second_sort_key = lambda group : sum([(players[pi].position) for pi in group]) / len(group)
@@ -1092,8 +1175,8 @@ def unit_test_generate_table_and_seat_indices(groups, count, dist, expected):
     if not lists_equal(expected, observed):
         raise TestFailedException("generate_table_and_seat_indices test failed.\nGroups: %s\ncount: %d\ndist: %d\nExpected: %s\nObserved: %s" % (groups, count, dist, str(expected), str(observed)))
 
-def unit_test_shuffle_joint_positioned_players():
-    # Test the shuffle_joint_positioned_players() function
+def unit_test_shuffle_equivalent_players():
+    # Test the shuffle_equivalent_players() function
     players = [
             #               Name  Ratg  W Pos P  F  AvoidingPrune
             StandingsPlayer("P1", 1000, 2, 1, 2, 1, False),
@@ -1114,50 +1197,55 @@ def unit_test_shuffle_joint_positioned_players():
     # P9 can expect to be first in line for promotion to the 1-winsers.
     # P5 and P6 can be shuffled amongst themselves, and P9 should stay where
     # they are, but all other players should move.
-    # Do 20 shuffles - any player which is allowed to be moved will be very
-    # likely to have moved after then.
+    # Do 20 shuffles, with the players being given different random tiebreaker
+    # numbers each time. Any player which is allowed to be moved will be very
+    # likely to have moved in one of those shuffles.
     group_size = 3
     moved = [ False for p in players ]
     for trial in range(20):
+        for sp in players:
+            sp.rerandomise_tiebreaker()
         shuffled = players[:]
-        shuffle_joint_positioned_players(shuffled, group_size, True)
+        shuffle_equivalent_players(shuffled, group_size, False, UPFLOAT_BY_RANK)
         for (i, p) in enumerate(shuffled):
             if int(p.name[1:]) != i + 1:
                 moved[i] = True
             if p.wins != players[i].wins:
-                raise TestFailedException("unit_test_shuffle_joint_positioned_players (initial test): player %s shuffled into the %d-win zone! shuffled: %s" % (p.name, players[i].wins, str([x.name for x in shuffled])))
+                raise TestFailedException("unit_test_shuffle_equivalent_players (initial test): player %s shuffled into the %d-win zone! shuffled: %s" % (p.name, players[i].wins, str([x.name for x in shuffled])))
     for i in range(len(players)):
         moved_expected = (i + 1 != 9)
         if moved[i] != moved_expected:
-            raise TestFailedException("unit_test_shuffle_joint_positioned_players (initial test): player %s: expected moved = %s, observed otherwise. shuffled: %s" % (players[i].name, moved_expected, str([ p.name for p in shuffled ])))
+            raise TestFailedException("unit_test_shuffle_equivalent_players (initial test): player %s: expected moved = %s, observed otherwise. shuffled: %s" % (players[i].name, moved_expected, str([ p.name for p in shuffled ])))
 
-    # shuffle_joint_positioned_players with equal_wins_are_equal_players False
+    # shuffle_equivalent_players with pairing_by_rank True
     # should have no effect here - there are no joint positions.
     shuffled = players[:]
-    shuffle_joint_positioned_players(shuffled, group_size, False)
+    shuffle_equivalent_players(shuffled, group_size, True, UPFLOAT_BY_RANK)
     for (i, p) in enumerate(shuffled):
         if p.position != i + 1:
-            raise TestFailedException("unit_test_shuffle_joint_positioned_players (equal_wins_... = False): no joint positions but player %s has moved (position %d in list, rank %d)" % (p.name, i, p.position))
+            raise TestFailedException("unit_test_shuffle_equivalent_players (group_by_standings_position = True): no joint positions but player %s has moved (position %d in list, rank %d)" % (p.name, i, p.position))
 
     # Make P6 joint fifth. They should now be equivalent to P5.
     # Shuffle can exchange P5 and P6, but not either of those with anyone else.
     players[5].position = 5
     moved = [ False for p in players ]
     for trial in range(20):
+        for sp in players:
+            sp.rerandomise_tiebreaker()
         shuffled = players[:]
-        shuffle_joint_positioned_players(shuffled, group_size, True)
+        shuffle_equivalent_players(shuffled, group_size, False, UPFLOAT_BY_RANK)
         for (i, p) in enumerate(shuffled):
             if int(p.name[1:]) != i + 1:
                 moved[i] = True
             if p.wins != players[i].wins:
-                raise TestFailedException("unit_test_shuffle_joint_positioned_players (P5/P6 joint 5th): player %s shuffled into the %d-win zone! shuffled: %s" % (p.name, players[i].wins, str([x.name for x in shuffled])))
+                raise TestFailedException("unit_test_shuffle_equivalent_players (P5/P6 joint 5th): player %s shuffled into the %d-win zone! shuffled: %s" % (p.name, players[i].wins, str([x.name for x in shuffled])))
         if shuffled[4].name not in ("P5", "P6") or shuffled[5].name not in ("P5", "P6"):
-            raise TestFailedException("unit_test_shuffle_joint_positioned_players: P5 and P6 joint 5th but one or both has been shuffled out of joint 5th. shuffled: %s" % (str([ p.name for p in shuffled ])))
+            raise TestFailedException("unit_test_shuffle_equivalent_players: P5 and P6 joint 5th but one or both has been shuffled out of joint 5th. shuffled: %s" % (str([ p.name for p in shuffled ])))
     # Only P9 should not have moved at all
     for i in range(len(players)):
         moved_expected = (i + 1 != 9)
         if moved[i] != moved_expected:
-            raise TestFailedException("unit_test_shuffle_joint_positioned_players (P5 and P6 joint 5th): player %s: expected moved = %s, observed otherwise." % (players[i].name, moved_expected))
+            raise TestFailedException("unit_test_shuffle_equivalent_players (P5 and P6 joint 5th): player %s: expected moved = %s, observed otherwise." % (players[i].name, moved_expected))
 
     # Put P6 as 6th in their own right again
     players[5].position = 6
@@ -1167,13 +1255,15 @@ def unit_test_shuffle_joint_positioned_players():
     group_size = 2
     moved = [ False for p in players ]
     for trial in range(20):
+        for sp in players:
+            sp.rerandomise_tiebreaker()
         shuffled = players[:]
-        shuffle_joint_positioned_players(shuffled, group_size, True)
+        shuffle_equivalent_players(shuffled, group_size, False, UPFLOAT_BY_RANK)
         for (i, p) in enumerate(shuffled):
             if p.position != i + 1:
                 moved[i] = True
     if False in moved:
-        raise TestFailedException("unit_test_shuffle_joint_positioned_players: group_size 2: expected all players to be eligible for moving. moved = %s" % (str(moved)))
+        raise TestFailedException("unit_test_shuffle_equivalent_players: group_size 2: expected all players to be eligible for moving. moved = %s" % (str(moved)))
 
 
 def unit_tests():
@@ -1228,7 +1318,7 @@ def unit_tests():
             ]
         )
 
-        unit_test_shuffle_joint_positioned_players()
+        unit_test_shuffle_equivalent_players()
     except TestFailedException as e:
         print(str(e))
         return False

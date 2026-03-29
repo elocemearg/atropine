@@ -104,7 +104,7 @@
 	],
 	"test" : {
 		"group_size" : 3,
-        "equal_wins_are_equal_players" : true,
+        "group_by_standings_position" : false,
 		"exp_max_win_diff" : 1,
         "limit_ms" : 5000,
 

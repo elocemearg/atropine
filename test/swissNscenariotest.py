@@ -81,13 +81,13 @@ def test_scenario(scenario_file):
     group_size = test["group_size"]
     init_max_win_diff = test.get("init_max_win_diff", 2)
     limit_ms = test.get("limit_ms", DEFAULT_LIMIT_MS)
-    equal_wins_are_equal_players = test.get("equal_wins_are_equal_players", False)
+    group_by_standings_position = test.get("group_by_standings_position", True)
 
     # Call the business end of the swissN fixture generator
     (weight, groups) = swissN.swissN(games, active_players, standings,
             group_size, rank_by_wins=True, limit_ms=limit_ms,
             init_max_win_diff=init_max_win_diff,
-            equal_wins_are_equal_players=equal_wins_are_equal_players);
+            group_by_standings_position=group_by_standings_position)
 
     if not groups:
         print("Unable to find any acceptable groupings in the time limit.")
