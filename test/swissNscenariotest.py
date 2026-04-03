@@ -14,6 +14,13 @@ import swissNtest
 import json
 
 DEFAULT_LIMIT_MS = 30000
+
+UPFLOAT_STRATEGY_FROM_STRING = {
+        "rank" : swissN.UPFLOAT_BY_RANK,
+        "random" : swissN.UPFLOAT_BY_RANDOM,
+        "float_balance" : swissN.UPFLOAT_BY_FLOAT_BALANCE
+}
+
 #swissN.ENABLE_PENALTY_CAP_OPTIMISATION = False
 #swissN.ENABLE_RESULTS_CACHE_OPTIMISATION = False
 
@@ -82,12 +89,14 @@ def test_scenario(scenario_file):
     init_max_win_diff = test.get("init_max_win_diff", 2)
     limit_ms = test.get("limit_ms", DEFAULT_LIMIT_MS)
     group_by_standings_position = test.get("group_by_standings_position", True)
+    upfloat_strategy = UPFLOAT_STRATEGY_FROM_STRING.get(test.get("upfloat_strategy", "rank"), swissN.UPFLOAT_BY_RANK)
 
     # Call the business end of the swissN fixture generator
     (weight, groups) = swissN.swissN(games, active_players, standings,
             group_size, rank_by_wins=True, limit_ms=limit_ms,
             init_max_win_diff=init_max_win_diff,
-            group_by_standings_position=group_by_standings_position)
+            group_by_standings_position=group_by_standings_position,
+            upfloat_strategy=upfloat_strategy)
 
     if not groups:
         print("Unable to find any acceptable groupings in the time limit.")

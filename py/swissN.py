@@ -521,10 +521,9 @@ def shuffle_equivalent_players(players, group_size, group_by_standings_position,
             # the highest-ranked or most-previously-downfloated players
             # according to upfloat_strategy.
             for idx in range(0, len(players), group_size):
-                for i in range(group_size):
-                    for j in range(i + 1, group_size):
-                        if players[idx + i].wins != players[idx + j].wins:
-                            promotees.add(players[idx + j].name)
+                for i in range(1, group_size):
+                    if players[idx].wins != players[idx + i].wins:
+                        promotees.add(players[idx + i].name)
         players.sort(key=lambda x : (-x.wins, -int(x.name in promotees), x.random_tiebreaker))
     else:
         # upfloat_strategy must be UPFLOAT_BY_RANDOM.
@@ -1264,6 +1263,77 @@ def unit_test_shuffle_equivalent_players():
                 moved[i] = True
     if False in moved:
         raise TestFailedException("unit_test_shuffle_equivalent_players: group_size 2: expected all players to be eligible for moving. moved = %s" % (str(moved)))
+
+    # Test upfloat_strategy == UPFLOAT_BY_FLOAT_BALANCE
+    players = [
+            #               Name   Ratg  W Pos  P  F  AvoidPrune FloatBal
+            StandingsPlayer("P1",  1000, 4,  1, 4, 2, False,     0),
+            StandingsPlayer("P2",  1000, 4,  2, 4, 2, False,     0),
+            StandingsPlayer("P3",  1000, 3,  3, 4, 2, False,     0),
+            StandingsPlayer("P4",  1000, 3,  4, 4, 2, False,     -1),
+            StandingsPlayer("P5",  1000, 2,  5, 4, 2, False,     0),
+            StandingsPlayer("P6",  1000, 2,  6, 4, 2, False,     -2),
+            StandingsPlayer("P7",  1000, 2,  7, 4, 2, False,     1),
+            StandingsPlayer("P8",  1000, 2,  8, 4, 2, False,     0),
+            StandingsPlayer("P9",  1000, 1,  9, 4, 2, False,     0),
+            StandingsPlayer("P10", 1000, 0, 10, 4, 2, False,     2),
+            StandingsPlayer("P11", 1000, 0, 11, 4, 2, False,     0),
+            StandingsPlayer("Prune",  0, 0, 12, 2, 2, False,     0),
+    ]
+    players.sort(key=lambda x : (-x.wins, x.float_balance, x.random_tiebreaker))
+
+    # When we shuffle the players, we expect them still to be sorted by win
+    # group, but with P4 floated to the top of their win group so the list has
+    # P4 immediately after the 4-winsers, and P6 floated to one of the top two
+    # positions of their win group, so P6 plays the other 3-winser. These are
+    # the two players in their win groups on the lowest float history, so the
+    # shuffle will put them in a position where they'll be chosen for
+    # upfloating first.
+    group_size = 3
+    moved = [ False for p in players ]
+    player_to_possible_indexes = {
+        "P1" : frozenset([0, 1]),
+        "P2" : frozenset([0, 1]),
+        "P3" : frozenset([3]), # will not be shuffled into third position, that will be taken by P4 on float balance
+        "P4" : frozenset([2]), # will be shuffled above P3 on float balance
+        "P5" : frozenset([4, 5, 6, 7]),
+        "P6" : frozenset([4, 5]), # float balance -2, so will be shuffled to top or second-from-top of 2-winsers - either way, they'll start in the second group of three
+        "P7" : frozenset([6, 7]), # shouldn't be first choice for upfloating, because float balance is higher than the other 2-winsers
+        "P8" : frozenset([4, 5, 6, 7]),
+        "P9" : frozenset([8]), # the only player on 1 win
+        "P10" : frozenset([9, 10]), # no upfloating required
+        "P11" : frozenset([9, 10]), # no upfloating required
+        "Prune" : frozenset([11]), # Prunes are always shuffled to the bottom of their win group, so we don't upfloat them
+    }
+
+    # Over 100 trial shuffles, remember each position each player visited,
+    # and ensure that given enough trials, every player can be shuffled into
+    # every allowable position.
+    player_to_observed_indexes = {}
+    for sp in players:
+        player_to_observed_indexes[sp.name] = set()
+    for trial in range(100):
+        for sp in players:
+            sp.rerandomise_tiebreaker()
+        shuffled = players[:]
+        shuffle_equivalent_players(shuffled, group_size, False, UPFLOAT_BY_FLOAT_BALANCE)
+        for (index, player) in enumerate(shuffled):
+            if index not in player_to_possible_indexes[player.name]:
+                for sp in shuffled:
+                    print(sp.name, sp.wins, sp.float_balance, sp.random_tiebreaker)
+                raise TestFailedException("unit_test_shuffle_equivalent_players (rank by float balance): player %s shuffled into list position %d, expected %s." % (
+                    player.name,
+                    index,
+                    ",".join([ str(x) for x in sorted(player_to_possible_indexes[player.name]) ])
+                ))
+            player_to_observed_indexes[player.name].add(index)
+    for name in player_to_observed_indexes:
+        if player_to_observed_indexes[name] != player_to_possible_indexes[name]:
+            raise TestFailedException("unit_test_shuffle_equivalent_players (rank by float balance): player %s didn't get shuffled into all possible positions after 100 trials. expected [%s], observed [%s]" % (
+                name,
+                ",".join([ str(x) for x in sorted(player_to_possible_indexes[name]) ]),
+                ",".join([ str(x) for x in sorted(player_to_observed_indexes[name]) ])
+            ))
 
 
 def unit_tests():
