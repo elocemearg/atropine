@@ -812,10 +812,6 @@ table.ranktable tr.finals {
     background-color: #aaffaa;
 }
 
-table.ranktable td.winlossform {
-    font-family: monospace;
-}
-
 th.emptycell, td.emptycell {
     background-color: white !important;
     border: none !important;

@@ -2663,19 +2663,20 @@ and (g.p1 = ? and g.p2 = ?) or (g.p1 = ? and g.p2 = ?)"""
 
     def get_games(self, round_no=None, table_no=None, game_type=None,
                 division=None, only_unplayed=False, only_complete=False,
-                only_rival_wins=False):
-        conditions = [];
-        params = [];
-
+                only_rival_wins=False, only_finals=False):
+        conditions = []
+        params = []
         if round_no is not None:
-            conditions.append("g.round_no = ?");
-            params.append(round_no);
+            conditions.append("g.round_no = ?")
+            params.append(round_no)
         if table_no is not None:
-            conditions.append("g.table_no = ?");
-            params.append(table_no);
+            conditions.append("g.table_no = ?")
+            params.append(table_no)
         if game_type is not None:
-            conditions.append("g.game_type = ?");
-            params.append(game_type);
+            conditions.append("g.game_type = ?")
+            params.append(game_type)
+        if game_type is None and only_finals:
+            conditions.append("g.game_type in ('QF', 'SF', '3P', 'F')")
         if division is not None:
             conditions.append("g.division = ?")
             params.append(division)
@@ -4256,8 +4257,6 @@ def get_float_histories(games, from_round=1, to_round=None):
     for g in games:
         if g.get_game_type() == "P":
             round_no = g.get_round_no()
-            if round_no < from_round or (to_round is not None and round_no > to_round):
-                continue
             if round_no not in rounds:
                 rounds[round_no] = []
                 round_numbers.append(round_no)
@@ -4281,21 +4280,27 @@ def get_float_histories(games, from_round=1, to_round=None):
         for g in rounds[round_no]:
             player_names = g.get_player_names()
             wins = []
-            for i in (0, 1):
-                wins.append(player_wins.get(player_names[i], 0))
-            for i in (0, 1):
-                # If P1 has a greater win count than P2, then P1 is said
-                # to have floated down and P2 is said to have floated up.
-                name = player_names[i]
-                if name not in player_float_history:
-                    player_float_history[name] = []
-                player_float_history[name].append({
-                    "player_wins" : wins[i],
-                    "opponent_wins" : wins[i ^ 1],
-                    "game" : g,
-                    "float_balance" : wins[i ^ 1] - wins[i]
-                })
+            # If this game isn't in the round range we're interested in,
+            # don't create float history entries for it, but we still need
+            # to count wins in these games further below so that float history
+            # for the rounds we want is correct.
+            if round_no >= from_round and (to_round is None or round_no <= to_round):
+                for i in (0, 1):
+                    wins.append(player_wins.get(player_names[i], 0))
+                for i in (0, 1):
+                    # If P1 has a greater win count than P2, then P1 is said
+                    # to have floated down and P2 is said to have floated up.
+                    name = player_names[i]
+                    if name not in player_float_history:
+                        player_float_history[name] = []
+                    player_float_history[name].append({
+                        "player_wins" : wins[i],
+                        "opponent_wins" : wins[i ^ 1],
+                        "game" : g,
+                        "float_balance" : wins[i ^ 1] - wins[i]
+                    })
 
+            # Update player_wins_this_round
             if g.is_complete():
                 if g.is_draw():
                     # Give both players 0.5 wins

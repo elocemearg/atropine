@@ -911,10 +911,15 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
         name_to_float_history = {}
 
     if show_win_loss_column:
-        games = tourney.get_games(game_type=(None if show_finals_column else "P"))
+        games = tourney.get_games(game_type="P")
         games = [ g for g in games if (g.get_round_no() >= starting_from_round and (last_round is None or g.get_round_no() <= last_round)) ]
     else:
         games = []
+
+    if show_finals_column:
+        finals_games = tourney.get_games(only_finals=True)
+    else:
+        finals_games = []
 
     html.append("<table class=\"ranktable\">")
     for div_index in div_list:
@@ -938,8 +943,6 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
         if div_index > 0:
             html.append("<tr class=\"ranktabledivspacer\"><td></td></tr>")
         html.append("<tr><th colspan=\"2\">%s</th>" % (escape(div_string)))
-        if show_finals_column:
-            html.append("<th>Finals</th>")
         html.append("<th>Played</th><th>Wins</th>")
         if show_draws_column:
             html.append("<th>Draws</th>")
@@ -953,6 +956,8 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             html.append("<th title=\"Number of games as player 1 / number of games as player 2\">1st/2nd</th>")
         if show_win_loss_column:
             html.append("<th title=\"Win-loss record for this tourney\">Form</th>")
+        if show_finals_column:
+            html.append("<th>Finals</th>")
         if show_float_balance_column:
             html.append("<th colspan=\"2\" title=\"Upfloat/downfloat history. When a player is drawn to play an opponent on a higher number of wins, this is an upfloat (+) and the opposite is a downfloat (-).\">Float history</th>")
         if show_tournament_rating_column:
@@ -970,7 +975,6 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             while finals_form and finals_form[0] == '-':
                 finals_form = finals_form[1:]
 
-            finals_points = s.finals_points
             player = tourney.get_player_from_name(name)
             if finals_form and show_finals_column:
                 tr_class = "finals"
@@ -1008,8 +1012,6 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             html.append("<td class=\"rankpos\">%d</td>" % pos);
             html.append("<td class=\"rankname\">%s</td>" % (linkfn(player)));
 
-            if show_finals_column:
-                html.append("<td class=\"rankright winlossform\">%s</td>" % (finals_form.upper()))
             html.append("<td class=\"ranknumber\">%d</td>" % played);
 
             if not show_draws_column:
@@ -1031,6 +1033,8 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
                 html.append("<td class=\"rankright\">%d/%d</td>" % (num_first, played - num_first))
             if show_win_loss_column:
                 html.append("<td>" + get_win_loss_string_html(games, player) + "</td>")
+            if show_finals_column:
+                html.append("<td>" + get_win_loss_string_html(finals_games, player) + "</td>")
             if show_float_balance_column:
                 float_history = name_to_float_history.get(name, [])
                 float_balance = sum([ h["float_balance"] for h in float_history ])
