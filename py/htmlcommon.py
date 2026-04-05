@@ -867,19 +867,20 @@ def show_standings_table(response, tourney, show_draws_column,
         linkify_players=False, show_tournament_rating_column=None,
         show_qualified=False, which_division=None, show_finals_column=True,
         rank_finals=None, starting_from_round=1, last_round=None,
-        show_float_balance_column=False):
+        show_win_loss_column=False, show_float_balance_column=False):
     response.writeln(make_standings_table(tourney, show_draws_column,
         show_points_column, show_spread_column, show_first_second_column,
         linkify_players, show_tournament_rating_column, show_qualified,
         which_division, show_finals_column, rank_finals, starting_from_round,
-        last_round=last_round, show_float_balance_column=show_float_balance_column))
+        last_round=last_round, show_win_loss_column=show_win_loss_column,
+        show_float_balance_column=show_float_balance_column))
 
 def make_standings_table(tourney, show_draws_column, show_points_column,
         show_spread_column, show_first_second_column=False,
         linkify_players=False, show_tournament_rating_column=None,
         show_qualified=False, which_division=None, show_finals_column=True,
         rank_finals=None, starting_from_round=1, last_round=None,
-        show_float_balance_column=False):
+        show_win_loss_column=False, show_float_balance_column=False):
     html = []
 
     num_divisions = tourney.get_num_divisions()
@@ -908,6 +909,12 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
         name_to_float_balance = tourney.get_float_balances(starting_from_round, last_round)
     else:
         name_to_float_balance = {}
+
+    if show_win_loss_column:
+        games = tourney.get_games(game_type=(None if show_finals_column else "P"))
+        games = [ g for g in games if (g.get_round_no() >= starting_from_round and (last_round is None or g.get_round_no() <= last_round)) ]
+    else:
+        games = []
 
     html.append("<table class=\"ranktable\">")
     for div_index in div_list:
@@ -944,6 +951,8 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             html.append("<th>Spread</th>")
         if show_first_second_column:
             html.append("<th>1st/2nd</th>")
+        if show_win_loss_column:
+            html.append("<th>Form</th>")
         if show_float_balance_column:
             html.append("<th title=\"Upfloat/downfloat balance. When a player is drawn to play an opponent on a higher number of wins, this is an upfloat (+) and the opposite is a downfloat (-).\">Float balance</th>")
         if show_tournament_rating_column:
@@ -1020,6 +1029,8 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
                 html.append("<td class=\"ranknumber\">%+d</td>" % (spread))
             if show_first_second_column:
                 html.append("<td class=\"rankright\">%d/%d</td>" % (num_first, played - num_first))
+            if show_win_loss_column:
+                html.append("<td>" + get_win_loss_string_html(games, player) + "</td>")
             if show_float_balance_column:
                 html.append("<td class=\"ranknumber\">%s</td>" % (halves_to_html(int(name_to_float_balance.get(name, 0) * 2), show_sign=True)))
             if show_tournament_rating_column:
@@ -1106,8 +1117,24 @@ def win_loss_letter_to_html(x, additional_text=None, title_text=None, additional
     else:
         return "<span class=\"wdl wdl_no_additional %s%s\"%s%s>%s</span>" % (wdl_class, additional_classes_str, title_attr, attrs_str, x)
 
-def win_loss_string_to_html(win_loss_string, additional_text=None):
-    return "".join([ win_loss_letter_to_html(x) for x in win_loss_string.upper() ])
+def get_win_loss_string_html(games, player, game_type=None):
+    html_fragments = []
+    for g in games:
+        if game_type and g.get_game_type() != game_type:
+            continue
+        if g.contains_player(player):
+            if not g.is_complete():
+                letter = "-"
+            elif g.is_player_winner(player):
+                letter = "W"
+            elif g.is_player_loser(player):
+                letter = "L"
+            elif g.is_draw():
+                letter = "D"
+            else:
+                letter = "?"
+            html_fragments.append(win_loss_letter_to_html(letter, title_text=g.get_short_string()))
+    return "".join(html_fragments)
 
 def show_division_drop_down_box(response, control_name, tourney, player):
     num_divisions = tourney.get_num_divisions()

@@ -451,9 +451,7 @@ function showDeletePlayerDialog() {
 
         response.writeln("<hr />")
 
-        games = tourney.get_games()
-
-        games = [x for x in games if x.contains_player(player)]
+        games = [x for x in tourney.get_games() if x.contains_player(player)]
 
         standings = tourney.get_standings(player.get_division())
         rank_method = tourney.get_rank_method()
@@ -472,17 +470,12 @@ function showDeletePlayerDialog() {
             write_h2(response, player, "Games")
 
             # Show win-loss summary first
-            form_dict = tourney.get_player_win_loss_strings(game_type=None, player=player)
-            if len(form_dict) > 0:
-                # form_dict will contain only one element
-                form = htmlcommon.win_loss_string_to_html(form_dict[next(iter(form_dict))])
-            else:
-                form = None
             win_loss_record = "%d-%d" % (standing.wins, standing.played - standing.wins - standing.draws)
             if standing.draws:
                 win_loss_record += "-%d" % (standing.draws)
-            if form:
-                response.writeln("<p>%s %s</p>" % (form, win_loss_record))
+            if standing.played > 0:
+                win_loss_string = htmlcommon.get_win_loss_string_html(games, player, game_type="P")
+                response.writeln("<p>%s %s</p>" % (win_loss_string, win_loss_record))
 
             # Now show all games involving this player
             htmlcommon.show_games_as_html_table(response, games, False, None,

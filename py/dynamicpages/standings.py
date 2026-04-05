@@ -97,6 +97,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                 rank_finals=False,
                 starting_from_round=starting_from_round,
                 last_round=last_round,
+                show_win_loss_column=True,
                 show_float_balance_column=True)
 
         if show_finals_placings:
@@ -111,6 +112,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                     rank_finals=True,
                     starting_from_round=starting_from_round,
                     last_round=last_round,
+                    show_win_loss_column=True,
                     show_float_balance_column=True)
 
         response.writeln("</div>"); #mainpane

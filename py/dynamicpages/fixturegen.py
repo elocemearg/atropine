@@ -87,6 +87,7 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
     show_wins_and_played = False
 
     player_name_to_float_balance = tourney.get_float_balances()
+    games = tourney.get_games(game_type="P")
 
     for r in rounds:
         round_no = r.get_round_no()
@@ -101,7 +102,6 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
             standings_dict = {}
             for s in standings:
                 standings_dict[s.name] = s
-            form_dict = tourney.get_player_win_loss_strings(division=div_index)
 
             if num_divisions > 1:
                 response.writeln("<h3>%s</h3>" % (htmlcommon.escape(tourney.get_division_name(div_index))))
@@ -161,7 +161,7 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
                         game_standings_info_td_html.append(
                                 [
                                     standings_position_str,
-                                    htmlcommon.win_loss_string_to_html(form_dict.get(name, "")),
+                                    htmlcommon.get_win_loss_string_html(games, player),
                                     win_loss_record,
                                     float_balance_str
                                 ]
