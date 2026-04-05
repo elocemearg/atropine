@@ -742,15 +742,6 @@ table.ranktable tr {
 	background-color: #ffdd66;
 }
 
-table.ranktable tr.ranktabledivspacer {
-    height: 2ex;
-    background-color: transparent;
-}
-
-table.ranktable tr.ranktabledivspacer td {
-    border: none;
-}
-
 table.ranktable td.rankpos {
     text-align: right;
     vertical-align: middle;

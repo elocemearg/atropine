@@ -921,8 +921,11 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
     else:
         finals_games = []
 
-    html.append("<table class=\"ranktable\">")
     for div_index in div_list:
+        if div_index > 0:
+            html.append("<table class=\"ranktable\" style=\"margin-top: 20px;\">")
+        else:
+            html.append("<table class=\"ranktable\">")
         if starting_from_round > 1 or last_round is not None:
             standings = tourney.get_standings_from_rounds(div_index, starting_from_round, last_round)
         else:
@@ -940,8 +943,6 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
         if not finals_form_exists:
             show_finals_column = False
 
-        if div_index > 0:
-            html.append("<tr class=\"ranktabledivspacer\"><td></td></tr>")
         html.append("<tr><th colspan=\"2\">%s</th>" % (escape(div_string)))
         html.append("<th>Played</th><th>Wins</th>")
         if show_draws_column:
@@ -1046,7 +1047,7 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
                     html.append("%.2f" % (tournament_rating))
                 html.append("</td>")
             html.append("</tr>");
-    html.append("</table>");
+        html.append("</table>");
     return "\n".join(html)
 
 def player_to_link(player, tourney_name, emboldenise=False, disable_tab_order=False, open_in_new_window=False, custom_text=None, withdrawn=False):
