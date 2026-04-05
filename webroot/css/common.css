@@ -544,6 +544,54 @@ span.wdl_additional_unplayed.linkedhoverhighlight {
     background-color: black !important;
 }
 
+/* Float history indicators */
+span.floathistory {
+    display: inline-block;
+    font-size: 9pt;
+    border-radius: 0.9em;
+    min-width: 1.8em;
+    height: 1.8em;
+    line-height: 1.8em;
+    text-align: center;
+    color: black;
+    border: 1px solid transparent;
+    background-color: transparent;
+}
+
+/* The larger the win difference between opponents, the more intense the colour */
+span.floathistorypos1 {
+    border: 1px solid black;
+    background-color: hsl(0, 100%, 85%);
+}
+
+span.floathistorypos2 {
+    border: 1px solid black;
+    background-color: hsl(0, 100%, 75%);
+}
+
+span.floathistorypos3 {
+    border: 1px solid black;
+    background-color: hsl(0, 100%, 65%);
+    color: white;
+}
+
+span.floathistoryneg1 {
+    border: 1px solid black;
+    background-color: hsl(240deg, 100%, 90%);
+}
+
+span.floathistoryneg2 {
+    border: 1px solid black;
+    background-color: hsl(240deg, 100%, 80%);
+}
+
+span.floathistoryneg3 {
+    border: 1px solid black;
+    background-color: hsl(240deg, 100%, 70%);
+    color: white;
+}
+
+
 /* Warnings and exceptions */
 
 div.warningbox {

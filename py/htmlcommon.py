@@ -906,9 +906,9 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
         show_tournament_rating_column = tourney.get_show_tournament_rating_column()
 
     if show_float_balance_column:
-        name_to_float_balance = tourney.get_float_balances(starting_from_round, last_round)
+        name_to_float_history = tourney.get_float_histories(starting_from_round, last_round)
     else:
-        name_to_float_balance = {}
+        name_to_float_history = {}
 
     if show_win_loss_column:
         games = tourney.get_games(game_type=(None if show_finals_column else "P"))
@@ -948,13 +948,13 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
         if show_points_column and "Points" not in secondary_rank_headings:
             html.append("<th>Points</th>")
         if show_spread_column and "Spread" not in secondary_rank_headings:
-            html.append("<th>Spread</th>")
+            html.append("<th title=\"Points scored minus points against\">Spread</th>")
         if show_first_second_column:
-            html.append("<th>1st/2nd</th>")
+            html.append("<th title=\"Number of games as player 1 / number of games as player 2\">1st/2nd</th>")
         if show_win_loss_column:
-            html.append("<th>Form</th>")
+            html.append("<th title=\"Win-loss record for this tourney\">Form</th>")
         if show_float_balance_column:
-            html.append("<th title=\"Upfloat/downfloat balance. When a player is drawn to play an opponent on a higher number of wins, this is an upfloat (+) and the opposite is a downfloat (-).\">Float balance</th>")
+            html.append("<th colspan=\"2\" title=\"Upfloat/downfloat history. When a player is drawn to play an opponent on a higher number of wins, this is an upfloat (+) and the opposite is a downfloat (-).\">Float history</th>")
         if show_tournament_rating_column:
             html.append("<th>Tournament Rating</th>")
         html.append("</tr>")
@@ -1032,7 +1032,10 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
             if show_win_loss_column:
                 html.append("<td>" + get_win_loss_string_html(games, player) + "</td>")
             if show_float_balance_column:
-                html.append("<td class=\"ranknumber\">%s</td>" % (halves_to_html(int(name_to_float_balance.get(name, 0) * 2), show_sign=True)))
+                float_history = name_to_float_history.get(name, [])
+                float_balance = sum([ h["float_balance"] for h in float_history ])
+                html.append("<td>" + player_float_history_to_html(float_history, player) + "</td>")
+                html.append("<td class=\"ranknumber\">%s</td>" % (halves_to_html(int(float_balance * 2), show_sign=True)))
             if show_tournament_rating_column:
                 html.append("<td class=\"ranknumber\">")
                 if tournament_rating is not None:
@@ -1135,6 +1138,40 @@ def get_win_loss_string_html(games, player, game_type=None):
                 letter = "?"
             html_fragments.append(win_loss_letter_to_html(letter, title_text=g.get_short_string()))
     return "".join(html_fragments)
+
+def player_float_history_to_html(float_history, player=None):
+    html_fragments = []
+    for h in float_history:
+        balance = h.get("float_balance", 0)
+        game = h.get("game", None)
+        player_wins = h.get("player_wins", None)
+        opponent_wins = h.get("opponent_wins", None)
+        classes = "floathistory"
+        if balance != 0:
+            classes += " floathistory%s%d" % ("neg" if balance < 0 else "pos", int(min(3, abs(balance))))
+
+        # Make the "title" attribute say how many wins this player had and
+        # how many the opponent had.
+        title_attr = ""
+        if player is not None and game is not None and player_wins is not None and opponent_wins is not None:
+            try:
+                title = "%s %s win%s, %s %s win%s" % (
+                        player.get_name(),
+                        halves_to_html(int(player_wins * 2)),
+                        "" if player_wins >= 0.5 and player_wins <= 1 else "s",
+                        game.get_opponent_name(player.get_name()),
+                        halves_to_html(int(opponent_wins * 2)),
+                        "" if opponent_wins >= 0.5 and opponent_wins <= 1 else "s"
+                )
+                title_attr = "title=\"" + htmlescape(title) + "\""
+            except PlayerNotInGameException:
+                # Shouldn't get here, but if it happens, just omit the
+                # title attribute in preference to throwing an exception
+                pass
+
+        html_fragments.append("<span class=\"%s\" %s>%s</span>" % (classes, title_attr, halves_to_html(int(balance * 2), show_sign=True)))
+    return " ".join(html_fragments)
+
 
 def show_division_drop_down_box(response, control_name, tourney, player):
     num_divisions = tourney.get_num_divisions()

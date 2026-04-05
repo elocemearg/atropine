@@ -4222,9 +4222,35 @@ order by 1""")
     def get_float_balances(self, from_round=1, to_round=None):
         return get_float_balances(self.get_games(game_type="P"), from_round, to_round)
 
-# Return a dict { player_name -> float_balance } based on the Game objects
-# in the list "games" which have type = "P".
-def get_float_balances(games, from_round=1, to_round=None):
+    def get_float_histories(self, from_round=1, to_round=None):
+        return get_float_histories(self.get_games(game_type="P"), from_round, to_round)
+
+
+def get_float_histories(games, from_round=1, to_round=None):
+    """
+    get_float_histories: return the upfloat/downfloat history for each player
+    based on the supplied games.
+
+    Return a dict:
+    {
+        player_name: [
+            {
+                "player_wins": number,
+                "opponent_wins": number,
+                "game": Game,
+                "float_balance": number
+            }
+        ]
+    }
+
+    This is based on the Game objects in the list "games" which have type = "P".
+    Each player name maps to a list of dicts, and each of those dicts refers to
+    a game that player played, which lists the number of wins this player had
+    at the start of the round, the number of wins the opponent had at the start
+    of the round, the Game class itself, and the player's float balance for
+    this game (opponent wins minus player wins).
+    """
+
     rounds = {}
     round_numbers = []
     for g in games:
@@ -4241,8 +4267,8 @@ def get_float_balances(games, from_round=1, to_round=None):
     # player_name -> wins, up to but not including the round currently being worked on by the loop below.
     player_wins = {}
 
-    # player_name -> float baance, including every game the loop has visited so far.
-    player_float_balance = {}
+    # player_name -> float history, including every game the loop has visited so far.
+    player_float_history = {}
 
     for round_no in round_numbers:
         # First, just consider the matchups - take account of any win-count
@@ -4257,11 +4283,18 @@ def get_float_balances(games, from_round=1, to_round=None):
             wins = []
             for i in (0, 1):
                 wins.append(player_wins.get(player_names[i], 0))
-            if wins[0] != wins[1]:
+            for i in (0, 1):
                 # If P1 has a greater win count than P2, then P1 is said
                 # to have floated down and P2 is said to have floated up.
-                for i in (0, 1):
-                    player_float_balance[player_names[i]] = player_float_balance.get(player_names[i], 0) + (wins[i ^ 1] - wins[i])
+                name = player_names[i]
+                if name not in player_float_history:
+                    player_float_history[name] = []
+                player_float_history[name].append({
+                    "player_wins" : wins[i],
+                    "opponent_wins" : wins[i ^ 1],
+                    "game" : g,
+                    "float_balance" : wins[i ^ 1] - wins[i]
+                })
 
             if g.is_complete():
                 if g.is_draw():
@@ -4269,7 +4302,9 @@ def get_float_balances(games, from_round=1, to_round=None):
                     for i in (0, 1):
                         player_wins_this_round[player_names[i]] = player_wins_this_round.get(player_names[i], 0) + 0.5
                 elif not g.is_double_loss():
-                    # Give the winner 1 win and the loser 0
+                    # Whoever won this game, credit them for the win in
+                    # player_wins_this_round (but not player_wins yet).
+                    # Give the winner 1 win and the loser 0.
                     if g.s1 > g.s2:
                         winner_index = 0
                     elif g.s2 > g.s1:
@@ -4286,8 +4321,19 @@ def get_float_balances(games, from_round=1, to_round=None):
         for player_name in player_wins_this_round:
             player_wins[player_name] = player_wins.get(player_name, 0) + player_wins_this_round.get(player_name, 0)
 
-    return player_float_balance
+    return player_float_history
 
+def get_float_balances(games, from_round=1, to_round=None):
+    """
+    get_float_balances: return the float balance, as a number, for each
+    player, as a dict { player_name (str) -> balance (number) }.
+    """
+
+    histories = get_float_histories(games, from_round, to_round)
+    balances = {}
+    for player_name in histories:
+        balances[player_name] = sum([ h["float_balance"] for h in histories[player_name] ])
+    return balances
 
 def get_game_types():
     return [
