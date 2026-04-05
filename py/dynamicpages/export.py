@@ -299,7 +299,7 @@ def export_text_standings(tourney, response, max_name_len, rank_finals,
         # secondary ranking columns, then tournament rating if applicable.
         header_line = ("%%%ds" % (max_name_len + 6)) % ("")
         header_line += "    P   W"
-        row_format = "%(pos)5d %(name)-" + str(max_name_len) + "s  %(played)3d %(wins)3d"
+        row_format = "%(pos)5d %(name)-" + str(max_name_len) + "s  %(played)3d %(wins)3s"
         if show_draws_column:
             header_line += "   D"
             row_format += " %(draws)3d"
@@ -326,7 +326,7 @@ def export_text_standings(tourney, response, max_name_len, rank_finals,
                     "pos" : s.position,
                     "name" : s.name,
                     "played" : s.played,
-                    "wins" : s.wins,
+                    "wins" : str(s.wins) if show_draws_column else s.get_wins_inc_draws_str(),
                     "draws" : s.draws,
                     "points" : s.points,
                     "tr" : ("" if s.tournament_rating is None else "%7.2f" % (s.tournament_rating))
