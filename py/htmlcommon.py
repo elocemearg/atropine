@@ -1086,9 +1086,7 @@ def ordinal_number(n):
     else:
         return "%dth" % (n)
 
-# halves is an integer. We divide it by 2 and produce the result with a "½"
-# character if necessary using "&frac12;", e.g. 2½ or -½.
-def halves_to_html(halves, show_sign=False):
+def halves_to_str(halves, show_sign=False, half_symbol="½"):
     if halves < 0:
         sign = "-"
     elif halves > 0 and show_sign:
@@ -1098,11 +1096,16 @@ def halves_to_html(halves, show_sign=False):
     halves = abs(halves)
     if halves % 2 == 1:
         if halves == 1:
-            return sign + "&frac12;"
+            return sign + half_symbol
         else:
-            return "%s%d&frac12;" % (sign, halves // 2)
+            return "%s%d%s" % (sign, halves // 2, half_symbol)
     else:
         return "%s%d" % (sign, halves // 2)
+
+# halves is an integer. We divide it by 2 and produce the result with a "½"
+# character if necessary using "&frac12;", e.g. 2½ or -½.
+def halves_to_html(halves, show_sign=False):
+    return halves_to_str(halves, show_sign, "&frac12;")
 
 
 def win_loss_letter_to_html(x, additional_text=None, title_text=None, additional_classes=None, attrs=None):
@@ -1161,10 +1164,10 @@ def player_float_history_to_html(float_history, player=None):
             try:
                 title = "%s %s win%s, %s %s win%s" % (
                         player.get_name(),
-                        halves_to_html(int(player_wins * 2)),
+                        halves_to_str(int(player_wins * 2)),
                         "" if player_wins >= 0.5 and player_wins <= 1 else "s",
                         game.get_opponent_name(player.get_name()),
-                        halves_to_html(int(opponent_wins * 2)),
+                        halves_to_str(int(opponent_wins * 2)),
                         "" if opponent_wins >= 0.5 and opponent_wins <= 1 else "s"
                 )
                 title_attr = "title=\"" + htmlescape(title) + "\""
