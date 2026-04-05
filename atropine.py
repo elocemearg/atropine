@@ -185,7 +185,7 @@ except Exception as e:
 try:
     import uploader
 except Exception as e:
-    fatal_error("Failed to import the uploader module. Is there a file uploader..py in the py folder? There should be.", e)
+    fatal_error("Failed to import the uploader module. Is there a file uploader.py in the py folder? There should be.", e)
 
 try:
     import countdowntourney
