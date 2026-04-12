@@ -108,6 +108,8 @@ def test_scenario(scenario_file):
     exp_max_penalty = test.get("exp_max_penalty", None)
     exp_opponent_win_counts = test.get("exp_opponent_win_counts", None)
     exp_tables_with_win_diff = test.get("exp_tables_with_win_diff", None)
+    must_upfloat = test.get("must_upfloat", None)
+    must_downfloat = test.get("must_downfloat", None)
 
     # Sanity check that every player we passed to swissN() appears exactly once.
     unseen_players = set([p.get_name() for p in active_players])
@@ -189,6 +191,31 @@ def test_scenario(scenario_file):
             print("Expected %d tables with unequal win counts, observed %d" % (exp_tables_with_win_diff, num_tables_with_win_diff))
             return False
 
+    # Check that all players named in must_upfloat actually upfloat,
+    # and that all players named in must_downfloat actually downfloat.
+    if must_upfloat is not None or must_downfloat is not None:
+        obs_upfloaters = set()
+        obs_downfloaters = set()
+        for g in groups:
+            for i in range(len(g)):
+                for j in range(len(g)):
+                    if i == j:
+                        continue
+                    if name_to_wins[g[i].name] > name_to_wins[g[j].name]:
+                        # g[i] has been downfloated and g[j] has been upfloated
+                        obs_upfloaters.add(g[j].name)
+                        obs_downfloaters.add(g[i].name)
+        if must_upfloat is not None:
+            for name in must_upfloat:
+                if name not in obs_upfloaters:
+                    print("%s was unexpectedly not upfloated!" % (name))
+                    return False
+        if must_downfloat is not None:
+            for name in must_downfloat:
+                if name not in obs_downfloaters:
+                    print("%s was unexpectedly not downfloated!" % (name))
+                    return False
+
     return True
 
 def main():
@@ -225,6 +252,11 @@ def main():
             # of wins, as far as possible.
             "colin2022_after_r2_wins_only.json",
 
+            # Same scenario, but we set the equal-wins-are-equal-players flag
+            # (Birmingham strategy) and we choose who to upfloat/downfloat
+            # based on float balance then randomness, not standings position.
+            "colin2022_after_r2_birmingham_use_float_balance.json",
+
             # 24 players including two Prunes, generate R3 after two rounds
             # of Lincoln style fixtures.
             "r3_22players_2prunes.json",
@@ -234,6 +266,7 @@ def main():
 
             # Generate round 5 after 4 rounds of two-to-a-table.
             "r5_pairs.json"
+
     ]
 
     if len(sys.argv) > 1:
