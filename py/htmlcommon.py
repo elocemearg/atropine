@@ -646,7 +646,7 @@ def show_games_as_html_table(response, games, editable=True, remarks=None,
         remarks_heading="", show_game_type=True, game_onclick_fn=None,
         colour_win_loss=True, score_id_prefix=None, show_heading_row=True,
         hide_game_type_if_p=False, include_table_number_column=True,
-        show_rivalries=False):
+        show_rivalries=False, show_win_loss_column_for_player=None):
     if round_namer is None:
         round_namer = lambda x : ("Round %d" % (x))
 
@@ -676,6 +676,8 @@ def show_games_as_html_table(response, games, editable=True, remarks=None,
             response.writeln("<th>Type</th>");
 
         response.writeln("<th>Player 1</th><th>Score</th><th>Player 2</th>");
+        if show_win_loss_column_for_player:
+            response.writeln("<th></th>")
         if remarks is not None:
             response.writeln("<th>%s</th>" % (escape(remarks_heading)));
         response.writeln("</tr>")
@@ -773,6 +775,12 @@ onchange="score_modified('gamescore_%d_%d');" />""" % (g.round_no, g.seq, g.roun
         team_string = make_player_dot_html(g.p2)
         rival_string = make_rival_dot_html(g, 2, show_rivalries)
         response.writeln("<td class=\"%s\">%s %s %s</td>" % (" ".join(p2_classes), team_string, rival_string, player_html_strings[1]));
+        if show_win_loss_column_for_player:
+            if g.contains_player(show_win_loss_column_for_player):
+                win_loss_html = get_win_loss_string_html([g], show_win_loss_column_for_player)
+            else:
+                win_loss_html = ""
+            response.writeln("<td class=\"gamewinloss\">" + win_loss_html + "</td>")
         if remarks is not None:
             response.writeln("<td class=\"gameremarks\">%s</td>" % escape(remarks.get((g.round_no, g.seq), "")));
         response.writeln("</tr>");
@@ -1050,27 +1058,33 @@ def make_standings_table(tourney, show_draws_column, show_points_column,
         html.append("</table>");
     return "\n".join(html)
 
-def player_to_link(player, tourney_name, emboldenise=False, disable_tab_order=False, open_in_new_window=False, custom_text=None, withdrawn=False):
+def player_name_classes(highlight, emboldenise):
+    classes = []
+    if highlight:
+        classes.append("highlightplayer")
+    if emboldenise:
+        classes.append("boldplayer")
+    return " ".join(classes)
+
+def player_to_link(player, tourney_name, highlight=False,
+            disable_tab_order=False, open_in_new_window=False,
+            custom_text=None, withdrawn=False, emboldenise=False):
+    classes = player_name_classes(highlight, emboldenise)
     if player.is_auto_prune():
         # Auto-prune never has a link
-        if emboldenise:
-            return "<span style=\"font-weight: bold\">%s</span>" % (escape(player.get_name()))
-        else:
-            return escape(player.get_name())
+        return "<span class=\"" + classes + "\">" + escape(player.get_name()) + "</span>"
     else:
-        return "<a class=\"playerlink%s%s\" href=\"/atropine/%s/player/%d\" %s%s>%s</a>" % (
+        return "<a class=\"playerlink%s %s\" href=\"/atropine/%s/player/%d\" %s%s>%s</a>" % (
             "withdrawn" if withdrawn else " ",
-            " thisplayerlink" if emboldenise else "",
+            classes,
             escape(tourney_name), player.get_id(),
             "tabindex=\"-1\" " if disable_tab_order else "",
             "target=\"_blank\"" if open_in_new_window else "",
             escape(custom_text) if custom_text is not None else escape(player.get_name())
         )
 
-def player_to_non_link(player, emboldenise=False):
-    html = ""
-    if emboldenise:
-        html += "<span style=\"font-weight: bold;\">"
+def player_to_non_link(player, highlight=False, emboldenise=False):
+    html = "<span class=\"" + player_name_classes(highlight, emboldenise) + "\">"
     html += escape(player.get_name())
     html += "</span>"
     return html

@@ -52,14 +52,14 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
                 # Show the winner's name and a link to their player page
                 response.writeln("<li>")
-                response.writeln(htmlcommon.player_to_link(winner, tourney_name, emboldenise=True, open_in_new_window=True) + " beat ")
+                response.writeln(htmlcommon.player_to_link(winner, tourney_name, open_in_new_window=True, emboldenise=True) + " beat ")
 
                 # List defeated rivals, with the number of times in brackets
                 # if they defeated the same rival more than once.
                 loser_name_list = []
                 for loser_name in sorted(losers_freq):
                     loser = name_to_player[loser_name]
-                    s = htmlcommon.player_to_link(loser, tourney_name, emboldenise=False, open_in_new_window=True)
+                    s = htmlcommon.player_to_link(loser, tourney_name, open_in_new_window=True)
                     if losers_freq[loser_name] > 1:
                         s += " (x" + str(losers_freq[loser_name]) + ")"
                     loser_name_list.append(s)

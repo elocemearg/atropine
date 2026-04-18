@@ -351,7 +351,7 @@ function showDeletePlayerDialog() {
             response.writeln("<tr class=\"playerlistrow %s\">" % ("playerlistrowselected" if player_selected else ""));
 
             response.writeln("<td class=\"playerlistname\">");
-            response.writeln(htmlcommon.player_to_link(p, tourney.get_name(), emboldenise=player_selected, withdrawn=p.is_withdrawn()))
+            response.writeln(htmlcommon.player_to_link(p, tourney.get_name(), withdrawn=p.is_withdrawn()))
             response.writeln("</td>")
 
             response.writeln("<td class=\"playerlistflags\">")
@@ -469,18 +469,12 @@ function showDeletePlayerDialog() {
         else:
             write_h2(response, player, "Games")
 
-            # Show win-loss summary first
-            win_loss_record = "%d-%d" % (standing.wins, standing.played - standing.wins - standing.draws)
-            if standing.draws:
-                win_loss_record += "-%d" % (standing.draws)
-            if standing.played > 0:
-                win_loss_string = htmlcommon.get_win_loss_string_html(games, player, game_type="P")
-                response.writeln("<p>%s %s</p>" % (win_loss_string, win_loss_record))
-
-            # Now show all games involving this player
-            htmlcommon.show_games_as_html_table(response, games, False, None,
-                    True, lambda x : tourney.get_short_round_name(x),
-                    player_to_link, show_rivalries=True)
+            # Show all games involving this player
+            htmlcommon.show_games_as_html_table(response, games, editable=False,
+                    remarks=None, include_round_column=True,
+                    round_namer=lambda x : tourney.get_short_round_name(x),
+                    player_to_link=player_to_link, colour_win_loss=False,
+                    show_rivalries=True, show_win_loss_column_for_player=player)
 
         response.writeln("<hr />")
         write_h2(response, player, "Stats Corner")

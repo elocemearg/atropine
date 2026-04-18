@@ -106,7 +106,7 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
             if num_divisions > 1:
                 response.writeln("<h3>%s</h3>" % (htmlcommon.escape(tourney.get_division_name(div_index))))
             response.writeln("<table class=\"fixturetable\">");
-            response.writeln("<tr><th>Table</th><th>Type</th><th colspan=\"4\">Player 1</th><th></th><th colspan=\"4\">Player 2</th></tr>");
+            response.writeln("<tr><th>Table</th><th>Type</th><th colspan=\"5\">Player 1</th><th></th><th colspan=\"5\">Player 2</th></tr>");
 
             fixnum = 0;
             last_table_no = None;
@@ -132,7 +132,7 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
                         player_td_html.append(htmlcommon.player_to_non_link(player, emboldenise=True))
                         game_standings_info_td_html.append(["", "", "", ""])
                     elif standings_row is None:
-                        player_td_html.append(htmlcommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True) + " ?")
+                        player_td_html.append(htmlcommon.player_to_link(player, tourney_name, disable_tab_order=False, open_in_new_window=True, emboldenise=True) + " ?")
                         game_standings_info_td_html.append(["", "", "", ""])
                     else:
                         standings_position_str = "<span title=\"Current position in standings\">" + htmlcommon.ordinal_number(standings_row.position) + "</span>"
@@ -157,7 +157,7 @@ def show_fixtures_to_accept(response, tourney, generator_name, fixtures, rounds,
                         fb = int(2 * player_name_to_float_balance.get(name, 0))
                         float_balance_str = "<span title=\"Upfloat/downfloat (+/-) balance so far\">(" + htmlcommon.halves_to_html(fb, show_sign=True) + ")</span>"
 
-                        player_td_html.append(htmlcommon.player_to_link(player, tourney_name, emboldenise=True, disable_tab_order=False, open_in_new_window=True))
+                        player_td_html.append(htmlcommon.player_to_link(player, tourney_name, disable_tab_order=False, open_in_new_window=True, emboldenise=True))
                         game_standings_info_td_html.append(
                                 [
                                     standings_position_str,

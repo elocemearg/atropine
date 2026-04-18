@@ -250,6 +250,11 @@ table.scorestable td.gamescore {
     text-align: center;
 }
 
+table.scorestable td.gamewinloss {
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+
 table.scorestable td.gameremarks {
     font-size: 10pt;
     border-left: 2px solid black;
@@ -703,8 +708,12 @@ a.playerlinkwithdrawn {
     color: #777777;
 }
 
-a.thisplayerlink {
-	font-weight: bold;
+.boldplayer {
+    font-weight: bold;
+}
+
+.highlightplayer {
+    background-color: yellow;
 }
 
 
