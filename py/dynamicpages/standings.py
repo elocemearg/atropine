@@ -33,6 +33,8 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
     if last_round is not None and starting_from_round > last_round:
         (starting_from_round, last_round) = (last_round, starting_from_round)
 
+    show_float_history = htmlcommon.int_or_none(form.getfirst("showfloathistory"))
+
     htmlcommon.print_html_head(response, "Standings: " + str(tourney_name));
 
     response.writeln("<body>");
@@ -51,26 +53,39 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
 
         rounds = tourney.get_rounds()
 
+        # Show a form at the top, to customise what is shown
+        response.writeln("<form method=\"GET\" class=\"spaced\">")
         if tourney.has_per_round_standings() and len(rounds) > 1:
             max_round_no = 1
             for r in rounds:
                 if r["num"] > max_round_no:
                     max_round_no = r["num"]
 
-            response.writeln("<form method=\"GET\" class=\"spaced\">")
+            response.writeln("<p>")
             response.writeln("Count games from ")
             write_round_drop_down(response, "fromround", rounds, starting_from_round)
             response.writeln(" to ")
             write_round_drop_down(response, "toround", rounds, last_round if last_round is not None else -1, last_round_option=True)
             response.writeln(" inclusive.")
-
-            response.writeln("<br><input type=\"submit\" value=\"Refresh\">")
-            response.writeln("</form>")
+            response.writeln("</p>")
         else:
             # Either we have no more than one round at the moment, or this is
             # an older tourney DB without the round_standings view. Either way,
             # don't offer the user per-round selection form.
             starting_from_round = 1
+
+        # Checkbox to enable/disable upfloat/downfloat history
+        response.writeln("<p>")
+        response.writeln("""
+<label title="Show upfloat/downfloat history of each player, indicating when the player has played someone on a higher or lower win count.\">
+<input type="checkbox" name="showfloathistory" value="1" %(checked)s>
+Show upfloat/downfloat history</label>
+""" % {
+            "checked" : ("checked" if show_float_history else "")
+        })
+        response.writeln("</p>")
+        response.writeln("<input type=\"submit\" value=\"Refresh\">")
+        response.writeln("</form>")
 
         if tourney.are_players_assigned_teams():
             htmlcommon.show_team_score_table(response, tourney.get_team_scores())
@@ -98,7 +113,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                 starting_from_round=starting_from_round,
                 last_round=last_round,
                 show_win_loss_column=True,
-                show_float_balance_column=True)
+                show_float_balance_column=show_float_history)
 
         if show_finals_placings:
             response.writeln("<h2>After finals</h2>")
@@ -113,7 +128,7 @@ def handle(httpreq, response, tourney, request_method, form, query_string, extra
                     starting_from_round=starting_from_round,
                     last_round=last_round,
                     show_win_loss_column=True,
-                    show_float_balance_column=True)
+                    show_float_balance_column=show_float_history)
 
         response.writeln("</div>"); #mainpane
     except countdowntourney.TourneyException as e:
